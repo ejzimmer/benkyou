@@ -10,6 +10,7 @@ import { isSameDay } from "date-fns/isSameDay"
 import { addDays } from "date-fns/addDays"
 import { LeftArrowIcon } from "../common/LeftArrowIcon"
 import { IconLink } from "../common/IconLink"
+import { endOfDay, isBefore } from "date-fns"
 
 type Params = { deckId: string }
 
@@ -77,7 +78,10 @@ export function ReviewCards() {
 }
 
 const getTodaysCards = (cards: CardType[]) =>
-  cards.filter((card) => !card.dueDate || isSameDay(card.dueDate, new Date()))
+  cards.filter(
+    (card: CardType) =>
+      !card.dueDate || isBefore(card.dueDate, endOfDay(new Date()))
+  )
 
 function updateCard(card: CardType) {
   const level = (card.level ?? 0) + 1
