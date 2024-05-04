@@ -49,7 +49,7 @@
 .deck-list button.study:hover {
   color: var(--green);
 }
-.deck-list button.edit:hover {
+.deck-list a.edit:hover {
   color: var(--blue);
 }
 

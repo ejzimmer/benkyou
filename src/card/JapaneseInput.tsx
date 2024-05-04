@@ -1,5 +1,5 @@
 import { useCallback, useId, useState } from "react"
-import { Word } from "./types"
+import { Word } from "../types"
 
 type Props = {
   value: Word
@@ -45,6 +45,7 @@ export function JapaneseInput({ value, onChange }: Props) {
             {value.kana.split("").map((kana, index) => (
               <FuriganaInput
                 key={index}
+                value={value.furigana[index]}
                 kanji={kana}
                 onChange={(furigana) => addFurigana(index, furigana)}
               />
@@ -58,9 +59,10 @@ export function JapaneseInput({ value, onChange }: Props) {
 
 type FuriganaInputProps = {
   kanji: string
+  value?: string
   onChange: (furigana: string) => void
 }
-function FuriganaInput({ kanji, onChange }: FuriganaInputProps) {
+function FuriganaInput({ kanji, value, onChange }: FuriganaInputProps) {
   const id = useId()
 
   return (
@@ -69,6 +71,7 @@ function FuriganaInput({ kanji, onChange }: FuriganaInputProps) {
       <input
         id={id}
         size={3}
+        value={value}
         onChange={(event) => onChange(event.target.value)}
       />
     </div>

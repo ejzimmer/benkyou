@@ -1,0 +1,41 @@
+.card-list {
+  max-width: 600px;
+  margin-inline: auto;
+  margin-top: 80px;
+}
+.card-list table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.card-list td {
+  border-block: 1px solid;
+  padding-inline: 8px;
+  white-space: nowrap;
+}
+.card-list td a.edit:hover {
+  color: var(--green);
+}
+.card-list tr:hover {
+  background: hsl(0 0% 100%/0.1);
+}
+
+.card-list .footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  font-size: 1.2rem;
+}
+.card-list .footer-links a {
+  color: var(--white);
+  text-decoration: none;
+  padding: 8px;
+}
+.card-list .footer-links a:hover {
+  color: var(--green);
+  background: hsl(0 0% 100%/0.1);
+  border-radius: 4px;
+}
+.card-list .footer-links a.back-arrow:hover {
+  color: var(--blue);
+}

@@ -60,10 +60,8 @@ export function DeckList() {
               <li key={id}>
                 <Deck
                   name={name}
+                  id={id}
                   onStudy={function (): void {
-                    throw new Error("Function not implemented.")
-                  }}
-                  onEdit={function (): void {
                     throw new Error("Function not implemented.")
                   }}
                   onDelete={() => handleDelete(id)}

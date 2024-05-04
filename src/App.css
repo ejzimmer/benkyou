@@ -58,3 +58,10 @@ button.ghost {
   bottom: 0;
   background-color: hsl(0 0 0% / 0.6);
 }
+
+.icon-link {
+  display: inline-block;
+  width: 40px;
+  color: var(--white);
+  box-sizing: border-box;
+}
