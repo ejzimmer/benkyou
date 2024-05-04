@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useState } from "react"
 import { JapaneseInput } from "./JapaneseInput"
-import "./card.css"
+import "./edit-card.css"
 import { Word } from "../types"
 import { ExampleSentences } from "./ExampleSentences"
 import { CrossIcon } from "../common/CrossIcon"

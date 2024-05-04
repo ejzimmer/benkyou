@@ -38,15 +38,18 @@
   grid-template-columns: 1fr max-content max-content;
   align-items: center;
   border-radius: 4px;
+  padding-inline: 8px;
 }
 .deck-list li:hover {
   background: hsl(0 0% 100%/0.1);
 }
-.deck-list li button {
+.deck-list li a {
   font-size: 1.6rem;
   text-align: start;
+  color: var(--white);
+  text-decoration: none;
 }
-.deck-list button.study:hover {
+.deck-list a.study:hover {
   color: var(--green);
 }
 .deck-list a.edit:hover {

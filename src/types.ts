@@ -7,5 +7,5 @@ export type CardType = {
   id: string
   japanese: Word
   english: string
-  examples: string[]
+  exampleSentences: string[]
 }

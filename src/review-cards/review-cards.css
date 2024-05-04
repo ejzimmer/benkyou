@@ -1,0 +1,57 @@
+.review-card {
+  width: 400px;
+  height: 300px;
+  max-width: 100vw;
+  max-height: 100vh;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  transition: opacity 0.2s;
+}
+
+.review-card .japanese {
+  display: flex;
+  justify-content: center;
+  line-height: 1;
+  font-size: 3rem;
+}
+.review-card .japanese .furigana {
+  font-size: 0.4em;
+  text-align: start;
+  padding-left: 4px;
+  opacity: 0;
+}
+.review-card .japanese .furigana.visible {
+  opacity: 0.6;
+}
+
+.review-card .toggles {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 24px;
+}
+
+.review-card .answer {
+  font-size: 1.5rem;
+  margin-top: 48px;
+  opacity: 0;
+}
+.review-card .answer.visible {
+  opacity: 1;
+}
+
+.review-card ul.examples {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  text-align: start;
+  margin-top: 24px;
+  font-size: 1.2em;
+  opacity: 0;
+}
+.review-card ul.examples.visible {
+  opacity: 1;
+}

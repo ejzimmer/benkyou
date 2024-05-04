@@ -58,14 +58,7 @@ export function DeckList() {
           <ul>
             {decks.map(({ name, id }) => (
               <li key={id}>
-                <Deck
-                  name={name}
-                  id={id}
-                  onStudy={function (): void {
-                    throw new Error("Function not implemented.")
-                  }}
-                  onDelete={() => handleDelete(id)}
-                />
+                <Deck name={name} id={id} onDelete={() => handleDelete(id)} />
               </li>
             ))}
           </ul>
