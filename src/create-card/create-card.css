@@ -1,0 +1,57 @@
+.create-card {
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+  margin-inline: auto;
+  margin-top: 40px;
+  gap: 40px;
+}
+
+.furigana-input {
+  font-weight: normal;
+  border: 1px solid;
+  display: flex;
+  flex-direction: row;
+  color: var(--white);
+}
+.furigana-input label {
+  font-weight: normal;
+  color: inherit;
+  border-right: 1px solid;
+  margin: 0;
+  padding: 4px;
+}
+.furigana-input input {
+  border: none;
+  padding-inline: 8px;
+  padding-block: 4px;
+}
+
+fieldset.example-sentences {
+  display: grid;
+  grid-template-columns: 1fr max-content;
+  align-items: center;
+  border: none;
+  margin-inline: 0;
+  padding: 0;
+}
+
+fieldset.example-sentences button {
+  border: none;
+  font-size: 2rem;
+  padding: 0;
+}
+fieldset.example-sentences button:hover {
+  color: var(--green);
+}
+
+.footer-buttons {
+  display: flex;
+  height: 40px;
+  gap: 8px;
+  justify-content: end;
+}
+.footer-buttons button {
+  height: 100%;
+  width: 40px;
+}

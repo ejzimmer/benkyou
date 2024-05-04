@@ -2,37 +2,47 @@
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.jp {
+  --accent-colour: var(--green);
+}
+.en {
+  --accent-colour: var(--blue);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+form label,
+legend {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  font-weight: bold;
+  font-size: 1.4rem;
+  color: var(--accent-colour);
 }
 
-.App-link {
-  color: #61dafb;
+form input {
+  font-size: 1.2rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid;
+  border-color: var(--accent-colour);
+  color: var(--white);
+  padding-top: 8px;
+}
+form input:focus-visible {
+  outline: none;
+  box-shadow: 0 2px var(--accent-colour);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+button {
+  border: 2px solid var(--accent-colour, var(--white));
+  background: none;
+  color: var(--white);
+  padding: 8px;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 1px solid var(--white);
+}
+button:hover {
+  border-color: var(--accent-colour, var(--pink));
+  color: var(--accent-colour, var(--pink));
 }
