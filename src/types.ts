@@ -8,4 +8,6 @@ export type CardType = {
   japanese: Word
   english: string
   exampleSentences: string[]
+  dueDate?: number
+  level?: number
 }

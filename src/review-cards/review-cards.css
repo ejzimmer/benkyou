@@ -55,3 +55,18 @@
 .review-card ul.examples.visible {
   opacity: 1;
 }
+
+.review-card .controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 24px;
+}
+.review-card .controls .correct:hover {
+  color: var(--green);
+  border-color: currentColor;
+}
+
+.review-card .back-link:hover {
+  color: var(--blue);
+}

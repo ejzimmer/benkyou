@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react"
 import { CardType } from "../types"
+import { TickIcon } from "../common/TickIcon"
+import { IconButton } from "../common/IconButton"
+import { CrossIcon } from "../common/CrossIcon"
 
 type Props = {
   card: CardType
+  onCorrect: () => void
+  onIncorrect: () => void
 }
 
-export function ReviewCard({ card }: Props) {
+export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
   const [isFuriganaVisible, setFuriganaVisible] = useState(false)
   const [isAnswerVisible, setAnswerVisible] = useState(false)
   const [areExamplesVisible, setExamplesVisible] = useState(false)
@@ -50,6 +55,15 @@ export function ReviewCard({ card }: Props) {
           ))}
         </ul>
       )}
+      <div className="controls">
+        <IconButton
+          label="correct"
+          onClick={onCorrect}
+          icon={TickIcon}
+          className="correct"
+        />
+        <IconButton label="incorrect" onClick={onIncorrect} icon={CrossIcon} />
+      </div>
     </div>
   )
 }
