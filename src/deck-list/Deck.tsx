@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { CrossIcon } from "../common/CrossIcon"
 import { IconButton } from "../common/IconButton"
 import { PencilIcon } from "../common/PencilIcon"
@@ -17,6 +17,19 @@ export function Deck({ name, id, onDelete }: Props) {
   const [isShowingDeleteConfirmation, setShowingDeleteConfirmation] =
     useState(false)
 
+  const openConfirmation = useCallback(
+    () => setShowingDeleteConfirmation(true),
+    []
+  )
+  const closeConfirmation = useCallback(
+    () => setShowingDeleteConfirmation(false),
+    []
+  )
+  const deleteDeck = useCallback(async () => {
+    await onDelete()
+    closeConfirmation()
+  }, [onDelete, closeConfirmation])
+
   return (
     <>
       <Link className="study" to={`${id}/review`}>
@@ -24,7 +37,7 @@ export function Deck({ name, id, onDelete }: Props) {
       </Link>
       <IconButton
         icon={CrossIcon}
-        onClick={() => setShowingDeleteConfirmation(true)}
+        onClick={openConfirmation}
         className="ghost"
         label={`delete ${name}`}
         ref={deleteButtonRef}
@@ -39,8 +52,8 @@ export function Deck({ name, id, onDelete }: Props) {
         <DeleteConfirmation
           returnFocusRef={deleteButtonRef}
           name={name}
-          onConfirm={onDelete}
-          onClose={() => setShowingDeleteConfirmation(false)}
+          onConfirm={deleteDeck}
+          onClose={closeConfirmation}
         />
       )}
     </>

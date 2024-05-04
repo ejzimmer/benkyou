@@ -29,10 +29,6 @@ function App() {
     })
   }, [auth, authProvider])
 
-  useEffect(() => {
-    getRedirectResult(auth).then(console.log)
-  }, [auth, authProvider])
-
   return (
     <FirebaseContext.Provider value={{ database }}>
       {user === null ? (

@@ -23,8 +23,10 @@ export function DeckList() {
       const data = snapshot.val()
       setLoading(false)
       if (!data) {
+        setDecks(data)
         return
       }
+
       const decks = (Object.entries(data) as [string, DeckType][]).map(
         ([key, value]) => ({
           ...value,
@@ -37,13 +39,8 @@ export function DeckList() {
 
   const handleDelete = useCallback(
     (id: string) => {
-      if (!database) {
-        console.error("Missing database")
-        return
-      }
-
       const deleteRef = ref(database, `decks/${id}`)
-      remove(deleteRef)
+      return remove(deleteRef)
     },
     [database]
   )
