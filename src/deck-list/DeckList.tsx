@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import "./deck-list.css"
 import { CreateDeck } from "./CreateDeck"
-import { useDatabase } from "../common/DatabaseContext"
+import { useDatabase } from "../common/FirebaseContext"
 import { onValue, ref, remove } from "firebase/database"
 import { Deck } from "./Deck"
 
@@ -17,11 +17,6 @@ export function DeckList() {
   const database = useDatabase()
 
   useEffect(() => {
-    if (!database) {
-      console.error("Missing database")
-      return
-    }
-
     const decksRef = ref(database, "decks")
     onValue(decksRef, (snapshot) => {
       const data = snapshot.val()

@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { useDatabase } from "../common/DatabaseContext"
+import { useDatabase } from "../common/FirebaseContext"
 import { useCallback, useEffect, useState } from "react"
 import { onValue, ref, remove } from "firebase/database"
 import { CardType } from "../types"
@@ -18,11 +18,6 @@ export function EditDeck() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!database) {
-      console.error("Missing database")
-      return
-    }
-
     const deckRef = ref(database, `decks/${deckId}`)
     onValue(deckRef, (snapshot) => {
       const data = snapshot.val().cards

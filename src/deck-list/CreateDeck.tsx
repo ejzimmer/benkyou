@@ -1,6 +1,6 @@
 import { push, child, ref, update } from "firebase/database"
 import { useRef, useCallback, FormEvent, useState } from "react"
-import { useDatabase } from "../common/DatabaseContext"
+import { useDatabase } from "../common/FirebaseContext"
 import { CrossIcon } from "../common/CrossIcon"
 import { IconButton } from "../common/IconButton"
 import { TickIcon } from "../common/TickIcon"
@@ -18,11 +18,6 @@ export function CreateDeck({ onClose }: Props) {
   const addDeck = useCallback(
     async (event: FormEvent) => {
       event.preventDefault()
-
-      if (!database) {
-        console.error("missing database")
-        return
-      }
 
       const name = nameRef.current?.value
       if (!name) {

@@ -1,12 +1,11 @@
 import { ref, onValue, update } from "firebase/database"
 import { useCallback, useEffect, useState } from "react"
-import { useDatabase } from "../common/DatabaseContext"
+import { useDatabase } from "../common/FirebaseContext"
 import { useNavigate, useParams } from "react-router-dom"
 import { CardType } from "../types"
 
 import "./review-cards.css"
 import { ReviewCard } from "./ReviewCard"
-import { isSameDay } from "date-fns/isSameDay"
 import { addDays } from "date-fns/addDays"
 import { LeftArrowIcon } from "../common/LeftArrowIcon"
 import { IconLink } from "../common/IconLink"
@@ -21,11 +20,6 @@ export function ReviewCards() {
   const [todaysCards, setTodaysCards] = useState<CardType[]>([])
 
   useEffect(() => {
-    if (!database) {
-      console.error("Missing database")
-      return
-    }
-
     const cardRef = ref(database, `decks/${deckId}/cards`)
     onValue(cardRef, (snapshot) => {
       const value = snapshot.val()

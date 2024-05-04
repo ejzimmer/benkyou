@@ -7,7 +7,7 @@ import { CrossIcon } from "../common/CrossIcon"
 import { TickIcon } from "../common/TickIcon"
 import { IconButton } from "../common/IconButton"
 import { useNavigate, useParams } from "react-router-dom"
-import { useDatabase } from "../common/DatabaseContext"
+import { useDatabase } from "../common/FirebaseContext"
 import { child, onValue, push, ref, update } from "firebase/database"
 import { IconLink } from "../common/IconLink"
 
@@ -22,11 +22,6 @@ export function Card() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (!database) {
-      console.error("Missing database")
-      return
-    }
-
     if (!cardId) return
 
     const cardRef = ref(database, `decks/${deckId}/cards/${cardId}`)

@@ -8,6 +8,9 @@ import { EditDeck } from "./edit-deck/EditDeck"
 import { Card } from "./edit-card/EditCard"
 import { ReviewCards } from "./review-cards/ReviewCards"
 
+import { GoogleAuthProvider } from "firebase/auth"
+const provider = new GoogleAuthProvider()
+
 function App() {
   const database = useRef(getDatabase())
 
