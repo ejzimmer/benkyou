@@ -18,6 +18,7 @@ export function DeckList() {
 
   useEffect(() => {
     const decksRef = ref(database, "decks")
+
     onValue(decksRef, (snapshot) => {
       const data = snapshot.val()
       setLoading(false)

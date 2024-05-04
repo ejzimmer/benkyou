@@ -65,3 +65,14 @@ button.ghost {
   color: var(--white);
   box-sizing: border-box;
 }
+
+.centred {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+button.login {
+  font-size: 1.5rem;
+}
