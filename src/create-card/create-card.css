@@ -47,11 +47,6 @@ fieldset.example-sentences button:hover {
 
 .footer-buttons {
   display: flex;
-  height: 40px;
   gap: 8px;
   justify-content: end;
-}
-.footer-buttons button {
-  height: 100%;
-  width: 40px;
 }

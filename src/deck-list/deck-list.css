@@ -1,0 +1,16 @@
+.deck-list {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+.deck-list button.add-deck {
+  font-size: 2em;
+}
+
+.deck-name-input {
+  display: flex;
+  gap: 4px;
+}
