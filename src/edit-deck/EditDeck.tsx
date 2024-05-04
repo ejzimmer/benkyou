@@ -28,7 +28,7 @@ export function EditDeck() {
       const data = snapshot.val().cards
 
       if (!data) {
-        return navigate(`/${deckId}/add`)
+        return
       }
 
       const cards = (Object.entries(data) as [string, CardType][]).map(
@@ -56,7 +56,7 @@ export function EditDeck() {
 
   return (
     <div className="card-list">
-      {cards?.length && (
+      {cards?.length ? (
         <>
           <table>
             <tbody>
@@ -82,6 +82,11 @@ export function EditDeck() {
             <Link to={`/${deckId}/add`}>+ カード </Link>
           </div>
         </>
+      ) : (
+        <div className="no-cards">
+          <Link to={`/${deckId}/add`}>+ カード </Link>
+          <IconLink to="/" icon={LeftArrowIcon} label="back to deck list" />
+        </div>
       )}
     </div>
   )

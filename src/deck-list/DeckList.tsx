@@ -25,6 +25,10 @@ export function DeckList() {
     const decksRef = ref(database, "decks")
     onValue(decksRef, (snapshot) => {
       const data = snapshot.val()
+      setLoading(false)
+      if (!data) {
+        return
+      }
       const decks = (Object.entries(data) as [string, DeckType][]).map(
         ([key, value]) => ({
           ...value,
@@ -32,7 +36,6 @@ export function DeckList() {
         })
       )
       setDecks(decks)
-      setLoading(false)
     })
   }, [database])
 
