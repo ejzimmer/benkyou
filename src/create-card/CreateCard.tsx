@@ -3,8 +3,9 @@ import { JapaneseInput } from "./JapaneseInput"
 import "./create-card.css"
 import { Word } from "./types"
 import { ExampleSentences } from "./ExampleSentences"
-import { CrossButton } from "../common/CrossButton"
-import { TickButton } from "../common/TickButton"
+import { CrossIcon } from "../common/CrossIcon"
+import { TickIcon } from "../common/TickIcon"
+import { IconButton } from "../common/IconButton"
 
 export function CreateCard() {
   const [japanese, setJapanese] = useState<Word>({ kana: "", furigana: [] })
@@ -41,8 +42,8 @@ export function CreateCard() {
       />
 
       <div className="footer-buttons">
-        <CrossButton />
-        <TickButton />
+        <IconButton icon={CrossIcon} label="Cancel" />
+        <IconButton icon={TickIcon} label="Create card" />
       </div>
     </form>
   )

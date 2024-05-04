@@ -46,3 +46,15 @@ button:hover {
   border-color: var(--accent-colour, var(--pink));
   color: var(--accent-colour, var(--pink));
 }
+button.ghost {
+  border: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: hsl(0 0 0% / 0.6);
+}

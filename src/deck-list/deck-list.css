@@ -1,9 +1,18 @@
-.deck-list {
+.no-decks {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100vw;
   height: 100vh;
+}
+
+.deck-list {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  height: 100vh;
+  margin-inline: auto;
+  justify-content: center;
 }
 
 .deck-list button.add-deck {
@@ -13,4 +22,59 @@
 .deck-name-input {
   display: flex;
   gap: 4px;
+}
+
+.deck-list ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 500px;
+  margin-inline: auto;
+  margin-bottom: 16px;
+}
+.deck-list li {
+  display: grid;
+  grid-template-columns: 1fr max-content max-content;
+  align-items: center;
+  border-radius: 4px;
+}
+.deck-list li:hover {
+  background: hsl(0 0% 100%/0.1);
+}
+.deck-list li button {
+  font-size: 1.6rem;
+  text-align: start;
+}
+.deck-list button.study:hover {
+  color: var(--green);
+}
+.deck-list button.edit:hover {
+  color: var(--blue);
+}
+
+.delete-confirmation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  max-width: 100vw;
+  border: 8px solid;
+  background: var(--black);
+  padding: 24px;
+  box-shadow: 8px 8px 16px hsl(0 0% 0%/0.6);
+  font-size: 1.4rem;
+  border-color: var(--blue);
+}
+.delete-confirmation .footer {
+  display: flex;
+  margin-top: 16px;
+  justify-content: end;
+}
+.delete-confirmation .footer button:first-child {
+  color: var(--pink);
+}
+.delete-confirmation .footer button:last-child {
+  color: var(--green);
 }

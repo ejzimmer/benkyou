@@ -5,10 +5,11 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #333;
+  background: var(--black);
   color: var(--white);
   --blue: hsl(200 100% 50%);
   --green: hsl(140, 87%, 42%);
   --pink: hsl(320, 84%, 57%);
   --white: hsl(0 0% 95%);
+  --black: #333;
 }

@@ -1,14 +1,16 @@
 import { push, child, ref, update } from "firebase/database"
-import { CrossButton } from "../common/CrossButton"
 import { useRef, useCallback, FormEvent, useState } from "react"
 import { useDatabase } from "../common/DatabaseContext"
-import { TickButton } from "../common/TickButton"
+import { CrossIcon } from "../common/CrossIcon"
+import { IconButton } from "../common/IconButton"
+import { TickIcon } from "../common/TickIcon"
+import { PlusIcon } from "../common/PlusIcon"
 
 type Props = {
-  onClose: () => void
+  onClose?: () => void
 }
 
-export function DeckNameInput({ onClose }: Props) {
+export function CreateDeck({ onClose }: Props) {
   const database = useDatabase()
   const nameRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -34,7 +36,7 @@ export function DeckNameInput({ onClose }: Props) {
       setIsLoading(true)
       await update(ref(database), updates)
       setIsLoading(false)
-      onClose()
+      onClose?.()
     },
     [database, onClose]
   )
@@ -44,8 +46,14 @@ export function DeckNameInput({ onClose }: Props) {
   ) : (
     <form onSubmit={addDeck} className="deck-name-input">
       <input ref={nameRef} />
-      <CrossButton onClick={onClose} />
-      <TickButton />
+      {onClose ? (
+        <>
+          <IconButton icon={CrossIcon} onClick={onClose} label="cancel" />
+          <IconButton icon={TickIcon} label="create deck" />
+        </>
+      ) : (
+        <IconButton icon={PlusIcon} label="create deck" />
+      )}
     </form>
   )
 }
