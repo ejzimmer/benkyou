@@ -34,7 +34,7 @@ export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
     setResponseButtonsVisible(true)
   }, [isAnswerVisible])
   const toggleExamples = useCallback(() => {
-    setFuriganaVisible(!areExamplesVisible)
+    setExamplesVisible(!areExamplesVisible)
   }, [areExamplesVisible])
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
   })
 
   return (
-    <div className="review-card">
+    <div>
       <div className="japanese">
         {characters.map(({ furigana, kana }, index) => (
           <div key={index} className="kana">
@@ -84,21 +84,15 @@ export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
         <button onClick={toggleAnswer}>回答</button>
         <button onClick={toggleExamples}>使用例</button>
       </div>
-      {areResponseButtonsVisible && (
-        <div className="controls">
-          <IconButton
-            label="correct"
-            onClick={onCorrect}
-            icon={TickIcon}
-            className="correct"
-          />
-          <IconButton
-            label="incorrect"
-            onClick={onIncorrect}
-            icon={CrossIcon}
-          />
-        </div>
-      )}
+      <div className={getClassName("controls", areResponseButtonsVisible)}>
+        <IconButton
+          label="correct"
+          onClick={onCorrect}
+          icon={TickIcon}
+          className="correct"
+        />
+        <IconButton label="incorrect" onClick={onIncorrect} icon={CrossIcon} />
+      </div>
     </div>
   )
 }

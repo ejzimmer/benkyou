@@ -18,6 +18,7 @@ export function ReviewCards() {
   const { deckId } = useParams<Params>()
   const navigate = useNavigate()
   const [todaysCards, setTodaysCards] = useState<CardType[]>([])
+  const [sessionTotal, setSessionTotal] = useState(0)
 
   useEffect(() => {
     const cardRef = ref(database, `decks/${deckId}/cards`)
@@ -28,7 +29,9 @@ export function ReviewCards() {
       const cards = Object.entries(value as Record<string, CardType>).map(
         ([id, value]) => ({ ...value, id })
       )
-      setTodaysCards(getTodaysCards(cards))
+      const todaysCards = getTodaysCards(cards)
+      setTodaysCards(todaysCards)
+      setSessionTotal(todaysCards.length)
     })
   }, [database, deckId, navigate])
 
@@ -54,12 +57,23 @@ export function ReviewCards() {
   }, [todaysCards])
 
   return todaysCards[0] ? (
-    <ReviewCard
-      key={todaysCards[0].japanese.kana}
-      card={todaysCards[0]}
-      onCorrect={markCardCorrect}
-      onIncorrect={markCardIncorrect}
-    />
+    <div className="review-card">
+      <ReviewCard
+        key={todaysCards[0].japanese.kana}
+        card={todaysCards[0]}
+        onCorrect={markCardCorrect}
+        onIncorrect={markCardIncorrect}
+      />
+      <div className="session-count">
+        {sessionTotal - todaysCards.length}/{sessionTotal} cards completed
+      </div>
+      <IconLink
+        className="back-link"
+        label="return to deck list"
+        to="/"
+        icon={LeftArrowIcon}
+      />
+    </div>
   ) : (
     <div className="review-card">
       <IconLink
