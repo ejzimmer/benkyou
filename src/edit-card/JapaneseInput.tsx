@@ -11,6 +11,7 @@ export function JapaneseInput({ value, onChange }: Props) {
 
   const addFurigana = useCallback(
     (index: number, kana: string) => {
+      if (!value.furigana) value.furigana = []
       value.furigana[index] = kana
       onChange({ ...value, furigana: [...value.furigana] })
     },
@@ -45,7 +46,7 @@ export function JapaneseInput({ value, onChange }: Props) {
             {value.kana.split("").map((kana, index) => (
               <FuriganaInput
                 key={index}
-                value={value.furigana[index] ?? ""}
+                value={value.furigana?.[index] ?? ""}
                 kanji={kana}
                 onChange={(furigana) => addFurigana(index, furigana)}
               />

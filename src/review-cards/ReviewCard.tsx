@@ -19,7 +19,7 @@ export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
     () =>
       card.japanese.kana.split("").map((kana, index) => ({
         kana,
-        furigana: card.japanese.furigana[index],
+        furigana: card.japanese.furigana?.[index],
       })),
     [card]
   )

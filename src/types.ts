@@ -1,6 +1,6 @@
 export type Word = {
   kana: string
-  furigana: string[]
+  furigana?: string[]
 }
 
 export type CardType = {
