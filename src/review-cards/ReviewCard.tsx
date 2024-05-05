@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { CardType } from "../types"
 import { TickIcon } from "../common/TickIcon"
 import { IconButton } from "../common/IconButton"
@@ -14,6 +14,7 @@ export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
   const [isFuriganaVisible, setFuriganaVisible] = useState(false)
   const [isAnswerVisible, setAnswerVisible] = useState(false)
   const [areExamplesVisible, setExamplesVisible] = useState(false)
+  const [areResponseButtonsVisible, setResponseButtonsVisible] = useState(false)
 
   const characters = useMemo(
     () =>
@@ -23,6 +24,18 @@ export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
       })),
     [card]
   )
+
+  const toggleFurigana = useCallback(() => {
+    setFuriganaVisible(!isFuriganaVisible)
+    setResponseButtonsVisible(true)
+  }, [isFuriganaVisible])
+  const toggleAnswer = useCallback(() => {
+    setAnswerVisible(!isAnswerVisible)
+    setResponseButtonsVisible(true)
+  }, [isAnswerVisible])
+  const toggleExamples = useCallback(() => {
+    setFuriganaVisible(!areExamplesVisible)
+  }, [areExamplesVisible])
 
   return (
     <div className="review-card">
@@ -36,15 +49,6 @@ export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
           </div>
         ))}
       </div>
-      <div className="toggles">
-        <button onClick={() => setFuriganaVisible(!isFuriganaVisible)}>
-          ふりがな
-        </button>
-        <button onClick={() => setAnswerVisible(!isAnswerVisible)}>回答</button>
-        <button onClick={() => setExamplesVisible(!areExamplesVisible)}>
-          使用例
-        </button>
-      </div>
       <div className={getClassName("answer", isAnswerVisible)}>
         {card.english}
       </div>
@@ -55,15 +59,26 @@ export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
           ))}
         </ul>
       )}
-      <div className="controls">
-        <IconButton
-          label="correct"
-          onClick={onCorrect}
-          icon={TickIcon}
-          className="correct"
-        />
-        <IconButton label="incorrect" onClick={onIncorrect} icon={CrossIcon} />
+      <div className="toggles">
+        <button onClick={toggleFurigana}>ふりがな</button>
+        <button onClick={toggleAnswer}>回答</button>
+        <button onClick={toggleExamples}>使用例</button>
       </div>
+      {areResponseButtonsVisible && (
+        <div className="controls">
+          <IconButton
+            label="correct"
+            onClick={onCorrect}
+            icon={TickIcon}
+            className="correct"
+          />
+          <IconButton
+            label="incorrect"
+            onClick={onIncorrect}
+            icon={CrossIcon}
+          />
+        </div>
+      )}
     </div>
   )
 }
