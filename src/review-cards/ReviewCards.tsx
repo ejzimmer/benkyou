@@ -1,4 +1,4 @@
-import { ref, onValue, update } from "firebase/database"
+import { ref, onValue, update, get } from "firebase/database"
 import { useCallback, useEffect, useState } from "react"
 import { useDatabase } from "../common/FirebaseContext"
 import { useNavigate, useParams } from "react-router-dom"
@@ -19,9 +19,11 @@ export function ReviewCards() {
   const navigate = useNavigate()
   const [todaysCards, setTodaysCards] = useState<CardType[]>([])
 
+  console.log("today cards", todaysCards)
+
   useEffect(() => {
     const cardRef = ref(database, `decks/${deckId}/cards`)
-    onValue(cardRef, (snapshot) => {
+    get(cardRef).then((snapshot) => {
       const value = snapshot.val()
       if (!value) navigate(`/${deckId}/add`)
 
@@ -38,12 +40,13 @@ export function ReviewCards() {
       return
     }
 
-    const [currentCard] = todaysCards
+    const [currentCard, ...remainingCards] = todaysCards
     const updatedCard = updateCard(currentCard)
     const updates = {
       [`/decks/${deckId}/cards/${currentCard.id}`]: updatedCard,
     }
     await update(ref(database), updates)
+    setTodaysCards(remainingCards)
   }, [todaysCards, deckId, database])
 
   const markCardIncorrect = useCallback(() => {

@@ -20,14 +20,14 @@ export function EditDeck() {
   useEffect(() => {
     const deckRef = ref(database, `decks/${deckId}`)
     onValue(deckRef, (snapshot) => {
-      const data = snapshot.val().cards
+      const data = snapshot.val()
 
-      if (!data) {
-        setCards(data)
+      if (!data || !data.cards) {
+        setCards(undefined)
         return
       }
 
-      const cards = (Object.entries(data) as [string, CardType][]).map(
+      const cards = (Object.entries(data.cards) as [string, CardType][]).map(
         ([key, value]) => ({
           ...value,
           id: key,
