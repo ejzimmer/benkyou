@@ -12,7 +12,6 @@ import {
   GoogleAuthProvider,
   User,
   getAuth,
-  getRedirectResult,
   onAuthStateChanged,
   signInWithRedirect,
 } from "firebase/auth"
