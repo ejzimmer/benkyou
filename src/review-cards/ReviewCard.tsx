@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { CardType } from "../types"
 import { TickIcon } from "../common/TickIcon"
 import { IconButton } from "../common/IconButton"
@@ -36,6 +36,26 @@ export function ReviewCard({ card, onCorrect, onIncorrect }: Props) {
   const toggleExamples = useCallback(() => {
     setFuriganaVisible(!areExamplesVisible)
   }, [areExamplesVisible])
+
+  useEffect(() => {
+    const keyHandler = (event: KeyboardEvent) => {
+      if (event.key === "Enter") {
+        if (!areResponseButtonsVisible) {
+          setFuriganaVisible(true)
+          setAnswerVisible(true)
+          setResponseButtonsVisible(true)
+        } else {
+          onCorrect()
+        }
+      }
+
+      if (event.key === "x" && areResponseButtonsVisible) {
+        onIncorrect()
+      }
+    }
+    window.addEventListener("keydown", keyHandler)
+    return () => window.removeEventListener("keydown", keyHandler)
+  })
 
   return (
     <div className="review-card">

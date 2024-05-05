@@ -19,8 +19,6 @@ export function ReviewCards() {
   const navigate = useNavigate()
   const [todaysCards, setTodaysCards] = useState<CardType[]>([])
 
-  console.log("today cards", todaysCards)
-
   useEffect(() => {
     const cardRef = ref(database, `decks/${deckId}/cards`)
     get(cardRef).then((snapshot) => {
