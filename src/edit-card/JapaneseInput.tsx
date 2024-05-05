@@ -45,7 +45,7 @@ export function JapaneseInput({ value, onChange }: Props) {
             {value.kana.split("").map((kana, index) => (
               <FuriganaInput
                 key={index}
-                value={value.furigana[index]}
+                value={value.furigana[index] ?? ""}
                 kanji={kana}
                 onChange={(furigana) => addFurigana(index, furigana)}
               />
@@ -59,7 +59,7 @@ export function JapaneseInput({ value, onChange }: Props) {
 
 type FuriganaInputProps = {
   kanji: string
-  value?: string
+  value: string
   onChange: (furigana: string) => void
 }
 function FuriganaInput({ kanji, value, onChange }: FuriganaInputProps) {

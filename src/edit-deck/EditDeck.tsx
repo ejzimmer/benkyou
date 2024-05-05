@@ -23,6 +23,7 @@ export function EditDeck() {
       const data = snapshot.val().cards
 
       if (!data) {
+        setCards(data)
         return
       }
 
@@ -38,13 +39,8 @@ export function EditDeck() {
 
   const handleDelete = useCallback(
     (id: string) => {
-      if (!database) {
-        console.error("Missing database")
-        return
-      }
-
       const deleteRef = ref(database, `decks/${deckId}/cards/${id}`)
-      remove(deleteRef)
+      return remove(deleteRef)
     },
     [database, deckId]
   )

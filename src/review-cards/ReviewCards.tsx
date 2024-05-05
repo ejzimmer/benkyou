@@ -54,6 +54,7 @@ export function ReviewCards() {
 
   return todaysCards[0] ? (
     <ReviewCard
+      key={todaysCards[0].japanese.kana}
       card={todaysCards[0]}
       onCorrect={markCardCorrect}
       onIncorrect={markCardIncorrect}

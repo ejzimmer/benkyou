@@ -16,6 +16,7 @@
   justify-content: center;
   line-height: 1;
   font-size: 3rem;
+  align-items: end;
 }
 .review-card .japanese .furigana {
   font-size: 0.4em;

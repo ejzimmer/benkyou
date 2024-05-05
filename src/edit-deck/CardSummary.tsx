@@ -1,7 +1,7 @@
 import { CrossIcon } from "../common/CrossIcon"
 import { IconButton } from "../common/IconButton"
 import { PencilIcon } from "../common/PencilIcon"
-import { useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { DeleteConfirmation } from "../common/DeleteConfirmation"
 import { IconLink } from "../common/IconLink"
 
@@ -24,6 +24,19 @@ export function CardSummary({
   const [isShowingDeleteConfirmation, setShowingDeleteConfirmation] =
     useState(false)
 
+  const showConfirmation = useCallback(
+    () => setShowingDeleteConfirmation(true),
+    []
+  )
+  const hideConfirmation = useCallback(
+    () => setShowingDeleteConfirmation(false),
+    []
+  )
+  const deleteCard = useCallback(async () => {
+    await onDelete()
+    hideConfirmation()
+  }, [hideConfirmation, onDelete])
+
   return (
     <tr>
       <td style={{ paddingRight: "20px" }}>{word}</td>
@@ -31,7 +44,7 @@ export function CardSummary({
       <td style={{ width: "80px", paddingRight: 0 }}>
         <IconButton
           icon={CrossIcon}
-          onClick={() => setShowingDeleteConfirmation(true)}
+          onClick={showConfirmation}
           className="ghost"
           label={`delete ${word}`}
           ref={deleteButtonRef}
@@ -40,8 +53,8 @@ export function CardSummary({
           <DeleteConfirmation
             returnFocusRef={deleteButtonRef}
             name={word}
-            onConfirm={onDelete}
-            onClose={() => setShowingDeleteConfirmation(false)}
+            onConfirm={deleteCard}
+            onClose={hideConfirmation}
           />
         )}
         <IconLink

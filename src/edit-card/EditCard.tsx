@@ -66,6 +66,10 @@ export function Card() {
       setJapanese({ kana: "", furigana: [] })
       setEnglish("")
       setExampleSentences([])
+
+      const firstInput =
+        document.querySelector<HTMLInputElement>(".create-card input")
+      firstInput?.focus()
     },
     [japanese, english, exampleSentences, database, deckId, navigate, cardId]
   )
