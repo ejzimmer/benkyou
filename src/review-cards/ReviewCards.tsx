@@ -1,4 +1,4 @@
-import { ref, onValue, update, get } from "firebase/database"
+import { ref, update, get } from "firebase/database"
 import { useCallback, useEffect, useState } from "react"
 import { useDatabase } from "../common/FirebaseContext"
 import { useNavigate, useParams } from "react-router-dom"
@@ -94,8 +94,8 @@ const getTodaysCards = (cards: CardType[]) =>
   )
 
 function updateCard(card: CardType) {
-  const level = (card.level ?? 0) + 1
+  const level = card.level ?? 0
   const nextInterval = Math.pow(2, level)
   const dueDate = addDays(new Date(), nextInterval)
-  return { ...card, level, dueDate }
+  return { ...card, level: level + 1, dueDate }
 }

@@ -1,4 +1,11 @@
-import { useCallback, useId, useState } from "react"
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react"
 import { Word } from "../types"
 
 type Props = {
@@ -7,7 +14,12 @@ type Props = {
 }
 
 export function JapaneseInput({ value, onChange }: Props) {
+  const firstFuriganaRef = useRef<HTMLInputElement>(null)
   const [isFuriganaVisible, setFuriganaVisible] = useState(false)
+
+  useEffect(() => {
+    firstFuriganaRef?.current?.focus()
+  }, [isFuriganaVisible])
 
   const addFurigana = useCallback(
     (index: number, kana: string) => {
@@ -45,6 +57,7 @@ export function JapaneseInput({ value, onChange }: Props) {
           <div style={{ display: "flex", gap: "2px", marginTop: "4px" }}>
             {value.kana.split("").map((kana, index) => (
               <FuriganaInput
+                ref={index === 0 ? firstFuriganaRef : undefined}
                 key={index}
                 value={value.furigana?.[index] ?? ""}
                 kanji={kana}
@@ -63,18 +76,21 @@ type FuriganaInputProps = {
   value: string
   onChange: (furigana: string) => void
 }
-function FuriganaInput({ kanji, value, onChange }: FuriganaInputProps) {
-  const id = useId()
+const FuriganaInput = forwardRef<HTMLInputElement, FuriganaInputProps>(
+  function FuriganaInput({ kanji, value, onChange }, ref) {
+    const id = useId()
 
-  return (
-    <div className="furigana-input">
-      <label htmlFor={id}>{kanji}</label>
-      <input
-        id={id}
-        size={3}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </div>
-  )
-}
+    return (
+      <div className="furigana-input">
+        <label htmlFor={id}>{kanji}</label>
+        <input
+          ref={ref}
+          id={id}
+          size={3}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </div>
+    )
+  }
+)
