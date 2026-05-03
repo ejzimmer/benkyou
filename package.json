@@ -18,15 +18,16 @@
     "ts-fsrs": "^5.1.0"
   },
   "devDependencies": {
-    "dexie-react-hooks": "^1.1.7",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "dexie-react-hooks": "^1.1.7",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
+    "fake-indexeddb": "^6.2.5",
     "globals": "^15.14.0",
     "jsdom": "^25.0.1",
     "typescript": "~5.7.2",

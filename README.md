@@ -16,7 +16,7 @@ npm run build
 npm run preview
 ```
 
-Tests:
+Tests (Vitest; `fake-indexeddb` for Dexie in jsdom):
 
 ```bash
 npm test
