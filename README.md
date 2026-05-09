@@ -29,3 +29,7 @@ Copy `.env.example` to `.env.local` and add Firebase keys to enable sign-in and 
 ## Agent / bulk import
 
 See [docs/AGENT_API.md](docs/AGENT_API.md). Local helpers live in `src/services/agentLocal.ts`.
+
+## Cursor: code review skill
+
+The [awesome-skills/code-review-skill](https://github.com/awesome-skills/code-review-skill) bundle lives in [`.cursor/skills/code-review-skill`](.cursor/skills/code-review-skill). In Cursor Agent, invoke **`/code-review-excellence`** or attach that skill from `@`. Details: [`.cursor/skills/README.md`](.cursor/skills/README.md).
