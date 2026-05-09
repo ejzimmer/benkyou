@@ -2,8 +2,8 @@ import {
   collection,
   doc,
   getDocs,
-  runTransaction,
   setDoc,
+  writeBatch,
   type Firestore,
 } from "firebase/firestore"
 import type { Card, Deck } from "../../domain/types"
@@ -17,6 +17,9 @@ const cardsCol = (fs: Firestore, uid: string) =>
 const schedCol = (fs: Firestore, uid: string) =>
   collection(fs, "users", uid, "scheduling")
 
+/** Firestore batch limit is 500 operations; stay under for headroom. */
+const BATCH_SIZE = 400
+
 export async function pushLocalToRemote(
   fs: Firestore,
   uid: string,
@@ -27,20 +30,32 @@ export async function pushLocalToRemote(
     db.scheduling.toArray(),
   ])
 
-  await runTransaction(fs, async (tx) => {
-    for (const d of localDecks) {
-      tx.set(doc(decksCol(fs, uid), d.id), d)
+  let batch = writeBatch(fs)
+  let n = 0
+
+  const enqueue = async (ref: ReturnType<typeof doc>, data: object) => {
+    batch.set(ref, data)
+    n++
+    if (n >= BATCH_SIZE) {
+      await batch.commit()
+      batch = writeBatch(fs)
+      n = 0
     }
-    for (const c of localCards) {
-      tx.set(doc(cardsCol(fs, uid), c.id), {
-        ...c,
-        content: c.content,
-      })
-    }
-    for (const s of localSched) {
-      tx.set(doc(schedCol(fs, uid), s.id), s)
-    }
-  })
+  }
+
+  for (const d of localDecks) {
+    await enqueue(doc(decksCol(fs, uid), d.id), d)
+  }
+  for (const c of localCards) {
+    await enqueue(doc(cardsCol(fs, uid), c.id), {
+      ...c,
+      content: c.content,
+    })
+  }
+  for (const s of localSched) {
+    await enqueue(doc(schedCol(fs, uid), s.id), s)
+  }
+  if (n > 0) await batch.commit()
 }
 
 export async function pullRemoteToLocal(

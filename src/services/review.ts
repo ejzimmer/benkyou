@@ -81,8 +81,9 @@ export async function commitJudgement(
   await updateSchedulingRow(updated, user)
 
   const card = await db.cards.get(cardId)
+  const eventId = newId()
   const event: ReviewEventRow = {
-    id: newId(),
+    id: eventId,
     ts: Date.now(),
     cardId,
     deckId: card?.deckId ?? "",
@@ -98,7 +99,10 @@ export async function commitJudgement(
     const undo: ReviewUndoRow = {
       id: newId(),
       ts: Date.now(),
+      cardId,
+      modeId,
       schedulingSnapshot: JSON.stringify(snapshot.schedulingRow),
+      linkedEventId: eventId,
     }
     await db.reviewUndo.put(undo)
   }
@@ -116,8 +120,12 @@ export async function undoLastJudgement(user: User | null): Promise<boolean> {
   await db.reviewUndo.delete(last.id)
   await updateSchedulingRow(restored, user)
 
-  const ev = await db.reviewEvents.orderBy("ts").last()
-  if (ev) await db.reviewEvents.delete(ev.id)
+  if (last.linkedEventId) {
+    await db.reviewEvents.delete(last.linkedEventId)
+  } else {
+    const ev = await db.reviewEvents.orderBy("ts").last()
+    if (ev) await db.reviewEvents.delete(ev.id)
+  }
 
   return true
 }

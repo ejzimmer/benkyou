@@ -1,4 +1,4 @@
-import { type ReactNode } from "react"
+import { Fragment, type ReactNode } from "react"
 
 type Props = {
   /** Full phrase ruby (when only one reading string for whole expression) */
@@ -30,29 +30,24 @@ type MapProps = {
   readings: Record<string, string>
 }
 
-/** Apply readings from a map (exact substring keys in sentence, excluding gap). */
-export function RubySentence({ sentence, gapMarker, readings }: MapProps) {
-  const gapIdx = sentence.indexOf(gapMarker)
+function RubySegment({
+  segment,
+  readings,
+}: {
+  segment: string
+  readings: Record<string, string>
+}) {
   const keys = Object.keys(readings).sort((a, b) => b.length - a.length)
   const parts: ReactNode[] = []
   let i = 0
-  let key = 0
-  while (i < sentence.length) {
-    if (gapIdx >= 0 && i === gapIdx) {
-      parts.push(
-        <span key={key++} className="gap-mark">
-          {gapMarker}
-        </span>,
-      )
-      i += gapMarker.length
-      continue
-    }
+  let keyIdx = 0
+  while (i < segment.length) {
     let matched = false
     for (const k of keys) {
       if (!k || !readings[k]?.trim()) continue
-      if (sentence.slice(i, i + k.length) === k) {
+      if (segment.slice(i, i + k.length) === k) {
         parts.push(
-          <RubyWord key={key++} surface={k} reading={readings[k]} />,
+          <RubyWord key={keyIdx++} surface={k} reading={readings[k]} />,
         )
         i += k.length
         matched = true
@@ -60,10 +55,33 @@ export function RubySentence({ sentence, gapMarker, readings }: MapProps) {
       }
     }
     if (!matched) {
-      const ch = sentence[i]
-      parts.push(<span key={key++}>{ch}</span>)
+      const ch = segment[i]
+      parts.push(<span key={keyIdx++}>{ch}</span>)
       i += 1
     }
   }
-  return <span className="ruby-sentence">{parts}</span>
+  return <>{parts}</>
+}
+
+/** Ruby per substring + gap markers between segments (supports repeated gaps). */
+export function RubySentence({ sentence, gapMarker, readings }: MapProps) {
+  const marker = gapMarker.trim()
+  if (!marker) {
+    return (
+      <span className="ruby-sentence">
+        <RubySegment segment={sentence} readings={readings} />
+      </span>
+    )
+  }
+  const chunks = sentence.split(marker)
+  return (
+    <span className="ruby-sentence">
+      {chunks.map((chunk, idx) => (
+        <Fragment key={`${idx}-${chunk.slice(0, 8)}`}>
+          {idx > 0 && <span className="gap-mark">{marker}</span>}
+          <RubySegment segment={chunk} readings={readings} />
+        </Fragment>
+      ))}
+    </span>
+  )
 }

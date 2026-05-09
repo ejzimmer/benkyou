@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import type {
   Card,
@@ -17,6 +17,10 @@ import {
 import { saveImageBlob } from "../../services/media"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { db } from "../../lib/db/schema"
+import {
+  grammarReadingsToText,
+  parseGrammarReadingsText,
+} from "../../domain/grammarReadings"
 
 export function CardEditPage() {
   const { deckId = "", cardId = "" } = useParams()
@@ -32,14 +36,20 @@ export function CardEditPage() {
   )
   const [vocab, setVocab] = useState<VocabularyCardContent>(defaultVocabulary)
   const [grammar, setGrammar] = useState<GrammarCardContent>(defaultGrammar)
+  /** Controlled draft so incomplete `kanji=` lines are not dropped on each keystroke */
+  const [readingsMapDraft, setReadingsMapDraft] = useState("")
+  const prevKind = useRef(kind)
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
     if (isNew || !cardId || cardId === "new") {
       setLoading(false)
+      setReadingsMapDraft("")
       return
     }
     let cancelled = false
+    setLoading(true)
+    setErr(null)
     ;(async () => {
       const c = await db.cards.get(cardId)
       if (cancelled) return
@@ -49,14 +59,27 @@ export function CardEditPage() {
         return
       }
       setKind(c.kind)
-      if (c.kind === "vocabulary") setVocab(c.content)
-      else setGrammar(c.content)
+      if (c.kind === "vocabulary") {
+        setVocab(c.content)
+      } else {
+        setGrammar(c.content)
+        setReadingsMapDraft(grammarReadingsToText(c.content.readings))
+      }
       setLoading(false)
     })()
     return () => {
       cancelled = true
     }
   }, [cardId, isNew])
+
+  useEffect(() => {
+    if (!isNew) return
+    if (prevKind.current !== kind && kind === "grammar") {
+      setReadingsMapDraft(grammarReadingsToText(grammar.readings))
+    }
+    prevKind.current = kind
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset draft when switching TO grammar, not when readings change from typing
+  }, [isNew, kind])
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -260,19 +283,15 @@ export function CardEditPage() {
               <textarea
                 className="input"
                 rows={4}
-                value={Object.entries(grammar.readings)
-                  .map(([k, v]) => `${k}=${v}`)
-                  .join("\n")}
+                aria-label="Kanji to reading map"
+                value={readingsMapDraft}
                 onChange={(e) => {
-                  const readings: Record<string, string> = {}
-                  for (const line of e.target.value.split("\n")) {
-                    const idx = line.indexOf("=")
-                    if (idx === -1) continue
-                    readings[line.slice(0, idx).trim()] = line
-                      .slice(idx + 1)
-                      .trim()
-                  }
-                  setGrammar({ ...grammar, readings })
+                  const text = e.target.value
+                  setReadingsMapDraft(text)
+                  setGrammar((g) => ({
+                    ...g,
+                    readings: parseGrammarReadingsText(text),
+                  }))
                 }}
               />
             </label>

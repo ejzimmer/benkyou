@@ -35,8 +35,12 @@ export type ReviewEventRow = {
 export type ReviewUndoRow = {
   id: string
   ts: number
-  /** Snapshot of scheduling rows before judgement (JSON) */
+  /** Snapshot of scheduling row before judgement (JSON) */
   schedulingSnapshot: string
+  /** Present on rows created after schema fix — undo deletes this event exactly */
+  linkedEventId?: string
+  cardId?: string
+  modeId?: ReviewModeId
 }
 
 export type MediaRow = {
@@ -70,6 +74,15 @@ export class BenkyouDB extends Dexie {
       scheduling: "id, cardId, modeId, due, updatedAt",
       reviewEvents: "id, ts, cardId, modeId",
       reviewUndo: "id, ts",
+      media: "id",
+      syncOutbox: "id, collection, updatedAt",
+    })
+    this.version(2).stores({
+      decks: "id, name, updatedAt",
+      cards: "id, deckId, kind, updatedAt",
+      scheduling: "id, cardId, modeId, due, updatedAt",
+      reviewEvents: "id, ts, cardId, modeId",
+      reviewUndo: "id, ts, cardId, modeId",
       media: "id",
       syncOutbox: "id, collection, updatedAt",
     })

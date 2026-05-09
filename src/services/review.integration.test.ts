@@ -9,6 +9,7 @@ import {
   undoLastJudgement,
 } from "./review"
 import { loadSchedulingRow } from "./cards"
+import { db } from "../lib/db/schema"
 
 vi.mock("../lib/firebase", () => ({
   getFirebaseApp: () => null,
@@ -66,6 +67,10 @@ describe("review + scheduling (IndexedDB)", () => {
       null,
     )
 
+    const undoRow = await db.reviewUndo.orderBy("ts").last()
+    expect(undoRow?.linkedEventId).toBeDefined()
+    expect(await db.reviewEvents.get(undoRow!.linkedEventId!)).not.toBeUndefined()
+
     const rowAfter = await loadSchedulingRow(
       card.id,
       "vocab_type_reading",
@@ -102,9 +107,12 @@ describe("review + scheduling (IndexedDB)", () => {
     const afterDue = (await loadSchedulingRow(card.id, "vocab_oral_en"))!.due
     expect(afterDue).not.toBe(beforeDue)
 
+    const eventId = (await db.reviewEvents.orderBy("ts").last())!.id
+
     const ok = await undoLastJudgement(null)
     expect(ok).toBe(true)
     const restored = await loadSchedulingRow(card.id, "vocab_oral_en")
     expect(restored!.due).toBe(beforeDue)
+    expect(await db.reviewEvents.get(eventId)).toBeUndefined()
   })
 })
