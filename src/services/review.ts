@@ -59,7 +59,8 @@ export async function prepareJudgement(
 export async function commitJudgement(
   cardId: string,
   modeId: ReviewModeId,
-  responseMs: number | null,
+  /** Prompt → reveal latency (ms); graded per `modeId` thresholds */
+  promptToRevealMs: number | null,
   selfCorrect: boolean,
   snapshot: JudgementSnapshot | null,
   user: User | null,
@@ -67,7 +68,7 @@ export async function commitJudgement(
   const row = await loadSchedulingRow(cardId, modeId)
   if (!row) return
 
-  const grade = responseTimeToGrade(responseMs, selfCorrect) as Grade
+  const grade = responseTimeToGrade(modeId, promptToRevealMs, selfCorrect) as Grade
   const now = new Date()
   const prevCard = deserializeFsrs(row.fsrs)
   const nextCard = applyGrade(prevCard, now, grade)
@@ -88,7 +89,7 @@ export async function commitJudgement(
     cardId,
     deckId: card?.deckId ?? "",
     modeId,
-    responseMs,
+    responseMs: promptToRevealMs,
     outcome: selfCorrect ? "correct" : "incorrect",
     grade,
     undone: false,

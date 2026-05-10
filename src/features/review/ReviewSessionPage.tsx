@@ -39,6 +39,8 @@ export function ReviewSessionPage() {
   const [readingWarn, setReadingWarn] = useState(false)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [snapshot, setSnapshot] = useState<JudgementSnapshot | null>(null)
+  /** Prompt shown → “Show answer” (FSRS latency heuristic); cleared after grading */
+  const [promptToRevealMs, setPromptToRevealMs] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [pendingIncorrectDelay, setPendingIncorrectDelay] = useState(false)
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -54,6 +56,7 @@ export function ReviewSessionPage() {
     setReadingWarn(false)
     setStartedAt(null)
     setSnapshot(null)
+    setPromptToRevealMs(null)
     setPendingIncorrectDelay(false)
     setLoading(false)
   }, [deckId])
@@ -87,11 +90,15 @@ export function ReviewSessionPage() {
     setReadingWarn(false)
     setStartedAt(null)
     setSnapshot(null)
+    setPromptToRevealMs(null)
   }
 
   async function prepareAndShowAnswer() {
     if (!current) return
+    const elapsed =
+      startedAt != null ? Math.round(performance.now() - startedAt) : null
     const snap = await prepareJudgement(current.card.id, current.modeId)
+    setPromptToRevealMs(elapsed)
     setSnapshot(snap)
     setPhase("answer")
     if (
@@ -146,12 +153,10 @@ export function ReviewSessionPage() {
   async function onJudge(correct: boolean) {
     if (!current || pendingIncorrectDelay) return
     const item = current
-    const ms =
-      startedAt != null ? Math.round(performance.now() - startedAt) : null
     await commitJudgement(
       item.card.id,
       item.modeId,
-      ms,
+      promptToRevealMs,
       correct,
       snapshot,
       user,
@@ -187,6 +192,7 @@ export function ReviewSessionPage() {
     if (snapshot) await restoreSchedulingSnapshot(snapshot, user)
     setPhase("prompt")
     setSnapshot(null)
+    setPromptToRevealMs(null)
   }
 
   async function onUndoJudgementFromHeader() {
@@ -218,8 +224,9 @@ export function ReviewSessionPage() {
     }
     setSnapshot(snap)
     setPhase("answer")
-    // Skip prompt phase — measure FSRS latency from this judgement screen only
-    setStartedAt(performance.now())
+    // No prompt→reveal pass yet — grading uses neutral timing (null → Good if correct)
+    setPromptToRevealMs(null)
+    setStartedAt(null)
   }
 
   if (loading) return <div className="page">Loading queue…</div>

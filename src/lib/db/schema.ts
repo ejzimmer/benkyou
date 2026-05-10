@@ -26,6 +26,7 @@ export type ReviewEventRow = {
   cardId: string
   deckId: string
   modeId: ReviewModeId
+  /** Prompt shown → “Show answer” (ms); used for FSRS grade heuristic */
   responseMs: number | null
   outcome: "correct" | "incorrect"
   grade: number
