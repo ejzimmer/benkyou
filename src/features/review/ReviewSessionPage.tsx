@@ -6,7 +6,6 @@ import {
   useState,
 } from "react"
 import { Link, useParams } from "react-router-dom"
-import type { Card, ReviewModeId } from "../../domain/types"
 import {
   commitJudgement,
   prefetchDueForSession,
@@ -17,35 +16,16 @@ import {
   type JudgementSnapshot,
 } from "../../services/review"
 import { useAuth } from "../../lib/auth/AuthContext"
-import { RubySentence, RubyWord } from "../../ui/KanjiRuby"
-import { CardImage } from "../../ui/CardImage"
-import { TextDiffCompare } from "../../ui/TextDiffCompare"
 import { hasNonHiraganaKana } from "../../lib/japanese/normalize"
 import {
   isSynonymAnswer,
   matchesPrimaryJapanese,
 } from "../../lib/japanese/synonyms"
+import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
+import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
+import { expectedAnswer, REVIEW_MODE_LABELS } from "./reviewFlowHelpers"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
-
-function readingForConstruction(
-  construction: string,
-  readings: Record<string, string>,
-): string | undefined {
-  const keys = Object.keys(readings).sort((a, b) => b.length - a.length)
-  for (const k of keys) {
-    if (construction.includes(k) && readings[k]?.trim()) return readings[k]
-  }
-  return undefined
-}
-
-function requiresTyping(mode: ReviewModeId): boolean {
-  return (
-    mode === "vocab_type_reading" ||
-    mode === "vocab_type_word_from_clue" ||
-    mode === "grammar_type_construction"
-  )
-}
 
 type Phase = "prompt" | "answer"
 
@@ -98,15 +78,7 @@ export function ReviewSessionPage() {
 
   const modeLabel = useMemo(() => {
     if (!current) return ""
-    const m = current.modeId
-    const labels: Record<ReviewModeId, string> = {
-      vocab_oral_en: "Say the English meaning",
-      vocab_type_reading: "Type the reading (hiragana)",
-      vocab_type_word_from_clue: "Type the Japanese word",
-      grammar_type_construction: "Type the construction",
-      grammar_oral_meaning: "Say the English meaning of the construction",
-    }
-    return labels[m]
+    return REVIEW_MODE_LABELS[current.modeId]
   }, [current])
 
   function resetPromptAfterJudgement() {
@@ -171,16 +143,6 @@ export function ReviewSessionPage() {
     return () => window.removeEventListener("keydown", handler)
   }, [phase, current, pendingIncorrectDelay, loading])
 
-  function expectedAnswer(card: Card, mode: ReviewModeId): string {
-    if (mode === "vocab_type_reading")
-      return card.kind === "vocabulary" ? card.content.reading ?? "" : ""
-    if (mode === "vocab_type_word_from_clue")
-      return card.kind === "vocabulary" ? card.content.wordJa : ""
-    if (mode === "grammar_type_construction")
-      return card.kind === "grammar" ? card.content.construction : ""
-    return ""
-  }
-
   async function onJudge(correct: boolean) {
     if (!current || pendingIncorrectDelay) return
     const item = current
@@ -208,8 +170,6 @@ export function ReviewSessionPage() {
     const delayMs = rest.length > 0 ? INCORRECT_ADVANCE_DELAY_MS : 0
     setSessionQueue([...rest, first])
 
-    // Leave answer phase immediately so we never flash the next card's reveal UI
-    // while the queue pointer has already advanced.
     resetPromptAfterJudgement()
     setPhase("prompt")
 
@@ -258,9 +218,9 @@ export function ReviewSessionPage() {
     }
     setSnapshot(snap)
     setPhase("answer")
+    // Skip prompt phase — measure FSRS latency from this judgement screen only
+    setStartedAt(performance.now())
   }
-
-  const typingMode = current ? requiresTyping(current.modeId) : false
 
   if (loading) return <div className="page">Loading queue…</div>
 
@@ -288,9 +248,8 @@ export function ReviewSessionPage() {
     )
   }
 
-  const c = current.card
-  const m = current.modeId
-  const exp = expectedAnswer(c, m)
+  const item = current
+  const exp = expectedAnswer(item.card, item.modeId)
 
   return (
     <div className="page review">
@@ -298,7 +257,7 @@ export function ReviewSessionPage() {
         <Link to={deckId ? `/decks/${deckId}` : "/"}>← Exit</Link>
         <div className="review-header-main">
           <p className="muted small">
-            {sessionQueue.length} left · {m}
+            {sessionQueue.length} left · {item.modeId}
           </p>
           <button
             type="button"
@@ -315,119 +274,14 @@ export function ReviewSessionPage() {
 
         {phase === "prompt" && !pendingIncorrectDelay && (
           <>
-            {m === "vocab_oral_en" && c.kind === "vocabulary" && (
-              <div className="stack">
-                <p className="prompt-main">
-                  <RubyWord
-                    surface={c.content.wordJa}
-                    reading={c.content.reading}
-                  />
-                </p>
-                {c.content.exampleSentences[0] && (
-                  <p className="muted">{c.content.exampleSentences[0]}</p>
-                )}
-              </div>
-            )}
-
-            {m === "vocab_type_reading" && c.kind === "vocabulary" && (
-              <div className="stack">
-                <p className="prompt-main">{c.content.wordJa}</p>
-                {c.content.exampleSentences[0] && (
-                  <p className="muted">{c.content.exampleSentences[0]}</p>
-                )}
-                <input
-                  className="input"
-                  value={typed}
-                  onChange={(e) => setTyped(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key !== "Enter") return
-                    e.preventDefault()
-                    tryShowAnswerRef.current()
-                  }}
-                  placeholder="ひらがなで"
-                  autoComplete="off"
-                />
-                {readingWarn && (
-                  <p className="error">
-                    Use hiragana only for readings (no kanji or katakana).
-                  </p>
-                )}
-              </div>
-            )}
-
-            {m === "vocab_type_word_from_clue" && c.kind === "vocabulary" && (
-              <div className="stack">
-                <ul>
-                  {c.content.definitionsEn
-                    .filter((s) => s.trim())
-                    .map((d, i) => (
-                      <li key={i}>{d}</li>
-                    ))}
-                </ul>
-                {c.content.images.map((id) => (
-                  <CardImage key={id} mediaId={id} />
-                ))}
-                <input
-                  className="input"
-                  value={typed}
-                  onChange={(e) => setTyped(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key !== "Enter") return
-                    e.preventDefault()
-                    tryShowAnswerRef.current()
-                  }}
-                  placeholder="Japanese word"
-                />
-                {synonymWarn && (
-                  <p className="warn">
-                    That matches a synonym — try the main form on the card.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {m === "grammar_type_construction" && c.kind === "grammar" && (
-              <div className="stack">
-                <RubySentence
-                  sentence={c.content.sentenceWithGap}
-                  gapMarker={c.content.gapMarker}
-                  readings={c.content.readings}
-                />
-                <p className="muted">{c.content.translationEn}</p>
-                <input
-                  className="input"
-                  value={typed}
-                  onChange={(e) => setTyped(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key !== "Enter") return
-                    e.preventDefault()
-                    tryShowAnswerRef.current()
-                  }}
-                  placeholder="Construction"
-                />
-                {synonymWarn && (
-                  <p className="warn">
-                    That matches a synonym — try the construction written on the
-                    card.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {m === "grammar_oral_meaning" && c.kind === "grammar" && (
-              <div className="stack">
-                <p className="prompt-main">
-                  <RubyWord
-                    surface={c.content.construction}
-                    reading={readingForConstruction(
-                      c.content.construction,
-                      c.content.readings,
-                    )}
-                  />
-                </p>
-              </div>
-            )}
-
+            <ReviewSessionPromptBody
+              item={item}
+              typed={typed}
+              onTypedChange={setTyped}
+              readingWarn={readingWarn}
+              synonymWarn={synonymWarn}
+              onTypedSubmit={() => tryShowAnswerRef.current()}
+            />
             <div className="toolbar">
               <button
                 type="button"
@@ -445,52 +299,14 @@ export function ReviewSessionPage() {
         )}
 
         {phase === "answer" && (
-          <div className="answer-block stack">
-            <h3>Answer</h3>
-            {typingMode && (
-              <TextDiffCompare typed={typed} expected={exp} />
-            )}
-            {m === "vocab_oral_en" && c.kind === "vocabulary" && (
-              <ul>
-                {c.content.definitionsEn
-                  .filter((s) => s.trim())
-                  .map((d, i) => (
-                    <li key={i}>{d}</li>
-                  ))}
-              </ul>
-            )}
-            {m === "grammar_oral_meaning" && c.kind === "grammar" && (
-              <p>{c.content.translationEn}</p>
-            )}
-            <div className="toolbar">
-              <button
-                type="button"
-                className="btn good"
-                disabled={pendingIncorrectDelay}
-                onClick={() => void onJudge(true)}
-              >
-                Correct
-              </button>
-              <button
-                type="button"
-                className="btn bad"
-                disabled={pendingIncorrectDelay}
-                onClick={() => void onJudge(false)}
-              >
-                Incorrect
-              </button>
-              {typingMode && (
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={pendingIncorrectDelay}
-                  onClick={() => void onUndoAnswer()}
-                >
-                  Undo answer
-                </button>
-              )}
-            </div>
-          </div>
+          <ReviewSessionAnswerPanel
+            item={item}
+            typed={typed}
+            expected={exp}
+            pendingIncorrectDelay={pendingIncorrectDelay}
+            onJudge={(correct) => void onJudge(correct)}
+            onUndoAnswer={() => void onUndoAnswer()}
+          />
         )}
       </section>
     </div>
