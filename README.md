@@ -4,7 +4,7 @@ Local-first Japanese SRS (FSRS) with optional Firestore sync. Web/PWA; runs on L
 
 ## Development
 
-Requires **Node.js 22+** (see `engines` in `package.json` and `.nvmrc` for `nvm` / `fnm`).
+Requires **Node.js 22.13+** or **24+** (`engines` in `package.json`, `.nvmrc` for `nvm` / `fnm`). Older **22.0–22.12** builds trip `EBADENGINE` on some devDependencies (e.g. `eslint-visitor-keys`).
 
 ```bash
 npm install
