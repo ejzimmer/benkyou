@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Build:
+Build (outputs to **`build/`** for Netlify and similar hosts):
 
 ```bash
 npm run build
