@@ -4,6 +4,8 @@ Local-first Japanese SRS (FSRS) with optional Firestore sync. Web/PWA; runs on L
 
 ## Development
 
+Requires **Node.js 22+** (see `engines` in `package.json` and `.nvmrc` for `nvm` / `fnm`).
+
 ```bash
 npm install
 npm run dev
