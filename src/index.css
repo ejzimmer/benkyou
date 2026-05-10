@@ -172,6 +172,61 @@ label {
   gap: 1rem;
 }
 
+.review-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.review-header-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.review-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.compare-diff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.compare-col .diff-line {
+  margin: 0.35rem 0 0;
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.diff-chunk {
+  border-radius: 3px;
+  padding: 0.06em 0.12em;
+}
+
+.diff-same {
+  color: inherit;
+}
+
+/* Extra characters in your answer — warm highlight, light text (~7:1 on brown) */
+.diff-extra {
+  background: #7c2d12;
+  color: #fff8f2;
+  box-decoration-break: clone;
+}
+
+/* Expected text you missed — cool highlight */
+.diff-missing {
+  background: #1d4ed8;
+  color: #f8fafc;
+  box-decoration-break: clone;
+}
+
 .ruby-hover ruby rt {
   opacity: 0;
   transition: opacity 0.12s ease;

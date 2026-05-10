@@ -62,6 +62,6 @@ describe("ReviewSessionPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
     })
-    expect(screen.getByText(/Card 2\s*\/\s*3/)).toBeInTheDocument()
+    expect(screen.getByText(/2 left/i)).toBeInTheDocument()
   })
 })

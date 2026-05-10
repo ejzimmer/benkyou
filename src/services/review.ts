@@ -108,14 +108,14 @@ export async function commitJudgement(
   }
 }
 
-export async function undoLastJudgement(user: User | null): Promise<boolean> {
+export async function undoLastJudgement(user: User | null): Promise<DueItem | null> {
   const last = await db.reviewUndo.orderBy("ts").last()
-  if (!last) return false
+  if (!last) return null
   let restored: SchedulingRow
   try {
     restored = JSON.parse(last.schedulingSnapshot) as SchedulingRow
   } catch {
-    return false
+    return null
   }
   await db.reviewUndo.delete(last.id)
   await updateSchedulingRow(restored, user)
@@ -127,7 +127,13 @@ export async function undoLastJudgement(user: User | null): Promise<boolean> {
     if (ev) await db.reviewEvents.delete(ev.id)
   }
 
-  return true
+  const card = await db.cards.get(restored.cardId)
+  if (!card) return null
+  return {
+    card,
+    modeId: restored.modeId,
+    due: restored.due,
+  }
 }
 
 export async function restoreSchedulingSnapshot(

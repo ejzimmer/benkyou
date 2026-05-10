@@ -109,8 +109,8 @@ describe("review + scheduling (IndexedDB)", () => {
 
     const eventId = (await db.reviewEvents.orderBy("ts").last())!.id
 
-    const ok = await undoLastJudgement(null)
-    expect(ok).toBe(true)
+    const undone = await undoLastJudgement(null)
+    expect(undone).not.toBeNull()
     const restored = await loadSchedulingRow(card.id, "vocab_oral_en")
     expect(restored!.due).toBe(beforeDue)
     expect(await db.reviewEvents.get(eventId)).toBeUndefined()
