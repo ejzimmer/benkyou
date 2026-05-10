@@ -1,15 +1,260 @@
+:root {
+  font-family:
+    "Noto Sans JP",
+    "Hiragino Sans",
+    system-ui,
+    sans-serif;
+  line-height: 1.5;
+  color: #e8e8f0;
+  background: #12121a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: var(--black);
-  color: var(--white);
-  --blue: hsl(200 100% 50%);
-  --green: hsl(140, 87%, 42%);
-  --pink: hsl(320, 84%, 57%);
-  --white: hsl(0 0% 95%);
-  --black: #333;
+  min-height: 100vh;
+}
+
+a {
+  color: #7dd3fc;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+.app-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+}
+
+.page.centred {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+}
+
+.header h1 {
+  margin: 0.25rem 0;
+}
+
+.muted {
+  color: #9898b0;
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.panel {
+  background: #1a1a28;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid #33334a;
+  background: #0f0f18;
+  color: inherit;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.btn {
+  border: 1px solid #33334a;
+  background: #252538;
+  color: inherit;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: #e94560;
+  border-color: #e94560;
+}
+
+.btn.good {
+  background: #166534;
+  border-color: #22c55e;
+}
+
+.btn.bad {
+  background: #7f1d1d;
+  border-color: #ef4444;
+}
+
+.btn.danger {
+  background: #450a0a;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #fca5a5;
+}
+
+.warn {
+  color: #fcd34d;
+}
+
+.deck-list,
+.card-list {
+  list-style: none;
+  padding: 0;
+}
+
+.deck-list li,
+.card-list li {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #2a2a3e;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prompt-main {
+  font-size: 1.5rem;
+}
+
+.gap-mark {
+  border-bottom: 2px dashed #e94560;
+  padding: 0 0.15rem;
+}
+
+.card-image {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+}
+
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.review-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.review-header-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.review-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.compare-diff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.compare-col .diff-line {
+  margin: 0.35rem 0 0;
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.diff-chunk {
+  border-radius: 3px;
+  padding: 0.06em 0.12em;
+}
+
+.diff-same {
+  color: inherit;
+}
+
+/* Extra characters in your answer — warm highlight, light text (~7:1 on brown) */
+.diff-extra {
+  background: #7c2d12;
+  color: #fff8f2;
+  box-decoration-break: clone;
+}
+
+/* Expected text you missed — cool highlight */
+.diff-missing {
+  background: #1d4ed8;
+  color: #f8fafc;
+  box-decoration-break: clone;
+}
+
+.ruby-hover ruby rt {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  font-size: 0.65em;
+  color: #a5b4fc;
+}
+
+.ruby-hover:hover rt,
+.ruby-hover:focus-within rt {
+  opacity: 1;
+}
+
+.footer-nav {
+  margin-top: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+code {
+  font-size: 0.9em;
 }

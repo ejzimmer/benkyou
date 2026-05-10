@@ -1,59 +1,49 @@
-import React, { useEffect, useState } from "react"
-import "./App.css"
-import { DeckList } from "./deck-list/DeckList"
-import { getDatabase } from "firebase/database"
-import { FirebaseContext } from "./common/FirebaseContext"
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom"
-import { EditDeck } from "./edit-deck/EditDeck"
-import { Card } from "./edit-card/EditCard"
-import { ReviewCards } from "./review-cards/ReviewCards"
+import { Navigate, Route, Routes } from "react-router-dom"
+import { DeckListPage } from "./features/decks/DeckListPage"
+import { DeckPage } from "./features/decks/DeckPage"
+import { CardEditPage } from "./features/cards/CardEditPage"
+import { ReviewSessionPage } from "./features/review/ReviewSessionPage"
+import { SettingsPage } from "./features/settings/SettingsPage"
+import { useAuth } from "./lib/auth/AuthContext"
+import { useSync } from "./lib/sync/SyncContext"
+import { useEffect, useRef } from "react"
 
-import {
-  GoogleAuthProvider,
-  User,
-  getAuth,
-  onAuthStateChanged,
-  signInWithRedirect,
-} from "firebase/auth"
-
-function App() {
-  const [database] = useState(getDatabase)
-  const [authProvider] = useState(() => new GoogleAuthProvider())
-  const [auth] = useState(getAuth)
-  const [user, setUser] = useState<User | null>()
+export function App() {
+  const { user, offlineOnly, loading } = useAuth()
+  const { syncNow } = useSync()
+  const syncedUidRef = useRef<string | null>(null)
 
   useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
-      setUser(user)
-    })
-  }, [auth, authProvider])
+    if (!user) {
+      syncedUidRef.current = null
+      return
+    }
+    if (offlineOnly) return
+    if (syncedUidRef.current === user.uid) return
+    syncedUidRef.current = user.uid
+    void syncNow()
+  }, [offlineOnly, user, syncNow])
+
+  if (loading) {
+    return (
+      <div className="page centred">
+        <p>Loading…</p>
+      </div>
+    )
+  }
 
   return (
-    <FirebaseContext.Provider value={{ database }}>
-      {user === null ? (
-        <button
-          className="login centred"
-          onClick={() => signInWithRedirect(auth, authProvider)}
-        >
-          log in
-        </button>
-      ) : !user ? (
-        <div className="centred">loading...</div>
-      ) : (
-        <>
-          <Router>
-            <Routes>
-              <Route path="/edit/:deckId" Component={EditDeck} />
-              <Route path="/:deckId/add" Component={Card} />
-              <Route path="/:deckId/edit/:cardId" Component={Card} />
-              <Route path="/:deckId/review" Component={ReviewCards} />
-              <Route path="/" Component={DeckList} />
-            </Routes>
-          </Router>
-        </>
-      )}
-    </FirebaseContext.Provider>
+    <div className="app-shell">
+      <Routes>
+        <Route path="/" element={<DeckListPage />} />
+        <Route path="/decks/:deckId" element={<DeckPage />} />
+        <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
+        <Route path="/decks/:deckId/cards/:cardId" element={<CardEditPage />} />
+        <Route path="/review" element={<ReviewSessionPage />} />
+        <Route path="/decks/:deckId/review" element={<ReviewSessionPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
   )
 }
-
-export default App
