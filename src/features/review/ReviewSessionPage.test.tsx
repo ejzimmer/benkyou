@@ -64,4 +64,58 @@ describe("ReviewSessionPage", () => {
     })
     expect(screen.getByText(/2 left/i)).toBeInTheDocument()
   })
+
+  it("after incorrect, does not flash next card answer during queue rotation gap", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "犬",
+        reading: "いぬ",
+        definitionsEn: ["dog"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    await user.click(screen.getByRole("button", { name: /show answer/i }))
+    await user.click(screen.getByRole("button", { name: /^incorrect$/i }))
+
+    expect(
+      screen.queryByRole("heading", { name: /^answer$/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText(/next card/i)).toBeInTheDocument()
+  })
 })

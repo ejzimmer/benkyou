@@ -208,19 +208,18 @@ export function ReviewSessionPage() {
     const delayMs = rest.length > 0 ? INCORRECT_ADVANCE_DELAY_MS : 0
     setSessionQueue([...rest, first])
 
-    if (delayMs === 0) {
-      resetPromptAfterJudgement()
-      setPhase("prompt")
-      return
-    }
+    // Leave answer phase immediately so we never flash the next card's reveal UI
+    // while the queue pointer has already advanced.
+    resetPromptAfterJudgement()
+    setPhase("prompt")
+
+    if (delayMs === 0) return
 
     setPendingIncorrectDelay(true)
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     advanceTimerRef.current = setTimeout(() => {
       advanceTimerRef.current = null
       setPendingIncorrectDelay(false)
-      resetPromptAfterJudgement()
-      setPhase("prompt")
     }, delayMs)
   }
 
@@ -231,20 +230,34 @@ export function ReviewSessionPage() {
   }
 
   async function onUndoJudgementFromHeader() {
-    const undone = await undoLastJudgement(user)
-    if (undone) {
-      setSessionQueue((q) => [undone, ...q])
-    }
-    setPhase("prompt")
-    setTyped("")
-    setSnapshot(null)
-    setSynonymWarn(false)
-    setReadingWarn(false)
-    setPendingIncorrectDelay(false)
     if (advanceTimerRef.current) {
       clearTimeout(advanceTimerRef.current)
       advanceTimerRef.current = null
     }
+    setPendingIncorrectDelay(false)
+
+    const undone = await undoLastJudgement(user)
+    if (!undone) return
+
+    setSessionQueue((q) => {
+      const filtered = q.filter(
+        (item) =>
+          item.card.id !== undone.card.id || item.modeId !== undone.modeId,
+      )
+      return [undone, ...filtered]
+    })
+
+    const snap = await prepareJudgement(undone.card.id, undone.modeId)
+    setTyped("")
+    setSynonymWarn(false)
+    setReadingWarn(false)
+    if (!snap) {
+      setSnapshot(null)
+      setPhase("prompt")
+      return
+    }
+    setSnapshot(snap)
+    setPhase("answer")
   }
 
   const typingMode = current ? requiresTyping(current.modeId) : false
