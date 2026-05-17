@@ -32,6 +32,8 @@ Copy `.env.example` to `.env.local` and add Firebase keys to enable sign-in and 
 
 See [docs/AGENT_API.md](docs/AGENT_API.md). Local helpers live in `src/services/agentLocal.ts`.
 
+**Anki (.apkg):** run `npm run dev`, open **Settings**, and choose a single-deck export (`.apkg`). Import runs entirely in the browser (IndexedDB). Optional Vitest integration test reads `とんがり帽子のアトリエ-20260514195355.apkg` from Downloads when present (`src/lib/import/parseApkg.integration.test.ts`).
+
 ## Cursor: code review skill
 
 The [awesome-skills/code-review-skill](https://github.com/awesome-skills/code-review-skill) bundle lives in [`.cursor/skills/code-review-skill`](.cursor/skills/code-review-skill). In Cursor Agent, invoke **`/code-review-excellence`** or attach that skill from `@`. Details: [`.cursor/skills/README.md`](.cursor/skills/README.md).

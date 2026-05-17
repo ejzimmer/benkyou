@@ -166,6 +166,47 @@ label {
   margin: 0.5rem 0;
 }
 
+.import-card-preview {
+  background: #12121a;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #2a2a3a;
+}
+
+.import-card-fact {
+  display: grid;
+  grid-template-columns: minmax(6rem, 8rem) 1fr;
+  gap: 0.35rem 0.75rem;
+  align-items: start;
+}
+
+.import-card-fact-label {
+  color: #9898b0;
+  font-size: 0.85rem;
+}
+
+.import-card-fact-value {
+  min-width: 0;
+}
+
+.import-card-list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.import-gap-card--discarded {
+  opacity: 0.55;
+}
+
+.import-gap-discard {
+  margin-top: 0.25rem;
+}
+
+.import-gap-fill {
+  padding-top: 0.25rem;
+  border-top: 1px dashed #2a2a3a;
+}
+
 .compare {
   display: grid;
   grid-template-columns: 1fr 1fr;

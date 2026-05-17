@@ -3,6 +3,12 @@ import type {
   GrammarCardContent,
   VocabularyCardContent,
 } from "../domain/types"
+import {
+  hasVocabularyEnglishDefinition,
+  hasVocabularyImage,
+  hasVocabularyPronunciation,
+  isKanaOnly,
+} from "../domain/vocabularyContent"
 import { containsKanji, reviewModesForCard } from "../domain/types"
 import { db, type SchedulingRow } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
@@ -16,19 +22,28 @@ import type { User } from "firebase/auth"
 
 export function validateVocabulary(content: VocabularyCardContent): string | null {
   if (!content.wordJa.trim()) return "Japanese word is required"
-  const hasKanji = containsKanji(content.wordJa)
-  if (hasKanji && !(content.reading?.trim())) return "Reading is required when the word contains kanji"
-  const hasDef = content.definitionsEn.some((s) => s.trim().length > 0)
-  const hasImg = content.images.length > 0
-  if (!hasDef && !hasImg)
-    return "Add at least one English definition or one image"
+  if (isKanaOnly(content.wordJa) && content.reading?.trim()) {
+    return "Pronunciation (reading) is only for words that contain kanji"
+  }
+  if (content.reading?.trim() && !containsKanji(content.wordJa)) {
+    return "Pronunciation (reading) is only for words that contain kanji"
+  }
+  const hasPronunciation = hasVocabularyPronunciation(content)
+  const hasEnglish = hasVocabularyEnglishDefinition(content)
+  const hasImg = hasVocabularyImage(content)
+  if (!hasPronunciation && !hasEnglish && !hasImg) {
+    return "Add at least one pronunciation (reading), English meaning, or image"
+  }
   return null
 }
 
 export function validateGrammar(content: GrammarCardContent): string | null {
   if (!content.sentenceWithGap.trim()) return "Sentence is required"
   if (!content.construction.trim()) return "Construction is required"
-  if (!content.translationEn.trim()) return "English translation is required"
+  const hasTranslation = content.translationEn.trim().length > 0
+  const hasImage = content.images.length > 0
+  if (!hasTranslation && !hasImage)
+    return "Add at least one English translation or one image"
   const gap = content.gapMarker.trim() || "___"
   if (!content.sentenceWithGap.includes(gap))
     return `Sentence must contain the gap marker (${gap})`

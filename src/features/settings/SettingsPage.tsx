@@ -1,10 +1,76 @@
+import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
+import type { BulkImportPayload } from "../../lib/import/types"
+import type { ImportGapDraft } from "../../lib/import/gaps"
+import {
+  ankiImportNeedsUserInput,
+  completeAnkiImport,
+  importBulkPayload,
+  parseAnkiPackageFile,
+} from "../../services/ankiImport"
+import { AnkiImportGapReview } from "./AnkiImportGapReview"
 
 export function SettingsPage() {
   const { user, offlineOnly, loading, signInGoogle, signOut } = useAuth()
   const { syncNow, syncing, lastError, lastSyncedAt } = useSync()
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [importErr, setImportErr] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [pendingImport, setPendingImport] = useState<BulkImportPayload | null>(
+    null,
+  )
+
+  function resetImportState() {
+    setPendingImport(null)
+    setImporting(false)
+    setImportErr(null)
+  }
+
+  async function onPickAnkiPackage(file: File | null) {
+    setImportMsg(null)
+    setImportErr(null)
+    setPendingImport(null)
+    if (!file) return
+    setImporting(true)
+    try {
+      const lower = file.name.toLowerCase()
+      if (!lower.endsWith(".apkg") && !lower.endsWith(".colpkg")) {
+        throw new Error("Choose an Anki package (.apkg or .colpkg)")
+      }
+      const payload = await parseAnkiPackageFile(file)
+      if (ankiImportNeedsUserInput(payload)) {
+        setPendingImport(payload)
+        return
+      }
+      await importBulkPayload(payload, user)
+      setImportMsg(
+        `Imported ${payload.cards.length} cards into “${payload.deck.name}”. Open it from the home screen.`,
+      )
+    } catch (e) {
+      setImportErr(e instanceof Error ? e.message : "Import failed")
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  async function onConfirmGapReview(drafts: Record<string, ImportGapDraft>) {
+    if (!pendingImport) return
+    setImporting(true)
+    setImportErr(null)
+    try {
+      const completed = await completeAnkiImport(pendingImport, drafts, user)
+      setPendingImport(null)
+      setImportMsg(
+        `Imported ${completed.cards.length} cards into “${completed.deck.name}”. Open it from the home screen.`,
+      )
+    } catch (e) {
+      setImportErr(e instanceof Error ? e.message : "Import failed")
+    } finally {
+      setImporting(false)
+    }
+  }
 
   return (
     <div className="page">
@@ -63,6 +129,41 @@ export function SettingsPage() {
           </p>
         )}
         {lastError && <p className="error">{lastError}</p>}
+      </section>
+
+      <section className="panel stack">
+        <h2>Anki import</h2>
+        <p className="muted small">
+          Export <strong>one deck</strong> from Anki as an <code>.apkg</code> (include
+          scheduling if you want to keep intervals). Then choose the file here — it
+          stays in your browser; nothing is uploaded to a server.
+        </p>
+        <p className="muted small">
+          Full <code>.colpkg</code> files also work: the deck with the most cards is
+          imported. Prefer a single-deck <code>.apkg</code> for smaller files.
+        </p>
+        {!pendingImport && (
+          <label className="row">
+            <span>Anki package</span>
+            <input
+              type="file"
+              accept=".apkg,.colpkg,application/zip"
+              disabled={importing}
+              onChange={(e) => void onPickAnkiPackage(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        )}
+        {importing && !pendingImport && <p className="muted">Reading package…</p>}
+        {pendingImport && (
+          <AnkiImportGapReview
+            payload={pendingImport}
+            importing={importing}
+            onCancel={resetImportState}
+            onConfirm={(drafts) => void onConfirmGapReview(drafts)}
+          />
+        )}
+        {importMsg && <p className="muted">{importMsg}</p>}
+        {importErr && <p className="error">{importErr}</p>}
       </section>
     </div>
   )

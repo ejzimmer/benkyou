@@ -58,6 +58,41 @@ describe("reviewModesForCard", () => {
     ])
   })
 
+  it("pronunciation-only card has type-reading mode only", () => {
+    const card: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "vocabulary",
+      updatedAt: 1,
+      content: {
+        wordJa: "陣",
+        reading: "じん",
+        definitionsEn: [],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+    }
+    expect(reviewModesForCard(card)).toEqual(["vocab_type_reading"])
+  })
+
+  it("image-only card omits oral and reading modes", () => {
+    const card: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "vocabulary",
+      updatedAt: 1,
+      content: {
+        wordJa: "ねこ",
+        definitionsEn: [],
+        images: ["img-1"],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+    }
+    expect(reviewModesForCard(card)).toEqual(["vocab_type_word_from_clue"])
+  })
+
   it("grammar has construction + oral modes", () => {
     const card: Card = {
       id: "1",
