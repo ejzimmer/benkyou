@@ -26,15 +26,14 @@ describe("convertExtractedPackage", () => {
     expect(payload.media.length).toBeGreaterThan(0)
 
     const grammarCard = payload.cards.find((c) => c.kind === "grammar")
-    expect(grammarCard).toBeDefined()
+    expect(grammarCard?.kind).toBe("grammar")
+    if (grammarCard?.kind !== "grammar") return
     const grammarScheduling = payload.scheduling.filter(
-      (r) => r.cardId === grammarCard!.id,
+      (r) => r.cardId === grammarCard.id,
     )
     expect(grammarScheduling).toHaveLength(2)
     const [a, b] = grammarScheduling
     expect(a.due).toBe(b.due)
-    expect(grammarCard!.kind === "grammar" && grammarCard.content.translationEn).not.toBe(
-      "流し、呼ぶ",
-    )
+    expect(grammarCard.content.translationEn).not.toBe("流し、呼ぶ")
   })
 })
