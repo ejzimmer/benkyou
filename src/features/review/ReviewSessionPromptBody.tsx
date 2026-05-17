@@ -1,7 +1,48 @@
+import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { RubySentence, RubyWord } from "../../ui/KanjiRuby"
 import { CardImage } from "../../ui/CardImage"
 import { readingForConstruction } from "./reviewFlowHelpers"
+
+type TypingAnswerInputProps = {
+  value: string
+  onChange: (value: string) => void
+  onSubmit: () => void
+  placeholder: string
+  focusKey: string
+  autoComplete?: string
+}
+
+function TypingAnswerInput({
+  value,
+  onChange,
+  onSubmit,
+  placeholder,
+  focusKey,
+  autoComplete,
+}: TypingAnswerInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [focusKey])
+
+  return (
+    <input
+      ref={inputRef}
+      className="input"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key !== "Enter") return
+        e.preventDefault()
+        onSubmit()
+      }}
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+    />
+  )
+}
 
 export type ReviewSessionPromptBodyProps = {
   item: DueItem
@@ -22,6 +63,7 @@ export function ReviewSessionPromptBody({
   onTypedSubmit,
 }: ReviewSessionPromptBodyProps) {
   const { card, modeId: m } = item
+  const focusKey = `${card.id}:${m}`
 
   if (m === "vocab_oral_en" && card.kind === "vocabulary") {
     return (
@@ -43,16 +85,12 @@ export function ReviewSessionPromptBody({
         {card.content.exampleSentences[0] && (
           <p className="muted">{card.content.exampleSentences[0]}</p>
         )}
-        <input
-          className="input"
+        <TypingAnswerInput
           value={typed}
-          onChange={(e) => onTypedChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key !== "Enter") return
-            e.preventDefault()
-            onTypedSubmit()
-          }}
+          onChange={onTypedChange}
+          onSubmit={onTypedSubmit}
           placeholder="ひらがなで"
+          focusKey={focusKey}
           autoComplete="off"
         />
         {readingWarn && (
@@ -77,16 +115,12 @@ export function ReviewSessionPromptBody({
         {card.content.images.map((id) => (
           <CardImage key={id} mediaId={id} />
         ))}
-        <input
-          className="input"
+        <TypingAnswerInput
           value={typed}
-          onChange={(e) => onTypedChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key !== "Enter") return
-            e.preventDefault()
-            onTypedSubmit()
-          }}
+          onChange={onTypedChange}
+          onSubmit={onTypedSubmit}
           placeholder="Japanese word"
+          focusKey={focusKey}
         />
         {synonymWarn && (
           <p className="warn">
@@ -106,16 +140,12 @@ export function ReviewSessionPromptBody({
           readings={card.content.readings}
         />
         <p className="muted">{card.content.translationEn}</p>
-        <input
-          className="input"
+        <TypingAnswerInput
           value={typed}
-          onChange={(e) => onTypedChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key !== "Enter") return
-            e.preventDefault()
-            onTypedSubmit()
-          }}
+          onChange={onTypedChange}
+          onSubmit={onTypedSubmit}
           placeholder="Construction"
+          focusKey={focusKey}
         />
         {synonymWarn && (
           <p className="warn">
