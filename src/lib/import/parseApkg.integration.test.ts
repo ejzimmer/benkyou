@@ -25,11 +25,13 @@ describe("parseAnkiPackageToBulkImport (integration)", () => {
       expect(payload.cards.length).toBeGreaterThan(0)
       expect(payload.media.length).toBeGreaterThan(0)
       const grammar = payload.cards.find(
-        (c) =>
+        (c): c is Extract<typeof c, { kind: "grammar" }> =>
           c.kind === "grammar" && c.content.construction.includes("流し"),
       )
-      expect(grammar?.content.translationEn).not.toBe("流し、呼ぶ")
-      expect(grammar?.content.images.length).toBeGreaterThan(0)
+      expect(grammar).toBeDefined()
+      if (!grammar) return
+      expect(grammar.content.translationEn).not.toBe("流し、呼ぶ")
+      expect(grammar.content.images.length).toBeGreaterThan(0)
     },
   )
 })

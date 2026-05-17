@@ -4,7 +4,7 @@ import type {
   ReviewModeId,
   VocabularyCardContent,
 } from "../../domain/types"
-import { containsKanji, reviewModesForCard } from "../../domain/types"
+import { reviewModesForCard } from "../../domain/types"
 import type { SchedulingRow } from "../db/schema"
 import { serializeFsrs } from "../srs/schedule"
 import { createEmptyCard } from "ts-fsrs"
