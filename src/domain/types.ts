@@ -5,6 +5,15 @@ export type Deck = {
   updatedAt: number
 }
 
+import {
+  containsKanji,
+  hasVocabularyEnglishDefinition,
+  hasVocabularyImage,
+  hasVocabularyPronunciation,
+} from "./vocabularyContent"
+
+export { containsKanji }
+
 /** Media blob stored locally (and synced via Storage later). */
 export type MediaRef = {
   id: string
@@ -13,7 +22,7 @@ export type MediaRef = {
 
 export type VocabularyCardContent = {
   wordJa: string
-  /** Required when word contains kanji; hiragana/katakana reading */
+  /** Hiragana reading — only for words with kanji (pronunciation study). */
   reading?: string
   definitionsEn: string[]
   images: string[]
@@ -66,21 +75,15 @@ export type ReviewModeId = (typeof REVIEW_MODES)[number]
 
 export function reviewModesForCard(card: Card): ReviewModeId[] {
   if (card.kind === "vocabulary") {
-    const hasKanji = containsKanji(card.content.wordJa)
-    const base: ReviewModeId[] = [
-      "vocab_oral_en",
-      "vocab_type_word_from_clue",
-    ]
-    if (hasKanji) base.splice(1, 0, "vocab_type_reading")
-    return base
+    const c = card.content
+    const modes: ReviewModeId[] = []
+    if (hasVocabularyEnglishDefinition(c)) modes.push("vocab_oral_en")
+    if (hasVocabularyPronunciation(c)) modes.push("vocab_type_reading")
+    if (hasVocabularyEnglishDefinition(c) || hasVocabularyImage(c)) {
+      modes.push("vocab_type_word_from_clue")
+    }
+    return modes
   }
   return ["grammar_type_construction", "grammar_oral_meaning"]
 }
 
-export function containsKanji(s: string): boolean {
-  for (const ch of s) {
-    const cp = ch.codePointAt(0)!
-    if (cp >= 0x4e00 && cp <= 0x9fff) return true
-  }
-  return false
-}

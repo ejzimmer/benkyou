@@ -1,0 +1,87 @@
+{
+  "deckId": 1772052380622,
+  "deckName": "とんがり帽子のアトリエ",
+  "collectionCrt": 1739725200,
+  "mediaPaths": {
+    "sample.jpg": "media/sample.jpg",
+    "grammar.jpg": "media/grammar.jpg"
+  },
+  "notes": [
+    {
+      "id": 1772052422345,
+      "noteType": "Basic",
+      "fields": ["陣", "<img src=\"sample.jpg\"><br>formation"],
+      "tags": "",
+      "cards": [
+        {
+          "id": 1,
+          "ord": 0,
+          "type": 2,
+          "queue": 2,
+          "due": 10,
+          "ivl": 5,
+          "factor": 2500,
+          "reps": 2,
+          "lapses": 0
+        }
+      ]
+    },
+    {
+      "id": 1772052407396,
+      "noteType": "Basic (type in the answer)",
+      "fields": ["<img src=\"sample.jpg\"><br>formation", "陣"],
+      "tags": "",
+      "cards": [
+        {
+          "id": 2,
+          "ord": 0,
+          "type": 2,
+          "queue": 2,
+          "due": 12,
+          "ivl": 6,
+          "factor": 2500,
+          "reps": 2,
+          "lapses": 0
+        }
+      ]
+    },
+    {
+      "id": 1772052436270,
+      "noteType": "Basic",
+      "fields": ["«陣»", "じん"],
+      "tags": "",
+      "cards": [
+        {
+          "id": 3,
+          "ord": 0,
+          "type": 2,
+          "queue": 2,
+          "due": 8,
+          "ivl": 4,
+          "factor": 2500,
+          "reps": 2,
+          "lapses": 0
+        }
+      ]
+    },
+    {
+      "id": 1777682009453,
+      "noteType": "Basic (type in the answer)",
+      "fields": ["<img src=\"grammar.jpg\"><br>___羽根馬車を___", "流し、呼ぶ"],
+      "tags": "",
+      "cards": [
+        {
+          "id": 4,
+          "ord": 0,
+          "type": 2,
+          "queue": 2,
+          "due": 15,
+          "ivl": 7,
+          "factor": 2500,
+          "reps": 1,
+          "lapses": 0
+        }
+      ]
+    }
+  ]
+}

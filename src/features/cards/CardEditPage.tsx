@@ -5,6 +5,8 @@ import type {
   GrammarCardContent,
   VocabularyCardContent,
 } from "../../domain/types"
+import { containsKanji } from "../../domain/types"
+import { isKanaOnly } from "../../domain/vocabularyContent"
 import {
   createGrammarCard,
   createVocabularyCard,
@@ -164,22 +166,37 @@ export function CardEditPage() {
               <input
                 className="input"
                 value={vocab.wordJa}
-                onChange={(e) =>
-                  setVocab({ ...vocab, wordJa: e.target.value })
-                }
+                onChange={(e) => {
+                  const wordJa = e.target.value
+                  setVocab({
+                    ...vocab,
+                    wordJa,
+                    reading: isKanaOnly(wordJa) ? undefined : vocab.reading,
+                  })
+                }}
                 required
               />
             </label>
             <label>
-              Reading (hiragana — required if word has kanji)
+              Reading / pronunciation (hiragana — kanji words only)
               <input
                 className="input"
                 value={vocab.reading ?? ""}
+                disabled={isKanaOnly(vocab.wordJa)}
                 onChange={(e) =>
                   setVocab({ ...vocab, reading: e.target.value })
                 }
               />
             </label>
+            {!containsKanji(vocab.wordJa) && (
+              <p className="muted small">
+                Kana-only words do not use a separate pronunciation field.
+              </p>
+            )}
+            <p className="muted small">
+              Include at least one of: pronunciation (for kanji words), English
+              meaning, or an image.
+            </p>
             <label>
               English definitions (one per line)
               <textarea

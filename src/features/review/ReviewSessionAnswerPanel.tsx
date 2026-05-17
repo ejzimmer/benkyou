@@ -1,4 +1,5 @@
 import type { DueItem } from "../../services/review"
+import { CardImage } from "../../ui/CardImage"
 import { TextDiffCompare } from "../../ui/TextDiffCompare"
 import { requiresTyping } from "./reviewFlowHelpers"
 
@@ -36,7 +37,14 @@ export function ReviewSessionAnswerPanel({
         </ul>
       )}
       {m === "grammar_oral_meaning" && card.kind === "grammar" && (
-        <p>{card.content.translationEn}</p>
+        <>
+          {card.content.translationEn.trim() && (
+            <p>{card.content.translationEn}</p>
+          )}
+          {card.content.images.map((id) => (
+            <CardImage key={id} mediaId={id} />
+          ))}
+        </>
       )}
       <div className="toolbar">
         <button

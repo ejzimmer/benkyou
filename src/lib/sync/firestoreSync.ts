@@ -9,6 +9,7 @@ import {
 import type { Card, Deck } from "../../domain/types"
 import type { SchedulingRow } from "../db/schema"
 import { db } from "../db/schema"
+import { pullRemoteMediaToLocal, pushLocalMediaToRemote } from "./mediaSync"
 
 const decksCol = (fs: Firestore, uid: string) =>
   collection(fs, "users", uid, "decks")
@@ -56,6 +57,7 @@ export async function pushLocalToRemote(
     await enqueue(doc(schedCol(fs, uid), s.id), s)
   }
   if (n > 0) await batch.commit()
+  await pushLocalMediaToRemote(uid, localCards)
 }
 
 export async function pullRemoteToLocal(
@@ -89,6 +91,8 @@ export async function pullRemoteToLocal(
       }
     }
   })
+  const cards = await db.cards.toArray()
+  await pullRemoteMediaToLocal(uid, cards)
 }
 
 export async function upsertDeckRemote(
