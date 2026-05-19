@@ -16,7 +16,7 @@ export function DeckListPage() {
     e.preventDefault()
     setErr(null)
     try {
-      const deck = await createDeck(name.trim() || "New deck")
+      const deck = await createDeck(name.trim() || "New deck", user)
       setName("")
       navigate(`/decks/${deck.id}`)
     } catch (x) {

@@ -24,6 +24,15 @@ export function App() {
     void syncNow()
   }, [offlineOnly, user, syncNow])
 
+  useEffect(() => {
+    if (!user || offlineOnly) return
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void syncNow()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
+  }, [offlineOnly, user, syncNow])
+
   if (loading) {
     return (
       <div className="page centred">

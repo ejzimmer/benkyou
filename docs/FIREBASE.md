@@ -10,12 +10,12 @@ Cloud sync uses the existing Firebase project:
 |---------|---------|
 | **Authentication** | Google sign-in (same account on every device) |
 | **Cloud Firestore** | Decks, cards, FSRS scheduling (`users/{uid}/…`) |
-| **Cloud Storage** | Not wired yet — card images are still local-only |
+| **Cloud Storage** | Card image blobs at `users/{uid}/media/{mediaId}` |
 
 Security rules for Firestore live in [`firestore.rules`](../firestore.rules) at the repo root. Deploy them after changes:
 
 ```bash
-npx firebase-tools deploy --only firestore:rules --project benkyou-c1a8b
+npx firebase-tools deploy --only firestore:rules,storage --project benkyou-c1a8b
 ```
 
 (Requires Firebase CLI login: `npx firebase-tools login`.)
@@ -54,10 +54,9 @@ users/{uid}/scheduling/{schedulingId}   // e.g. "{cardId}:{modeId}"
 
 Sync logic: [`src/lib/sync/firestoreSync.ts`](../src/lib/sync/firestoreSync.ts).
 
-## Known sync limitations
+## Sync behaviour
 
-See the product discussion in issues/PRs; briefly:
-
-- Images are not uploaded to Storage yet.
-- Deletes and some creates may need a full **Sync now** until write-through gaps are closed.
-- Review event history stays local only.
+- **Sync now** (Settings) or sign-in runs a full merge: decks, cards, scheduling, images, and tombstones for deletes.
+- If the same item changed on two devices since the last sync, a dialog asks which copy to keep.
+- Edits while signed in also push in the background (debounced).
+- Review event history stays local only (not synced).

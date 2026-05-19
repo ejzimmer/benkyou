@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   setDoc,
@@ -7,8 +8,11 @@ import {
   type Firestore,
 } from "firebase/firestore"
 import type { Card, Deck } from "../../domain/types"
-import type { SchedulingRow } from "../db/schema"
+import type { MediaRow, SchedulingRow } from "../db/schema"
 import { db } from "../db/schema"
+import type { RemoteMediaMeta, Tombstone } from "./syncTypes"
+
+const BATCH_SIZE = 400
 
 const decksCol = (fs: Firestore, uid: string) =>
   collection(fs, "users", uid, "decks")
@@ -16,24 +20,59 @@ const cardsCol = (fs: Firestore, uid: string) =>
   collection(fs, "users", uid, "cards")
 const schedCol = (fs: Firestore, uid: string) =>
   collection(fs, "users", uid, "scheduling")
+const tombstonesCol = (fs: Firestore, uid: string) =>
+  collection(fs, "users", uid, "tombstones")
+const mediaMetaCol = (fs: Firestore, uid: string) =>
+  collection(fs, "users", uid, "media")
 
-/** Firestore batch limit is 500 operations; stay under for headroom. */
-const BATCH_SIZE = 400
+export type RemoteSnapshot = {
+  decks: Map<string, Deck>
+  cards: Map<string, Card>
+  scheduling: Map<string, SchedulingRow>
+  tombstones: Map<string, Tombstone>
+  mediaMeta: Map<string, RemoteMediaMeta>
+}
 
-export async function pushLocalToRemote(
+export async function fetchRemoteSnapshot(
   fs: Firestore,
   uid: string,
-): Promise<void> {
-  const [localDecks, localCards, localSched] = await Promise.all([
-    db.decks.toArray(),
-    db.cards.toArray(),
-    db.scheduling.toArray(),
-  ])
+): Promise<RemoteSnapshot> {
+  const [snapDecks, snapCards, snapSched, snapTombs, snapMedia] =
+    await Promise.all([
+      getDocs(decksCol(fs, uid)),
+      getDocs(cardsCol(fs, uid)),
+      getDocs(schedCol(fs, uid)),
+      getDocs(tombstonesCol(fs, uid)),
+      getDocs(mediaMetaCol(fs, uid)),
+    ])
 
+  const decks = new Map<string, Deck>()
+  for (const d of snapDecks.docs) decks.set(d.id, d.data() as Deck)
+
+  const cards = new Map<string, Card>()
+  for (const d of snapCards.docs) cards.set(d.id, d.data() as Card)
+
+  const scheduling = new Map<string, SchedulingRow>()
+  for (const d of snapSched.docs)
+    scheduling.set(d.id, d.data() as SchedulingRow)
+
+  const tombstones = new Map<string, Tombstone>()
+  for (const d of snapTombs.docs) tombstones.set(d.id, d.data() as Tombstone)
+
+  const mediaMeta = new Map<string, RemoteMediaMeta>()
+  for (const d of snapMedia.docs)
+    mediaMeta.set(d.id, d.data() as RemoteMediaMeta)
+
+  return { decks, cards, scheduling, tombstones, mediaMeta }
+}
+
+async function commitBatch(
+  fs: Firestore,
+  ops: Array<{ ref: ReturnType<typeof doc>; data: object }>,
+): Promise<void> {
   let batch = writeBatch(fs)
   let n = 0
-
-  const enqueue = async (ref: ReturnType<typeof doc>, data: object) => {
+  for (const { ref, data } of ops) {
     batch.set(ref, data)
     n++
     if (n >= BATCH_SIZE) {
@@ -42,53 +81,83 @@ export async function pushLocalToRemote(
       n = 0
     }
   }
-
-  for (const d of localDecks) {
-    await enqueue(doc(decksCol(fs, uid), d.id), d)
-  }
-  for (const c of localCards) {
-    await enqueue(doc(cardsCol(fs, uid), c.id), {
-      ...c,
-      content: c.content,
-    })
-  }
-  for (const s of localSched) {
-    await enqueue(doc(schedCol(fs, uid), s.id), s)
-  }
   if (n > 0) await batch.commit()
 }
 
-export async function pullRemoteToLocal(
+export async function pushLocalToRemote(
   fs: Firestore,
   uid: string,
 ): Promise<void> {
-  const snapDecks = await getDocs(decksCol(fs, uid))
-  const snapCards = await getDocs(cardsCol(fs, uid))
-  const snapSched = await getDocs(schedCol(fs, uid))
+  const [localDecks, localCards, localSched, localTombs, localMedia] =
+    await Promise.all([
+      db.decks.toArray(),
+      db.cards.toArray(),
+      db.scheduling.toArray(),
+      db.tombstones.toArray(),
+      db.media.toArray(),
+    ])
 
-  await db.transaction("rw", db.decks, db.cards, db.scheduling, async () => {
-    for (const d of snapDecks.docs) {
-      const data = d.data() as Deck
-      const local = await db.decks.get(d.id)
-      if (!local || data.updatedAt >= local.updatedAt) {
-        await db.decks.put(data)
-      }
+  const sets: Array<{ ref: ReturnType<typeof doc>; data: object }> = []
+
+  for (const d of localDecks) {
+    sets.push({ ref: doc(decksCol(fs, uid), d.id), data: d })
+  }
+  for (const c of localCards) {
+    sets.push({
+      ref: doc(cardsCol(fs, uid), c.id),
+      data: c as Record<string, unknown>,
+    })
+  }
+  for (const s of localSched) {
+    sets.push({ ref: doc(schedCol(fs, uid), s.id), data: s })
+  }
+  for (const t of localTombs) {
+    sets.push({ ref: doc(tombstonesCol(fs, uid), t.id), data: t })
+  }
+  for (const m of localMedia) {
+    sets.push({
+      ref: doc(mediaMetaCol(fs, uid), m.id),
+      data: { id: m.id, mimeType: m.mimeType, updatedAt: m.updatedAt },
+    })
+  }
+
+  await commitBatch(fs, sets)
+
+  const tombstoned = new Set(localTombs.map((t) => t.id))
+
+  const deleteOps: ReturnType<typeof doc>[] = []
+  const remote = await fetchRemoteSnapshot(fs, uid)
+
+  for (const id of remote.decks.keys()) {
+    const tid = `deck:${id}`
+    if (!localDecks.some((d) => d.id === id) || tombstoned.has(tid)) {
+      deleteOps.push(doc(decksCol(fs, uid), id))
     }
-    for (const d of snapCards.docs) {
-      const data = d.data() as Card
-      const local = await db.cards.get(d.id)
-      if (!local || data.updatedAt >= local.updatedAt) {
-        await db.cards.put(data)
-      }
+  }
+  for (const id of remote.cards.keys()) {
+    const tid = `card:${id}`
+    if (!localCards.some((c) => c.id === id) || tombstoned.has(tid)) {
+      deleteOps.push(doc(cardsCol(fs, uid), id))
     }
-    for (const d of snapSched.docs) {
-      const data = d.data() as SchedulingRow
-      const local = await db.scheduling.get(d.id)
-      if (!local || data.updatedAt >= local.updatedAt) {
-        await db.scheduling.put(data)
-      }
+  }
+  for (const id of remote.scheduling.keys()) {
+    const tid = `scheduling:${id}`
+    if (!localSched.some((s) => s.id === id) || tombstoned.has(tid)) {
+      deleteOps.push(doc(schedCol(fs, uid), id))
     }
-  })
+  }
+  for (const id of remote.mediaMeta.keys()) {
+    const tid = `media:${id}`
+    if (!localMedia.some((m) => m.id === id) || tombstoned.has(tid)) {
+      deleteOps.push(doc(mediaMetaCol(fs, uid), id))
+    }
+  }
+
+  for (let i = 0; i < deleteOps.length; i += BATCH_SIZE) {
+    const batch = writeBatch(fs)
+    for (const ref of deleteOps.slice(i, i + BATCH_SIZE)) batch.delete(ref)
+    await batch.commit()
+  }
 }
 
 export async function upsertDeckRemote(
@@ -113,4 +182,56 @@ export async function upsertSchedulingRemote(
   row: SchedulingRow,
 ): Promise<void> {
   await setDoc(doc(schedCol(fs, uid), row.id), row)
+}
+
+export async function upsertTombstoneRemote(
+  fs: Firestore,
+  uid: string,
+  tombstone: Tombstone,
+): Promise<void> {
+  await setDoc(doc(tombstonesCol(fs, uid), tombstone.id), tombstone)
+}
+
+export async function upsertMediaMetaRemote(
+  fs: Firestore,
+  uid: string,
+  row: MediaRow,
+): Promise<void> {
+  await setDoc(doc(mediaMetaCol(fs, uid), row.id), {
+    id: row.id,
+    mimeType: row.mimeType,
+    updatedAt: row.updatedAt,
+  })
+}
+
+export async function deleteDeckRemote(
+  fs: Firestore,
+  uid: string,
+  deckId: string,
+): Promise<void> {
+  await deleteDoc(doc(decksCol(fs, uid), deckId))
+}
+
+export async function deleteCardRemote(
+  fs: Firestore,
+  uid: string,
+  cardId: string,
+): Promise<void> {
+  await deleteDoc(doc(cardsCol(fs, uid), cardId))
+}
+
+export async function deleteSchedulingRemote(
+  fs: Firestore,
+  uid: string,
+  schedulingId: string,
+): Promise<void> {
+  await deleteDoc(doc(schedCol(fs, uid), schedulingId))
+}
+
+export async function deleteMediaMetaRemote(
+  fs: Firestore,
+  uid: string,
+  mediaId: string,
+): Promise<void> {
+  await deleteDoc(doc(mediaMetaCol(fs, uid), mediaId))
 }

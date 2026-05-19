@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from "dexie"
 import type { Card, Deck, ReviewModeId } from "../../domain/types"
 import type { Card as FsrsCard } from "ts-fsrs"
+import type { Tombstone } from "../sync/syncTypes"
 
 export type SchedulingRow = {
   id: string
@@ -48,6 +49,7 @@ export type MediaRow = {
   id: string
   blob: Blob
   mimeType: string
+  updatedAt: number
 }
 
 export type SyncOutboxRow = {
@@ -65,6 +67,7 @@ export class BenkyouDB extends Dexie {
   reviewEvents!: EntityTable<ReviewEventRow, "id">
   reviewUndo!: EntityTable<ReviewUndoRow, "id">
   media!: EntityTable<MediaRow, "id">
+  tombstones!: EntityTable<Tombstone, "id">
   syncOutbox!: EntityTable<SyncOutboxRow, "id">
 
   constructor() {
@@ -87,6 +90,24 @@ export class BenkyouDB extends Dexie {
       media: "id",
       syncOutbox: "id, collection, updatedAt",
     })
+    this.version(3).stores({
+      decks: "id, name, updatedAt",
+      cards: "id, deckId, kind, updatedAt",
+      scheduling: "id, cardId, modeId, due, updatedAt",
+      reviewEvents: "id, ts, cardId, modeId",
+      reviewUndo: "id, ts, cardId, modeId",
+      media: "id, updatedAt",
+      tombstones: "id, entityType, entityId, deletedAt",
+      syncOutbox: "id, collection, updatedAt",
+    })
+    this.version(3).upgrade((tx) =>
+      tx
+        .table("media")
+        .toCollection()
+        .modify((row: MediaRow) => {
+          if (row.updatedAt == null) row.updatedAt = Date.now()
+        }),
+    )
   }
 }
 
