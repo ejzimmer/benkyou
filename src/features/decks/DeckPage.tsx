@@ -2,11 +2,13 @@ import { useLiveQuery } from "dexie-react-hooks"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { db } from "../../lib/db/schema"
 import { deleteDeck } from "../../services/decks"
+import { useAuth } from "../../lib/auth/AuthContext"
 import { useMemo, useState } from "react"
 
 export function DeckPage() {
   const { deckId = "" } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const deck = useLiveQuery(() => db.decks.get(deckId), [deckId])
   const cards = useLiveQuery(
     () => db.cards.where("deckId").equals(deckId).toArray(),
@@ -34,7 +36,7 @@ export function DeckPage() {
 
   async function onDeleteDeck() {
     if (!confirm("Delete this deck and all its cards?")) return
-    await deleteDeck(deckId)
+    await deleteDeck(deckId, user)
     navigate("/")
   }
 

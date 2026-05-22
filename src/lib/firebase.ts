@@ -1,9 +1,12 @@
 import { initializeApp, type FirebaseApp } from "firebase/app"
 import {
+  getFirestore,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  type Firestore,
 } from "firebase/firestore"
+import { getStorage, type FirebaseStorage } from "firebase/storage"
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? "",
@@ -19,6 +22,8 @@ export function isFirebaseConfigured(): boolean {
 }
 
 let appInstance: FirebaseApp | null = null
+let firestoreInstance: Firestore | null = null
+let storageInstance: FirebaseStorage | null = null
 
 export function getFirebaseApp(): FirebaseApp | null {
   if (!isFirebaseConfigured()) return null
@@ -26,12 +31,25 @@ export function getFirebaseApp(): FirebaseApp | null {
   return appInstance
 }
 
-export function getFirestoreDb() {
+export function getFirestoreDb(): Firestore | null {
   const app = getFirebaseApp()
   if (!app) return null
-  return initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager(),
-    }),
-  })
+  if (firestoreInstance) return firestoreInstance
+  try {
+    firestoreInstance = initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    })
+  } catch {
+    firestoreInstance = getFirestore(app)
+  }
+  return firestoreInstance
+}
+
+export function getFirebaseStorage(): FirebaseStorage | null {
+  const app = getFirebaseApp()
+  if (!app) return null
+  if (!storageInstance) storageInstance = getStorage(app)
+  return storageInstance
 }

@@ -4,7 +4,7 @@ import { useSync } from "../../lib/sync/SyncContext"
 
 export function SettingsPage() {
   const { user, offlineOnly, loading, signInGoogle, signOut } = useAuth()
-  const { syncNow, syncing, lastError, lastSyncedAt } = useSync()
+  const { syncNow, syncing, lastError, lastSyncedAt, conflictActive } = useSync()
 
   return (
     <div className="page">
@@ -52,10 +52,14 @@ export function SettingsPage() {
         <button
           type="button"
           className="btn primary"
-          disabled={offlineOnly || !user || syncing}
+          disabled={offlineOnly || !user || syncing || conflictActive}
           onClick={() => syncNow()}
         >
-          {syncing ? "Syncing…" : "Sync now"}
+          {conflictActive
+            ? "Resolve conflict…"
+            : syncing
+              ? "Syncing…"
+              : "Sync now"}
         </button>
         {lastSyncedAt && (
           <p className="muted small">

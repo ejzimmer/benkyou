@@ -11,7 +11,18 @@ import {
   emptyFsrs,
   serializeFsrs,
 } from "../lib/srs/schedule"
-import { pushCardRemote, pushSchedulingRemote } from "./decks"
+import {
+  pushAllSchedulingForCard,
+  pushCardRemote,
+  pushSchedulingRemote,
+} from "./decks"
+import { schedulePushAfterMutation } from "../lib/sync/schedulePush"
+import { recordTombstone } from "../lib/sync/tombstones"
+import {
+  deleteCardRemote,
+  deleteSchedulingRemote,
+} from "../lib/sync/firestoreSync"
+import { getFirestoreDb } from "../lib/firebase"
 import type { User } from "firebase/auth"
 
 export function validateVocabulary(content: VocabularyCardContent): string | null {
@@ -73,13 +84,45 @@ export async function saveCard(card: Card, user: User | null): Promise<void> {
   await db.cards.put(card)
   await ensureSchedulingForCard(card)
   await pushCardRemote(user, card.id)
+  await pushAllSchedulingForCard(user, card.id)
+  schedulePushAfterMutation(user)
 }
 
-export async function deleteCard(cardId: string): Promise<void> {
-  await db.transaction("rw", db.cards, db.scheduling, async () => {
+export async function deleteCard(
+  cardId: string,
+  user: User | null,
+): Promise<void> {
+  const card = await db.cards.get(cardId)
+  const now = Date.now()
+  if (card) {
+    for (const imgId of card.content.images) {
+      await recordTombstone("media", imgId, now)
+    }
+  }
+  const sched = await db.scheduling.where("cardId").equals(cardId).toArray()
+  for (const row of sched) {
+    await recordTombstone("scheduling", row.id, now)
+  }
+  await recordTombstone("card", cardId, now)
+
+  await db.transaction("rw", db.cards, db.scheduling, db.media, async () => {
+    if (card) {
+      for (const imgId of card.content.images) {
+        await db.media.delete(imgId)
+      }
+    }
     await db.cards.delete(cardId)
     await db.scheduling.where("cardId").equals(cardId).delete()
   })
+
+  const fs = getFirestoreDb()
+  if (fs && user) {
+    await deleteCardRemote(fs, user.uid, cardId)
+    for (const row of sched) {
+      await deleteSchedulingRemote(fs, user.uid, row.id)
+    }
+  }
+  schedulePushAfterMutation(user)
 }
 
 export function defaultVocabulary(): VocabularyCardContent {
@@ -156,6 +199,7 @@ export async function updateSchedulingRow(
 ): Promise<void> {
   await db.scheduling.put(row)
   await pushSchedulingRemote(user, row.id)
+  schedulePushAfterMutation(user)
 }
 
 /** Deserialize FSRS card from scheduling row */
