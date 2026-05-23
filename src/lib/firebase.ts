@@ -1,11 +1,5 @@
 import { initializeApp, type FirebaseApp } from "firebase/app"
-import {
-  getFirestore,
-  initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
-  type Firestore,
-} from "firebase/firestore"
+import { getFirestore, type Firestore } from "firebase/firestore"
 import { getStorage, type FirebaseStorage } from "firebase/storage"
 
 const firebaseConfig = {
@@ -31,19 +25,15 @@ export function getFirebaseApp(): FirebaseApp | null {
   return appInstance
 }
 
+/**
+ * Single Firestore instance per app. Use `getFirestore` only — not
+ * `initializeFirestore`, which throws if invoked twice or after defaults exist.
+ * Local data lives in Dexie; Firestore is the sync transport.
+ */
 export function getFirestoreDb(): Firestore | null {
   const app = getFirebaseApp()
   if (!app) return null
-  if (firestoreInstance) return firestoreInstance
-  try {
-    firestoreInstance = initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager(),
-      }),
-    })
-  } catch {
-    firestoreInstance = getFirestore(app)
-  }
+  if (!firestoreInstance) firestoreInstance = getFirestore(app)
   return firestoreInstance
 }
 
@@ -52,4 +42,11 @@ export function getFirebaseStorage(): FirebaseStorage | null {
   if (!app) return null
   if (!storageInstance) storageInstance = getStorage(app)
   return storageInstance
+}
+
+/** Call once at startup so the first consumer never races on init. */
+export function warmFirebaseClients(): void {
+  if (!isFirebaseConfigured()) return
+  getFirestoreDb()
+  getFirebaseStorage()
 }

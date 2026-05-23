@@ -54,31 +54,43 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     resolveRef.current = null
   }, [])
 
+  const syncInFlightRef = useRef<Promise<void> | null>(null)
+
   const syncNow = useCallback(async () => {
     if (offlineOnly || !user) return
-    const fs = getFirestoreDb()
-    const storage = getFirebaseStorage()
-    if (!fs || !storage) return
-    setSyncing(true)
-    setLastError(null)
-    conflictNumberRef.current = 0
-    setConflictNumber(0)
-    try {
-      await runFullSync({
-        fs,
-        storage,
-        uid: user.uid,
-        onConflict,
-      })
-      setLastSyncedAt(Date.now())
-    } catch (e) {
-      setLastError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setSyncing(false)
-      setActiveConflict(null)
+    if (syncInFlightRef.current) return syncInFlightRef.current
+
+    const run = (async () => {
+      const fs = getFirestoreDb()
+      const storage = getFirebaseStorage()
+      if (!fs || !storage) return
+      setSyncing(true)
+      setLastError(null)
       conflictNumberRef.current = 0
       setConflictNumber(0)
-    }
+      try {
+        await runFullSync({
+          fs,
+          storage,
+          uid: user.uid,
+          onConflict,
+        })
+        setLastSyncedAt(Date.now())
+      } catch (e) {
+        setLastError(e instanceof Error ? e.message : String(e))
+        throw e
+      } finally {
+        setSyncing(false)
+        setActiveConflict(null)
+        conflictNumberRef.current = 0
+        setConflictNumber(0)
+      }
+    })()
+
+    syncInFlightRef.current = run.finally(() => {
+      syncInFlightRef.current = null
+    })
+    return syncInFlightRef.current
   }, [offlineOnly, user, onConflict])
 
   const value = useMemo(

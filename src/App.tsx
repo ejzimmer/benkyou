@@ -21,16 +21,25 @@ export function App() {
     if (offlineOnly) return
     if (syncedUidRef.current === user.uid) return
     syncedUidRef.current = user.uid
-    void syncNow()
+    void syncNow().catch(() => {})
   }, [offlineOnly, user, syncNow])
+
+  const tabWasHiddenRef = useRef(false)
 
   useEffect(() => {
     if (!user || offlineOnly) return
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void syncNow()
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        tabWasHiddenRef.current = true
+        return
+      }
+      if (document.visibilityState === "visible" && tabWasHiddenRef.current) {
+        tabWasHiddenRef.current = false
+        void syncNow().catch(() => {})
+      }
     }
-    document.addEventListener("visibilitychange", onVisible)
-    return () => document.removeEventListener("visibilitychange", onVisible)
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => document.removeEventListener("visibilitychange", onVisibility)
   }, [offlineOnly, user, syncNow])
 
   if (loading) {

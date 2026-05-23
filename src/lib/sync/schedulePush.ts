@@ -15,8 +15,12 @@ export function schedulePushAfterMutation(user: User | null): void {
   pushTimer = setTimeout(() => {
     pushTimer = null
     if (pushInFlight) return
-    pushInFlight = runPushOnly(fs, storage, user.uid).finally(() => {
-      pushInFlight = null
-    })
+    pushInFlight = runPushOnly(fs, storage, user.uid)
+      .catch((e) => {
+        console.error("Background sync push failed:", e)
+      })
+      .finally(() => {
+        pushInFlight = null
+      })
   }, 1500)
 }
