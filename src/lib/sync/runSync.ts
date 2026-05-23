@@ -24,6 +24,7 @@ import {
   uploadMediaBlob,
 } from "./mediaSync"
 import { purgeTombstonedMediaStorage } from "./purgeMediaStorage"
+import { runWithConcurrency } from "./runWithConcurrency"
 import { mergeTombstone } from "./tombstoneMerge"
 import { pruneOrphanMediaTombstones } from "./tombstones"
 import { tombstoneId } from "./syncCompare"
@@ -192,6 +193,89 @@ async function collectEntityConflicts(
   }
 }
 
+async function syncOneMediaItem(
+  storage: FirebaseStorage,
+  uid: string,
+  mediaId: string,
+  remote: RemoteSnapshot,
+  lastSyncedAt: number | null,
+  localById: Map<string, MediaRow>,
+  tombstonedMedia: Set<string>,
+  onConflict: (c: SyncConflict) => Promise<SyncConflictChoice>,
+): Promise<void> {
+  if (tombstonedMedia.has(mediaId)) return
+
+  const local = localById.get(mediaId)
+  const remoteMeta = remote.mediaMeta.get(mediaId)
+
+  if (local && remoteMeta) {
+    const localDigest = await mediaBlobDigest(local.blob)
+    let remoteRow: MediaRow
+    try {
+      remoteRow = await downloadMediaBlob(storage, uid, remoteMeta)
+    } catch {
+      await uploadMediaBlob(storage, uid, local)
+      return
+    }
+    const remoteDigest = await mediaBlobDigest(remoteRow.blob)
+    const changed = mediaChanged(local, remoteMeta, localDigest, remoteDigest)
+    const pick = resolveByTimestamp(
+      { updatedAt: local.updatedAt },
+      { updatedAt: remoteMeta.updatedAt },
+      lastSyncedAt,
+      changed,
+    )
+    if (pick === "conflict") {
+      syncLog("merge conflict", { entityType: "media", entityId: mediaId })
+      const localUrl = mediaPreviewUrl(local)
+      const remoteUrl = mediaPreviewUrl(remoteRow)
+      try {
+        const choice = await onConflict({
+          key: `media:${mediaId}`,
+          entityType: "media",
+          entityId: mediaId,
+          localUpdatedAt: local.updatedAt,
+          remoteUpdatedAt: remoteMeta.updatedAt,
+          localSummary: mediaSummary(local),
+          remoteSummary: mediaSummary(remoteMeta),
+          local,
+          remote: remoteRow,
+          localPreviewUrl: localUrl,
+          remotePreviewUrl: remoteUrl,
+        })
+        await db.media.put(choice === "local" ? local : remoteRow)
+        await uploadMediaBlob(
+          storage,
+          uid,
+          choice === "local" ? local : remoteRow,
+        )
+      } finally {
+        URL.revokeObjectURL(localUrl)
+        URL.revokeObjectURL(remoteUrl)
+      }
+    } else if (pick === "remote") {
+      await db.media.put(remoteRow)
+    } else {
+      await uploadMediaBlob(storage, uid, local)
+    }
+    return
+  }
+
+  if (local && !remoteMeta) {
+    await uploadMediaBlob(storage, uid, local)
+    return
+  }
+
+  if (!local && remoteMeta) {
+    try {
+      const remoteRow = await downloadMediaBlob(storage, uid, remoteMeta)
+      await db.media.put(remoteRow)
+    } catch {
+      /* missing storage object */
+    }
+  }
+}
+
 async function syncMedia(
   storage: FirebaseStorage,
   uid: string,
@@ -200,88 +284,50 @@ async function syncMedia(
   onConflict: (c: SyncConflict) => Promise<SyncConflictChoice>,
 ): Promise<void> {
   const cards = await db.cards.toArray()
-  const referenced = new Set<string>()
+  const mediaIds = new Set<string>()
   for (const c of cards) {
-    for (const id of c.content.images) referenced.add(id)
+    for (const id of c.content.images) mediaIds.add(id)
+  }
+  for (const m of await db.media.toArray()) {
+    mediaIds.add(m.id)
   }
 
   const localMedia = await db.media.toArray()
   const localById = new Map(localMedia.map((m) => [m.id, m]))
+  const tombstonedMedia = new Set(
+    (await db.tombstones.where("entityType").equals("media").toArray()).map(
+      (t) => t.entityId,
+    ),
+  )
 
-  for (const mediaId of referenced) {
-    if (await db.tombstones.get(tombstoneId("media", mediaId))) continue
+  const ids = [...mediaIds]
+  syncLog("syncMedia plan", {
+    mediaCount: ids.length,
+    cards: cards.length,
+    localBlobs: localMedia.length,
+    remoteMeta: remote.mediaMeta.size,
+  })
 
-    const local = localById.get(mediaId)
-    const remoteMeta = remote.mediaMeta.get(mediaId)
+  if (ids.length === 0) return
 
-    if (local && remoteMeta) {
-      const localDigest = await mediaBlobDigest(local.blob)
-      let remoteRow: MediaRow
-      try {
-        remoteRow = await downloadMediaBlob(storage, uid, remoteMeta)
-      } catch {
-        if (local) await uploadMediaBlob(storage, uid, local)
-        continue
-      }
-      const remoteDigest = await mediaBlobDigest(remoteRow.blob)
-      const changed = mediaChanged(local, remoteMeta, localDigest, remoteDigest)
-      const pick = resolveByTimestamp(
-        { updatedAt: local.updatedAt },
-        { updatedAt: remoteMeta.updatedAt },
-        lastSyncedAt,
-        changed,
-      )
-      if (pick === "conflict") {
-        syncLog("merge conflict", { entityType: "media", entityId: mediaId })
-        const localUrl = mediaPreviewUrl(local)
-        const remoteUrl = mediaPreviewUrl(remoteRow)
-        try {
-          const choice = await onConflict({
-            key: `media:${mediaId}`,
-            entityType: "media",
-            entityId: mediaId,
-            localUpdatedAt: local.updatedAt,
-            remoteUpdatedAt: remoteMeta.updatedAt,
-            localSummary: mediaSummary(local),
-            remoteSummary: mediaSummary(remoteMeta),
-            local,
-            remote: remoteRow,
-            localPreviewUrl: localUrl,
-            remotePreviewUrl: remoteUrl,
-          })
-          await db.media.put(choice === "local" ? local : remoteRow)
-          await uploadMediaBlob(
-            storage,
-            uid,
-            choice === "local" ? local : remoteRow,
-          )
-        } finally {
-          URL.revokeObjectURL(localUrl)
-          URL.revokeObjectURL(remoteUrl)
-        }
-      } else if (pick === "remote") {
-        await db.media.put(remoteRow)
-      } else {
-        await uploadMediaBlob(storage, uid, local)
-      }
-      continue
-    }
-
-    if (local && !remoteMeta) {
-      await uploadMediaBlob(storage, uid, local)
-      continue
-    }
-
-    if (!local && remoteMeta) {
-      try {
-        const remoteRow = await downloadMediaBlob(storage, uid, remoteMeta)
-        await db.media.put(remoteRow)
-      } catch {
-        /* missing storage object */
-      }
-    }
-  }
-
+  const concurrency = 4
+  await runWithConcurrency(ids, concurrency, async (mediaId, index) => {
+    await syncLogTimed(
+      `sync media ${index + 1}/${ids.length}`,
+      () =>
+        syncOneMediaItem(
+          storage,
+          uid,
+          mediaId,
+          remote,
+          lastSyncedAt,
+          localById,
+          tombstonedMedia,
+          onConflict,
+        ),
+      { mediaId: mediaId.slice(0, 40) },
+    )
+  })
 }
 
 export function readLastSyncedAt(): number | null {
@@ -331,22 +377,6 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
     pushLocalToRemote(fs, uid, remote),
   )
 
-  const localMedia = await db.media.toArray()
-  syncLog("upload media pass", { count: localMedia.length })
-  for (const m of localMedia) {
-    if (await db.tombstones.get(tombstoneId("media", m.id))) continue
-    try {
-      await syncLogTimed(`upload media ${m.id}`, () =>
-        uploadMediaBlob(storage, uid, m),
-      )
-    } catch (e) {
-      syncLog("upload media skipped", {
-        id: m.id,
-        error: e instanceof Error ? e.message : String(e),
-      })
-    }
-  }
-
   writeLastSyncedAt(Date.now())
   syncLog("runFullSync complete")
 }
@@ -359,14 +389,7 @@ export async function runPushOnly(
 ): Promise<void> {
   await pruneOrphanMediaTombstones()
   await purgeTombstonedMediaStorage(storage, uid)
-  await pushLocalToRemote(fs, uid)
-  const localMedia = await db.media.toArray()
-  for (const m of localMedia) {
-    if (await db.tombstones.get(tombstoneId("media", m.id))) continue
-    try {
-      await uploadMediaBlob(storage, uid, m)
-    } catch {
-      /* ignore */
-    }
-  }
+  const remote = await fetchRemoteSnapshot(fs, uid, "push")
+  await syncMedia(storage, uid, remote, readLastSyncedAt(), async () => "local")
+  await pushLocalToRemote(fs, uid, remote)
 }
