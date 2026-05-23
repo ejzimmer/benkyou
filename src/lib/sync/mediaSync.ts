@@ -10,8 +10,19 @@ import type { Card } from "../../domain/types"
 import type { MediaRow } from "../db/schema"
 import { db } from "../db/schema"
 import { getFirebaseStorage } from "../firebase"
+import { syncLog } from "./syncLog"
 import { withStorageTimeout } from "./storageTimeout"
 import type { RemoteMediaMeta } from "./syncTypes"
+
+function isLikelyStorageCorsError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const msg = error.message.toLowerCase()
+  return (
+    msg.includes("cors") ||
+    msg.includes("failed to fetch") ||
+    msg.includes("networkerror")
+  )
+}
 
 export function mediaStoragePath(uid: string, mediaId: string): string {
   return `users/${uid}/media/${mediaId}`
@@ -130,7 +141,13 @@ export async function downloadMediaFromRemote(
     const row = await db.media.get(mediaId)
     const mimeType = row?.mimeType ?? "application/octet-stream"
     return new Blob([bytes], { type: mimeType })
-  } catch {
+  } catch (e) {
+    if (isLikelyStorageCorsError(e)) {
+      syncLog(
+        "Storage download blocked by CORS — apply storage.cors.json to your bucket (see docs/FIREBASE.md)",
+        { mediaId },
+      )
+    }
     return null
   }
 }

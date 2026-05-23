@@ -53,6 +53,32 @@ Enable each product below before `firebase:deploy-rules` (or deploy will fail wi
 4. **Storage** — [open Storage](https://console.firebase.google.com/project/benkyou-c1a8b/storage) → **Get started** → use the default bucket (same Google Cloud region as Firestore if prompted). Card images sync to `users/{uid}/media/{mediaId}`; without Storage, rule deploy and image sync fail.
 5. **Project settings → Your apps** — add a **Web** app if you have not already. Copy the `firebaseConfig` object (including `storageBucket`).
 
+## Storage CORS (required for image sync in the browser)
+
+Firebase **security rules** are not enough. The Google Cloud Storage bucket must allow your site’s origin to **read** blobs with `getBytes` / `getBlob` (used during sync). If CORS is missing, the console shows:
+
+`CORS header 'Access-Control-Allow-Origin' missing` (often with HTTP 200).
+
+This is configured on the bucket, not in the Firebase Console UI.
+
+1. Edit [`storage.cors.json`](../storage.cors.json) at the repo root. Add your production origin(s), e.g. `https://your-site.netlify.app` or your custom domain, to the `"origin"` array (keep `http://localhost:5173` for local dev).
+2. Install [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) and log in (`gcloud auth login`), or use an account that owns project `benkyou-c1a8b`.
+3. Apply CORS to the bucket name from `VITE_FIREBASE_STORAGE_BUCKET` (usually `benkyou-c1a8b.firebasestorage.app`):
+
+```bash
+gcloud storage buckets update gs://benkyou-c1a8b.firebasestorage.app --cors-file=storage.cors.json
+```
+
+Older tooling:
+
+```bash
+gsutil cors set storage.cors.json gs://benkyou-c1a8b.firebasestorage.app
+```
+
+4. Confirm: `gcloud storage buckets describe gs://benkyou-c1a8b.firebasestorage.app --format="json(cors)"`
+
+If your bucket ends in `.appspot.com`, use that name instead. Re-run sync after CORS is applied (no app redeploy needed).
+
 ## Local / Netlify environment variables
 
 Copy [`.env.example`](../.env.example) to `.env.local` (gitignored) and fill values from the web app config:
