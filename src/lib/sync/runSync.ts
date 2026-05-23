@@ -24,6 +24,8 @@ import {
   uploadMediaBlob,
 } from "./mediaSync"
 import { purgeTombstonedMediaStorage } from "./purgeMediaStorage"
+import { mergeTombstone } from "./tombstoneMerge"
+import { pruneOrphanMediaTombstones } from "./tombstones"
 import { tombstoneId } from "./syncCompare"
 import type { SyncConflict, SyncConflictChoice, Tombstone } from "./syncTypes"
 import { LAST_SYNCED_AT_KEY } from "./syncTypes"
@@ -53,7 +55,7 @@ async function applyRemoteTombstones(
   for (const t of localTombs) allTombs.set(t.id, t)
   for (const t of remote.tombstones.values()) {
     const existing = allTombs.get(t.id)
-    if (!existing || t.deletedAt >= existing.deletedAt) allTombs.set(t.id, t)
+    allTombs.set(t.id, mergeTombstone(existing, t))
   }
 
   await db.transaction(
@@ -306,12 +308,23 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
   await syncLogTimed("apply remote tombstones", () =>
     applyRemoteTombstones(remote, localTombs),
   )
+  const prunedTombs = await syncLogTimed("prune orphan media tombstones", () =>
+    pruneOrphanMediaTombstones(),
+  )
+  if (prunedTombs > 0) {
+    syncLog("pruned orphan media tombstones", { count: prunedTombs })
+  }
   await syncLogTimed("merge decks/cards/scheduling", () =>
     collectEntityConflicts(lastSyncedAt, remote, onConflict),
   )
 
   await syncLogTimed("sync media blobs", () =>
     syncMedia(storage, uid, remote, lastSyncedAt, onConflict),
+  )
+
+  const remoteMediaIds = new Set(remote.mediaMeta.keys())
+  await syncLogTimed("purge tombstoned media in Storage", () =>
+    purgeTombstonedMediaStorage(storage, uid, { remoteMediaIds }),
   )
 
   await syncLogTimed("push local to remote", () =>
@@ -334,10 +347,6 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
     }
   }
 
-  await syncLogTimed("purge tombstoned media in Storage", () =>
-    purgeTombstonedMediaStorage(storage, uid),
-  )
-
   writeLastSyncedAt(Date.now())
   syncLog("runFullSync complete")
 }
@@ -348,6 +357,8 @@ export async function runPushOnly(
   storage: FirebaseStorage,
   uid: string,
 ): Promise<void> {
+  await pruneOrphanMediaTombstones()
+  await purgeTombstonedMediaStorage(storage, uid)
   await pushLocalToRemote(fs, uid)
   const localMedia = await db.media.toArray()
   for (const m of localMedia) {
@@ -358,5 +369,4 @@ export async function runPushOnly(
       /* ignore */
     }
   }
-  await purgeTombstonedMediaStorage(storage, uid)
 }
