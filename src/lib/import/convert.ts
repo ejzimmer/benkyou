@@ -202,7 +202,7 @@ function vocabularyCard(
     kind: "vocabulary",
     content,
     updatedAt,
-    meta,
+    ...(meta !== undefined ? { meta } : {}),
   }
   return {
     card,

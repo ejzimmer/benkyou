@@ -11,6 +11,7 @@ import type { Card, Deck } from "../../domain/types"
 import type { MediaRow, SchedulingRow } from "../db/schema"
 import { db } from "../db/schema"
 import type { RemoteMediaMeta, Tombstone } from "./syncTypes"
+import { stripUndefinedDeep } from "./firestoreData"
 import { syncLog, syncLogTimed } from "./syncLog"
 
 const BATCH_SIZE = 400
@@ -92,7 +93,7 @@ async function commitBatch(
   let batch = writeBatch(fs)
   let n = 0
   for (const { ref, data } of ops) {
-    batch.set(ref, data)
+    batch.set(ref, stripUndefinedDeep(data))
     n++
     if (n >= BATCH_SIZE) {
       await batch.commit()
@@ -205,7 +206,7 @@ export async function upsertDeckRemote(
   uid: string,
   deck: Deck,
 ): Promise<void> {
-  await setDoc(doc(decksCol(fs, uid), deck.id), deck)
+  await setDoc(doc(decksCol(fs, uid), deck.id), stripUndefinedDeep(deck))
 }
 
 export async function upsertCardRemote(
@@ -213,7 +214,10 @@ export async function upsertCardRemote(
   uid: string,
   card: Card,
 ): Promise<void> {
-  await setDoc(doc(cardsCol(fs, uid), card.id), card as Record<string, unknown>)
+  await setDoc(
+    doc(cardsCol(fs, uid), card.id),
+    stripUndefinedDeep(card as Record<string, unknown>),
+  )
 }
 
 export async function upsertSchedulingRemote(
@@ -221,7 +225,7 @@ export async function upsertSchedulingRemote(
   uid: string,
   row: SchedulingRow,
 ): Promise<void> {
-  await setDoc(doc(schedCol(fs, uid), row.id), row)
+  await setDoc(doc(schedCol(fs, uid), row.id), stripUndefinedDeep(row))
 }
 
 export async function upsertTombstoneRemote(
@@ -229,7 +233,10 @@ export async function upsertTombstoneRemote(
   uid: string,
   tombstone: Tombstone,
 ): Promise<void> {
-  await setDoc(doc(tombstonesCol(fs, uid), tombstone.id), tombstone)
+  await setDoc(
+    doc(tombstonesCol(fs, uid), tombstone.id),
+    stripUndefinedDeep(tombstone),
+  )
 }
 
 export async function upsertMediaMetaRemote(
@@ -237,11 +244,14 @@ export async function upsertMediaMetaRemote(
   uid: string,
   row: MediaRow,
 ): Promise<void> {
-  await setDoc(doc(mediaMetaCol(fs, uid), row.id), {
-    id: row.id,
-    mimeType: row.mimeType,
-    updatedAt: row.updatedAt,
-  })
+  await setDoc(
+    doc(mediaMetaCol(fs, uid), row.id),
+    stripUndefinedDeep({
+      id: row.id,
+      mimeType: row.mimeType,
+      updatedAt: row.updatedAt,
+    }),
+  )
 }
 
 export async function deleteDeckRemote(
