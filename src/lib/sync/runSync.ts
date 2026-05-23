@@ -27,6 +27,7 @@ import {
 import { tombstoneId } from "./syncCompare"
 import type { SyncConflict, SyncConflictChoice, Tombstone } from "./syncTypes"
 import { LAST_SYNCED_AT_KEY } from "./syncTypes"
+import { syncLog, syncLogTimed } from "./syncLog"
 
 export type RunSyncOptions = {
   fs: Firestore
@@ -99,6 +100,7 @@ async function collectEntityConflicts(
     const changed = deckChanged(local, remoteDeck)
     const pick = resolveByTimestamp(local, remoteDeck, lastSyncedAt, changed)
     if (pick === "conflict") {
+      syncLog("merge conflict", { entityType: "deck", entityId: local.id })
       const choice = await onConflict({
         key: `deck:${local.id}`,
         entityType: "deck",
@@ -129,6 +131,7 @@ async function collectEntityConflicts(
     const changed = cardChanged(local, remoteCard)
     const pick = resolveByTimestamp(local, remoteCard, lastSyncedAt, changed)
     if (pick === "conflict") {
+      syncLog("merge conflict", { entityType: "card", entityId: local.id })
       const choice = await onConflict({
         key: `card:${local.id}`,
         entityType: "card",
@@ -159,6 +162,10 @@ async function collectEntityConflicts(
     const changed = schedulingChanged(local, remoteRow)
     const pick = resolveByTimestamp(local, remoteRow, lastSyncedAt, changed)
     if (pick === "conflict") {
+      syncLog("merge conflict", {
+        entityType: "scheduling",
+        entityId: local.id,
+      })
       const choice = await onConflict({
         key: `scheduling:${local.id}`,
         entityType: "scheduling",
@@ -223,6 +230,7 @@ async function syncMedia(
         changed,
       )
       if (pick === "conflict") {
+        syncLog("merge conflict", { entityType: "media", entityId: mediaId })
         const localUrl = mediaPreviewUrl(local)
         const remoteUrl = mediaPreviewUrl(remoteRow)
         try {
@@ -294,29 +302,48 @@ export function writeLastSyncedAt(ts: number): void {
 
 export async function runFullSync(options: RunSyncOptions): Promise<void> {
   const { fs, storage, uid, onConflict } = options
+  syncLog("runFullSync start", { uid, lastSyncedAt: readLastSyncedAt() })
   const lastSyncedAt = readLastSyncedAt()
-  const remote = await fetchRemoteSnapshot(fs, uid)
+
+  const remote = await syncLogTimed("pull remote snapshot", () =>
+    fetchRemoteSnapshot(fs, uid),
+  )
   const localTombs = await db.tombstones.toArray()
 
-  await applyRemoteTombstones(remote, localTombs)
-  await collectEntityConflicts(lastSyncedAt, remote, onConflict)
+  await syncLogTimed("apply remote tombstones", () =>
+    applyRemoteTombstones(remote, localTombs),
+  )
+  await syncLogTimed("merge decks/cards/scheduling", () =>
+    collectEntityConflicts(lastSyncedAt, remote, onConflict),
+  )
 
-  const remoteAfter = await fetchRemoteSnapshot(fs, uid)
-  await syncMedia(storage, uid, remoteAfter, lastSyncedAt, onConflict)
+  const remoteAfter = await syncLogTimed("pull remote snapshot (post-merge)", () =>
+    fetchRemoteSnapshot(fs, uid),
+  )
+  await syncLogTimed("sync media blobs", () =>
+    syncMedia(storage, uid, remoteAfter, lastSyncedAt, onConflict),
+  )
 
-  await pushLocalToRemote(fs, uid)
+  await syncLogTimed("push local to remote", () => pushLocalToRemote(fs, uid))
 
   const localMedia = await db.media.toArray()
+  syncLog("upload media pass", { count: localMedia.length })
   for (const m of localMedia) {
     if (await db.tombstones.get(tombstoneId("media", m.id))) continue
     try {
-      await uploadMediaBlob(storage, uid, m)
-    } catch {
-      /* retry on next sync */
+      await syncLogTimed(`upload media ${m.id}`, () =>
+        uploadMediaBlob(storage, uid, m),
+      )
+    } catch (e) {
+      syncLog("upload media skipped", {
+        id: m.id,
+        error: e instanceof Error ? e.message : String(e),
+      })
     }
   }
 
   writeLastSyncedAt(Date.now())
+  syncLog("runFullSync complete")
 }
 
 /** Push local changes without merge (after edits while signed in). */

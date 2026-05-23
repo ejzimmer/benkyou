@@ -347,3 +347,20 @@ code {
   border-radius: 6px;
   background: #0a0a12;
 }
+
+.sync-log-details {
+  margin-top: 0.75rem;
+}
+
+.sync-log-pre {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  max-height: 12rem;
+  overflow: auto;
+  background: #12121a;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
