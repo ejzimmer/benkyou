@@ -29,11 +29,13 @@ import { runWithConcurrency } from "./runWithConcurrency"
 import { mergeTombstone } from "./tombstoneMerge"
 import { pruneOrphanMediaTombstones } from "./tombstones"
 import { tombstoneId } from "./syncCompare"
-import type {
-  SyncConflict,
-  SyncConflictChoice,
-  Tombstone,
+import {
+  LAST_SYNCED_AT_KEY,
+  type SyncConflict,
+  type SyncConflictChoice,
+  type Tombstone,
 } from "./syncTypes"
+import { syncLog, syncLogTimed } from "./syncLog"
 
 async function resolveConflictChoice(
   conflict: SyncConflict,
@@ -50,8 +52,6 @@ async function resolveConflictChoice(
   }
   return onConflict(conflict)
 }
-import { LAST_SYNCED_AT_KEY } from "./syncTypes"
-import { syncLog, syncLogTimed } from "./syncLog"
 
 export type RunSyncOptions = {
   fs: Firestore
@@ -129,17 +129,20 @@ async function collectEntityConflicts(
     )
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "deck", entityId: local.id })
-      const choice = await resolveConflictChoice({
-        key: `deck:${local.id}`,
-        entityType: "deck",
-        entityId: local.id,
-        localUpdatedAt: local.updatedAt,
-        remoteUpdatedAt: remoteDeck.updatedAt,
-        localSummary: deckSummary(local),
-        remoteSummary: deckSummary(remoteDeck),
-        local,
-        remote: remoteDeck,
-      })
+      const choice = await resolveConflictChoice(
+        {
+          key: `deck:${local.id}`,
+          entityType: "deck",
+          entityId: local.id,
+          localUpdatedAt: local.updatedAt,
+          remoteUpdatedAt: remoteDeck.updatedAt,
+          localSummary: deckSummary(local),
+          remoteSummary: deckSummary(remoteDeck),
+          local,
+          remote: remoteDeck,
+        },
+        onConflict,
+      )
       await db.decks.put(choice === "local" ? local : remoteDeck)
     } else {
       await db.decks.put(pick === "local" ? local : remoteDeck)
@@ -164,17 +167,20 @@ async function collectEntityConflicts(
     )
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "card", entityId: local.id })
-      const choice = await resolveConflictChoice({
-        key: `card:${local.id}`,
-        entityType: "card",
-        entityId: local.id,
-        localUpdatedAt: local.updatedAt,
-        remoteUpdatedAt: remoteCard.updatedAt,
-        localSummary: cardSummary(local),
-        remoteSummary: cardSummary(remoteCard),
-        local,
-        remote: remoteCard,
-      })
+      const choice = await resolveConflictChoice(
+        {
+          key: `card:${local.id}`,
+          entityType: "card",
+          entityId: local.id,
+          localUpdatedAt: local.updatedAt,
+          remoteUpdatedAt: remoteCard.updatedAt,
+          localSummary: cardSummary(local),
+          remoteSummary: cardSummary(remoteCard),
+          local,
+          remote: remoteCard,
+        },
+        onConflict,
+      )
       await db.cards.put(choice === "local" ? local : remoteCard)
     } else {
       await db.cards.put(pick === "local" ? local : remoteCard)
@@ -202,17 +208,20 @@ async function collectEntityConflicts(
         entityType: "scheduling",
         entityId: local.id,
       })
-      const choice = await resolveConflictChoice({
-        key: `scheduling:${local.id}`,
-        entityType: "scheduling",
-        entityId: local.id,
-        localUpdatedAt: local.updatedAt,
-        remoteUpdatedAt: remoteRow.updatedAt,
-        localSummary: schedulingSummary(local),
-        remoteSummary: schedulingSummary(remoteRow),
-        local,
-        remote: remoteRow,
-      })
+      const choice = await resolveConflictChoice(
+        {
+          key: `scheduling:${local.id}`,
+          entityType: "scheduling",
+          entityId: local.id,
+          localUpdatedAt: local.updatedAt,
+          remoteUpdatedAt: remoteRow.updatedAt,
+          localSummary: schedulingSummary(local),
+          remoteSummary: schedulingSummary(remoteRow),
+          local,
+          remote: remoteRow,
+        },
+        onConflict,
+      )
       await db.scheduling.put(choice === "local" ? local : remoteRow)
     } else {
       await db.scheduling.put(pick === "local" ? local : remoteRow)
@@ -262,19 +271,22 @@ async function syncOneMediaItem(
       const localUrl = mediaPreviewUrl(local)
       const remoteUrl = mediaPreviewUrl(remoteRow)
       try {
-        const choice = await resolveConflictChoice({
-          key: `media:${mediaId}`,
-          entityType: "media",
-          entityId: mediaId,
-          localUpdatedAt: local.updatedAt,
-          remoteUpdatedAt: remoteMeta.updatedAt,
-          localSummary: mediaSummary(local),
-          remoteSummary: mediaSummary(remoteMeta),
-          local,
-          remote: remoteRow,
-          localPreviewUrl: localUrl,
-          remotePreviewUrl: remoteUrl,
-        })
+        const choice = await resolveConflictChoice(
+          {
+            key: `media:${mediaId}`,
+            entityType: "media",
+            entityId: mediaId,
+            localUpdatedAt: local.updatedAt,
+            remoteUpdatedAt: remoteMeta.updatedAt,
+            localSummary: mediaSummary(local),
+            remoteSummary: mediaSummary(remoteMeta),
+            local,
+            remote: remoteRow,
+            localPreviewUrl: localUrl,
+            remotePreviewUrl: remoteUrl,
+          },
+          onConflict,
+        )
         await db.media.put(choice === "local" ? local : remoteRow)
         await uploadMediaBlob(
           storage,
