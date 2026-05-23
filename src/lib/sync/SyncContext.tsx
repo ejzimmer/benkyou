@@ -9,8 +9,9 @@ import {
   type ReactNode,
 } from "react"
 import { useAuth } from "../auth/AuthContext"
-import { getFirestoreDb, getFirebaseStorage } from "../firebase"
+import { getFirebaseStorage } from "../firebase"
 import { SyncConflictModal } from "./SyncConflictModal"
+import { prepareFirestoreForSync } from "./prepareFirestore"
 import { readLastSyncedAt, runFullSync } from "./runSync"
 import {
   clearSyncLog,
@@ -95,13 +96,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     const run = (async () => {
       clearSyncLog()
       syncLog("syncNow invoked", { uid: user.uid })
-      const fs = getFirestoreDb()
       const storage = getFirebaseStorage()
-      if (!fs || !storage) {
-        syncLog("sync aborted: Firebase not ready", {
-          hasFirestore: Boolean(fs),
-          hasStorage: Boolean(storage),
-        })
+      if (!storage) {
+        syncLog("sync aborted: Firebase Storage not ready")
         return
       }
       setSyncing(true)
@@ -110,6 +107,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       conflictNumberRef.current = 0
       setConflictNumber(0)
       try {
+        const fs = await prepareFirestoreForSync(user)
         await runFullSync({
           fs,
           storage,

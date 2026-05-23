@@ -123,8 +123,10 @@ export function SettingsPage() {
         <h2>Sync</h2>
         <p className="muted small">
           Data lives in IndexedDB first; sync pushes/pulls to Firestore when
-          online and signed in. Open the browser console (F12) for detailed{" "}
-          <code>[benkyou sync]</code> logs.
+          online and signed in. A typical first sync finishes in a few seconds;
+          large decks can take up to a minute. Open the browser console (F12) for{" "}
+          <code>[benkyou sync]</code> logs — if a step stays on “→ start” for
+          more than 30s, check network, ad blockers, or Firebase rules.
         </p>
         <button
           type="button"

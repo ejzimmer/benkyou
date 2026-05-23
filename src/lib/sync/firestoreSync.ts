@@ -2,16 +2,27 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDocs,
+  getDocsFromServer,
   setDoc,
   writeBatch,
   type Firestore,
+  type Query,
 } from "firebase/firestore"
 import type { Card, Deck } from "../../domain/types"
 import type { MediaRow, SchedulingRow } from "../db/schema"
 import { db } from "../db/schema"
 import type { RemoteMediaMeta, Tombstone } from "./syncTypes"
 import { syncLog, syncLogTimed } from "./syncLog"
+import { withSyncTimeout } from "./prepareFirestore"
+
+function getDocsFromServerTimed(
+  label: string,
+  query: Query,
+): Promise<Awaited<ReturnType<typeof getDocsFromServer>>> {
+  return syncLogTimed(label, () =>
+    withSyncTimeout(getDocsFromServer(query), label),
+  )
+}
 
 const BATCH_SIZE = 400
 
@@ -41,16 +52,19 @@ export async function fetchRemoteSnapshot(
   syncLog("fetchRemoteSnapshot", { uid })
   const [snapDecks, snapCards, snapSched, snapTombs, snapMedia] =
     await Promise.all([
-      syncLogTimed("Firestore getDocs decks", () => getDocs(decksCol(fs, uid))),
-      syncLogTimed("Firestore getDocs cards", () => getDocs(cardsCol(fs, uid))),
-      syncLogTimed("Firestore getDocs scheduling", () =>
-        getDocs(schedCol(fs, uid)),
+      getDocsFromServerTimed("Firestore getDocs decks", decksCol(fs, uid)),
+      getDocsFromServerTimed("Firestore getDocs cards", cardsCol(fs, uid)),
+      getDocsFromServerTimed(
+        "Firestore getDocs scheduling",
+        schedCol(fs, uid),
       ),
-      syncLogTimed("Firestore getDocs tombstones", () =>
-        getDocs(tombstonesCol(fs, uid)),
+      getDocsFromServerTimed(
+        "Firestore getDocs tombstones",
+        tombstonesCol(fs, uid),
       ),
-      syncLogTimed("Firestore getDocs media meta", () =>
-        getDocs(mediaMetaCol(fs, uid)),
+      getDocsFromServerTimed(
+        "Firestore getDocs media meta",
+        mediaMetaCol(fs, uid),
       ),
     ])
 
