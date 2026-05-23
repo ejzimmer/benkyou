@@ -126,7 +126,7 @@ export function CardEditPage() {
 
   async function onPickImage(files: FileList | null) {
     if (!files?.length) return
-    const id = await saveImageBlob(files[0])
+    const id = await saveImageBlob(files[0], user)
     if (kind === "vocabulary") {
       setVocab((v) => ({ ...v, images: [...v.images, id] }))
     } else {

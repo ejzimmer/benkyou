@@ -1,18 +1,64 @@
-import { getBytes, ref, uploadBytes } from "firebase/storage"
+import {
+  deleteObject,
+  getBlob,
+  getBytes,
+  ref,
+  uploadBytes,
+  type FirebaseStorage,
+} from "firebase/storage"
 import type { Card } from "../../domain/types"
+import type { MediaRow } from "../db/schema"
 import { db } from "../db/schema"
 import { getFirebaseStorage } from "../firebase"
+import type { RemoteMediaMeta } from "./syncTypes"
 
-function mediaStoragePath(uid: string, mediaId: string): string {
+export function mediaStoragePath(uid: string, mediaId: string): string {
   return `users/${uid}/media/${mediaId}`
 }
 
+export async function uploadMediaBlob(
+  storage: FirebaseStorage,
+  uid: string,
+  row: MediaRow,
+): Promise<void> {
+  const path = mediaStoragePath(uid, row.id)
+  await uploadBytes(ref(storage, path), row.blob, {
+    contentType: row.mimeType,
+  })
+}
+
+export async function downloadMediaBlob(
+  storage: FirebaseStorage,
+  uid: string,
+  meta: RemoteMediaMeta,
+): Promise<MediaRow> {
+  const path = mediaStoragePath(uid, meta.id)
+  const blob = await getBlob(ref(storage, path))
+  return {
+    id: meta.id,
+    blob,
+    mimeType: meta.mimeType,
+    updatedAt: meta.updatedAt,
+  }
+}
+
+export async function deleteMediaBlob(
+  storage: FirebaseStorage,
+  uid: string,
+  mediaId: string,
+): Promise<void> {
+  await deleteObject(ref(storage, mediaStoragePath(uid, mediaId)))
+}
+
+export function mediaPreviewUrl(row: MediaRow): string {
+  return URL.createObjectURL(row.blob)
+}
+
+/** Used by Anki / bulk import after local save */
 export function collectMediaIdsFromCards(cards: Card[]): string[] {
   const ids = new Set<string>()
   for (const card of cards) {
-    const list =
-      card.kind === "vocabulary" ? card.content.images : card.content.images
-    for (const id of list) ids.add(id)
+    for (const id of card.content.images) ids.add(id)
   }
   return [...ids]
 }
@@ -45,7 +91,6 @@ export async function downloadMediaFromRemote(
   }
 }
 
-/** Push local media blobs referenced by cards (skips already uploaded when present locally). */
 export async function pushLocalMediaToRemote(
   uid: string,
   cards: Card[],
@@ -56,11 +101,10 @@ export async function pushLocalMediaToRemote(
   for (const mediaId of ids) {
     const row = await db.media.get(mediaId)
     if (!row) continue
-    await uploadMediaToRemote(uid, mediaId, row.blob)
+    await uploadMediaBlob(storage, uid, row)
   }
 }
 
-/** Pull remote blobs for media ids used on cards but missing locally. */
 export async function pullRemoteMediaToLocal(
   uid: string,
   cards: Card[],
@@ -68,6 +112,7 @@ export async function pullRemoteMediaToLocal(
   const storage = getFirebaseStorage()
   if (!storage) return
   const ids = collectMediaIdsFromCards(cards)
+  const now = Date.now()
   for (const mediaId of ids) {
     const local = await db.media.get(mediaId)
     if (local) continue
@@ -77,6 +122,7 @@ export async function pullRemoteMediaToLocal(
       id: mediaId,
       blob,
       mimeType: blob.type || "application/octet-stream",
+      updatedAt: now,
     })
   }
 }

@@ -35,6 +35,7 @@ export async function applyBulkImport(
           id: item.id,
           blob: new Blob([bytes], { type: item.mimeType }),
           mimeType: item.mimeType,
+          updatedAt: Date.now(),
         })
       }
       for (const card of payload.cards) {

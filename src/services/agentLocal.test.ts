@@ -24,7 +24,7 @@ describe("agentLocal", () => {
   })
 
   it("agentListDue includes card when scheduling is due", async () => {
-    const deck = await createDeck("T")
+    const deck = await createDeck("T", null)
     await createVocabularyCard(
       deck.id,
       {

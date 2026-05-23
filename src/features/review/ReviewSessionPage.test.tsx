@@ -25,7 +25,7 @@ describe("ReviewSessionPage", () => {
   it("shows a due card and advances after grading", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T")
+    const deck = await createDeck("T", null)
     await createVocabularyCard(
       deck.id,
       {
@@ -68,7 +68,7 @@ describe("ReviewSessionPage", () => {
   it("after incorrect, does not flash next card answer during queue rotation gap", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T")
+    const deck = await createDeck("T", null)
     await createVocabularyCard(
       deck.id,
       {
