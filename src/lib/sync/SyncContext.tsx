@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react"
@@ -25,21 +26,33 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [lastError, setLastError] = useState<string | null>(null)
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
 
+  const syncInFlightRef = useRef<Promise<void> | null>(null)
+
   const syncNow = useCallback(async () => {
     if (offlineOnly || !user) return
-    const fs = getFirestoreDb()
-    if (!fs) return
-    setSyncing(true)
-    setLastError(null)
-    try {
-      await pullRemoteToLocal(fs, user.uid)
-      await pushLocalToRemote(fs, user.uid)
-      setLastSyncedAt(Date.now())
-    } catch (e) {
-      setLastError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setSyncing(false)
-    }
+    if (syncInFlightRef.current) return syncInFlightRef.current
+
+    const run = (async () => {
+      const fs = getFirestoreDb()
+      if (!fs) return
+      setSyncing(true)
+      setLastError(null)
+      try {
+        await pullRemoteToLocal(fs, user.uid)
+        await pushLocalToRemote(fs, user.uid)
+        setLastSyncedAt(Date.now())
+      } catch (e) {
+        setLastError(e instanceof Error ? e.message : String(e))
+        throw e
+      } finally {
+        setSyncing(false)
+      }
+    })()
+
+    syncInFlightRef.current = run.finally(() => {
+      syncInFlightRef.current = null
+    })
+    return syncInFlightRef.current
   }, [offlineOnly, user])
 
   const value = useMemo(

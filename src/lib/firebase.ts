@@ -1,9 +1,5 @@
 import { initializeApp, type FirebaseApp } from "firebase/app"
-import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
-} from "firebase/firestore"
+import { getFirestore, type Firestore } from "firebase/firestore"
 import { getStorage, type FirebaseStorage } from "firebase/storage"
 
 const env: ImportMetaEnv =
@@ -23,6 +19,8 @@ export function isFirebaseConfigured(): boolean {
 }
 
 let appInstance: FirebaseApp | null = null
+let firestoreInstance: Firestore | null = null
+let storageInstance: FirebaseStorage | null = null
 
 export function getFirebaseApp(): FirebaseApp | null {
   if (!isFirebaseConfigured()) return null
@@ -30,18 +28,23 @@ export function getFirebaseApp(): FirebaseApp | null {
   return appInstance
 }
 
-export function getFirestoreDb() {
+/** One Firestore instance per app — do not call initializeFirestore() repeatedly. */
+export function getFirestoreDb(): Firestore | null {
   const app = getFirebaseApp()
   if (!app) return null
-  return initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager(),
-    }),
-  })
+  if (!firestoreInstance) firestoreInstance = getFirestore(app)
+  return firestoreInstance
 }
 
 export function getFirebaseStorage(): FirebaseStorage | null {
   const app = getFirebaseApp()
   if (!app || !firebaseConfig.storageBucket) return null
-  return getStorage(app)
+  if (!storageInstance) storageInstance = getStorage(app)
+  return storageInstance
+}
+
+export function warmFirebaseClients(): void {
+  if (!isFirebaseConfigured()) return
+  getFirestoreDb()
+  getFirebaseStorage()
 }

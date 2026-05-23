@@ -21,7 +21,7 @@ export function App() {
     if (offlineOnly) return
     if (syncedUidRef.current === user.uid) return
     syncedUidRef.current = user.uid
-    void syncNow()
+    void syncNow().catch(() => {})
   }, [offlineOnly, user, syncNow])
 
   if (loading) {
