@@ -11,6 +11,7 @@ import {
   importBulkPayload,
   parseAnkiPackageFile,
 } from "../../services/ankiImport"
+import { BUILD_LABEL } from "../../lib/buildInfo"
 import { AnkiImportGapReview } from "./AnkiImportGapReview"
 
 export function SettingsPage() {
@@ -191,6 +192,10 @@ export function SettingsPage() {
         {importMsg && <p className="muted">{importMsg}</p>}
         {importErr && <p className="error">{importErr}</p>}
       </section>
+
+      <p className="muted small" title="If this time is older than the latest GitHub deploy, hard-refresh or clear site data.">
+        App build: {BUILD_LABEL}
+      </p>
     </div>
   )
 }
