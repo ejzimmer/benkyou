@@ -10,6 +10,7 @@ import type { Card } from "../../domain/types"
 import type { MediaRow } from "../db/schema"
 import { db } from "../db/schema"
 import { getFirebaseStorage } from "../firebase"
+import { withStorageTimeout } from "./storageTimeout"
 import type { RemoteMediaMeta } from "./syncTypes"
 
 export function mediaStoragePath(uid: string, mediaId: string): string {
@@ -22,9 +23,11 @@ export async function uploadMediaBlob(
   row: MediaRow,
 ): Promise<void> {
   const path = mediaStoragePath(uid, row.id)
-  await uploadBytes(ref(storage, path), row.blob, {
-    contentType: row.mimeType,
-  })
+  await withStorageTimeout(`upload ${row.id}`, () =>
+    uploadBytes(ref(storage, path), row.blob, {
+      contentType: row.mimeType,
+    }),
+  )
 }
 
 export async function downloadMediaBlob(
@@ -33,7 +36,9 @@ export async function downloadMediaBlob(
   meta: RemoteMediaMeta,
 ): Promise<MediaRow> {
   const path = mediaStoragePath(uid, meta.id)
-  const blob = await getBlob(ref(storage, path))
+  const blob = await withStorageTimeout(`download ${meta.id}`, () =>
+    getBlob(ref(storage, path)),
+  )
   return {
     id: meta.id,
     blob,
@@ -105,9 +110,11 @@ export async function uploadMediaToRemote(
 ): Promise<void> {
   const storage = getFirebaseStorage()
   if (!storage) return
-  await uploadBytes(ref(storage, mediaStoragePath(uid, mediaId)), blob, {
-    contentType: blob.type || "application/octet-stream",
-  })
+  await withStorageTimeout(`upload ${mediaId}`, () =>
+    uploadBytes(ref(storage, mediaStoragePath(uid, mediaId)), blob, {
+      contentType: blob.type || "application/octet-stream",
+    }),
+  )
 }
 
 export async function downloadMediaFromRemote(
@@ -117,7 +124,9 @@ export async function downloadMediaFromRemote(
   const storage = getFirebaseStorage()
   if (!storage) return null
   try {
-    const bytes = await getBytes(ref(storage, mediaStoragePath(uid, mediaId)))
+    const bytes = await withStorageTimeout(`download ${mediaId}`, () =>
+      getBytes(ref(storage, mediaStoragePath(uid, mediaId))),
+    )
     const row = await db.media.get(mediaId)
     const mimeType = row?.mimeType ?? "application/octet-stream"
     return new Blob([bytes], { type: mimeType })
