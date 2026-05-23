@@ -1,5 +1,6 @@
 import type { Card, Deck } from "../../domain/types"
 import type { MediaRow, SchedulingRow } from "../db/schema"
+import { stableCompareJson } from "./firestoreData"
 import type { RemoteMediaMeta, SyncConflictChoice, Tombstone } from "./syncTypes"
 
 export function tombstoneId(
@@ -9,41 +10,41 @@ export function tombstoneId(
   return `${entityType}:${entityId}`
 }
 
-export function stableDeckPayload(deck: Deck): string {
-  return JSON.stringify({ name: deck.name })
+function deckPayload(deck: Deck) {
+  return { name: deck.name }
 }
 
-export function stableCardPayload(card: Card): string {
-  return JSON.stringify({
+function cardPayload(card: Card) {
+  return {
     deckId: card.deckId,
     kind: card.kind,
     content: card.content,
     meta: card.meta ?? null,
-  })
+  }
 }
 
-export function stableSchedulingPayload(row: SchedulingRow): string {
-  return JSON.stringify({
+function schedulingPayload(row: SchedulingRow) {
+  return {
     cardId: row.cardId,
     modeId: row.modeId,
     fsrs: row.fsrs,
     due: row.due,
-  })
+  }
 }
 
 export function deckChanged(local: Deck, remote: Deck): boolean {
-  return stableDeckPayload(local) !== stableDeckPayload(remote)
+  return !stableCompareJson(deckPayload(local), deckPayload(remote))
 }
 
 export function cardChanged(local: Card, remote: Card): boolean {
-  return stableCardPayload(local) !== stableCardPayload(remote)
+  return !stableCompareJson(cardPayload(local), cardPayload(remote))
 }
 
 export function schedulingChanged(
   local: SchedulingRow,
   remote: SchedulingRow,
 ): boolean {
-  return stableSchedulingPayload(local) !== stableSchedulingPayload(remote)
+  return !stableCompareJson(schedulingPayload(local), schedulingPayload(remote))
 }
 
 export function resolveByTimestamp<T extends { updatedAt: number }>(
@@ -52,7 +53,9 @@ export function resolveByTimestamp<T extends { updatedAt: number }>(
   lastSyncedAt: number | null,
   changed: boolean,
 ): SyncConflictChoice | "conflict" {
-  if (!changed) return "local"
+  if (!changed) {
+    return remote.updatedAt >= local.updatedAt ? "remote" : "local"
+  }
   if (lastSyncedAt == null) {
     return remote.updatedAt >= local.updatedAt ? "remote" : "local"
   }
@@ -62,6 +65,26 @@ export function resolveByTimestamp<T extends { updatedAt: number }>(
   if (remoteChanged) return "remote"
   if (localChanged) return "local"
   return remote.updatedAt >= local.updatedAt ? "remote" : "local"
+}
+
+/** Pick a side without prompting when payloads match (only timestamps / metadata differ). */
+export function resolveEntityMerge<T extends { updatedAt: number }>(
+  local: T,
+  remote: T,
+  lastSyncedAt: number | null,
+  payloadEqual: boolean,
+): SyncConflictChoice | "conflict" {
+  if (payloadEqual) {
+    return remote.updatedAt >= local.updatedAt ? "remote" : "local"
+  }
+  return resolveByTimestamp(local, remote, lastSyncedAt, true)
+}
+
+export function summariesLookIdentical(
+  localSummary: string,
+  remoteSummary: string,
+): boolean {
+  return localSummary.trim() === remoteSummary.trim()
 }
 
 export function deckSummary(deck: Deck): string {

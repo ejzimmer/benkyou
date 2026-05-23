@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import type { Deck } from "../../domain/types"
-import { resolveByTimestamp } from "./syncCompare"
+import type { Card, Deck } from "../../domain/types"
+import { cardChanged, resolveByTimestamp, resolveEntityMerge } from "./syncCompare"
 
 describe("resolveByTimestamp", () => {
   const deck = (updatedAt: number): Deck => ({
@@ -28,5 +28,40 @@ describe("resolveByTimestamp", () => {
 
   it("picks newer on first sync without asking", () => {
     expect(resolveByTimestamp(deck(100), deck(200), null, true)).toBe("remote")
+  })
+
+  it("does not conflict when payloads match but both timestamps moved", () => {
+    expect(resolveEntityMerge(deck(2000), deck(3000), 1000, true)).toBe("remote")
+  })
+})
+
+describe("cardChanged", () => {
+  const base: Card = {
+    id: "c1",
+    deckId: "d1",
+    kind: "vocabulary",
+    updatedAt: 1,
+    content: {
+      wordJa: "猫",
+      definitionsEn: ["cat"],
+      images: [],
+      exampleSentences: [],
+      synonymsJa: [],
+    },
+  }
+
+  it("ignores undefined optional fields vs omitted fields", () => {
+    const withMeta = { ...base, meta: undefined }
+    const withoutMeta = { ...base }
+    expect(cardChanged(withMeta, withoutMeta)).toBe(false)
+  })
+
+  it("ignores undefined reading vs omitted reading", () => {
+    const a = {
+      ...base,
+      content: { ...base.content, reading: undefined },
+    }
+    const b = { ...base }
+    expect(cardChanged(a, b)).toBe(false)
   })
 })

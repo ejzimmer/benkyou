@@ -55,8 +55,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const resolveRef = useRef<((choice: SyncConflictChoice) => void) | null>(null)
+  const applyAllChoiceRef = useRef<SyncConflictChoice | null>(null)
 
   const onConflict = useCallback((conflict: SyncConflict) => {
+    const preset = applyAllChoiceRef.current
+    if (preset) {
+      syncLog("bulk conflict choice", {
+        choice: preset,
+        entityType: conflict.entityType,
+        entityId: conflict.entityId,
+      })
+      return Promise.resolve(preset)
+    }
     return new Promise<SyncConflictChoice>((resolve) => {
       syncLog("waiting for user conflict choice", {
         entityType: conflict.entityType,
@@ -71,14 +81,22 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const handleConflictChoice = useCallback((choice: SyncConflictChoice) => {
-    syncLog("user resolved conflict", { choice })
-    setActiveConflict(null)
-    setSyncPhase("running")
-    setSyncing(true)
-    resolveRef.current?.(choice)
-    resolveRef.current = null
-  }, [])
+  const handleConflictChoice = useCallback(
+    (choice: SyncConflictChoice, applyToAllRemaining: boolean) => {
+      if (applyToAllRemaining) {
+        applyAllChoiceRef.current = choice
+        syncLog("user chose apply to all remaining conflicts", { choice })
+      } else {
+        syncLog("user resolved conflict", { choice })
+      }
+      setActiveConflict(null)
+      setSyncPhase("running")
+      setSyncing(true)
+      resolveRef.current?.(choice)
+      resolveRef.current = null
+    },
+    [],
+  )
 
   const syncInFlightRef = useRef<Promise<void> | null>(null)
 
@@ -109,6 +127,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setLastError(null)
       conflictNumberRef.current = 0
       setConflictNumber(0)
+      applyAllChoiceRef.current = null
       try {
         await runFullSync({
           fs,

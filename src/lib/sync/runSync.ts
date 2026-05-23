@@ -8,9 +8,10 @@ import {
   deckSummary,
   mediaChanged,
   mediaSummary,
-  resolveByTimestamp,
+  resolveEntityMerge,
   schedulingChanged,
   schedulingSummary,
+  summariesLookIdentical,
   mediaBlobDigest,
 } from "./syncCompare"
 import {
@@ -28,7 +29,27 @@ import { runWithConcurrency } from "./runWithConcurrency"
 import { mergeTombstone } from "./tombstoneMerge"
 import { pruneOrphanMediaTombstones } from "./tombstones"
 import { tombstoneId } from "./syncCompare"
-import type { SyncConflict, SyncConflictChoice, Tombstone } from "./syncTypes"
+import type {
+  SyncConflict,
+  SyncConflictChoice,
+  Tombstone,
+} from "./syncTypes"
+
+async function resolveConflictChoice(
+  conflict: SyncConflict,
+  onConflict: (c: SyncConflict) => Promise<SyncConflictChoice>,
+): Promise<SyncConflictChoice> {
+  if (summariesLookIdentical(conflict.localSummary, conflict.remoteSummary)) {
+    syncLog("auto-resolved conflict (identical summary)", {
+      entityType: conflict.entityType,
+      entityId: conflict.entityId,
+    })
+    return conflict.localUpdatedAt >= conflict.remoteUpdatedAt
+      ? "local"
+      : "remote"
+  }
+  return onConflict(conflict)
+}
 import { LAST_SYNCED_AT_KEY } from "./syncTypes"
 import { syncLog, syncLogTimed } from "./syncLog"
 
@@ -100,11 +121,15 @@ async function collectEntityConflicts(
     if (await db.tombstones.get(tombstoneId("deck", local.id))) continue
     const remoteDeck = remote.decks.get(local.id)
     if (!remoteDeck) continue
-    const changed = deckChanged(local, remoteDeck)
-    const pick = resolveByTimestamp(local, remoteDeck, lastSyncedAt, changed)
+    const pick = resolveEntityMerge(
+      local,
+      remoteDeck,
+      lastSyncedAt,
+      !deckChanged(local, remoteDeck),
+    )
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "deck", entityId: local.id })
-      const choice = await onConflict({
+      const choice = await resolveConflictChoice({
         key: `deck:${local.id}`,
         entityType: "deck",
         entityId: local.id,
@@ -131,11 +156,15 @@ async function collectEntityConflicts(
     if (await db.tombstones.get(tombstoneId("card", local.id))) continue
     const remoteCard = remote.cards.get(local.id)
     if (!remoteCard) continue
-    const changed = cardChanged(local, remoteCard)
-    const pick = resolveByTimestamp(local, remoteCard, lastSyncedAt, changed)
+    const pick = resolveEntityMerge(
+      local,
+      remoteCard,
+      lastSyncedAt,
+      !cardChanged(local, remoteCard),
+    )
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "card", entityId: local.id })
-      const choice = await onConflict({
+      const choice = await resolveConflictChoice({
         key: `card:${local.id}`,
         entityType: "card",
         entityId: local.id,
@@ -162,14 +191,18 @@ async function collectEntityConflicts(
     if (await db.tombstones.get(tombstoneId("scheduling", local.id))) continue
     const remoteRow = remote.scheduling.get(local.id)
     if (!remoteRow) continue
-    const changed = schedulingChanged(local, remoteRow)
-    const pick = resolveByTimestamp(local, remoteRow, lastSyncedAt, changed)
+    const pick = resolveEntityMerge(
+      local,
+      remoteRow,
+      lastSyncedAt,
+      !schedulingChanged(local, remoteRow),
+    )
     if (pick === "conflict") {
       syncLog("merge conflict", {
         entityType: "scheduling",
         entityId: local.id,
       })
-      const choice = await onConflict({
+      const choice = await resolveConflictChoice({
         key: `scheduling:${local.id}`,
         entityType: "scheduling",
         entityId: local.id,
@@ -218,19 +251,18 @@ async function syncOneMediaItem(
       return
     }
     const remoteDigest = await mediaBlobDigest(remoteRow.blob)
-    const changed = mediaChanged(local, remoteMeta, localDigest, remoteDigest)
-    const pick = resolveByTimestamp(
+    const pick = resolveEntityMerge(
       { updatedAt: local.updatedAt },
       { updatedAt: remoteMeta.updatedAt },
       lastSyncedAt,
-      changed,
+      !mediaChanged(local, remoteMeta, localDigest, remoteDigest),
     )
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "media", entityId: mediaId })
       const localUrl = mediaPreviewUrl(local)
       const remoteUrl = mediaPreviewUrl(remoteRow)
       try {
-        const choice = await onConflict({
+        const choice = await resolveConflictChoice({
           key: `media:${mediaId}`,
           entityType: "media",
           entityId: mediaId,
