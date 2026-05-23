@@ -43,12 +43,32 @@ export async function downloadMediaBlob(
 }
 
 export function isStorageObjectNotFound(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "storage/object-not-found"
-  )
+  if (typeof error === "object" && error !== null) {
+    const code =
+      "code" in error ? String((error as { code: string }).code) : ""
+    if (
+      code === "storage/object-not-found" ||
+      code === "storage/not-found"
+    ) {
+      return true
+    }
+    if ("status_" in error && (error as { status_: number }).status_ === 404) {
+      return true
+    }
+    if (
+      "serverResponse" in error &&
+      typeof (error as { serverResponse: unknown }).serverResponse ===
+        "object" &&
+      (error as { serverResponse: { status?: number } }).serverResponse
+        ?.status === 404
+    ) {
+      return true
+    }
+  }
+  if (error instanceof Error) {
+    return /object-not-found|not-found|404/i.test(error.message)
+  }
+  return false
 }
 
 /** Deletes the Storage blob; missing objects are treated as success. */

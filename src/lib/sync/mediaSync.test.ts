@@ -8,6 +8,10 @@ describe("isStorageObjectNotFound", () => {
     )
   })
 
+  it("matches 404 status on Storage errors", () => {
+    expect(isStorageObjectNotFound({ code: "x", status_: 404 })).toBe(true)
+  })
+
   it("rejects other errors", () => {
     expect(isStorageObjectNotFound({ code: "storage/unauthorized" })).toBe(
       false,

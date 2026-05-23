@@ -184,6 +184,12 @@ export async function pushLocalToRemote(
       deleteOps.push(doc(mediaMetaCol(fs, uid), id))
     }
   }
+  const localTombIds = new Set(localTombs.map((t) => t.id))
+  for (const id of remoteSnapshot.tombstones.keys()) {
+    if (!localTombIds.has(id)) {
+      deleteOps.push(doc(tombstonesCol(fs, uid), id))
+    }
+  }
 
   syncLog("pushLocalToRemote deletes", { count: deleteOps.length })
   for (let i = 0; i < deleteOps.length; i += BATCH_SIZE) {
