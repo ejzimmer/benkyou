@@ -16,11 +16,26 @@ Cloud sync uses the existing Firebase project:
 
 Security rules for Firestore live in [`firestore.rules`](../firestore.rules) at the repo root. Deploy them after changes:
 
+From the repo root (requires [Node 22+](README.md)):
+
 ```bash
+npm install
+npm run firebase:login
+npm run firebase:deploy-rules
+```
+
+The CLI npm package is **`firebase-tools`** (command name `firebase`). Do **not** run `npx firebase login` — that is the web SDK package and will fail with “could not determine executable to run”.
+
+Without installing in the project:
+
+```bash
+npx firebase-tools login
 npx firebase-tools deploy --only firestore:rules,storage --project benkyou-c1a8b
 ```
 
-(Requires Firebase CLI login: `npx firebase-tools login`.)
+Or install the CLI globally once: `npm install -g firebase-tools`, then `firebase login` and `firebase deploy …`.
+
+**No CLI:** In the [Firebase Console](https://console.firebase.google.com/project/benkyou-c1a8b/firestore/rules) you can paste the contents of `firestore.rules` under Firestore → Rules and publish manually (Storage rules similarly under Storage → Rules).
 
 ## One-time console setup
 
