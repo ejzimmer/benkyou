@@ -37,19 +37,22 @@ export type RemoteSnapshot = {
 export async function fetchRemoteSnapshot(
   fs: Firestore,
   uid: string,
+  phase = "pull",
 ): Promise<RemoteSnapshot> {
-  syncLog("fetchRemoteSnapshot", { uid })
+  syncLog("fetchRemoteSnapshot", { uid, phase })
+  const label = (collection: string) =>
+    `Firestore getDocs ${collection} (${phase})`
   const [snapDecks, snapCards, snapSched, snapTombs, snapMedia] =
     await Promise.all([
-      syncLogTimed("Firestore getDocs decks", () => getDocs(decksCol(fs, uid))),
-      syncLogTimed("Firestore getDocs cards", () => getDocs(cardsCol(fs, uid))),
-      syncLogTimed("Firestore getDocs scheduling", () =>
+      syncLogTimed(label("decks"), () => getDocs(decksCol(fs, uid))),
+      syncLogTimed(label("cards"), () => getDocs(cardsCol(fs, uid))),
+      syncLogTimed(label("scheduling"), () =>
         getDocs(schedCol(fs, uid)),
       ),
-      syncLogTimed("Firestore getDocs tombstones", () =>
+      syncLogTimed(label("tombstones"), () =>
         getDocs(tombstonesCol(fs, uid)),
       ),
-      syncLogTimed("Firestore getDocs media meta", () =>
+      syncLogTimed(label("media meta"), () =>
         getDocs(mediaMetaCol(fs, uid)),
       ),
     ])
@@ -103,6 +106,7 @@ async function commitBatch(
 export async function pushLocalToRemote(
   fs: Firestore,
   uid: string,
+  remote?: RemoteSnapshot,
 ): Promise<void> {
   syncLog("pushLocalToRemote", { uid })
   const [localDecks, localCards, localSched, localTombs, localMedia] =
@@ -150,29 +154,31 @@ export async function pushLocalToRemote(
   const tombstoned = new Set(localTombs.map((t) => t.id))
 
   const deleteOps: ReturnType<typeof doc>[] = []
-  const remote = await syncLogTimed("fetchRemoteSnapshot (for deletes)", () =>
-    fetchRemoteSnapshot(fs, uid),
-  )
+  const remoteSnapshot =
+    remote ??
+    (await syncLogTimed("fetchRemoteSnapshot (push-deletes)", () =>
+      fetchRemoteSnapshot(fs, uid, "push-deletes"),
+    ))
 
-  for (const id of remote.decks.keys()) {
+  for (const id of remoteSnapshot.decks.keys()) {
     const tid = `deck:${id}`
     if (!localDecks.some((d) => d.id === id) || tombstoned.has(tid)) {
       deleteOps.push(doc(decksCol(fs, uid), id))
     }
   }
-  for (const id of remote.cards.keys()) {
+  for (const id of remoteSnapshot.cards.keys()) {
     const tid = `card:${id}`
     if (!localCards.some((c) => c.id === id) || tombstoned.has(tid)) {
       deleteOps.push(doc(cardsCol(fs, uid), id))
     }
   }
-  for (const id of remote.scheduling.keys()) {
+  for (const id of remoteSnapshot.scheduling.keys()) {
     const tid = `scheduling:${id}`
     if (!localSched.some((s) => s.id === id) || tombstoned.has(tid)) {
       deleteOps.push(doc(schedCol(fs, uid), id))
     }
   }
-  for (const id of remote.mediaMeta.keys()) {
+  for (const id of remoteSnapshot.mediaMeta.keys()) {
     const tid = `media:${id}`
     if (!localMedia.some((m) => m.id === id) || tombstoned.has(tid)) {
       deleteOps.push(doc(mediaMetaCol(fs, uid), id))
