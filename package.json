@@ -10,7 +10,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "firebase:login": "firebase login",
+    "firebase:deploy-rules": "firebase deploy --only firestore:rules,storage --project benkyou-c1a8b"
   },
   "dependencies": {
     "dexie": "^4.0.10",
@@ -34,6 +36,7 @@
     "@types/sql.js": "^1.4.11",
     "@vitejs/plugin-react": "^4.3.4",
     "dexie-react-hooks": "^1.1.7",
+    "firebase-tools": "^14.0.0",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
