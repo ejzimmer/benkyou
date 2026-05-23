@@ -52,6 +52,8 @@ export type Tombstone = {
   entityType: SyncEntityType
   entityId: string
   deletedAt: number
+  /** Set after Storage object delete succeeded or was already absent. */
+  storagePurgedAt?: number
 }
 
 export type RemoteMediaMeta = {

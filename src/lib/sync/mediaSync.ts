@@ -42,12 +42,27 @@ export async function downloadMediaBlob(
   }
 }
 
+export function isStorageObjectNotFound(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: string }).code === "storage/object-not-found"
+  )
+}
+
+/** Deletes the Storage blob; missing objects are treated as success. */
 export async function deleteMediaBlob(
   storage: FirebaseStorage,
   uid: string,
   mediaId: string,
 ): Promise<void> {
-  await deleteObject(ref(storage, mediaStoragePath(uid, mediaId)))
+  try {
+    await deleteObject(ref(storage, mediaStoragePath(uid, mediaId)))
+  } catch (e) {
+    if (isStorageObjectNotFound(e)) return
+    throw e
+  }
 }
 
 export function mediaPreviewUrl(row: MediaRow): string {

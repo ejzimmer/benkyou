@@ -19,11 +19,11 @@ import {
   type RemoteSnapshot,
 } from "./firestoreSync"
 import {
-  deleteMediaBlob,
   downloadMediaBlob,
   mediaPreviewUrl,
   uploadMediaBlob,
 } from "./mediaSync"
+import { purgeTombstonedMediaStorage } from "./purgeMediaStorage"
 import { tombstoneId } from "./syncCompare"
 import type { SyncConflict, SyncConflictChoice, Tombstone } from "./syncTypes"
 import { LAST_SYNCED_AT_KEY } from "./syncTypes"
@@ -280,13 +280,6 @@ async function syncMedia(
     }
   }
 
-  for (const t of await db.tombstones.where("entityType").equals("media").toArray()) {
-    try {
-      await deleteMediaBlob(storage, uid, t.entityId)
-    } catch {
-      /* already gone */
-    }
-  }
 }
 
 export function readLastSyncedAt(): number | null {
@@ -306,7 +299,7 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
   const lastSyncedAt = readLastSyncedAt()
 
   const remote = await syncLogTimed("pull remote snapshot", () =>
-    fetchRemoteSnapshot(fs, uid),
+    fetchRemoteSnapshot(fs, uid, "sync"),
   )
   const localTombs = await db.tombstones.toArray()
 
@@ -317,14 +310,13 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
     collectEntityConflicts(lastSyncedAt, remote, onConflict),
   )
 
-  const remoteAfter = await syncLogTimed("pull remote snapshot (post-merge)", () =>
-    fetchRemoteSnapshot(fs, uid),
-  )
   await syncLogTimed("sync media blobs", () =>
-    syncMedia(storage, uid, remoteAfter, lastSyncedAt, onConflict),
+    syncMedia(storage, uid, remote, lastSyncedAt, onConflict),
   )
 
-  await syncLogTimed("push local to remote", () => pushLocalToRemote(fs, uid))
+  await syncLogTimed("push local to remote", () =>
+    pushLocalToRemote(fs, uid, remote),
+  )
 
   const localMedia = await db.media.toArray()
   syncLog("upload media pass", { count: localMedia.length })
@@ -341,6 +333,10 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
       })
     }
   }
+
+  await syncLogTimed("purge tombstoned media in Storage", () =>
+    purgeTombstonedMediaStorage(storage, uid),
+  )
 
   writeLastSyncedAt(Date.now())
   syncLog("runFullSync complete")
@@ -362,14 +358,5 @@ export async function runPushOnly(
       /* ignore */
     }
   }
-  for (const t of await db.tombstones
-    .where("entityType")
-    .equals("media")
-    .toArray()) {
-    try {
-      await deleteMediaBlob(storage, uid, t.entityId)
-    } catch {
-      /* ignore */
-    }
-  }
+  await purgeTombstonedMediaStorage(storage, uid)
 }
