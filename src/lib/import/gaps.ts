@@ -84,16 +84,18 @@ function mergeVocabularyDraft(
     ?.split("\n")
     .map((s) => s.trim())
     .filter(Boolean)
+  const reading =
+    draft.reading?.trim() ||
+    (isKanaOnly(content.wordJa) ? undefined : content.reading)
   const next: VocabularyCardContent = {
     ...content,
-    reading: draft.reading?.trim() || content.reading,
     definitionsEn:
       englishLines && englishLines.length > 0
         ? englishLines
         : content.definitionsEn,
     images: [...content.images, ...newImageIds],
+    ...(reading !== undefined ? { reading } : {}),
   }
-  if (isKanaOnly(next.wordJa)) next.reading = undefined
   return next
 }
 
