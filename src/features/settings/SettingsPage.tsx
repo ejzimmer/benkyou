@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
+import { formatSyncLogLine } from "../../lib/sync/syncLog"
 import type { BulkImportPayload } from "../../lib/import/types"
 import type { ImportGapDraft } from "../../lib/import/gaps"
 import {
@@ -14,7 +15,16 @@ import { AnkiImportGapReview } from "./AnkiImportGapReview"
 
 export function SettingsPage() {
   const { user, offlineOnly, loading, signInGoogle, signOut } = useAuth()
-  const { syncNow, syncing, lastError, lastSyncedAt, conflictActive } = useSync()
+  const {
+    syncNow,
+    syncing,
+    syncPhase,
+    syncStatusLabel,
+    syncLog,
+    lastError,
+    lastSyncedAt,
+    conflictActive,
+  } = useSync()
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const [importErr, setImportErr] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
@@ -113,13 +123,14 @@ export function SettingsPage() {
         <h2>Sync</h2>
         <p className="muted small">
           Data lives in IndexedDB first; sync pushes/pulls to Firestore when
-          online and signed in.
+          online and signed in. Open the browser console (F12) for detailed{" "}
+          <code>[benkyou sync]</code> logs.
         </p>
         <button
           type="button"
           className="btn primary"
           disabled={offlineOnly || !user || syncing || conflictActive}
-          onClick={() => syncNow()}
+          onClick={() => void syncNow()}
         >
           {conflictActive
             ? "Resolve conflict…"
@@ -127,12 +138,23 @@ export function SettingsPage() {
               ? "Syncing…"
               : "Sync now"}
         </button>
+        {(syncing || syncPhase === "conflict") && syncStatusLabel && (
+          <p className="muted small">{syncStatusLabel}</p>
+        )}
         {lastSyncedAt && (
           <p className="muted small">
             Last synced: {new Date(lastSyncedAt).toLocaleString()}
           </p>
         )}
         {lastError && <p className="error">{lastError}</p>}
+        {syncLog.length > 0 && (
+          <details className="sync-log-details" open={syncing || syncPhase === "conflict"}>
+            <summary className="muted small">Sync log ({syncLog.length} lines)</summary>
+            <pre className="sync-log-pre small">
+              {syncLog.slice(-24).map((e) => formatSyncLogLine(e)).join("\n")}
+            </pre>
+          </details>
+        )}
       </section>
 
       <section className="panel stack">

@@ -11,6 +11,7 @@ import type { Card, Deck } from "../../domain/types"
 import type { MediaRow, SchedulingRow } from "../db/schema"
 import { db } from "../db/schema"
 import type { RemoteMediaMeta, Tombstone } from "./syncTypes"
+import { syncLog, syncLogTimed } from "./syncLog"
 
 const BATCH_SIZE = 400
 
@@ -37,13 +38,20 @@ export async function fetchRemoteSnapshot(
   fs: Firestore,
   uid: string,
 ): Promise<RemoteSnapshot> {
+  syncLog("fetchRemoteSnapshot", { uid })
   const [snapDecks, snapCards, snapSched, snapTombs, snapMedia] =
     await Promise.all([
-      getDocs(decksCol(fs, uid)),
-      getDocs(cardsCol(fs, uid)),
-      getDocs(schedCol(fs, uid)),
-      getDocs(tombstonesCol(fs, uid)),
-      getDocs(mediaMetaCol(fs, uid)),
+      syncLogTimed("Firestore getDocs decks", () => getDocs(decksCol(fs, uid))),
+      syncLogTimed("Firestore getDocs cards", () => getDocs(cardsCol(fs, uid))),
+      syncLogTimed("Firestore getDocs scheduling", () =>
+        getDocs(schedCol(fs, uid)),
+      ),
+      syncLogTimed("Firestore getDocs tombstones", () =>
+        getDocs(tombstonesCol(fs, uid)),
+      ),
+      syncLogTimed("Firestore getDocs media meta", () =>
+        getDocs(mediaMetaCol(fs, uid)),
+      ),
     ])
 
   const decks = new Map<string, Deck>()
@@ -63,6 +71,14 @@ export async function fetchRemoteSnapshot(
   for (const d of snapMedia.docs)
     mediaMeta.set(d.id, d.data() as RemoteMediaMeta)
 
+  const summary = {
+    decks: decks.size,
+    cards: cards.size,
+    scheduling: scheduling.size,
+    tombstones: tombstones.size,
+    mediaMeta: mediaMeta.size,
+  }
+  syncLog("fetchRemoteSnapshot complete", summary)
   return { decks, cards, scheduling, tombstones, mediaMeta }
 }
 
@@ -88,6 +104,7 @@ export async function pushLocalToRemote(
   fs: Firestore,
   uid: string,
 ): Promise<void> {
+  syncLog("pushLocalToRemote", { uid })
   const [localDecks, localCards, localSched, localTombs, localMedia] =
     await Promise.all([
       db.decks.toArray(),
@@ -121,12 +138,21 @@ export async function pushLocalToRemote(
     })
   }
 
-  await commitBatch(fs, sets)
+  syncLog("pushLocalToRemote upsert batch", {
+    decks: localDecks.length,
+    cards: localCards.length,
+    scheduling: localSched.length,
+    tombstones: localTombs.length,
+    mediaMeta: localMedia.length,
+  })
+  await syncLogTimed("Firestore commit upserts", () => commitBatch(fs, sets))
 
   const tombstoned = new Set(localTombs.map((t) => t.id))
 
   const deleteOps: ReturnType<typeof doc>[] = []
-  const remote = await fetchRemoteSnapshot(fs, uid)
+  const remote = await syncLogTimed("fetchRemoteSnapshot (for deletes)", () =>
+    fetchRemoteSnapshot(fs, uid),
+  )
 
   for (const id of remote.decks.keys()) {
     const tid = `deck:${id}`
@@ -153,11 +179,13 @@ export async function pushLocalToRemote(
     }
   }
 
+  syncLog("pushLocalToRemote deletes", { count: deleteOps.length })
   for (let i = 0; i < deleteOps.length; i += BATCH_SIZE) {
     const batch = writeBatch(fs)
     for (const ref of deleteOps.slice(i, i + BATCH_SIZE)) batch.delete(ref)
-    await batch.commit()
+    await syncLogTimed(`Firestore commit deletes ${i}`, () => batch.commit())
   }
+  syncLog("pushLocalToRemote complete")
 }
 
 export async function upsertDeckRemote(
