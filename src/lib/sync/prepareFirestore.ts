@@ -18,7 +18,7 @@ export function withSyncTimeout<T>(
     const timer = setTimeout(() => {
       reject(
         new Error(
-          `${label} timed out after ${Math.round(ms / 1000)}s. Check network, ad blockers, and Firebase Auth/Firestore rules.`,
+          `${label} timed out after ${Math.round(ms / 1000)}s. Is Cloud Firestore enabled in this Firebase project? (Realtime Database alone is not enough.) Also check network, ad blockers, and firestore.rules.`,
         ),
       )
     }, ms)

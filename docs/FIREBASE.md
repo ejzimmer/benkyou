@@ -12,6 +12,8 @@ Cloud sync uses the existing Firebase project:
 | **Cloud Firestore** | Decks, cards, FSRS scheduling (`users/{uid}/…`) |
 | **Cloud Storage** | Card image blobs at `users/{uid}/media/{mediaId}` |
 
+**Not supported:** [Firebase Realtime Database](https://firebase.google.com/docs/database) (the older JSON tree DB). If your project only has Realtime Database, sync will hang or fail until you **create a Firestore database** in the same project (you can keep both).
+
 Security rules for Firestore live in [`firestore.rules`](../firestore.rules) at the repo root. Deploy them after changes:
 
 ```bash
@@ -24,7 +26,7 @@ npx firebase-tools deploy --only firestore:rules,storage --project benkyou-c1a8b
 
 1. Open the [project overview](https://console.firebase.google.com/project/benkyou-c1a8b/overview).
 2. **Authentication → Sign-in method** — enable **Google** (and add your app’s authorized domains for production, e.g. Netlify URL).
-3. **Firestore Database** — create a database if none exists (production mode is fine; rules restrict access to `request.auth.uid`).
+3. **Firestore Database** (required) — in the console sidebar choose **Firestore Database**, not Realtime Database → **Create database** → pick a region → start in **production mode** (app rules in `firestore.rules` limit access to `request.auth.uid`). An empty database is fine; first sync uploads from the device.
 4. **Project settings → Your apps** — add a **Web** app if you have not already. Copy the `firebaseConfig` object.
 
 ## Local / Netlify environment variables
