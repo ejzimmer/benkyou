@@ -12,6 +12,7 @@ export function App() {
   const { user, offlineOnly, loading } = useAuth()
   const { syncNow } = useSync()
   const syncedUidRef = useRef<string | null>(null)
+  const tabWasHiddenRef = useRef(false)
 
   useEffect(() => {
     if (!user) {
@@ -22,6 +23,22 @@ export function App() {
     if (syncedUidRef.current === user.uid) return
     syncedUidRef.current = user.uid
     void syncNow().catch(() => {})
+  }, [offlineOnly, user, syncNow])
+
+  useEffect(() => {
+    if (!user || offlineOnly) return
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        tabWasHiddenRef.current = true
+        return
+      }
+      if (document.visibilityState === "visible" && tabWasHiddenRef.current) {
+        tabWasHiddenRef.current = false
+        void syncNow().catch(() => {})
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibility)
+    return () => document.removeEventListener("visibilitychange", onVisibility)
   }, [offlineOnly, user, syncNow])
 
   if (loading) {

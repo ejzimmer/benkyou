@@ -31,7 +31,7 @@ describe("review + scheduling (IndexedDB)", () => {
   })
 
   it("creates due rows for each review mode and updates after judgement", async () => {
-    const deck = await createDeck("D")
+    const deck = await createDeck("D", null)
     const card = await createVocabularyCard(
       deck.id,
       {
@@ -79,7 +79,7 @@ describe("review + scheduling (IndexedDB)", () => {
   })
 
   it("undoLastJudgement restores prior scheduling row", async () => {
-    const deck = await createDeck("D")
+    const deck = await createDeck("D", null)
     const card = await createVocabularyCard(
       deck.id,
       {

@@ -14,7 +14,7 @@ import { AnkiImportGapReview } from "./AnkiImportGapReview"
 
 export function SettingsPage() {
   const { user, offlineOnly, loading, signInGoogle, signOut } = useAuth()
-  const { syncNow, syncing, lastError, lastSyncedAt } = useSync()
+  const { syncNow, syncing, lastError, lastSyncedAt, conflictActive } = useSync()
   const [importMsg, setImportMsg] = useState<string | null>(null)
   const [importErr, setImportErr] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
@@ -118,10 +118,14 @@ export function SettingsPage() {
         <button
           type="button"
           className="btn primary"
-          disabled={offlineOnly || !user || syncing}
+          disabled={offlineOnly || !user || syncing || conflictActive}
           onClick={() => syncNow()}
         >
-          {syncing ? "Syncing…" : "Sync now"}
+          {conflictActive
+            ? "Resolve conflict…"
+            : syncing
+              ? "Syncing…"
+              : "Sync now"}
         </button>
         {lastSyncedAt && (
           <p className="muted small">

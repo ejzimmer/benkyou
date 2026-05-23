@@ -28,7 +28,7 @@ export function getFirebaseApp(): FirebaseApp | null {
   return appInstance
 }
 
-/** One Firestore instance per app — do not call initializeFirestore() repeatedly. */
+/** Single Firestore instance per app — do not call initializeFirestore() repeatedly. */
 export function getFirestoreDb(): Firestore | null {
   const app = getFirebaseApp()
   if (!app) return null
