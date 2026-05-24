@@ -166,6 +166,47 @@ export async function pushLocalMediaToRemote(
   }
 }
 
+/** Pull Storage blobs for every image id referenced by cards (for review UI). */
+export async function hydrateReferencedMedia(
+  uid: string,
+): Promise<{ total: number; pulled: number; alreadyLocal: number; failed: number }> {
+  const cards = await db.cards.toArray()
+  const ids = new Set<string>()
+  for (const card of cards) {
+    for (const id of card.content.images) ids.add(id)
+  }
+
+  let pulled = 0
+  let alreadyLocal = 0
+  let failed = 0
+
+  for (const id of ids) {
+    const local = await db.media.get(id)
+    if (local?.blob && local.blob.size > 0) {
+      alreadyLocal++
+      continue
+    }
+    try {
+      const blob = await downloadMediaFromRemote(uid, id)
+      if (!blob || blob.size === 0) {
+        failed++
+        continue
+      }
+      await db.media.put({
+        id,
+        blob,
+        mimeType: local?.mimeType ?? blob.type ?? "image/jpeg",
+        updatedAt: Date.now(),
+      })
+      pulled++
+    } catch {
+      failed++
+    }
+  }
+
+  return { total: ids.size, pulled, alreadyLocal, failed }
+}
+
 export async function pullRemoteMediaToLocal(
   uid: string,
   cards: Card[],
