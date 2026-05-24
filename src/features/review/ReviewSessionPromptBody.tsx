@@ -74,6 +74,9 @@ export function ReviewSessionPromptBody({
         {card.content.exampleSentences[0] && (
           <p className="muted">{card.content.exampleSentences[0]}</p>
         )}
+        {card.content.images.map((id) => (
+          <CardImage key={id} mediaId={id} />
+        ))}
       </div>
     )
   }
@@ -82,6 +85,9 @@ export function ReviewSessionPromptBody({
     return (
       <div className="stack">
         <p className="prompt-main">{card.content.wordJa}</p>
+        {card.content.images.map((id) => (
+          <CardImage key={id} mediaId={id} />
+        ))}
         {card.content.exampleSentences[0] && (
           <p className="muted">{card.content.exampleSentences[0]}</p>
         )}

@@ -21,6 +21,7 @@ import {
 } from "./firestoreSync"
 import {
   downloadMediaBlob,
+  hydrateReferencedMedia,
   mediaPreviewUrl,
   uploadMediaBlob,
 } from "./mediaSync"
@@ -420,6 +421,11 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
   await syncLogTimed("push local to remote", () =>
     pushLocalToRemote(fs, uid, remote),
   )
+
+  const hydrate = await syncLogTimed("hydrate card images for review", () =>
+    hydrateReferencedMedia(uid),
+  )
+  syncLog("hydrate card images complete", hydrate)
 
   writeLastSyncedAt(Date.now())
   syncLog("runFullSync complete")

@@ -1,8 +1,11 @@
-import { db } from "../lib/db/schema"
+import { db, type MediaRow } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
 import { getFirestoreDb, getFirebaseStorage } from "../lib/firebase"
 import { upsertMediaMetaRemote } from "../lib/sync/firestoreSync"
-import { uploadMediaBlob } from "../lib/sync/mediaSync"
+import {
+  downloadMediaFromRemote,
+  uploadMediaBlob,
+} from "../lib/sync/mediaSync"
 import { schedulePushAfterMutation } from "../lib/sync/schedulePush"
 import type { User } from "firebase/auth"
 
@@ -36,8 +39,34 @@ export async function saveImageBlob(
   return id
 }
 
-export async function getImageUrl(mediaId: string): Promise<string | null> {
-  const row = await db.media.get(mediaId)
+/** Ensure image bytes exist in IndexedDB; download from Storage when missing. */
+export async function ensureMediaCached(
+  mediaId: string,
+  user: User | null,
+): Promise<MediaRow | null> {
+  const existing = await db.media.get(mediaId)
+  if (existing?.blob && existing.blob.size > 0) return existing
+
+  if (!user) return existing ?? null
+
+  const blob = await downloadMediaFromRemote(user.uid, mediaId)
+  if (!blob || blob.size === 0) return null
+
+  const row: MediaRow = {
+    id: mediaId,
+    blob,
+    mimeType: existing?.mimeType ?? blob.type ?? "image/jpeg",
+    updatedAt: Date.now(),
+  }
+  await db.media.put(row)
+  return row
+}
+
+export async function getImageUrl(
+  mediaId: string,
+  user: User | null = null,
+): Promise<string | null> {
+  const row = await ensureMediaCached(mediaId, user)
   if (!row) return null
   return URL.createObjectURL(row.blob)
 }
