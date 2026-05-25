@@ -12,10 +12,23 @@ import { useAuth } from "../auth/AuthContext"
 import { getFirestoreDb, getFirebaseStorage } from "../firebase"
 import { SyncConflictModal } from "./SyncConflictModal"
 import { readLastSyncedAt, runFullSync } from "./runSync"
+import {
+  clearSyncLog,
+  formatSyncStatusLabel,
+  getSyncLogEntries,
+  subscribeSyncLog,
+  syncLog,
+  type SyncLogEntry,
+} from "./syncLog"
 import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
+
+export type SyncPhase = "idle" | "running" | "conflict"
 
 type SyncState = {
   syncing: boolean
+  syncPhase: SyncPhase
+  syncStatusLabel: string
+  syncLog: readonly SyncLogEntry[]
   lastError: string | null
   lastSyncedAt: number | null
   syncNow: () => Promise<void>
@@ -27,47 +40,95 @@ const Ctx = createContext<SyncState | null>(null)
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, offlineOnly } = useAuth()
   const [syncing, setSyncing] = useState(false)
+  const [syncPhase, setSyncPhase] = useState<SyncPhase>("idle")
   const [lastError, setLastError] = useState<string | null>(null)
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
   const [activeConflict, setActiveConflict] = useState<SyncConflict | null>(null)
+  const [syncLogEntries, setSyncLogEntries] = useState<readonly SyncLogEntry[]>(
+    () => getSyncLogEntries(),
+  )
   const conflictNumberRef = useRef(0)
   const [conflictNumber, setConflictNumber] = useState(0)
 
   useEffect(() => {
     setLastSyncedAt(readLastSyncedAt())
+    return subscribeSyncLog(() => setSyncLogEntries(getSyncLogEntries()))
   }, [])
 
   const resolveRef = useRef<((choice: SyncConflictChoice) => void) | null>(null)
+  const applyAllChoiceRef = useRef<SyncConflictChoice | null>(null)
 
   const onConflict = useCallback((conflict: SyncConflict) => {
+    const preset = applyAllChoiceRef.current
+    if (preset) {
+      syncLog("bulk conflict choice", {
+        choice: preset,
+        entityType: conflict.entityType,
+        entityId: conflict.entityId,
+      })
+      return Promise.resolve(preset)
+    }
     return new Promise<SyncConflictChoice>((resolve) => {
+      syncLog("waiting for user conflict choice", {
+        entityType: conflict.entityType,
+        entityId: conflict.entityId,
+      })
       conflictNumberRef.current += 1
       setConflictNumber(conflictNumberRef.current)
       resolveRef.current = resolve
       setActiveConflict(conflict)
+      setSyncPhase("conflict")
+      setSyncing(false)
     })
   }, [])
 
-  const handleConflictChoice = useCallback((choice: SyncConflictChoice) => {
-    setActiveConflict(null)
-    resolveRef.current?.(choice)
-    resolveRef.current = null
-  }, [])
+  const handleConflictChoice = useCallback(
+    (choice: SyncConflictChoice, applyToAllRemaining: boolean) => {
+      if (applyToAllRemaining) {
+        applyAllChoiceRef.current = choice
+        syncLog("user chose apply to all remaining conflicts", { choice })
+      } else {
+        syncLog("user resolved conflict", { choice })
+      }
+      setActiveConflict(null)
+      setSyncPhase("running")
+      setSyncing(true)
+      resolveRef.current?.(choice)
+      resolveRef.current = null
+    },
+    [],
+  )
 
   const syncInFlightRef = useRef<Promise<void> | null>(null)
 
   const syncNow = useCallback(async () => {
-    if (offlineOnly || !user) return
-    if (syncInFlightRef.current) return syncInFlightRef.current
+    if (offlineOnly || !user) {
+      syncLog("sync skipped", { offlineOnly, hasUser: Boolean(user) })
+      return
+    }
+    if (syncInFlightRef.current) {
+      syncLog("sync already in flight — joining existing run")
+      return syncInFlightRef.current
+    }
 
     const run = (async () => {
+      clearSyncLog()
+      syncLog("syncNow invoked", { uid: user.uid })
       const fs = getFirestoreDb()
       const storage = getFirebaseStorage()
-      if (!fs || !storage) return
+      if (!fs || !storage) {
+        syncLog("sync aborted: Firebase not ready", {
+          hasFirestore: Boolean(fs),
+          hasStorage: Boolean(storage),
+        })
+        return
+      }
       setSyncing(true)
+      setSyncPhase("running")
       setLastError(null)
       conflictNumberRef.current = 0
       setConflictNumber(0)
+      applyAllChoiceRef.current = null
       try {
         await runFullSync({
           fs,
@@ -76,11 +137,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           onConflict,
         })
         setLastSyncedAt(Date.now())
+        syncLog("syncNow finished OK")
       } catch (e) {
-        setLastError(e instanceof Error ? e.message : String(e))
+        const msg = e instanceof Error ? e.message : String(e)
+        syncLog("syncNow failed", { error: msg })
+        setLastError(msg)
         throw e
       } finally {
         setSyncing(false)
+        setSyncPhase("idle")
         setActiveConflict(null)
         conflictNumberRef.current = 0
         setConflictNumber(0)
@@ -93,15 +158,37 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return syncInFlightRef.current
   }, [offlineOnly, user, onConflict])
 
+  const syncStatusLabel = useMemo(() => {
+    if (syncPhase === "conflict") {
+      return "Choose a version in the dialog above"
+    }
+    if (syncing) {
+      return formatSyncStatusLabel(syncLogEntries[syncLogEntries.length - 1])
+    }
+    return ""
+  }, [syncPhase, syncing, syncLogEntries])
+
   const value = useMemo(
     () => ({
       syncing,
+      syncPhase,
+      syncStatusLabel,
+      syncLog: syncLogEntries,
       lastError,
       lastSyncedAt,
       syncNow,
       conflictActive: activeConflict != null,
     }),
-    [syncing, lastError, lastSyncedAt, syncNow, activeConflict],
+    [
+      syncing,
+      syncPhase,
+      syncStatusLabel,
+      syncLogEntries,
+      lastError,
+      lastSyncedAt,
+      syncNow,
+      activeConflict,
+    ],
   )
 
   return (

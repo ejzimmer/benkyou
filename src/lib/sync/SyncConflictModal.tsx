@@ -1,9 +1,10 @@
 import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
+import { summariesLookIdentical } from "./syncCompare"
 
 type Props = {
   conflict: SyncConflict
   conflictNumber: number
-  onChoose: (choice: SyncConflictChoice) => void
+  onChoose: (choice: SyncConflictChoice, applyToAllRemaining: boolean) => void
 }
 
 export function SyncConflictModal({
@@ -20,13 +21,20 @@ export function SyncConflictModal({
           ? "Review schedule conflict"
           : "Image conflict"
 
+  const looksSame = summariesLookIdentical(
+    conflict.localSummary,
+    conflict.remoteSummary,
+  )
+
   return (
     <div className="sync-conflict-backdrop" role="dialog" aria-modal="true">
       <div className="sync-conflict-panel panel">
         <h2>{title}</h2>
         <p className="muted small">
-          Conflict #{conflictNumber} — both devices changed this item since the last
-          sync. Which version should we keep?
+          Conflict #{conflictNumber} — both sides were edited since the last sync.
+          {looksSame
+            ? " The text below looks the same; you can keep either copy or apply one choice to all remaining conflicts."
+            : " Which version should we keep?"}
         </p>
 
         <div className="sync-conflict-columns">
@@ -44,13 +52,22 @@ export function SyncConflictModal({
             ) : (
               <p>{conflict.localSummary}</p>
             )}
-            <button
-              type="button"
-              className="btn primary"
-              onClick={() => onChoose("local")}
-            >
-              Keep this device
-            </button>
+            <div className="stack">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => onChoose("local", false)}
+              >
+                Keep this device
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => onChoose("local", true)}
+              >
+                Keep this device for all remaining
+              </button>
+            </div>
           </section>
 
           <section className="sync-conflict-side">
@@ -67,13 +84,22 @@ export function SyncConflictModal({
             ) : (
               <p>{conflict.remoteSummary}</p>
             )}
-            <button
-              type="button"
-              className="btn primary"
-              onClick={() => onChoose("remote")}
-            >
-              Keep cloud copy
-            </button>
+            <div className="stack">
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => onChoose("remote", false)}
+              >
+                Keep cloud copy
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => onChoose("remote", true)}
+              >
+                Keep cloud for all remaining
+              </button>
+            </div>
           </section>
         </div>
       </div>

@@ -12,6 +12,7 @@ export function App() {
   const { user, offlineOnly, loading } = useAuth()
   const { syncNow } = useSync()
   const syncedUidRef = useRef<string | null>(null)
+  const tabWasHiddenRef = useRef(false)
 
   useEffect(() => {
     if (!user) {
@@ -23,8 +24,6 @@ export function App() {
     syncedUidRef.current = user.uid
     void syncNow().catch(() => {})
   }, [offlineOnly, user, syncNow])
-
-  const tabWasHiddenRef = useRef(false)
 
   useEffect(() => {
     if (!user || offlineOnly) return

@@ -34,3 +34,23 @@ export async function clearTombstone(
 ): Promise<void> {
   await db.tombstones.delete(tombstoneId(entityType, entityId))
 }
+
+/** Drop media tombstones that no card references and have no local blob left. */
+export async function pruneOrphanMediaTombstones(): Promise<number> {
+  const referenced = new Set<string>()
+  for (const card of await db.cards.toArray()) {
+    for (const id of card.content.images) referenced.add(id)
+  }
+
+  let removed = 0
+  for (const t of await db.tombstones
+    .where("entityType")
+    .equals("media")
+    .toArray()) {
+    if (referenced.has(t.entityId)) continue
+    if (await db.media.get(t.entityId)) continue
+    await db.tombstones.delete(t.id)
+    removed++
+  }
+  return removed
+}

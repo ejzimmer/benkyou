@@ -74,6 +74,9 @@ export function ReviewSessionPromptBody({
         {card.content.exampleSentences[0] && (
           <p className="muted">{card.content.exampleSentences[0]}</p>
         )}
+        {card.content.images.map((id) => (
+          <CardImage key={id} mediaId={id} />
+        ))}
       </div>
     )
   }
@@ -82,6 +85,9 @@ export function ReviewSessionPromptBody({
     return (
       <div className="stack">
         <p className="prompt-main">{card.content.wordJa}</p>
+        {card.content.images.map((id) => (
+          <CardImage key={id} mediaId={id} />
+        ))}
         {card.content.exampleSentences[0] && (
           <p className="muted">{card.content.exampleSentences[0]}</p>
         )}
@@ -139,7 +145,12 @@ export function ReviewSessionPromptBody({
           gapMarker={card.content.gapMarker}
           readings={card.content.readings}
         />
-        <p className="muted">{card.content.translationEn}</p>
+        {card.content.translationEn.trim() && (
+          <p className="muted">{card.content.translationEn}</p>
+        )}
+        {card.content.images.map((id) => (
+          <CardImage key={id} mediaId={id} />
+        ))}
         <TypingAnswerInput
           value={typed}
           onChange={onTypedChange}

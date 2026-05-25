@@ -11,6 +11,8 @@ import type { Card, Deck } from "../../domain/types"
 import type { MediaRow, SchedulingRow } from "../db/schema"
 import { db } from "../db/schema"
 import type { RemoteMediaMeta, Tombstone } from "./syncTypes"
+import { stripUndefinedDeep } from "./firestoreData"
+import { syncLog, syncLogTimed } from "./syncLog"
 
 const BATCH_SIZE = 400
 
@@ -36,14 +38,24 @@ export type RemoteSnapshot = {
 export async function fetchRemoteSnapshot(
   fs: Firestore,
   uid: string,
+  phase = "pull",
 ): Promise<RemoteSnapshot> {
+  syncLog("fetchRemoteSnapshot", { uid, phase })
+  const label = (collection: string) =>
+    `Firestore getDocs ${collection} (${phase})`
   const [snapDecks, snapCards, snapSched, snapTombs, snapMedia] =
     await Promise.all([
-      getDocs(decksCol(fs, uid)),
-      getDocs(cardsCol(fs, uid)),
-      getDocs(schedCol(fs, uid)),
-      getDocs(tombstonesCol(fs, uid)),
-      getDocs(mediaMetaCol(fs, uid)),
+      syncLogTimed(label("decks"), () => getDocs(decksCol(fs, uid))),
+      syncLogTimed(label("cards"), () => getDocs(cardsCol(fs, uid))),
+      syncLogTimed(label("scheduling"), () =>
+        getDocs(schedCol(fs, uid)),
+      ),
+      syncLogTimed(label("tombstones"), () =>
+        getDocs(tombstonesCol(fs, uid)),
+      ),
+      syncLogTimed(label("media meta"), () =>
+        getDocs(mediaMetaCol(fs, uid)),
+      ),
     ])
 
   const decks = new Map<string, Deck>()
@@ -63,6 +75,14 @@ export async function fetchRemoteSnapshot(
   for (const d of snapMedia.docs)
     mediaMeta.set(d.id, d.data() as RemoteMediaMeta)
 
+  const summary = {
+    decks: decks.size,
+    cards: cards.size,
+    scheduling: scheduling.size,
+    tombstones: tombstones.size,
+    mediaMeta: mediaMeta.size,
+  }
+  syncLog("fetchRemoteSnapshot complete", summary)
   return { decks, cards, scheduling, tombstones, mediaMeta }
 }
 
@@ -73,7 +93,7 @@ async function commitBatch(
   let batch = writeBatch(fs)
   let n = 0
   for (const { ref, data } of ops) {
-    batch.set(ref, data)
+    batch.set(ref, stripUndefinedDeep(data))
     n++
     if (n >= BATCH_SIZE) {
       await batch.commit()
@@ -87,7 +107,9 @@ async function commitBatch(
 export async function pushLocalToRemote(
   fs: Firestore,
   uid: string,
+  remote?: RemoteSnapshot,
 ): Promise<void> {
+  syncLog("pushLocalToRemote", { uid })
   const [localDecks, localCards, localSched, localTombs, localMedia] =
     await Promise.all([
       db.decks.toArray(),
@@ -121,43 +143,62 @@ export async function pushLocalToRemote(
     })
   }
 
-  await commitBatch(fs, sets)
+  syncLog("pushLocalToRemote upsert batch", {
+    decks: localDecks.length,
+    cards: localCards.length,
+    scheduling: localSched.length,
+    tombstones: localTombs.length,
+    mediaMeta: localMedia.length,
+  })
+  await syncLogTimed("Firestore commit upserts", () => commitBatch(fs, sets))
 
   const tombstoned = new Set(localTombs.map((t) => t.id))
 
   const deleteOps: ReturnType<typeof doc>[] = []
-  const remote = await fetchRemoteSnapshot(fs, uid)
+  const remoteSnapshot =
+    remote ??
+    (await syncLogTimed("fetchRemoteSnapshot (push-deletes)", () =>
+      fetchRemoteSnapshot(fs, uid, "push-deletes"),
+    ))
 
-  for (const id of remote.decks.keys()) {
+  for (const id of remoteSnapshot.decks.keys()) {
     const tid = `deck:${id}`
     if (!localDecks.some((d) => d.id === id) || tombstoned.has(tid)) {
       deleteOps.push(doc(decksCol(fs, uid), id))
     }
   }
-  for (const id of remote.cards.keys()) {
+  for (const id of remoteSnapshot.cards.keys()) {
     const tid = `card:${id}`
     if (!localCards.some((c) => c.id === id) || tombstoned.has(tid)) {
       deleteOps.push(doc(cardsCol(fs, uid), id))
     }
   }
-  for (const id of remote.scheduling.keys()) {
+  for (const id of remoteSnapshot.scheduling.keys()) {
     const tid = `scheduling:${id}`
     if (!localSched.some((s) => s.id === id) || tombstoned.has(tid)) {
       deleteOps.push(doc(schedCol(fs, uid), id))
     }
   }
-  for (const id of remote.mediaMeta.keys()) {
+  for (const id of remoteSnapshot.mediaMeta.keys()) {
     const tid = `media:${id}`
     if (!localMedia.some((m) => m.id === id) || tombstoned.has(tid)) {
       deleteOps.push(doc(mediaMetaCol(fs, uid), id))
     }
   }
+  const localTombIds = new Set(localTombs.map((t) => t.id))
+  for (const id of remoteSnapshot.tombstones.keys()) {
+    if (!localTombIds.has(id)) {
+      deleteOps.push(doc(tombstonesCol(fs, uid), id))
+    }
+  }
 
+  syncLog("pushLocalToRemote deletes", { count: deleteOps.length })
   for (let i = 0; i < deleteOps.length; i += BATCH_SIZE) {
     const batch = writeBatch(fs)
     for (const ref of deleteOps.slice(i, i + BATCH_SIZE)) batch.delete(ref)
-    await batch.commit()
+    await syncLogTimed(`Firestore commit deletes ${i}`, () => batch.commit())
   }
+  syncLog("pushLocalToRemote complete")
 }
 
 export async function upsertDeckRemote(
@@ -165,7 +206,7 @@ export async function upsertDeckRemote(
   uid: string,
   deck: Deck,
 ): Promise<void> {
-  await setDoc(doc(decksCol(fs, uid), deck.id), deck)
+  await setDoc(doc(decksCol(fs, uid), deck.id), stripUndefinedDeep(deck))
 }
 
 export async function upsertCardRemote(
@@ -173,7 +214,10 @@ export async function upsertCardRemote(
   uid: string,
   card: Card,
 ): Promise<void> {
-  await setDoc(doc(cardsCol(fs, uid), card.id), card as Record<string, unknown>)
+  await setDoc(
+    doc(cardsCol(fs, uid), card.id),
+    stripUndefinedDeep(card as Record<string, unknown>),
+  )
 }
 
 export async function upsertSchedulingRemote(
@@ -181,7 +225,7 @@ export async function upsertSchedulingRemote(
   uid: string,
   row: SchedulingRow,
 ): Promise<void> {
-  await setDoc(doc(schedCol(fs, uid), row.id), row)
+  await setDoc(doc(schedCol(fs, uid), row.id), stripUndefinedDeep(row))
 }
 
 export async function upsertTombstoneRemote(
@@ -189,7 +233,10 @@ export async function upsertTombstoneRemote(
   uid: string,
   tombstone: Tombstone,
 ): Promise<void> {
-  await setDoc(doc(tombstonesCol(fs, uid), tombstone.id), tombstone)
+  await setDoc(
+    doc(tombstonesCol(fs, uid), tombstone.id),
+    stripUndefinedDeep(tombstone),
+  )
 }
 
 export async function upsertMediaMetaRemote(
@@ -197,11 +244,14 @@ export async function upsertMediaMetaRemote(
   uid: string,
   row: MediaRow,
 ): Promise<void> {
-  await setDoc(doc(mediaMetaCol(fs, uid), row.id), {
-    id: row.id,
-    mimeType: row.mimeType,
-    updatedAt: row.updatedAt,
-  })
+  await setDoc(
+    doc(mediaMetaCol(fs, uid), row.id),
+    stripUndefinedDeep({
+      id: row.id,
+      mimeType: row.mimeType,
+      updatedAt: row.updatedAt,
+    }),
+  )
 }
 
 export async function deleteDeckRemote(

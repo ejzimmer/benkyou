@@ -1,4 +1,5 @@
 import type { DueItem } from "../../services/review"
+import { CardImage } from "../../ui/CardImage"
 import { TextDiffCompare } from "../../ui/TextDiffCompare"
 import { requiresTyping } from "./reviewFlowHelpers"
 
@@ -27,16 +28,38 @@ export function ReviewSessionAnswerPanel({
       <h3>Answer</h3>
       {typingMode && <TextDiffCompare typed={typed} expected={expected} />}
       {m === "vocab_oral_en" && card.kind === "vocabulary" && (
-        <ul>
-          {card.content.definitionsEn
-            .filter((s) => s.trim())
-            .map((d, i) => (
-              <li key={i}>{d}</li>
-            ))}
-        </ul>
+        <>
+          <ul>
+            {card.content.definitionsEn
+              .filter((s) => s.trim())
+              .map((d, i) => (
+                <li key={i}>{d}</li>
+              ))}
+          </ul>
+          {card.content.images.map((id) => (
+            <CardImage key={id} mediaId={id} />
+          ))}
+        </>
+      )}
+      {m === "vocab_type_reading" && card.kind === "vocabulary" && (
+        <>
+          {card.content.reading?.trim() && (
+            <p className="prompt-main">{card.content.reading}</p>
+          )}
+          {card.content.images.map((id) => (
+            <CardImage key={id} mediaId={id} />
+          ))}
+        </>
       )}
       {m === "grammar_oral_meaning" && card.kind === "grammar" && (
-        <p>{card.content.translationEn}</p>
+        <>
+          {card.content.translationEn.trim() && (
+            <p>{card.content.translationEn}</p>
+          )}
+          {card.content.images.map((id) => (
+            <CardImage key={id} mediaId={id} />
+          ))}
+        </>
       )}
       <div className="toolbar">
         <button
