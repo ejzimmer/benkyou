@@ -9,7 +9,8 @@ import {
 import type { Card } from "../../domain/types"
 import type { MediaRow } from "../db/schema"
 import { db } from "../db/schema"
-import { getFirebaseStorage } from "../firebase"
+import { getFirebaseStorage, getFirestoreDb } from "../firebase"
+import { upsertMediaMetaRemote } from "./firestoreSync"
 import { syncLog } from "./syncLog"
 import { withStorageTimeout } from "./storageTimeout"
 import type { RemoteMediaMeta } from "./syncTypes"
@@ -158,11 +159,13 @@ export async function pushLocalMediaToRemote(
 ): Promise<void> {
   const storage = getFirebaseStorage()
   if (!storage) return
+  const fs = getFirestoreDb()
   const ids = collectMediaIdsFromCards(cards)
   for (const mediaId of ids) {
     const row = await db.media.get(mediaId)
     if (!row) continue
     await uploadMediaBlob(storage, uid, row)
+    if (fs) await upsertMediaMetaRemote(fs, uid, row)
   }
 }
 

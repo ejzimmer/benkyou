@@ -6,7 +6,8 @@ import { ReviewSessionPage } from "./features/review/ReviewSessionPage"
 import { SettingsPage } from "./features/settings/SettingsPage"
 import { useAuth } from "./lib/auth/AuthContext"
 import { useSync } from "./lib/sync/SyncContext"
-import { useEffect, useRef } from "react"
+import { createVisibilitySyncTrigger } from "./lib/sync/syncTrigger"
+import { useEffect, useMemo, useRef } from "react"
 
 export function App() {
   const { user, offlineOnly, loading } = useAuth()
@@ -25,6 +26,14 @@ export function App() {
     void syncNow().catch(() => {})
   }, [offlineOnly, user, syncNow])
 
+  const visibilityTrigger = useMemo(
+    () =>
+      createVisibilitySyncTrigger({
+        syncNow: () => syncNow().catch(() => {}),
+      }),
+    [syncNow],
+  )
+
   useEffect(() => {
     if (!user || offlineOnly) return
     const onVisibility = () => {
@@ -34,12 +43,12 @@ export function App() {
       }
       if (document.visibilityState === "visible" && tabWasHiddenRef.current) {
         tabWasHiddenRef.current = false
-        void syncNow().catch(() => {})
+        void visibilityTrigger.onVisible()
       }
     }
     document.addEventListener("visibilitychange", onVisibility)
     return () => document.removeEventListener("visibilitychange", onVisibility)
-  }, [offlineOnly, user, syncNow])
+  }, [offlineOnly, user, visibilityTrigger])
 
   if (loading) {
     return (
