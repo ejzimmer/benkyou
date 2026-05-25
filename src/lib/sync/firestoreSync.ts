@@ -285,3 +285,11 @@ export async function deleteMediaMetaRemote(
 ): Promise<void> {
   await deleteDoc(doc(mediaMetaCol(fs, uid), mediaId))
 }
+
+export async function deleteTombstoneRemote(
+  fs: Firestore,
+  uid: string,
+  tombstoneId: string,
+): Promise<void> {
+  await deleteDoc(doc(tombstonesCol(fs, uid), tombstoneId))
+}
