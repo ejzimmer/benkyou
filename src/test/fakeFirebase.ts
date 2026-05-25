@@ -3,9 +3,34 @@
  * sync test suite. Two "devices" share the same module-scoped backend; reset
  * the backend between tests with `resetFakeBackend()`.
  *
- * Use via `vi.mock` factories that import this module — see
- * `src/lib/sync/importSyncDiagnostic.test.ts`.
+ * Also installs a minimal `localStorage` polyfill when running under the
+ * vitest `node` environment so that `runSync.ts` (which reads
+ * `benkyou:lastSyncedAt` from localStorage) can be exercised end-to-end.
  */
+
+if (typeof (globalThis as { localStorage?: Storage }).localStorage === "undefined") {
+  const store = new Map<string, string>()
+  ;(globalThis as { localStorage: Storage }).localStorage = {
+    get length() {
+      return store.size
+    },
+    clear() {
+      store.clear()
+    },
+    getItem(k: string) {
+      return store.has(k) ? store.get(k)! : null
+    },
+    setItem(k: string, v: string) {
+      store.set(k, String(v))
+    },
+    removeItem(k: string) {
+      store.delete(k)
+    },
+    key(i: number) {
+      return [...store.keys()][i] ?? null
+    },
+  }
+}
 
 export type FakeFirestoreBackend = {
   /** collectionPath ("users/u/decks") -> docId -> arbitrary data */
@@ -38,6 +63,9 @@ export function resetFakeBackend(): void {
   backend.firestore.docs.clear()
   backend.storage.blobs.clear()
   backend.storage.uploads.length = 0
+  if (typeof globalThis.localStorage !== "undefined") {
+    globalThis.localStorage.clear()
+  }
 }
 
 // ---------------------------------------------------------------------------
