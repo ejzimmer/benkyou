@@ -348,19 +348,30 @@ code {
   background: #0a0a12;
 }
 
-.sync-log-details {
-  margin-top: 0.75rem;
+.sync-progress-current {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.95rem;
+  color: #e8e8f0;
+}
+
+.sync-progress-log {
+  margin-top: 0.35rem;
+}
+
+.sync-progress-empty {
+  margin-top: 0.5rem;
 }
 
 .sync-log-pre {
-  margin: 0.5rem 0 0;
+  margin: 0;
   padding: 0.5rem 0.75rem;
-  max-height: 12rem;
+  max-height: 16rem;
   overflow: auto;
   background: #12121a;
+  border: 1px solid #2a2a3a;
   border-radius: 8px;
   font-size: 0.75rem;
-  line-height: 1.4;
+  line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
 }

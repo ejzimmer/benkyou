@@ -14,6 +14,7 @@ import { SyncConflictModal } from "./SyncConflictModal"
 import { readLastSyncedAt, runFullSync } from "./runSync"
 import {
   clearSyncLog,
+  formatSyncStatusLabel,
   getSyncLogEntries,
   subscribeSyncLog,
   syncLog,
@@ -162,9 +163,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       return "Choose a version in the dialog above"
     }
     if (syncing) {
-      const last = syncLogEntries[syncLogEntries.length - 1]
-      if (last) return last.step.replace(/ → (start|done|error)$/, "")
-      return "Syncing…"
+      return formatSyncStatusLabel(syncLogEntries[syncLogEntries.length - 1])
     }
     return ""
   }, [syncPhase, syncing, syncLogEntries])
