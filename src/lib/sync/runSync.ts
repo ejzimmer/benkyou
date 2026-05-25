@@ -70,6 +70,22 @@ function tombstoneWins(
   return tomb.deletedAt >= entityUpdatedAt
 }
 
+function remoteEntityUpdatedAt(
+  remote: RemoteSnapshot,
+  t: Tombstone,
+): number | undefined {
+  switch (t.entityType) {
+    case "deck":
+      return remote.decks.get(t.entityId)?.updatedAt
+    case "card":
+      return remote.cards.get(t.entityId)?.updatedAt
+    case "scheduling":
+      return remote.scheduling.get(t.entityId)?.updatedAt
+    case "media":
+      return remote.mediaMeta.get(t.entityId)?.updatedAt
+  }
+}
+
 async function applyRemoteTombstones(
   remote: RemoteSnapshot,
   localTombs: Tombstone[],
@@ -86,6 +102,21 @@ async function applyRemoteTombstones(
     [db.decks, db.cards, db.scheduling, db.media, db.tombstones],
     async () => {
       for (const t of allTombs.values()) {
+        // Stale tombstone: a newer copy of the entity exists in the remote
+        // snapshot (e.g. user deleted then re-imported on another device).
+        // Drop the tombstone locally so collectEntityConflicts can write
+        // the resurrected entity; the next push removes it from Firestore.
+        const remoteUpdatedAt = remoteEntityUpdatedAt(remote, t)
+        if (remoteUpdatedAt != null && remoteUpdatedAt > t.deletedAt) {
+          syncLog("dropping stale tombstone (newer entity exists)", {
+            tombstoneId: t.id,
+            tombDeletedAt: t.deletedAt,
+            remoteUpdatedAt,
+          })
+          await db.tombstones.delete(t.id)
+          continue
+        }
+
         await db.tombstones.put(t)
         if (t.entityType === "deck") {
           const deck = await db.decks.get(t.entityId)
