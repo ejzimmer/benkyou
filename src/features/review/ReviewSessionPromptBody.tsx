@@ -65,6 +65,9 @@ export function ReviewSessionPromptBody({
   const { card, modeId: m } = item
   const focusKey = `${card.id}:${m}`
 
+  // Images for `vocab_oral_en` and `vocab_type_reading` live on the answer
+  // panel alongside the meaning / reading (the Anki "back"). Rendering them
+  // here too would duplicate the same image as soon as the answer flips.
   if (m === "vocab_oral_en" && card.kind === "vocabulary") {
     return (
       <div className="stack">
@@ -74,9 +77,6 @@ export function ReviewSessionPromptBody({
         {card.content.exampleSentences[0] && (
           <p className="muted">{card.content.exampleSentences[0]}</p>
         )}
-        {card.content.images.map((id) => (
-          <CardImage key={id} mediaId={id} />
-        ))}
       </div>
     )
   }
@@ -85,9 +85,6 @@ export function ReviewSessionPromptBody({
     return (
       <div className="stack">
         <p className="prompt-main">{card.content.wordJa}</p>
-        {card.content.images.map((id) => (
-          <CardImage key={id} mediaId={id} />
-        ))}
         {card.content.exampleSentences[0] && (
           <p className="muted">{card.content.exampleSentences[0]}</p>
         )}
