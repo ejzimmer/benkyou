@@ -171,20 +171,44 @@ function mediaIdsForRefs(
   return [...new Set(ids)]
 }
 
+function mediaContentKey(bytes: Uint8Array): string {
+  // Cheap, deterministic, sync fingerprint of a media payload. Real image
+  // bytes have high entropy in their first ~64 bytes (JPEG/PNG headers +
+  // pixel-stream start), so length + first-64-bytes-hex is unique enough
+  // for the in-import dedup pass.
+  const n = Math.min(64, bytes.length)
+  let hex = ""
+  for (let i = 0; i < n; i++) hex += bytes[i].toString(16).padStart(2, "0")
+  return bytes.length + ":" + hex
+}
+
 function buildMediaItems(
   pkg: ExtractedPackage,
   readFile: (relativePath: string) => Uint8Array,
 ): Map<string, BulkMediaItem> {
-  const map = new Map<string, BulkMediaItem>()
+  // Anki users frequently paste the same image into a "Basic" note AND a
+  // "Basic (type)" note; Anki stores each paste under its own filename, so a
+  // card merging those two notes would otherwise reference the same picture
+  // under two ids and render it twice during review. Collapse identical-byte
+  // media into a single canonical item; multiple filenames are allowed to
+  // map to the same item.
+  const byContent = new Map<string, BulkMediaItem>()
+  const byFilename = new Map<string, BulkMediaItem>()
   for (const [filename, relativePath] of Object.entries(pkg.mediaPaths)) {
     const bytes = readFile(relativePath)
-    map.set(filename, {
-      id: stableMediaId(filename),
-      mimeType: mimeFromFilename(filename),
-      bytes,
-    })
+    const key = mediaContentKey(bytes)
+    let item = byContent.get(key)
+    if (!item) {
+      item = {
+        id: stableMediaId(filename),
+        mimeType: mimeFromFilename(filename),
+        bytes,
+      }
+      byContent.set(key, item)
+    }
+    byFilename.set(filename, item)
   }
-  return map
+  return byFilename
 }
 
 function vocabularyCard(
@@ -586,6 +610,9 @@ export function convertExtractedPackage(
     deck: { id: deckId, name: pkg.deckName, updatedAt },
     cards,
     scheduling,
-    media: [...mediaByFilename.values()],
+    // mediaByFilename can map multiple filenames to the same canonical item;
+    // dedup by identity here so we don't write the same Dexie row / Storage
+    // blob more than once per import.
+    media: [...new Set(mediaByFilename.values())],
   }
 }
