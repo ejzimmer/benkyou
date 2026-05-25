@@ -233,7 +233,11 @@ export async function parseAnkiPackageToBulkImport(
       if (!zipName) continue
       const entry = zip.file(zipName)
       if (!entry) continue
-      const data = await entry.async("uint8array")
+      const raw = await entry.async("uint8array")
+      // Modern Anki (.colpkg / .anki21b) compresses each individual media
+      // file with Zstandard. Without this decompression we'd hand zstd bytes
+      // to the browser tagged as image/jpeg → unrenderable, ORB-blocked.
+      const data = isZstdMagic(raw) ? decompress(raw) : raw
       mediaBytes.set(filename, data)
       mediaPaths[filename] = `media/${filename}`
     }
