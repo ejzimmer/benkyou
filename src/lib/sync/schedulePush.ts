@@ -1,12 +1,13 @@
 import type { User } from "firebase/auth"
 import { getFirestoreDb, getFirebaseStorage } from "../firebase"
+import { isPullOnlySyncPending } from "./syncTypes"
 import { runPushOnly } from "./runSync"
 
 let pushTimer: ReturnType<typeof setTimeout> | null = null
 let pushInFlight: Promise<void> | null = null
 
 export function schedulePushAfterMutation(user: User | null): void {
-  if (!user) return
+  if (!user || isPullOnlySyncPending()) return
   const fs = getFirestoreDb()
   const storage = getFirebaseStorage()
   if (!fs || !storage) return

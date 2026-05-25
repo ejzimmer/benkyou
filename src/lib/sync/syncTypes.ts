@@ -63,3 +63,18 @@ export type RemoteMediaMeta = {
 }
 
 export const LAST_SYNCED_AT_KEY = "benkyou:lastSyncedAt"
+
+/** Set after “clear local cache”; next full sync pulls only (no remote deletes). */
+export const PULL_ONLY_SYNC_KEY = "benkyou:pullOnlySync"
+
+export function isPullOnlySyncPending(): boolean {
+  return localStorage.getItem(PULL_ONLY_SYNC_KEY) === "1"
+}
+
+export function markPullOnlySyncPending(): void {
+  localStorage.setItem(PULL_ONLY_SYNC_KEY, "1")
+}
+
+export function clearPullOnlySyncPending(): void {
+  localStorage.removeItem(PULL_ONLY_SYNC_KEY)
+}

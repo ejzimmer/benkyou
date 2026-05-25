@@ -12,6 +12,7 @@ import {
   parseAnkiPackageFile,
 } from "../../services/ankiImport"
 import { BUILD_LABEL } from "../../lib/buildInfo"
+import { clearLocalCacheOnly } from "../../services/localCache"
 import { AnkiImportGapReview } from "./AnkiImportGapReview"
 
 export function SettingsPage() {
@@ -32,6 +33,9 @@ export function SettingsPage() {
   const [pendingImport, setPendingImport] = useState<BulkImportPayload | null>(
     null,
   )
+  const [clearingCache, setClearingCache] = useState(false)
+  const [cacheMsg, setCacheMsg] = useState<string | null>(null)
+  const [cacheErr, setCacheErr] = useState<string | null>(null)
 
   function resetImportState() {
     setPendingImport(null)
@@ -63,6 +67,27 @@ export function SettingsPage() {
       setImportErr(e instanceof Error ? e.message : "Import failed")
     } finally {
       setImporting(false)
+    }
+  }
+
+  async function onClearLocalCache() {
+    const ok = window.confirm(
+      "Clear all decks, cards, scheduling, images, and review history stored on this device?\n\n" +
+        "Nothing is deleted from Firebase. The next Sync now will download your cloud data only (no upload).",
+    )
+    if (!ok) return
+    setClearingCache(true)
+    setCacheMsg(null)
+    setCacheErr(null)
+    try {
+      await clearLocalCacheOnly()
+      setCacheMsg(
+        "Local cache cleared. Use Sync now to restore from Firebase (pull only).",
+      )
+    } catch (e) {
+      setCacheErr(e instanceof Error ? e.message : "Could not clear local cache")
+    } finally {
+      setClearingCache(false)
     }
   }
 
@@ -156,6 +181,25 @@ export function SettingsPage() {
             </pre>
           </details>
         )}
+      </section>
+
+      <section className="panel stack">
+        <h2>Local data</h2>
+        <p className="muted small">
+          Remove everything stored in this browser (IndexedDB). Your Firebase
+          account is unchanged. The next sync only downloads from the cloud — it
+          does not delete remote decks or images.
+        </p>
+        <button
+          type="button"
+          className="btn danger"
+          disabled={clearingCache || syncing || conflictActive}
+          onClick={() => void onClearLocalCache()}
+        >
+          {clearingCache ? "Clearing…" : "Clear local cache"}
+        </button>
+        {cacheMsg && <p className="muted">{cacheMsg}</p>}
+        {cacheErr && <p className="error">{cacheErr}</p>}
       </section>
 
       <section className="panel stack">

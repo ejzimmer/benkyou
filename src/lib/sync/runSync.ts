@@ -32,6 +32,8 @@ import { tombstoneWins } from "./tombstonePolicy"
 import { allowEntitySync } from "./syncTombstoneGate"
 import { pruneOrphanMediaTombstones } from "./tombstones"
 import {
+  clearPullOnlySyncPending,
+  isPullOnlySyncPending,
   LAST_SYNCED_AT_KEY,
   type SyncConflict,
   type SyncConflictChoice,
@@ -414,9 +416,14 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
     purgeTombstonedMediaStorage(storage, uid, { remoteMediaIds }),
   )
 
-  await syncLogTimed("push local to remote", () =>
-    pushLocalToRemote(fs, uid, remote),
-  )
+  if (isPullOnlySyncPending()) {
+    syncLog("push skipped (local cache was cleared — pull-only restore)")
+    clearPullOnlySyncPending()
+  } else {
+    await syncLogTimed("push local to remote", () =>
+      pushLocalToRemote(fs, uid, remote),
+    )
+  }
 
   const hydrate = await syncLogTimed("hydrate card images for review", () =>
     hydrateReferencedMedia(uid),
@@ -433,6 +440,7 @@ export async function runPushOnly(
   storage: FirebaseStorage,
   uid: string,
 ): Promise<void> {
+  if (isPullOnlySyncPending()) return
   await pruneOrphanMediaTombstones()
   await purgeTombstonedMediaStorage(storage, uid)
   const remote = await fetchRemoteSnapshot(fs, uid, "push")
