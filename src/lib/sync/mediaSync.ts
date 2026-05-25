@@ -217,7 +217,7 @@ export async function pullRemoteMediaToLocal(
   const now = Date.now()
   for (const mediaId of ids) {
     const local = await db.media.get(mediaId)
-    if (local) continue
+    if (local?.blob && local.blob.size > 0) continue
     const blob = await downloadMediaFromRemote(uid, mediaId)
     if (!blob) continue
     await db.media.put({

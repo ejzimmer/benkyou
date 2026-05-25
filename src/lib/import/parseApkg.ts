@@ -3,6 +3,7 @@ import JSZip from "jszip"
 import initSqlJs, { type Database, type SqlValue } from "sql.js"
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url"
 import { convertExtractedPackage } from "./convert"
+import { normalizeMediaRef } from "./html"
 import {
   isZstdMagic,
   parseMediaEntriesProtobuf,
@@ -124,15 +125,6 @@ function pickPrimaryDeckId(db: Database): number {
   const row = stmt.get()
   stmt.free()
   return Number(row[0])
-}
-
-function normalizeMediaRef(ref: string): string {
-  const base = ref.split("?")[0] ?? ref
-  try {
-    return decodeURIComponent(base)
-  } catch {
-    return base
-  }
 }
 
 function collectMediaRefs(flds: string): Set<string> {

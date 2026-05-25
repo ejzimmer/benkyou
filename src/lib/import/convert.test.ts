@@ -25,9 +25,13 @@ describe("convertExtractedPackage", () => {
     expect(payload.cards.some((card) => card.kind === "grammar")).toBe(true)
     expect(payload.media.length).toBeGreaterThan(0)
 
+    const withImages = payload.cards.filter((c) => c.content.images.length > 0)
+    expect(withImages.length).toBeGreaterThan(0)
+
     const grammarCard = payload.cards.find((c) => c.kind === "grammar")
     expect(grammarCard?.kind).toBe("grammar")
     if (grammarCard?.kind !== "grammar") return
+    expect(grammarCard.content.images.length).toBeGreaterThan(0)
     const grammarScheduling = payload.scheduling.filter(
       (r) => r.cardId === grammarCard.id,
     )

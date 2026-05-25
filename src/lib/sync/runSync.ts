@@ -28,8 +28,9 @@ import {
 import { purgeTombstonedMediaStorage } from "./purgeMediaStorage"
 import { runWithConcurrency } from "./runWithConcurrency"
 import { mergeTombstone } from "./tombstoneMerge"
+import { tombstoneWins } from "./tombstonePolicy"
+import { allowEntitySync } from "./syncTombstoneGate"
 import { pruneOrphanMediaTombstones } from "./tombstones"
-import { tombstoneId } from "./syncCompare"
 import {
   LAST_SYNCED_AT_KEY,
   type SyncConflict,
@@ -59,15 +60,6 @@ export type RunSyncOptions = {
   storage: FirebaseStorage
   uid: string
   onConflict: (conflict: SyncConflict) => Promise<SyncConflictChoice>
-}
-
-function tombstoneWins(
-  tomb: Tombstone | undefined,
-  entityUpdatedAt: number | undefined,
-): boolean {
-  if (!tomb) return false
-  if (entityUpdatedAt == null) return true
-  return tomb.deletedAt >= entityUpdatedAt
 }
 
 async function applyRemoteTombstones(
@@ -109,7 +101,7 @@ async function applyRemoteTombstones(
   )
 }
 
-async function collectEntityConflicts(
+export async function collectEntityConflicts(
   lastSyncedAt: number | null,
   remote: RemoteSnapshot,
   onConflict: (c: SyncConflict) => Promise<SyncConflictChoice>,
@@ -119,7 +111,7 @@ async function collectEntityConflicts(
   const localSched = await db.scheduling.toArray()
 
   for (const local of localDecks) {
-    if (await db.tombstones.get(tombstoneId("deck", local.id))) continue
+    if (!(await allowEntitySync("deck", local.id, local.updatedAt))) continue
     const remoteDeck = remote.decks.get(local.id)
     if (!remoteDeck) continue
     const pick = resolveEntityMerge(
@@ -151,13 +143,14 @@ async function collectEntityConflicts(
   }
 
   for (const remoteDeck of remote.decks.values()) {
-    if (await db.tombstones.get(tombstoneId("deck", remoteDeck.id))) continue
+    if (!(await allowEntitySync("deck", remoteDeck.id, remoteDeck.updatedAt)))
+      continue
     if (await db.decks.get(remoteDeck.id)) continue
     await db.decks.put(remoteDeck)
   }
 
   for (const local of localCards) {
-    if (await db.tombstones.get(tombstoneId("card", local.id))) continue
+    if (!(await allowEntitySync("card", local.id, local.updatedAt))) continue
     const remoteCard = remote.cards.get(local.id)
     if (!remoteCard) continue
     const pick = resolveEntityMerge(
@@ -189,13 +182,15 @@ async function collectEntityConflicts(
   }
 
   for (const remoteCard of remote.cards.values()) {
-    if (await db.tombstones.get(tombstoneId("card", remoteCard.id))) continue
+    if (!(await allowEntitySync("card", remoteCard.id, remoteCard.updatedAt)))
+      continue
     if (await db.cards.get(remoteCard.id)) continue
     await db.cards.put(remoteCard)
   }
 
   for (const local of localSched) {
-    if (await db.tombstones.get(tombstoneId("scheduling", local.id))) continue
+    if (!(await allowEntitySync("scheduling", local.id, local.updatedAt)))
+      continue
     const remoteRow = remote.scheduling.get(local.id)
     if (!remoteRow) continue
     const pick = resolveEntityMerge(
@@ -230,7 +225,8 @@ async function collectEntityConflicts(
   }
 
   for (const remoteRow of remote.scheduling.values()) {
-    if (await db.tombstones.get(tombstoneId("scheduling", remoteRow.id))) continue
+    if (!(await allowEntitySync("scheduling", remoteRow.id, remoteRow.updatedAt)))
+      continue
     if (await db.scheduling.get(remoteRow.id)) continue
     await db.scheduling.put(remoteRow)
   }

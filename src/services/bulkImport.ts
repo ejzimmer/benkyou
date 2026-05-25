@@ -2,9 +2,18 @@ import type { User } from "firebase/auth"
 import { db } from "../lib/db/schema"
 import type { BulkImportPayload } from "../lib/import/types"
 import { pushLocalMediaToRemote } from "../lib/sync/mediaSync"
+import {
+  clearTombstonesForBulkImport,
+  remoteTombstoneIdsForBulkImport,
+} from "../lib/sync/importTombstones"
 import { pushCardRemote, pushSchedulingRemote } from "./decks"
-import { getFirestoreDb } from "../lib/firebase"
-import { upsertDeckRemote } from "../lib/sync/firestoreSync"
+import { getFirestoreDb, getFirebaseStorage } from "../lib/firebase"
+import {
+  deleteTombstoneRemote,
+  upsertDeckRemote,
+  upsertMediaMetaRemote,
+} from "../lib/sync/firestoreSync"
+import { uploadMediaBlob } from "../lib/sync/mediaSync"
 
 function mediaItemBytes(item: BulkImportPayload["media"][number]): Uint8Array {
   if (item.bytes) return item.bytes
@@ -47,10 +56,18 @@ export async function applyBulkImport(
     },
   )
 
+  await clearTombstonesForBulkImport(payload)
+
   if (!user) return
 
   const fs = getFirestoreDb()
-  if (fs) await upsertDeckRemote(fs, user.uid, payload.deck)
+  const storage = getFirebaseStorage()
+  if (fs) {
+    await upsertDeckRemote(fs, user.uid, payload.deck)
+    for (const tombId of remoteTombstoneIdsForBulkImport(payload)) {
+      await deleteTombstoneRemote(fs, user.uid, tombId)
+    }
+  }
 
   for (const card of payload.cards) {
     await pushCardRemote(user, card.id)
@@ -58,5 +75,15 @@ export async function applyBulkImport(
   for (const row of payload.scheduling) {
     await pushSchedulingRemote(user, row.id)
   }
-  await pushLocalMediaToRemote(user.uid, payload.cards)
+
+  if (storage) {
+    for (const item of payload.media) {
+      const row = await db.media.get(item.id)
+      if (!row) continue
+      await uploadMediaBlob(storage, user.uid, row)
+      if (fs) await upsertMediaMetaRemote(fs, user.uid, row)
+    }
+  } else {
+    await pushLocalMediaToRemote(user.uid, payload.cards)
+  }
 }

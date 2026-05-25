@@ -239,6 +239,14 @@ export async function upsertTombstoneRemote(
   )
 }
 
+export async function deleteTombstoneRemote(
+  fs: Firestore,
+  uid: string,
+  tombstoneId: string,
+): Promise<void> {
+  await deleteDoc(doc(tombstonesCol(fs, uid), tombstoneId))
+}
+
 export async function upsertMediaMetaRemote(
   fs: Firestore,
   uid: string,

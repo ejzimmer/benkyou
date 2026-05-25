@@ -18,12 +18,22 @@ export function stripHtml(html: string): string {
     .trim()
 }
 
+/** Match Anki parseApkg media index keys (strip query, decode URI). */
+export function normalizeMediaRef(ref: string): string {
+  const base = ref.split("?")[0] ?? ref
+  try {
+    return decodeURIComponent(base)
+  } catch {
+    return base
+  }
+}
+
 export function extractMediaRefs(html: string): string[] {
   const refs: string[] = []
   const re = /(?:src|href)=["']([^"']+)["']/gi
   let m: RegExpExecArray | null
   while ((m = re.exec(html)) !== null) {
-    refs.push(m[1])
+    refs.push(normalizeMediaRef(m[1]))
   }
   return refs
 }
