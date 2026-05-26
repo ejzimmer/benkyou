@@ -266,13 +266,23 @@ export function ReviewSessionPage() {
           <p className="muted small">
             {sessionQueue.length} left · {item.modeId}
           </p>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => void onUndoJudgementFromHeader()}
-          >
-            Undo last judgement
-          </button>
+          <div className="review-header-actions">
+            <Link
+              to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(
+                deckId ? `/decks/${deckId}/review` : "/review",
+              )}`}
+              className="btn"
+            >
+              Edit card
+            </Link>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => void onUndoJudgementFromHeader()}
+            >
+              Undo last judgement
+            </button>
+          </div>
         </div>
       </header>
 

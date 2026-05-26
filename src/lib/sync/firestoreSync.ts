@@ -16,6 +16,11 @@ import { syncLog, syncLogTimed } from "./syncLog"
 
 const BATCH_SIZE = 400
 
+/** Firestore doc id is canonical; body `id` may be missing or stale after manual edits. */
+function withDocId<T extends { id?: string }>(docId: string, data: T): T & { id: string } {
+  return { ...data, id: docId }
+}
+
 const decksCol = (fs: Firestore, uid: string) =>
   collection(fs, "users", uid, "decks")
 const cardsCol = (fs: Firestore, uid: string) =>
@@ -59,21 +64,24 @@ export async function fetchRemoteSnapshot(
     ])
 
   const decks = new Map<string, Deck>()
-  for (const d of snapDecks.docs) decks.set(d.id, d.data() as Deck)
+  for (const d of snapDecks.docs)
+    decks.set(d.id, withDocId(d.id, d.data() as Deck))
 
   const cards = new Map<string, Card>()
-  for (const d of snapCards.docs) cards.set(d.id, d.data() as Card)
+  for (const d of snapCards.docs)
+    cards.set(d.id, withDocId(d.id, d.data() as Card))
 
   const scheduling = new Map<string, SchedulingRow>()
   for (const d of snapSched.docs)
-    scheduling.set(d.id, d.data() as SchedulingRow)
+    scheduling.set(d.id, withDocId(d.id, d.data() as SchedulingRow))
 
   const tombstones = new Map<string, Tombstone>()
-  for (const d of snapTombs.docs) tombstones.set(d.id, d.data() as Tombstone)
+  for (const d of snapTombs.docs)
+    tombstones.set(d.id, withDocId(d.id, d.data() as Tombstone))
 
   const mediaMeta = new Map<string, RemoteMediaMeta>()
   for (const d of snapMedia.docs)
-    mediaMeta.set(d.id, d.data() as RemoteMediaMeta)
+    mediaMeta.set(d.id, withDocId(d.id, d.data() as RemoteMediaMeta))
 
   const summary = {
     decks: decks.size,
