@@ -26,6 +26,22 @@ export function App() {
   }, [offlineOnly, user, syncNow])
 
   useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const syncViewportHeight = () => {
+      document.documentElement.style.setProperty("--vvh", `${vv.height}px`)
+    }
+    syncViewportHeight()
+    vv.addEventListener("resize", syncViewportHeight)
+    vv.addEventListener("scroll", syncViewportHeight)
+    return () => {
+      vv.removeEventListener("resize", syncViewportHeight)
+      vv.removeEventListener("scroll", syncViewportHeight)
+      document.documentElement.style.removeProperty("--vvh")
+    }
+  }, [])
+
+  useEffect(() => {
     if (!user || offlineOnly) return
     const onVisibility = () => {
       if (document.visibilityState === "hidden") {

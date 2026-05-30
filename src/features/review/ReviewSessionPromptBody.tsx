@@ -13,6 +13,10 @@ type TypingAnswerInputProps = {
   autoComplete?: string
 }
 
+function isTouchPrimaryDevice() {
+  return window.matchMedia("(hover: none) and (pointer: coarse)").matches
+}
+
 function TypingAnswerInput({
   value,
   onChange,
@@ -24,7 +28,9 @@ function TypingAnswerInput({
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    inputRef.current?.focus()
+    const input = inputRef.current
+    if (!input || isTouchPrimaryDevice()) return
+    input.focus({ preventScroll: true })
   }, [focusKey])
 
   return (
@@ -33,6 +39,9 @@ function TypingAnswerInput({
       className="input"
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onFocus={(e) => {
+        e.target.scrollIntoView?.({ block: "nearest", inline: "nearest" })
+      }}
       onKeyDown={(e) => {
         if (e.key !== "Enter") return
         e.preventDefault()
