@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react"
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { useLiveQuery } from "dexie-react-hooks"
+import {
+  Link,
+  useMatch,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom"
 import type {
   Card,
   GrammarCardContent,
@@ -24,13 +31,30 @@ import {
   parseGrammarReadingsText,
 } from "../../domain/grammarReadings"
 
+function safeReturnTo(raw: string | null): string | null {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null
+  return raw
+}
+
 export function CardEditPage() {
-  const { deckId = "", cardId = "" } = useParams()
+  const { deckId = "", cardId: cardIdParam = "" } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isNew = cardId === "new"
+  const isNewRoute = useMatch({ path: "/decks/:deckId/cards/new", end: true })
+  const cardId = cardIdParam ? decodeURIComponent(cardIdParam) : ""
+  const isNew = Boolean(isNewRoute) || cardId === "new" || !cardId
   const vocabNew = searchParams.get("vocab") !== "0"
+  const returnTo = safeReturnTo(searchParams.get("returnTo"))
+  const backTo = returnTo ?? `/decks/${deckId}`
+
+  const loadedCard = useLiveQuery(
+    async () => {
+      if (isNew || !cardId) return null
+      return (await db.cards.get(cardId)) ?? null
+    },
+    [cardId, isNew],
+  )
 
   const [loading, setLoading] = useState(!isNew)
   const [kind, setKind] = useState<"vocabulary" | "grammar">(
@@ -44,35 +68,31 @@ export function CardEditPage() {
   const [err, setErr] = useState<string | null>(null)
 
   useEffect(() => {
-    if (isNew || !cardId || cardId === "new") {
+    if (isNew) {
       setLoading(false)
+      setErr(null)
       setReadingsMapDraft("")
       return
     }
-    let cancelled = false
-    setLoading(true)
-    setErr(null)
-    ;(async () => {
-      const c = await db.cards.get(cardId)
-      if (cancelled) return
-      if (!c) {
-        setErr("Card not found")
-        setLoading(false)
-        return
-      }
-      setKind(c.kind)
-      if (c.kind === "vocabulary") {
-        setVocab(c.content)
-      } else {
-        setGrammar(c.content)
-        setReadingsMapDraft(grammarReadingsToText(c.content.readings))
-      }
-      setLoading(false)
-    })()
-    return () => {
-      cancelled = true
+    if (loadedCard === undefined) {
+      setLoading(true)
+      return
     }
-  }, [cardId, isNew])
+    setLoading(false)
+    if (!loadedCard || loadedCard.deckId !== deckId) {
+      setErr("Card not found")
+      return
+    }
+    setErr(null)
+    setKind(loadedCard.kind)
+    if (loadedCard.kind === "vocabulary") {
+      setVocab(loadedCard.content)
+      setReadingsMapDraft("")
+    } else {
+      setGrammar(loadedCard.content)
+      setReadingsMapDraft(grammarReadingsToText(loadedCard.content.readings))
+    }
+  }, [cardId, deckId, isNew, loadedCard])
 
   useEffect(() => {
     if (!isNew) return
@@ -118,7 +138,7 @@ export function CardEditPage() {
           await saveCard(card, user)
         }
       }
-      navigate(`/decks/${deckId}`)
+      navigate(returnTo ?? `/decks/${deckId}`)
     } catch (x) {
       setErr(x instanceof Error ? x.message : "Save failed")
     }
@@ -139,7 +159,7 @@ export function CardEditPage() {
   return (
     <div className="page">
       <header className="header">
-        <Link to={`/decks/${deckId}`}>← Deck</Link>
+        <Link to={backTo}>{returnTo ? "← Back" : "← Deck"}</Link>
         <h1>{isNew ? "New card" : "Edit card"}</h1>
       </header>
 

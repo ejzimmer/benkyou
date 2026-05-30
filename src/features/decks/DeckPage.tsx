@@ -76,7 +76,9 @@ export function DeckPage() {
         <ul className="card-list">
           {filtered.map((c) => (
             <li key={c.id}>
-              <Link to={`/decks/${deckId}/cards/${c.id}`}>
+              <Link
+                to={`/decks/${deckId}/cards/${encodeURIComponent(c.id)}`}
+              >
                 {c.kind === "vocabulary"
                   ? c.content.wordJa
                   : c.content.sentenceWithGap}
