@@ -315,15 +315,26 @@ export function ReviewSessionPage() {
           <p className="muted small">Next card…</p>
         )}
 
-        {phase === "answer" && (
-          <ReviewSessionAnswerPanel
-            item={item}
-            typed={typed}
-            expected={exp}
-            pendingIncorrectDelay={pendingIncorrectDelay}
-            onJudge={(correct) => void onJudge(correct)}
-            onUndoAnswer={() => void onUndoAnswer()}
-          />
+        {phase === "answer" && !pendingIncorrectDelay && (
+          <>
+            <ReviewSessionPromptBody
+              item={item}
+              typed={typed}
+              onTypedChange={setTyped}
+              readingWarn={readingWarn}
+              synonymWarn={synonymWarn}
+              onTypedSubmit={() => {}}
+              revealed
+            />
+            <ReviewSessionAnswerPanel
+              item={item}
+              typed={typed}
+              expected={exp}
+              pendingIncorrectDelay={pendingIncorrectDelay}
+              onJudge={(correct) => void onJudge(correct)}
+              onUndoAnswer={() => void onUndoAnswer()}
+            />
+          </>
         )}
       </section>
     </div>

@@ -113,9 +113,99 @@ describe("ReviewSessionPage", () => {
     await user.click(screen.getByRole("button", { name: /show answer/i }))
     await user.click(screen.getByRole("button", { name: /^incorrect$/i }))
 
+    await waitFor(() => {
+      expect(screen.getByText(/next card/i)).toBeInTheDocument()
+    })
     expect(
       screen.queryByRole("heading", { name: /^answer$/i }),
     ).not.toBeInTheDocument()
-    expect(screen.getByText(/next card/i)).toBeInTheDocument()
+  })
+
+  it("keeps the question visible when the answer is shown", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T", null)
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    expect(screen.getByText("猫")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /show answer/i }))
+
+    expect(await screen.findByRole("heading", { name: /^answer$/i })).toBeInTheDocument()
+    expect(screen.getByText("猫")).toBeInTheDocument()
+    expect(screen.getByText("ねこ")).toBeInTheDocument()
+  })
+
+  it("keeps the question visible after undo last judgement reopens the answer", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T", null)
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    await user.click(screen.getByRole("button", { name: /show answer/i }))
+    await user.click(screen.getByRole("button", { name: /^correct$/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /undo last judgement/i })).toBeEnabled()
+    })
+
+    await user.click(screen.getByRole("button", { name: /undo last judgement/i }))
+
+    expect(await screen.findByRole("heading", { name: /^answer$/i })).toBeInTheDocument()
+    expect(screen.getByText("猫")).toBeInTheDocument()
+    expect(screen.getByText("ねこ")).toBeInTheDocument()
   })
 })
