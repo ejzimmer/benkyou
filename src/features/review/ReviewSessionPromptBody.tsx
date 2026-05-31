@@ -14,6 +14,7 @@ type TypingAnswerInputProps = {
 }
 
 function isTouchPrimaryDevice() {
+  if (typeof window.matchMedia !== "function") return false
   return window.matchMedia("(hover: none) and (pointer: coarse)").matches
 }
 
@@ -61,6 +62,8 @@ export type ReviewSessionPromptBodyProps = {
   synonymWarn: boolean
   /** Called when user presses Enter in a typing field */
   onTypedSubmit: () => void
+  /** Answer is visible — show the prompt only, not typing inputs or warnings */
+  revealed?: boolean
 }
 
 export function ReviewSessionPromptBody({
@@ -70,6 +73,7 @@ export function ReviewSessionPromptBody({
   readingWarn,
   synonymWarn,
   onTypedSubmit,
+  revealed = false,
 }: ReviewSessionPromptBodyProps) {
   const { card, modeId: m } = item
   const focusKey = `${card.id}:${m}`
@@ -100,18 +104,22 @@ export function ReviewSessionPromptBody({
         {card.content.exampleSentences[0] && (
           <p className="muted">{card.content.exampleSentences[0]}</p>
         )}
-        <TypingAnswerInput
-          value={typed}
-          onChange={onTypedChange}
-          onSubmit={onTypedSubmit}
-          placeholder="ひらがなで"
-          focusKey={focusKey}
-          autoComplete="off"
-        />
-        {readingWarn && (
-          <p className="error">
-            Use hiragana only for readings (no kanji or katakana).
-          </p>
+        {!revealed && (
+          <>
+            <TypingAnswerInput
+              value={typed}
+              onChange={onTypedChange}
+              onSubmit={onTypedSubmit}
+              placeholder="ひらがなで"
+              focusKey={focusKey}
+              autoComplete="off"
+            />
+            {readingWarn && (
+              <p className="error">
+                Use hiragana only for readings (no kanji or katakana).
+              </p>
+            )}
+          </>
         )}
       </div>
     )
@@ -130,17 +138,21 @@ export function ReviewSessionPromptBody({
         {card.content.images.map((id) => (
           <CardImage key={id} mediaId={id} />
         ))}
-        <TypingAnswerInput
-          value={typed}
-          onChange={onTypedChange}
-          onSubmit={onTypedSubmit}
-          placeholder="Japanese word"
-          focusKey={focusKey}
-        />
-        {synonymWarn && (
-          <p className="warn">
-            That matches a synonym — try the main form on the card.
-          </p>
+        {!revealed && (
+          <>
+            <TypingAnswerInput
+              value={typed}
+              onChange={onTypedChange}
+              onSubmit={onTypedSubmit}
+              placeholder="Japanese word"
+              focusKey={focusKey}
+            />
+            {synonymWarn && (
+              <p className="warn">
+                That matches a synonym — try the main form on the card.
+              </p>
+            )}
+          </>
         )}
       </div>
     )
@@ -160,17 +172,21 @@ export function ReviewSessionPromptBody({
         {card.content.images.map((id) => (
           <CardImage key={id} mediaId={id} />
         ))}
-        <TypingAnswerInput
-          value={typed}
-          onChange={onTypedChange}
-          onSubmit={onTypedSubmit}
-          placeholder="Construction"
-          focusKey={focusKey}
-        />
-        {synonymWarn && (
-          <p className="warn">
-            That matches a synonym — try the construction written on the card.
-          </p>
+        {!revealed && (
+          <>
+            <TypingAnswerInput
+              value={typed}
+              onChange={onTypedChange}
+              onSubmit={onTypedSubmit}
+              placeholder="Construction"
+              focusKey={focusKey}
+            />
+            {synonymWarn && (
+              <p className="warn">
+                That matches a synonym — try the construction written on the card.
+              </p>
+            )}
+          </>
         )}
       </div>
     )
