@@ -1,5 +1,6 @@
 import type { DueItem } from "../../services/review"
 import { CardImage } from "../../ui/CardImage"
+import { ReadingAnswerDiff } from "../../ui/ReadingAnswerDiff"
 import { TextDiffCompare } from "../../ui/TextDiffCompare"
 import { requiresTyping } from "./reviewFlowHelpers"
 
@@ -25,8 +26,10 @@ export function ReviewSessionAnswerPanel({
 
   return (
     <div className="answer-block stack">
-      <h3>Answer</h3>
-      {typingMode && <TextDiffCompare typed={typed} expected={expected} />}
+      {m !== "vocab_type_reading" && <h3>Answer</h3>}
+      {typingMode && m !== "vocab_type_reading" && (
+        <TextDiffCompare typed={typed} expected={expected} />
+      )}
       {m === "vocab_oral_en" && card.kind === "vocabulary" && (
         <>
           <ul>
@@ -43,9 +46,7 @@ export function ReviewSessionAnswerPanel({
       )}
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
         <>
-          {card.content.reading?.trim() && (
-            <p className="prompt-main">{card.content.reading}</p>
-          )}
+          <ReadingAnswerDiff typed={typed} expected={expected} />
           {card.content.images.map((id) => (
             <CardImage key={id} mediaId={id} />
           ))}
