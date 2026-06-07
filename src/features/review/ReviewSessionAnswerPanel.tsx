@@ -1,7 +1,8 @@
 import type { DueItem } from "../../services/review"
 import { CardImage } from "../../ui/CardImage"
+import { RubyWord } from "../../ui/KanjiRuby"
 import { TextDiffCompare } from "../../ui/TextDiffCompare"
-import { requiresTyping } from "./reviewFlowHelpers"
+import { readingForConstruction, requiresTyping } from "./reviewFlowHelpers"
 
 export type ReviewSessionAnswerPanelProps = {
   item: DueItem
@@ -43,16 +44,47 @@ export function ReviewSessionAnswerPanel({
       )}
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
         <>
-          {card.content.reading?.trim() && (
-            <p className="prompt-main">{card.content.reading}</p>
-          )}
+          <p className="prompt-main">
+            <RubyWord
+              surface={card.content.wordJa}
+              reading={card.content.reading}
+            />
+          </p>
           {card.content.images.map((id) => (
             <CardImage key={id} mediaId={id} />
           ))}
         </>
       )}
+      {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
+        <p className="prompt-main">
+          <RubyWord
+            surface={card.content.wordJa}
+            reading={card.content.reading}
+          />
+        </p>
+      )}
+      {m === "grammar_type_construction" && card.kind === "grammar" && (
+        <p className="prompt-main">
+          <RubyWord
+            surface={card.content.construction}
+            reading={readingForConstruction(
+              card.content.construction,
+              card.content.readings,
+            )}
+          />
+        </p>
+      )}
       {m === "grammar_oral_meaning" && card.kind === "grammar" && (
         <>
+          <p className="prompt-main">
+            <RubyWord
+              surface={card.content.construction}
+              reading={readingForConstruction(
+                card.content.construction,
+                card.content.readings,
+              )}
+            />
+          </p>
           {card.content.translationEn.trim() && (
             <p>{card.content.translationEn}</p>
           )}
