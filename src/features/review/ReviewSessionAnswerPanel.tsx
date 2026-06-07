@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { CardImage } from "../../ui/CardImage"
 import { TextDiffCompare } from "../../ui/TextDiffCompare"
@@ -22,6 +23,21 @@ export function ReviewSessionAnswerPanel({
 }: ReviewSessionAnswerPanelProps) {
   const { card, modeId: m } = item
   const typingMode = requiresTyping(m)
+  const correctBtnRef = useRef<HTMLButtonElement>(null)
+  const incorrectBtnRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (pendingIncorrectDelay) return
+    if (typingMode) {
+      if (typed === expected) {
+        correctBtnRef.current?.focus({ preventScroll: true })
+      } else {
+        incorrectBtnRef.current?.focus({ preventScroll: true })
+      }
+    } else {
+      correctBtnRef.current?.focus({ preventScroll: true })
+    }
+  }, [typingMode, typed, expected, pendingIncorrectDelay])
 
   return (
     <div className="answer-block stack">
@@ -63,6 +79,7 @@ export function ReviewSessionAnswerPanel({
       )}
       <div className="toolbar">
         <button
+          ref={correctBtnRef}
           type="button"
           className="btn good"
           disabled={pendingIncorrectDelay}
@@ -71,6 +88,7 @@ export function ReviewSessionAnswerPanel({
           Correct
         </button>
         <button
+          ref={incorrectBtnRef}
           type="button"
           className="btn bad"
           disabled={pendingIncorrectDelay}
