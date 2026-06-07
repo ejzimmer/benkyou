@@ -282,6 +282,46 @@ label {
   box-decoration-break: clone;
 }
 
+.reading-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.reading-diff-line {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.65;
+  word-break: break-word;
+}
+
+.reading-diff-line.muted-label {
+  font-size: 1.1rem;
+}
+
+.reading-diff-chunk {
+  border-radius: 3px;
+  padding: 0.06em 0.15em;
+}
+
+.reading-diff-same {
+  background: #166534;
+  color: #dcfce7;
+  box-decoration-break: clone;
+}
+
+.reading-diff-extra {
+  background: #991b1b;
+  color: #fef2f2;
+  box-decoration-break: clone;
+}
+
+.reading-diff-missing {
+  background: #1e40af;
+  color: #eff6ff;
+  box-decoration-break: clone;
+}
+
 .ruby-hover ruby rt {
   opacity: 0;
   transition: opacity 0.12s ease;
