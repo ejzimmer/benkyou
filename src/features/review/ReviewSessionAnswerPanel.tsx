@@ -1,8 +1,10 @@
+import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { CardImage } from "../../ui/CardImage"
 import { ReadingAnswerDiff } from "../../ui/ReadingAnswerDiff"
+import { RubyWord } from "../../ui/KanjiRuby"
 import { TextDiffCompare } from "../../ui/TextDiffCompare"
-import { requiresTyping } from "./reviewFlowHelpers"
+import { readingForConstruction, requiresTyping } from "./reviewFlowHelpers"
 
 export type ReviewSessionAnswerPanelProps = {
   item: DueItem
@@ -23,6 +25,21 @@ export function ReviewSessionAnswerPanel({
 }: ReviewSessionAnswerPanelProps) {
   const { card, modeId: m } = item
   const typingMode = requiresTyping(m)
+  const correctBtnRef = useRef<HTMLButtonElement>(null)
+  const incorrectBtnRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (pendingIncorrectDelay) return
+    if (typingMode) {
+      if (typed === expected) {
+        correctBtnRef.current?.focus({ preventScroll: true })
+      } else {
+        incorrectBtnRef.current?.focus({ preventScroll: true })
+      }
+    } else {
+      correctBtnRef.current?.focus({ preventScroll: true })
+    }
+  }, [typingMode, typed, expected, pendingIncorrectDelay])
 
   return (
     <div className="answer-block stack">
@@ -52,8 +69,36 @@ export function ReviewSessionAnswerPanel({
           ))}
         </>
       )}
+      {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
+        <p className="prompt-main">
+          <RubyWord
+            surface={card.content.wordJa}
+            reading={card.content.reading}
+          />
+        </p>
+      )}
+      {m === "grammar_type_construction" && card.kind === "grammar" && (
+        <p className="prompt-main">
+          <RubyWord
+            surface={card.content.construction}
+            reading={readingForConstruction(
+              card.content.construction,
+              card.content.readings,
+            )}
+          />
+        </p>
+      )}
       {m === "grammar_oral_meaning" && card.kind === "grammar" && (
         <>
+          <p className="prompt-main">
+            <RubyWord
+              surface={card.content.construction}
+              reading={readingForConstruction(
+                card.content.construction,
+                card.content.readings,
+              )}
+            />
+          </p>
           {card.content.translationEn.trim() && (
             <p>{card.content.translationEn}</p>
           )}
@@ -64,6 +109,7 @@ export function ReviewSessionAnswerPanel({
       )}
       <div className="toolbar">
         <button
+          ref={correctBtnRef}
           type="button"
           className="btn good"
           disabled={pendingIncorrectDelay}
@@ -72,6 +118,7 @@ export function ReviewSessionAnswerPanel({
           Correct
         </button>
         <button
+          ref={incorrectBtnRef}
           type="button"
           className="btn bad"
           disabled={pendingIncorrectDelay}

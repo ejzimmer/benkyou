@@ -45,6 +45,7 @@ function TypingAnswerInput({
       }}
       onKeyDown={(e) => {
         if (e.key !== "Enter") return
+        if (e.nativeEvent.isComposing) return
         e.preventDefault()
         onSubmit()
       }}

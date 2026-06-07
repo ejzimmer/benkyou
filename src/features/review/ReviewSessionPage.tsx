@@ -23,7 +23,7 @@ import {
 } from "../../lib/japanese/synonyms"
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
-import { expectedAnswer, REVIEW_MODE_LABELS } from "./reviewFlowHelpers"
+import { expectedAnswer, requiresTyping, REVIEW_MODE_LABELS } from "./reviewFlowHelpers"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
@@ -44,6 +44,7 @@ export function ReviewSessionPage() {
   const [loading, setLoading] = useState(true)
   const [pendingIncorrectDelay, setPendingIncorrectDelay] = useState(false)
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -83,6 +84,12 @@ export function ReviewSessionPage() {
     if (!current) return ""
     return REVIEW_MODE_LABELS[current.modeId]
   }, [current])
+
+  useEffect(() => {
+    if (phase === "prompt" && current && !pendingIncorrectDelay && !requiresTyping(current.modeId)) {
+      showAnswerBtnRef.current?.focus({ preventScroll: true })
+    }
+  }, [phase, current, pendingIncorrectDelay])
 
   function resetPromptAfterJudgement() {
     setTyped("")
@@ -301,6 +308,7 @@ export function ReviewSessionPage() {
             />
             <div className="toolbar">
               <button
+                ref={showAnswerBtnRef}
                 type="button"
                 className="btn primary"
                 onClick={() => tryShowAnswerRef.current()}
