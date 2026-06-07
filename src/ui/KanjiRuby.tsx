@@ -28,6 +28,7 @@ type MapProps = {
   gapMarker: string
   /** longest phrases first for greedy match */
   readings: Record<string, string>
+  renderGap?: (gapIndex: number, marker: string) => ReactNode
 }
 
 function RubySegment({
@@ -64,7 +65,12 @@ function RubySegment({
 }
 
 /** Ruby per substring + gap markers between segments (supports repeated gaps). */
-export function RubySentence({ sentence, gapMarker, readings }: MapProps) {
+export function RubySentence({
+  sentence,
+  gapMarker,
+  readings,
+  renderGap,
+}: MapProps) {
   const marker = gapMarker.trim()
   if (!marker) {
     return (
@@ -78,7 +84,12 @@ export function RubySentence({ sentence, gapMarker, readings }: MapProps) {
     <span className="ruby-sentence">
       {chunks.map((chunk, idx) => (
         <Fragment key={`${idx}-${chunk.slice(0, 8)}`}>
-          {idx > 0 && <span className="gap-mark">{marker}</span>}
+          {idx > 0 &&
+            (renderGap ? (
+              renderGap(idx - 1, marker)
+            ) : (
+              <span className="gap-mark">{marker}</span>
+            ))}
           <RubySegment segment={chunk} readings={readings} />
         </Fragment>
       ))}
