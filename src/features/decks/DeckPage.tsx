@@ -34,10 +34,10 @@ export function DeckPage() {
     })
   }, [cards, q])
 
-  async function onDeleteDeck() {
+  function onDeleteDeck() {
     if (!confirm("Delete this deck and all its cards?")) return
-    await deleteDeck(deckId, user)
     navigate("/")
+    deleteDeck(deckId, user).catch(console.error)
   }
 
   if (deck === undefined) return <div className="page">Loading…</div>
