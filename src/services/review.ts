@@ -23,6 +23,61 @@ export type DueItem = {
   due: number
 }
 
+type RandomSource = () => number
+
+function shuffle<T>(items: T[], random: RandomSource): T[] {
+  const shuffled = [...items]
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1))
+    const current = shuffled[i]
+    shuffled[i] = shuffled[j]
+    shuffled[j] = current
+  }
+  return shuffled
+}
+
+export function randomizeDueQueue(
+  dueItems: DueItem[],
+  random: RandomSource = Math.random,
+): DueItem[] {
+  const groups = new Map<string, DueItem[]>()
+  for (const item of shuffle(dueItems, random)) {
+    const group = groups.get(item.card.id)
+    if (group) {
+      group.push(item)
+    } else {
+      groups.set(item.card.id, [item])
+    }
+  }
+
+  const queues = [...groups.entries()].map(([cardId, items]) => ({
+    cardId,
+    items,
+  }))
+  const ordered: DueItem[] = []
+
+  while (queues.length > 0) {
+    const previousCardId = ordered[ordered.length - 1]?.card.id
+    const candidates = queues.filter((queue) => queue.cardId !== previousCardId)
+    const pool = candidates.length > 0 ? candidates : queues
+    const mostRemaining = Math.max(...pool.map((queue) => queue.items.length))
+    const tied = pool.filter((queue) => queue.items.length === mostRemaining)
+    const queue = tied[Math.floor(random() * tied.length)]
+    const next = queue.items.pop()
+
+    if (!next) continue
+
+    ordered.push(next)
+
+    if (queue.items.length === 0) {
+      const idx = queues.indexOf(queue)
+      if (idx >= 0) queues.splice(idx, 1)
+    }
+  }
+
+  return ordered
+}
+
 export async function getDueQueue(now = Date.now()): Promise<DueItem[]> {
   const rows = await db.scheduling.filter((r) => r.due <= now).toArray()
   const cards = await db.cards.toArray()
@@ -35,8 +90,7 @@ export async function getDueQueue(now = Date.now()): Promise<DueItem[]> {
     if (!allowed.has(r.modeId)) continue
     list.push({ card, modeId: r.modeId, due: r.due })
   }
-  list.sort((a, b) => a.due - b.due)
-  return list
+  return randomizeDueQueue(list)
 }
 
 export async function prefetchDueForSession(now = Date.now()): Promise<DueItem[]> {
