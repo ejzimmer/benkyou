@@ -11,6 +11,9 @@ type TypingAnswerInputProps = {
   placeholder: string
   focusKey: string
   autoComplete?: string
+  className?: string
+  ariaLabel?: string
+  autoFocus?: boolean
 }
 
 function isTouchPrimaryDevice() {
@@ -25,19 +28,22 @@ function TypingAnswerInput({
   placeholder,
   focusKey,
   autoComplete,
+  className,
+  ariaLabel,
+  autoFocus = true,
 }: TypingAnswerInputProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const input = inputRef.current
-    if (!input || isTouchPrimaryDevice()) return
+    if (!autoFocus || !input || isTouchPrimaryDevice()) return
     input.focus({ preventScroll: true })
-  }, [focusKey])
+  }, [autoFocus, focusKey])
 
   return (
     <input
       ref={inputRef}
-      className="input"
+      className={className ? `input ${className}` : "input"}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={(e) => {
@@ -51,6 +57,7 @@ function TypingAnswerInput({
       }}
       placeholder={placeholder}
       autoComplete={autoComplete}
+      aria-label={ariaLabel}
     />
   )
 }
@@ -157,13 +164,35 @@ export function ReviewSessionPromptBody({
   }
 
   if (m === "grammar_type_construction" && card.kind === "grammar") {
+    const gapMarker = card.content.gapMarker.trim()
+    const hasInlineGap =
+      Boolean(gapMarker) && card.content.sentenceWithGap.includes(gapMarker)
+
     return (
       <div className="stack">
-        <RubySentence
-          sentence={card.content.sentenceWithGap}
-          gapMarker={card.content.gapMarker}
-          readings={card.content.readings}
-        />
+        <div className="grammar-gap-sentence">
+          <RubySentence
+            sentence={card.content.sentenceWithGap}
+            gapMarker={card.content.gapMarker}
+            readings={card.content.readings}
+            renderGap={
+              !revealed && hasInlineGap
+                ? (gapIndex) => (
+                    <TypingAnswerInput
+                      value={typed}
+                      onChange={onTypedChange}
+                      onSubmit={onTypedSubmit}
+                      placeholder="Construction"
+                      focusKey={focusKey}
+                      className="inline-gap-input"
+                      ariaLabel={`Construction gap ${gapIndex + 1}`}
+                      autoFocus={gapIndex === 0}
+                    />
+                  )
+                : undefined
+            }
+          />
+        </div>
         {card.content.translationEn.trim() && (
           <p className="muted">{card.content.translationEn}</p>
         )}
@@ -172,13 +201,15 @@ export function ReviewSessionPromptBody({
         ))}
         {!revealed && (
           <>
-            <TypingAnswerInput
-              value={typed}
-              onChange={onTypedChange}
-              onSubmit={onTypedSubmit}
-              placeholder="Construction"
-              focusKey={focusKey}
-            />
+            {!hasInlineGap && (
+              <TypingAnswerInput
+                value={typed}
+                onChange={onTypedChange}
+                onSubmit={onTypedSubmit}
+                placeholder="Construction"
+                focusKey={focusKey}
+              />
+            )}
             {synonymWarn && (
               <p className="warn">
                 That matches a synonym — try the construction written on the card.
