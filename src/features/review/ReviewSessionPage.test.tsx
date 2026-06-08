@@ -157,7 +157,7 @@ describe("ReviewSessionPage", () => {
     expect(screen.getByText("猫")).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /show answer/i }))
 
-    expect(await screen.findByRole("heading", { name: /^answer$/i })).toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: /^correct$/i })).toBeInTheDocument()
     expect(screen.getByText("猫")).toBeInTheDocument()
     expect(screen.getByText("ねこ")).toBeInTheDocument()
   })
@@ -204,7 +204,7 @@ describe("ReviewSessionPage", () => {
 
     await user.click(screen.getByRole("button", { name: /undo last judgement/i }))
 
-    expect(await screen.findByRole("heading", { name: /^answer$/i })).toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: /^correct$/i })).toBeInTheDocument()
     expect(screen.getByText("猫")).toBeInTheDocument()
     expect(screen.getByText("ねこ")).toBeInTheDocument()
   })
