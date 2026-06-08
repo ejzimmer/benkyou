@@ -189,7 +189,11 @@ export function ReviewSessionPromptBody({
                       autoFocus={gapIndex === 0}
                     />
                   )
-                : undefined
+                : revealed
+                  ? () => (
+                      <span className="gap-filled">{typed || "—"}</span>
+                    )
+                  : undefined
             }
           />
         </div>

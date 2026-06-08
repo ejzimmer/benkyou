@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { CardImage } from "../../ui/CardImage"
+import { GapAnswerDiff } from "../../ui/GapAnswerDiff"
 import { ReadingAnswerDiff } from "../../ui/ReadingAnswerDiff"
 import { RubyWord } from "../../ui/KanjiRuby"
 import { TextDiffCompare } from "../../ui/TextDiffCompare"
@@ -43,10 +44,14 @@ export function ReviewSessionAnswerPanel({
 
   return (
     <div className="answer-block stack">
-      {m !== "vocab_type_reading" && <h3>Answer</h3>}
-      {typingMode && m !== "vocab_type_reading" && (
-        <TextDiffCompare typed={typed} expected={expected} />
+      {m !== "vocab_type_reading" && m !== "grammar_type_construction" && (
+        <h3>Answer</h3>
       )}
+      {typingMode &&
+        m !== "vocab_type_reading" &&
+        m !== "grammar_type_construction" && (
+          <TextDiffCompare typed={typed} expected={expected} />
+        )}
       {m === "vocab_oral_en" && card.kind === "vocabulary" && (
         <>
           <ul>
@@ -78,15 +83,14 @@ export function ReviewSessionAnswerPanel({
         </p>
       )}
       {m === "grammar_type_construction" && card.kind === "grammar" && (
-        <p className="prompt-main">
-          <RubyWord
-            surface={card.content.construction}
-            reading={readingForConstruction(
-              card.content.construction,
-              card.content.readings,
-            )}
-          />
-        </p>
+        <GapAnswerDiff
+          typed={typed}
+          expected={expected}
+          reading={readingForConstruction(
+            card.content.construction,
+            card.content.readings,
+          )}
+        />
       )}
       {m === "grammar_oral_meaning" && card.kind === "grammar" && (
         <>
