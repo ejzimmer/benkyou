@@ -36,6 +36,29 @@ function safeReturnTo(raw: string | null): string | null {
   return raw
 }
 
+function imageFilesFromClipboard(data: DataTransfer): File[] {
+  const itemFiles = Array.from(data.items)
+    .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => file !== null)
+
+  if (itemFiles.length > 0) return itemFiles
+
+  return Array.from(data.files).filter((file) => file.type.startsWith("image/"))
+}
+
+function ImageIdList({ imageIds }: { imageIds: string[] }) {
+  if (imageIds.length === 0) return null
+
+  return (
+    <ul className="muted small">
+      {imageIds.map((id) => (
+        <li key={id}>{id.slice(0, 8)}…</li>
+      ))}
+    </ul>
+  )
+}
+
 export function CardEditPage() {
   const { deckId = "", cardId: cardIdParam = "" } = useParams()
   const [searchParams] = useSearchParams()
@@ -67,6 +90,8 @@ export function CardEditPage() {
   const formRef = useRef<HTMLFormElement | null>(null)
   const prevKind = useRef(kind)
   const [err, setErr] = useState<string | null>(null)
+  const [imageUploadCount, setImageUploadCount] = useState(0)
+  const isUploadingImages = imageUploadCount > 0
 
   useEffect(() => {
     if (isNew) {
@@ -156,14 +181,44 @@ export function CardEditPage() {
     }
   }
 
+  async function addImageFiles(files: File[]) {
+    if (files.length === 0) return
+
+    setErr(null)
+    setImageUploadCount((count) => count + files.length)
+    const ids: string[] = []
+    try {
+      for (const file of files) {
+        ids.push(await saveImageBlob(file, user))
+      }
+    } catch (x) {
+      setErr(x instanceof Error ? x.message : "Image upload failed")
+    } finally {
+      setImageUploadCount((count) => Math.max(0, count - files.length))
+    }
+
+    if (ids.length === 0) return
+
+    if (kind === "vocabulary") {
+      setVocab((v) => ({ ...v, images: [...v.images, ...ids] }))
+    } else {
+      setGrammar((g) => ({ ...g, images: [...g.images, ...ids] }))
+    }
+  }
+
   async function onPickImage(files: FileList | null) {
     if (!files?.length) return
-    const id = await saveImageBlob(files[0], user)
-    if (kind === "vocabulary") {
-      setVocab((v) => ({ ...v, images: [...v.images, id] }))
-    } else {
-      setGrammar((g) => ({ ...g, images: [...g.images, id] }))
-    }
+    await addImageFiles(
+      Array.from(files).filter((file) => file.type.startsWith("image/")),
+    )
+  }
+
+  function onPaste(e: React.ClipboardEvent<HTMLFormElement>) {
+    const files = imageFilesFromClipboard(e.clipboardData)
+    if (files.length === 0) return
+
+    e.preventDefault()
+    void addImageFiles(files)
   }
 
   if (loading) return <div className="page">Loading…</div>
@@ -175,7 +230,13 @@ export function CardEditPage() {
         <h1>{isNew ? "New card" : "Edit card"}</h1>
       </header>
 
-      <form ref={formRef} onSubmit={onSubmit} className="panel stack">
+      <form
+        ref={formRef}
+        onSubmit={onSubmit}
+        onPaste={onPaste}
+        className="panel stack"
+        aria-label="Card editor"
+      >
         {isNew && (
           <label className="row">
             Type{" "}
@@ -276,14 +337,17 @@ export function CardEditPage() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => onPickImage(e.target.files)}
+                onChange={(e) => {
+                  void onPickImage(e.currentTarget.files)
+                  e.currentTarget.value = ""
+                }}
               />
             </label>
-            <ul className="muted small">
-              {vocab.images.map((id) => (
-                <li key={id}>{id.slice(0, 8)}…</li>
-              ))}
-            </ul>
+            <p className="muted small">
+              Choose an image file or paste an image from your clipboard
+              anywhere in this form.
+            </p>
+            <ImageIdList imageIds={vocab.images} />
           </>
         ) : (
           <>
@@ -363,14 +427,29 @@ export function CardEditPage() {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => onPickImage(e.target.files)}
+                onChange={(e) => {
+                  void onPickImage(e.currentTarget.files)
+                  e.currentTarget.value = ""
+                }}
               />
             </label>
+            <p className="muted small">
+              Choose an image file or paste an image from your clipboard
+              anywhere in this form.
+            </p>
+            <ImageIdList imageIds={grammar.images} />
           </>
         )}
 
+        {isUploadingImages && (
+          <p className="muted small" aria-live="polite">
+            {imageUploadCount === 1
+              ? "Adding image…"
+              : `Adding ${imageUploadCount} images…`}
+          </p>
+        )}
         {err && <p className="error">{err}</p>}
-        <button type="submit" className="btn primary">
+        <button type="submit" className="btn primary" disabled={isUploadingImages}>
           Save
         </button>
       </form>
