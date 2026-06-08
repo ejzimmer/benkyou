@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { CardImage } from "../../ui/CardImage"
 import { GapAnswerDiff } from "../../ui/GapAnswerDiff"
-import { ReadingAnswerDiff } from "../../ui/ReadingAnswerDiff"
 import { RubyWord } from "../../ui/KanjiRuby"
 import { TextDiffCompare } from "../../ui/TextDiffCompare"
 import { readingForConstruction, requiresTyping } from "./reviewFlowHelpers"
@@ -68,10 +67,36 @@ export function ReviewSessionAnswerPanel({
       )}
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
         <>
-          <ReadingAnswerDiff typed={typed} expected={expected} />
-          {card.content.images.map((id) => (
-            <CardImage key={id} mediaId={id} />
-          ))}
+          <div className="answer-grid" lang="ja">
+            <span className="answer-grid-label">correct answer</span>
+            <span className="answer-grid-value">{expected}</span>
+            <span className="answer-grid-label">your answer</span>
+            <span className="answer-grid-value">{typed || "—"}</span>
+          </div>
+          <details className="meaning-details">
+            <summary className="btn">Show meaning</summary>
+            <div className="meaning-details-content stack">
+              {card.content.definitionsEn.filter((s) => s.trim()).length > 0 && (
+                <ul>
+                  {card.content.definitionsEn
+                    .filter((s) => s.trim())
+                    .map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                </ul>
+              )}
+              {card.content.exampleSentences
+                .filter((s) => s.trim())
+                .map((s, i) => (
+                  <p key={i} className="muted">
+                    {s}
+                  </p>
+                ))}
+              {card.content.images.map((id) => (
+                <CardImage key={id} mediaId={id} />
+              ))}
+            </div>
+          </details>
         </>
       )}
       {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (

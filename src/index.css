@@ -298,6 +298,43 @@ label {
   box-decoration-break: clone;
 }
 
+.answer-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  align-items: baseline;
+  font-size: 1.3rem;
+  line-height: 1.65;
+}
+
+.answer-grid-label {
+  color: #9898b0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.answer-grid-value {
+  word-break: break-word;
+}
+
+.meaning-details {
+  margin-top: 0.25rem;
+}
+
+.meaning-details summary {
+  cursor: pointer;
+  list-style: none;
+  width: fit-content;
+}
+
+.meaning-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.meaning-details-content {
+  margin-top: 0.75rem;
+}
+
 .reading-diff {
   display: flex;
   flex-direction: column;
