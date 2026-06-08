@@ -53,7 +53,9 @@ describe("CardEditPage create flow", () => {
     expect(
       screen.getByRole("heading", { name: /new card/i }),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText(/japanese word/i)).toHaveValue("")
+    await waitFor(() => {
+      expect(screen.getByLabelText(/japanese word/i)).toHaveValue("")
+    })
     expect(screen.getByLabelText(/reading/i)).toHaveValue("")
     expect(screen.getByLabelText(/english definitions/i)).toHaveValue("")
   })
