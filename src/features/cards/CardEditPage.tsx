@@ -26,6 +26,7 @@ import {
 import { saveImageBlob } from "../../services/media"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { db } from "../../lib/db/schema"
+import { normalizeJapanese } from "../../lib/japanese/normalize"
 import {
   grammarReadingsToText,
   parseGrammarReadingsText,
@@ -34,6 +35,12 @@ import {
 function safeReturnTo(raw: string | null): string | null {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null
   return raw
+}
+
+function japaneseDefinitionForCard(card: Card): string {
+  return card.kind === "vocabulary"
+    ? card.content.wordJa
+    : card.content.construction
 }
 
 export function CardEditPage() {
@@ -66,6 +73,40 @@ export function CardEditPage() {
   const [readingsMapDraft, setReadingsMapDraft] = useState("")
   const prevKind = useRef(kind)
   const [err, setErr] = useState<string | null>(null)
+
+  const duplicateJapaneseCards = useLiveQuery(
+    async () => {
+      if (!isNew) return []
+      const currentJapanese =
+        kind === "vocabulary" ? vocab.wordJa : grammar.construction
+      const normalizedCurrentJapanese = normalizeJapanese(currentJapanese)
+      if (!normalizedCurrentJapanese) return []
+      const cards = await db.cards.toArray()
+      return cards.filter(
+        (card) =>
+          normalizeJapanese(japaneseDefinitionForCard(card)) ===
+          normalizedCurrentJapanese,
+      )
+    },
+    [isNew, kind, vocab.wordJa, grammar.construction],
+  )
+
+  const duplicateJapaneseWarning =
+    isNew && duplicateJapaneseCards?.length
+      ? (() => {
+          const count = duplicateJapaneseCards.length
+          const fieldName =
+            kind === "vocabulary" ? "Japanese word" : "construction"
+          const deckScope = duplicateJapaneseCards.some(
+            (card) => card.deckId !== deckId,
+          )
+            ? ", including in another deck"
+            : " in this deck"
+          return `Warning: ${count} existing card${
+            count === 1 ? "" : "s"
+          } already ${count === 1 ? "has" : "have"} the same ${fieldName}${deckScope}. You can still save this duplicate card.`
+        })()
+      : null
 
   useEffect(() => {
     if (isNew) {
@@ -217,6 +258,11 @@ export function CardEditPage() {
               Include at least one of: pronunciation (for kanji words), English
               meaning, or an image.
             </p>
+            {duplicateJapaneseWarning && (
+              <p className="warn small" role="status">
+                {duplicateJapaneseWarning}
+              </p>
+            )}
             <label>
               English definitions (one per line)
               <textarea
@@ -305,6 +351,11 @@ export function CardEditPage() {
                 }
               />
             </label>
+            {duplicateJapaneseWarning && (
+              <p className="warn small" role="status">
+                {duplicateJapaneseWarning}
+              </p>
+            )}
             <label>
               English translation
               <input
