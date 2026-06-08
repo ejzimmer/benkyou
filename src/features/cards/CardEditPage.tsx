@@ -64,6 +64,7 @@ export function CardEditPage() {
   const [grammar, setGrammar] = useState<GrammarCardContent>(defaultGrammar)
   /** Controlled draft so incomplete `kanji=` lines are not dropped on each keystroke */
   const [readingsMapDraft, setReadingsMapDraft] = useState("")
+  const formRef = useRef<HTMLFormElement | null>(null)
   const prevKind = useRef(kind)
   const [err, setErr] = useState<string | null>(null)
 
@@ -103,6 +104,13 @@ export function CardEditPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset draft when switching TO grammar, not when readings change from typing
   }, [isNew, kind])
 
+  function resetNewCardForm() {
+    setVocab(defaultVocabulary())
+    setGrammar(defaultGrammar())
+    setReadingsMapDraft("")
+    formRef.current?.reset()
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setErr(null)
@@ -112,6 +120,8 @@ export function CardEditPage() {
         if (emsg) throw new Error(emsg)
         if (isNew) {
           await createVocabularyCard(deckId, vocab, user)
+          resetNewCardForm()
+          return
         } else {
           const card: Card = {
             id: cardId!,
@@ -127,6 +137,8 @@ export function CardEditPage() {
         if (emsg) throw new Error(emsg)
         if (isNew) {
           await createGrammarCard(deckId, grammar, user)
+          resetNewCardForm()
+          return
         } else {
           const card: Card = {
             id: cardId!,
@@ -163,7 +175,7 @@ export function CardEditPage() {
         <h1>{isNew ? "New card" : "Edit card"}</h1>
       </header>
 
-      <form onSubmit={onSubmit} className="panel stack">
+      <form ref={formRef} onSubmit={onSubmit} className="panel stack">
         {isNew && (
           <label className="row">
             Type{" "}
