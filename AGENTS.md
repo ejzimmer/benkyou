@@ -1,42 +1,42 @@
 # Benkyou - Japanese Flashcard App
 
-A React TypeScript SPA (Create React App) for Japanese vocabulary study using spaced repetition. No backend server — communicates directly with Firebase (Realtime Database + Auth with Google sign-in).
+A React TypeScript SPA (Vite) for Japanese vocabulary study using FSRS spaced repetition. Local-first with IndexedDB (Dexie); optional Firebase sync (Auth + Firestore + Storage) when `.env.local` is configured.
 
 ## Cursor Cloud specific instructions
 
 ### Running the dev server
 
 ```bash
-npm start
+npm run dev
 ```
 
-Serves on `http://localhost:3000`. Hot-reloads on file changes.
-
-### Lint
-
-ESLint is configured via `eslintConfig` in `package.json` (extends `react-app` + `react-app/jest`):
-
-```bash
-npx eslint src/
-```
+Serves on `http://localhost:5173` (Vite default). Hot-reloads on file changes. Use `--host 0.0.0.0` when the dev server must be reachable outside the VM.
 
 ### Tests
 
 ```bash
-CI=true npm test -- --watchAll=false
+npm test
 ```
 
-**Known issue:** The single test file (`App.test.tsx`) fails with `ReferenceError: TextEncoder is not defined` due to a CRA Jest + Firebase Auth SDK incompatibility (the `undici` package used by Firebase Auth requires `TextEncoder` which is not available in the Jest/jsdom environment configured by CRA). This is a pre-existing issue unrelated to environment setup.
+Vitest with `fake-indexeddb` for Dexie in jsdom. Most tests pass; one pre-existing failure in `ReviewSessionPage.test.tsx` (`getByText("猫")` matches multiple elements) is unrelated to environment setup.
 
 ### Build
 
 ```bash
 npm run build
+npm run preview
 ```
+
+Build output goes to `build/` (Netlify-compatible).
+
+### Lint / typecheck
+
+There is no ESLint config or `lint` script in this repo. TypeScript checking runs as part of `npm run build` (`tsc --noEmit`).
 
 ### Key caveats
 
-- Firebase config (API key, project ID, database URL) is **hardcoded** in `src/index.tsx` — no `.env` files or environment variables are needed.
-- The app requires Google sign-in to access any functionality beyond the landing page. Without a valid Google account authenticated against the Firebase project, you can only verify the landing page renders and the OAuth redirect works.
-- Both `yarn.lock` and `package-lock.json` exist; use **npm** (matches README instructions and `package-lock.json`).
-- Node 18 is required (CRA react-scripts 5.0.1 compatibility).
+- **Node 22.13+** or **24+** required (`engines` in `package.json`; `.nvmrc` pins 22.13).
+- Use **npm** (`package-lock.json`).
+- **Offline mode works without Firebase.** Copy `.env.example` to `.env.local` only when testing sign-in or cloud sync. See [docs/FIREBASE.md](docs/FIREBASE.md).
+- No separate backend server — all app logic runs in the browser.
+- Core hello-world flow without Firebase: create a deck → add a vocabulary card → start review from the deck or "Review all due".
