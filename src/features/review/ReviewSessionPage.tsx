@@ -6,6 +6,7 @@ import {
   useState,
 } from "react"
 import { Link, useParams } from "react-router-dom"
+import { toHiragana } from "wanakana"
 import {
   commitJudgement,
   prefetchDueForSession,
@@ -74,6 +75,17 @@ export function ReviewSessionPage() {
 
   const current = sessionQueue[0]
 
+  const handleTypedChange = useCallback(
+    (value: string) => {
+      if (current?.modeId === "vocab_type_reading") {
+        setTyped(toHiragana(value, { IMEMode: true }))
+      } else {
+        setTyped(value)
+      }
+    },
+    [current?.modeId],
+  )
+
   useEffect(() => {
     if (current && phase === "prompt" && !pendingIncorrectDelay) {
       setStartedAt(performance.now())
@@ -100,7 +112,7 @@ export function ReviewSessionPage() {
     setPromptToRevealMs(null)
   }
 
-  async function prepareAndShowAnswer() {
+  async function prepareAndShowAnswer(typedValue: string = typed) {
     if (!current) return
     const elapsed =
       startedAt != null ? Math.round(performance.now() - startedAt) : null
@@ -110,14 +122,14 @@ export function ReviewSessionPage() {
     setPhase("answer")
     if (
       current.modeId === "vocab_type_reading" &&
-      typed &&
-      hasNonHiraganaKana(typed)
+      typedValue &&
+      hasNonHiraganaKana(typedValue)
     ) {
       setReadingWarn(true)
     }
   }
 
-  function checkSubmitTyped(): boolean {
+  function checkSubmitTyped(typedValue: string = typed): boolean {
     if (!current) return true
     const c = current.card
     const m = current.modeId
@@ -125,12 +137,12 @@ export function ReviewSessionPage() {
       m === "vocab_type_word_from_clue" ||
       m === "grammar_type_construction"
     ) {
-      if (isSynonymAnswer(c, typed) && !matchesPrimaryJapanese(c, typed)) {
+      if (isSynonymAnswer(c, typedValue) && !matchesPrimaryJapanese(c, typedValue)) {
         setSynonymWarn(true)
         return false
       }
     }
-    if (m === "vocab_type_reading" && typed && hasNonHiraganaKana(typed)) {
+    if (m === "vocab_type_reading" && typedValue && hasNonHiraganaKana(typedValue)) {
       setReadingWarn(true)
     }
     return true
@@ -138,8 +150,13 @@ export function ReviewSessionPage() {
 
   const tryShowAnswerRef = useRef(() => {})
   tryShowAnswerRef.current = () => {
-    if (!checkSubmitTyped()) return
-    void prepareAndShowAnswer()
+    let finalTyped = typed
+    if (current?.modeId === "vocab_type_reading" && typed) {
+      finalTyped = toHiragana(typed)
+      if (finalTyped !== typed) setTyped(finalTyped)
+    }
+    if (!checkSubmitTyped(finalTyped)) return
+    void prepareAndShowAnswer(finalTyped)
   }
 
   /** Enter on oral / non-input views (inputs handle Enter separately) */
@@ -301,7 +318,7 @@ export function ReviewSessionPage() {
             <ReviewSessionPromptBody
               item={item}
               typed={typed}
-              onTypedChange={setTyped}
+              onTypedChange={handleTypedChange}
               readingWarn={readingWarn}
               synonymWarn={synonymWarn}
               onTypedSubmit={() => tryShowAnswerRef.current()}
@@ -328,7 +345,7 @@ export function ReviewSessionPage() {
             <ReviewSessionPromptBody
               item={item}
               typed={typed}
-              onTypedChange={setTyped}
+              onTypedChange={handleTypedChange}
               readingWarn={readingWarn}
               synonymWarn={synonymWarn}
               onTypedSubmit={() => {}}
