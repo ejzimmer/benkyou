@@ -4,6 +4,17 @@ A React TypeScript SPA (Vite) for Japanese vocabulary study using FSRS spaced re
 
 ## Cursor Cloud specific instructions
 
+### Dependency install (VM startup)
+
+Cursor Cloud runs **`npm install`** automatically at the start of each agent session (repo root). Use **npm** only (`package-lock.json`); do not use yarn.
+
+After startup, verify the toolchain with:
+
+```bash
+npm test
+npm run build
+```
+
 ### Running the dev server
 
 ```bash
