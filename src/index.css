@@ -118,6 +118,12 @@ label {
   cursor: pointer;
 }
 
+.btn:focus {
+  outline: 3px solid #facc15;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px #0f0f18;
+}
+
 .btn.primary {
   background: #e94560;
   border-color: #e94560;
@@ -315,6 +321,15 @@ label {
 
 .answer-grid-value {
   word-break: break-word;
+}
+
+.reading-answer-comparison {
+  align-items: start;
+}
+
+.reading-answer-value {
+  font-size: 1.5rem;
+  line-height: 1.45;
 }
 
 .meaning-details {

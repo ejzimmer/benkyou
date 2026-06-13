@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useId, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { CardImage } from "../../ui/CardImage"
 import { GapAnswerDiff } from "../../ui/GapAnswerDiff"
@@ -27,6 +27,8 @@ export function ReviewSessionAnswerPanel({
   const typingMode = requiresTyping(m)
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
+  const correctAnswerLabelId = useId()
+  const typedAnswerLabelId = useId()
 
   useEffect(() => {
     if (pendingIncorrectDelay) return
@@ -67,11 +69,31 @@ export function ReviewSessionAnswerPanel({
       )}
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
         <>
-          <div className="answer-grid" lang="ja">
-            <span className="answer-grid-label">correct answer</span>
-            <span className="answer-grid-value">{expected}</span>
-            <span className="answer-grid-label">your answer</span>
-            <span className="answer-grid-value">{typed || "—"}</span>
+          <div
+            className="answer-grid reading-answer-comparison"
+            role="group"
+            aria-label="Hiragana answer comparison"
+          >
+            <span id={correctAnswerLabelId} className="answer-grid-label">
+              Correct answer
+            </span>
+            <span
+              className="answer-grid-value reading-answer-value"
+              lang="ja"
+              aria-labelledby={correctAnswerLabelId}
+            >
+              {expected || "—"}
+            </span>
+            <span id={typedAnswerLabelId} className="answer-grid-label">
+              Your answer
+            </span>
+            <span
+              className="answer-grid-value reading-answer-value"
+              lang="ja"
+              aria-labelledby={typedAnswerLabelId}
+            >
+              {typed || "—"}
+            </span>
           </div>
           <details className="meaning-details">
             <summary className="btn">Show meaning</summary>
