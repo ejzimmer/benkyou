@@ -19,9 +19,11 @@ import {
   createVocabularyCard,
   defaultGrammar,
   defaultVocabulary,
+  grammarFromVocabularyContent,
   saveCard,
   validateGrammar,
   validateVocabulary,
+  vocabularyFromGrammarContent,
 } from "../../services/cards"
 import { saveImageBlob } from "../../services/media"
 import { useAuth } from "../../lib/auth/AuthContext"
@@ -95,7 +97,6 @@ export function CardEditPage() {
   /** Controlled draft so incomplete `kanji=` lines are not dropped on each keystroke */
   const [readingsMapDraft, setReadingsMapDraft] = useState("")
   const formRef = useRef<HTMLFormElement | null>(null)
-  const prevKind = useRef(kind)
   const [err, setErr] = useState<string | null>(null)
   const [imageUploadCount, setImageUploadCount] = useState(0)
   const isUploadingImages = imageUploadCount > 0
@@ -161,20 +162,26 @@ export function CardEditPage() {
     }
   }, [cardId, deckId, isNew, loadedCard])
 
-  useEffect(() => {
-    if (!isNew) return
-    if (prevKind.current !== kind && kind === "grammar") {
-      setReadingsMapDraft(grammarReadingsToText(grammar.readings))
-    }
-    prevKind.current = kind
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset draft when switching TO grammar, not when readings change from typing
-  }, [isNew, kind])
-
   function resetNewCardForm() {
     setVocab(defaultVocabulary())
     setGrammar(defaultGrammar())
     setReadingsMapDraft("")
     formRef.current?.reset()
+  }
+
+  function onKindChange(nextKind: "vocabulary" | "grammar") {
+    if (nextKind === kind) return
+
+    if (nextKind === "vocabulary") {
+      setVocab(vocabularyFromGrammarContent(grammar))
+      setKind("vocabulary")
+      return
+    }
+
+    const nextGrammar = grammarFromVocabularyContent(vocab)
+    setGrammar(nextGrammar)
+    setReadingsMapDraft(grammarReadingsToText(nextGrammar.readings))
+    setKind("grammar")
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -278,20 +285,18 @@ export function CardEditPage() {
         className="panel stack"
         aria-label="Card editor"
       >
-        {isNew && (
-          <label className="row">
-            Type{" "}
-            <select
-              value={kind}
-              onChange={(e) =>
-                setKind(e.target.value as "vocabulary" | "grammar")
-              }
-            >
-              <option value="vocabulary">Vocabulary</option>
-              <option value="grammar">Grammar</option>
-            </select>
-          </label>
-        )}
+        <label className="row">
+          Type{" "}
+          <select
+            value={kind}
+            onChange={(e) =>
+              onKindChange(e.target.value as "vocabulary" | "grammar")
+            }
+          >
+            <option value="vocabulary">Vocabulary</option>
+            <option value="grammar">Grammar</option>
+          </select>
+        </label>
 
         {kind === "vocabulary" ? (
           <>
