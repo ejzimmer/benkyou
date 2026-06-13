@@ -47,18 +47,19 @@ describe("ReviewSessionAnswerPanel", () => {
     expect(correctValue).toHaveClass("reading-answer-value")
     expect(within(answer).queryByText("Your answer")).not.toBeInTheDocument()
     expect(within(answer).getAllByText("ねこ")).toHaveLength(1)
+    expect(answer.querySelector(".reading-answer-diff-cell")).not.toBeInTheDocument()
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
     })
   })
 
-  it("labels and aligns a wrong hiragana answer, then focuses Incorrect", async () => {
+  it("aligns missing hiragana under the correct answer, then focuses Incorrect", async () => {
     render(
       <ReviewSessionAnswerPanel
         item={readingItem}
-        typed="ぬこ"
-        expected="ねこ"
+        typed="しゅかん"
+        expected="しゅんかん"
         pendingIncorrectDelay={false}
         onJudge={vi.fn()}
         onUndoAnswer={vi.fn()}
@@ -69,21 +70,42 @@ describe("ReviewSessionAnswerPanel", () => {
       name: /hiragana answer comparison/i,
     })
     const correctLabel = within(comparison).getByText("Correct answer")
-    const correctValue = within(comparison).getByText("ねこ")
     const typedLabel = within(comparison).getByText("Your answer")
-    const typedValue = within(comparison).getByText("ぬこ")
+    const correctLine = comparison.querySelector(
+      '[data-reading-diff-line="correct"]',
+    )
+    const typedLine = comparison.querySelector(
+      '[data-reading-diff-line="yours"]',
+    )
 
-    expect(comparison.textContent).toMatch(
-      /Correct answer\s*ねこ\s*Your answer\s*ぬこ/,
-    )
-    expect(correctLabel.compareDocumentPosition(correctValue)).toBe(
+    if (!correctLine || !typedLine) {
+      throw new Error("Expected aligned reading diff lines")
+    }
+
+    expect(correctLabel.compareDocumentPosition(correctLine)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     )
-    expect(typedLabel.compareDocumentPosition(typedValue)).toBe(
+    expect(typedLabel.compareDocumentPosition(typedLine)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     )
-    expect(correctValue).toHaveClass("reading-answer-value")
-    expect(typedValue).toHaveClass("reading-answer-value")
+    expect(correctLine).toHaveTextContent("しゅんかん")
+    expect(typedLine).toHaveTextContent("しゅ-かん")
+    expect(
+      [...correctLine.querySelectorAll(".reading-answer-diff-cell")].map(
+        (cell) => cell.textContent,
+      ),
+    ).toEqual(["し", "ゅ", "ん", "か", "ん"])
+    expect(
+      [...typedLine.querySelectorAll(".reading-answer-diff-cell")].map(
+        (cell) => cell.textContent,
+      ),
+    ).toEqual(["し", "ゅ", "-", "か", "ん"])
+    expect(
+      correctLine.querySelectorAll(".reading-answer-diff-cell")[2],
+    ).toHaveClass("reading-answer-diff-missing")
+    expect(typedLine.querySelectorAll(".reading-answer-diff-cell")[2]).toHaveClass(
+      "reading-answer-diff-gap",
+    )
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
