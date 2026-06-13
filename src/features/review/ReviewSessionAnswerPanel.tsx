@@ -85,6 +85,7 @@ export function ReviewSessionAnswerPanel({
 }: ReviewSessionAnswerPanelProps) {
   const { card, modeId: m } = item
   const typingMode = requiresTyping(m)
+  const oralEnglishMode = m === "vocab_oral_en" || m === "grammar_oral_meaning"
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
   const correctAnswerLabelId = useId()
@@ -107,11 +108,47 @@ export function ReviewSessionAnswerPanel({
     }
   }, [typingMode, answeredCorrectly, pendingIncorrectDelay])
 
+  const answerControls = (
+    <div className="toolbar">
+      <button
+        ref={correctBtnRef}
+        type="button"
+        className="btn good"
+        disabled={pendingIncorrectDelay}
+        onClick={() => onJudge(true)}
+      >
+        Correct
+      </button>
+      <button
+        ref={incorrectBtnRef}
+        type="button"
+        className="btn bad"
+        disabled={pendingIncorrectDelay}
+        onClick={() => onJudge(false)}
+      >
+        Incorrect
+      </button>
+      {typingMode && (
+        <button
+          type="button"
+          className="btn"
+          disabled={pendingIncorrectDelay}
+          onClick={() => onUndoAnswer()}
+        >
+          Undo answer
+        </button>
+      )}
+    </div>
+  )
+
   return (
     <div className="answer-block stack">
-      {m !== "vocab_type_reading" && m !== "grammar_type_construction" && (
-        <h3>Answer</h3>
-      )}
+      {m !== "vocab_type_reading" &&
+        m !== "grammar_type_construction" &&
+        !oralEnglishMode && (
+          <h3>Answer</h3>
+        )}
+      {oralEnglishMode && answerControls}
       {typingMode &&
         m !== "vocab_type_reading" &&
         m !== "grammar_type_construction" && (
@@ -231,15 +268,6 @@ export function ReviewSessionAnswerPanel({
       )}
       {m === "grammar_oral_meaning" && card.kind === "grammar" && (
         <>
-          <p className="prompt-main">
-            <RubyWord
-              surface={card.content.construction}
-              reading={readingForConstruction(
-                card.content.construction,
-                card.content.readings,
-              )}
-            />
-          </p>
           {card.content.translationEn.trim() && (
             <p>{card.content.translationEn}</p>
           )}
@@ -248,36 +276,7 @@ export function ReviewSessionAnswerPanel({
           ))}
         </>
       )}
-      <div className="toolbar">
-        <button
-          ref={correctBtnRef}
-          type="button"
-          className="btn good"
-          disabled={pendingIncorrectDelay}
-          onClick={() => onJudge(true)}
-        >
-          Correct
-        </button>
-        <button
-          ref={incorrectBtnRef}
-          type="button"
-          className="btn bad"
-          disabled={pendingIncorrectDelay}
-          onClick={() => onJudge(false)}
-        >
-          Incorrect
-        </button>
-        {typingMode && (
-          <button
-            type="button"
-            className="btn"
-            disabled={pendingIncorrectDelay}
-            onClick={() => onUndoAnswer()}
-          >
-            Undo answer
-          </button>
-        )}
-      </div>
+      {!oralEnglishMode && answerControls}
     </div>
   )
 }
