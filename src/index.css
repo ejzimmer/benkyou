@@ -119,9 +119,9 @@ label {
 }
 
 .btn:focus {
-  outline: 4px solid #facc15;
+  outline: 3px solid #ffffff;
   outline-offset: 3px;
-  box-shadow: 0 0 0 2px #0f0f18, 0 0 0 8px rgba(250, 204, 21, 0.32);
+  box-shadow: 0 0 0 7px #facc15;
 }
 
 .btn.primary {
