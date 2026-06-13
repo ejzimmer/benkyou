@@ -70,30 +70,34 @@ export function ReviewSessionAnswerPanel({
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
         <>
           <div
-            className="answer-grid reading-answer-comparison"
+            className="reading-answer-comparison"
             role="group"
             aria-label="Hiragana answer comparison"
           >
-            <span id={correctAnswerLabelId} className="answer-grid-label">
-              Correct answer
-            </span>
-            <span
-              className="answer-grid-value reading-answer-value"
-              lang="ja"
-              aria-labelledby={correctAnswerLabelId}
-            >
-              {expected || "—"}
-            </span>
-            <span id={typedAnswerLabelId} className="answer-grid-label">
-              Your answer
-            </span>
-            <span
-              className="answer-grid-value reading-answer-value"
-              lang="ja"
-              aria-labelledby={typedAnswerLabelId}
-            >
-              {typed || "—"}
-            </span>
+            <div className="reading-answer-row">
+              <span id={correctAnswerLabelId} className="answer-grid-label">
+                Correct answer
+              </span>
+              <span
+                className="answer-grid-value reading-answer-value"
+                lang="ja"
+                aria-labelledby={correctAnswerLabelId}
+              >
+                {expected || "—"}
+              </span>
+            </div>
+            <div className="reading-answer-row">
+              <span id={typedAnswerLabelId} className="answer-grid-label">
+                Your answer
+              </span>
+              <span
+                className="answer-grid-value reading-answer-value"
+                lang="ja"
+                aria-labelledby={typedAnswerLabelId}
+              >
+                {typed || "—"}
+              </span>
+            </div>
           </div>
           <details className="meaning-details">
             <summary className="btn">Show meaning</summary>

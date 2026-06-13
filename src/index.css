@@ -324,10 +324,21 @@ label {
 }
 
 .reading-answer-comparison {
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.reading-answer-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
 }
 
 .reading-answer-value {
+  display: block;
   font-size: 1.5rem;
   line-height: 1.45;
 }
