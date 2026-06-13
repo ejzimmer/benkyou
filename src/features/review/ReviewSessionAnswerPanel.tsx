@@ -29,11 +29,12 @@ export function ReviewSessionAnswerPanel({
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
   const correctAnswerLabelId = useId()
   const typedAnswerLabelId = useId()
+  const answeredCorrectly = typed === expected
 
   useEffect(() => {
     if (pendingIncorrectDelay) return
     if (typingMode) {
-      if (typed === expected) {
+      if (answeredCorrectly) {
         correctBtnRef.current?.focus({ preventScroll: true })
       } else {
         incorrectBtnRef.current?.focus({ preventScroll: true })
@@ -41,7 +42,7 @@ export function ReviewSessionAnswerPanel({
     } else {
       correctBtnRef.current?.focus({ preventScroll: true })
     }
-  }, [typingMode, typed, expected, pendingIncorrectDelay])
+  }, [typingMode, answeredCorrectly, pendingIncorrectDelay])
 
   return (
     <div className="answer-block stack">
@@ -72,7 +73,11 @@ export function ReviewSessionAnswerPanel({
           <div
             className="reading-answer-comparison"
             role="group"
-            aria-label="Hiragana answer comparison"
+            aria-label={
+              answeredCorrectly
+                ? "Hiragana answer"
+                : "Hiragana answer comparison"
+            }
           >
             <div className="reading-answer-row">
               <span id={correctAnswerLabelId} className="answer-grid-label">
@@ -86,18 +91,20 @@ export function ReviewSessionAnswerPanel({
                 {expected || "—"}
               </span>
             </div>
-            <div className="reading-answer-row">
-              <span id={typedAnswerLabelId} className="answer-grid-label">
-                Your answer
-              </span>
-              <span
-                className="answer-grid-value reading-answer-value"
-                lang="ja"
-                aria-labelledby={typedAnswerLabelId}
-              >
-                {typed || "—"}
-              </span>
-            </div>
+            {!answeredCorrectly && (
+              <div className="reading-answer-row">
+                <span id={typedAnswerLabelId} className="answer-grid-label">
+                  Your answer
+                </span>
+                <span
+                  className="answer-grid-value reading-answer-value"
+                  lang="ja"
+                  aria-labelledby={typedAnswerLabelId}
+                >
+                  {typed || "—"}
+                </span>
+              </div>
+            )}
           </div>
           <details className="meaning-details">
             <summary className="btn">Show meaning</summary>

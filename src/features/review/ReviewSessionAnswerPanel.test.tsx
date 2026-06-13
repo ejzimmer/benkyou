@@ -23,6 +23,36 @@ const readingItem: DueItem = {
 }
 
 describe("ReviewSessionAnswerPanel", () => {
+  it("shows only the correct answer for a matching hiragana answer", async () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={readingItem}
+        typed="ねこ"
+        expected="ねこ"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    const answer = screen.getByRole("group", {
+      name: "Hiragana answer",
+    })
+    const correctLabel = within(answer).getByText("Correct answer")
+    const correctValue = within(answer).getByText("ねこ")
+
+    expect(correctLabel.compareDocumentPosition(correctValue)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    expect(correctValue).toHaveClass("reading-answer-value")
+    expect(within(answer).queryByText("Your answer")).not.toBeInTheDocument()
+    expect(within(answer).getAllByText("ねこ")).toHaveLength(1)
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
+    })
+  })
+
   it("labels and aligns a wrong hiragana answer, then focuses Incorrect", async () => {
     render(
       <ReviewSessionAnswerPanel
