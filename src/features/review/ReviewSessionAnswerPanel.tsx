@@ -86,6 +86,8 @@ export function ReviewSessionAnswerPanel({
   const { card, modeId: m } = item
   const typingMode = requiresTyping(m)
   const oralEnglishMode = m === "vocab_oral_en" || m === "grammar_oral_meaning"
+  const isCorrectTypedWordFromClue =
+    m === "vocab_type_word_from_clue" && typed === expected
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
   const correctAnswerLabelId = useId()
@@ -145,13 +147,12 @@ export function ReviewSessionAnswerPanel({
     <div className="answer-block stack">
       {m !== "vocab_type_reading" &&
         m !== "grammar_type_construction" &&
-        !oralEnglishMode && (
-          <h3>Answer</h3>
-        )}
+        !oralEnglishMode && <h3>Answer</h3>}
       {oralEnglishMode && answerControls}
       {typingMode &&
         m !== "vocab_type_reading" &&
-        m !== "grammar_type_construction" && (
+        m !== "grammar_type_construction" &&
+        !isCorrectTypedWordFromClue && (
           <TextDiffCompare typed={typed} expected={expected} />
         )}
       {m === "vocab_oral_en" && card.kind === "vocabulary" && (
@@ -225,7 +226,8 @@ export function ReviewSessionAnswerPanel({
           <details className="meaning-details">
             <summary className="btn">Show meaning</summary>
             <div className="meaning-details-content stack">
-              {card.content.definitionsEn.filter((s) => s.trim()).length > 0 && (
+              {card.content.definitionsEn.filter((s) => s.trim()).length >
+                0 && (
                 <ul>
                   {card.content.definitionsEn
                     .filter((s) => s.trim())
