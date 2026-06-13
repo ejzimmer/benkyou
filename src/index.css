@@ -121,6 +121,7 @@ label {
 .btn:focus {
   outline: 3px solid #7dd3fc;
   outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(125, 211, 252, 0.2);
 }
 
 .btn.primary {
