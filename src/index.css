@@ -118,6 +118,11 @@ label {
   cursor: pointer;
 }
 
+.btn:focus {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 2px;
+}
+
 .btn.primary {
   background: #e94560;
   border-color: #e94560;
