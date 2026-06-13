@@ -119,7 +119,7 @@ label {
 }
 
 .btn:focus {
-  outline: 2px solid #7dd3fc;
+  outline: 3px solid #7dd3fc;
   outline-offset: 2px;
 }
 
