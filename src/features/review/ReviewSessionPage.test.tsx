@@ -130,7 +130,7 @@ describe("ReviewSessionPage", () => {
       {
         wordJa: "猫",
         reading: "ねこ",
-        definitionsEn: ["cat"],
+        definitionsEn: [""],
         images: [],
         exampleSentences: [],
         synonymsJa: [],
@@ -159,7 +159,9 @@ describe("ReviewSessionPage", () => {
 
     expect(await screen.findByRole("button", { name: /^correct$/i })).toBeInTheDocument()
     expect(screen.getByText("猫")).toBeInTheDocument()
-    expect(screen.getByText("ねこ")).toBeInTheDocument()
+    expect(
+      document.querySelector('[data-reading-diff-line="correct"]'),
+    ).toHaveTextContent("ねこ")
   })
 
   it("keeps the question visible after undo last judgement reopens the answer", async () => {
@@ -171,7 +173,7 @@ describe("ReviewSessionPage", () => {
       {
         wordJa: "猫",
         reading: "ねこ",
-        definitionsEn: ["cat"],
+        definitionsEn: [""],
         images: [],
         exampleSentences: [],
         synonymsJa: [],
@@ -206,6 +208,54 @@ describe("ReviewSessionPage", () => {
 
     expect(await screen.findByRole("button", { name: /^correct$/i })).toBeInTheDocument()
     expect(screen.getByText("猫")).toBeInTheDocument()
-    expect(screen.getByText("ねこ")).toBeInTheDocument()
+    expect(
+      document.querySelector('[data-reading-diff-line="correct"]'),
+    ).toHaveTextContent("ねこ")
+  })
+
+  it("reveals the aligned reading diff for an incorrect hiragana answer", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("Reading", null)
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "瞬間",
+        reading: "しゅんかん",
+        definitionsEn: [""],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const input = await screen.findByPlaceholderText("ひらがなで")
+    await user.type(input, "しゅかん{Enter}")
+
+    const comparison = await screen.findByRole("group", {
+      name: /hiragana answer comparison/i,
+    })
+    const correctLine = comparison.querySelector(
+      '[data-reading-diff-line="correct"]',
+    )
+    const typedLine = comparison.querySelector('[data-reading-diff-line="yours"]')
+
+    expect(screen.getByText("瞬間")).toBeInTheDocument()
+    expect(correctLine).toHaveTextContent("しゅんかん")
+    expect(typedLine).toHaveTextContent("しゅ-かん")
+    expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
   })
 })
