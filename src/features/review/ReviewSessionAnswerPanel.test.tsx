@@ -13,24 +13,29 @@ vi.mock("../../ui/CardImage", () => ({
   ),
 }))
 
-const readingItem: DueItem = {
-  card: {
-    id: "card-1",
-    deckId: "deck-1",
-    kind: "vocabulary",
-    updatedAt: 0,
-    content: {
-      wordJa: "猫",
-      reading: "ねこ",
-      definitionsEn: ["cat"],
-      images: [],
-      exampleSentences: [],
-      synonymsJa: [],
+function vocabItem(modeId: ReviewModeId): DueItem {
+  return {
+    card: {
+      id: "card-1",
+      deckId: "deck-1",
+      kind: "vocabulary",
+      updatedAt: 0,
+      content: {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat"],
+        images: ["img-cat"],
+        exampleSentences: ["猫がいます。"],
+        synonymsJa: [],
+      },
     },
-  },
-  modeId: "vocab_type_reading",
-  due: 0,
+    modeId,
+    due: 0,
+  }
 }
+
+const readingItem: DueItem = vocabItem("vocab_type_reading")
+const vocabWordItem: DueItem = vocabItem("vocab_type_word_from_clue")
 
 describe("ReviewSessionAnswerPanel", () => {
   it("shows only the correct answer for a matching hiragana answer", async () => {
@@ -125,27 +130,6 @@ describe("ReviewSessionAnswerPanel", () => {
   })
 })
 
-function vocabItem(modeId: ReviewModeId): DueItem {
-  return {
-    card: {
-      id: "card-1",
-      deckId: "deck-1",
-      kind: "vocabulary",
-      updatedAt: 0,
-      content: {
-        wordJa: "猫",
-        reading: "ねこ",
-        definitionsEn: ["cat"],
-        images: ["img-cat"],
-        exampleSentences: ["猫がいます。"],
-        synonymsJa: [],
-      },
-    },
-    modeId,
-    due: 0,
-  }
-}
-
 function grammarItem(modeId: ReviewModeId): DueItem {
   return {
     card: {
@@ -233,5 +217,38 @@ describe("ReviewSessionAnswerPanel", () => {
     expectBefore(prompts[0]!, correctButton)
     expectBefore(correctButton, meaning)
     expectBefore(meaning, image)
+  })
+})
+
+function renderAnswerPanel(typed: string) {
+  return render(
+    <ReviewSessionAnswerPanel
+      item={vocabWordItem}
+      typed={typed}
+      expected="猫"
+      pendingIncorrectDelay={false}
+      onJudge={vi.fn()}
+      onUndoAnswer={vi.fn()}
+    />,
+  )
+}
+
+describe("ReviewSessionAnswerPanel", () => {
+  it("shows only the furigana card answer after a correct Japanese word entry", () => {
+    const { container } = renderAnswerPanel("猫")
+
+    screen.debug()
+    expect(screen.queryByText("Yours")).toBeNull()
+    expect(container.querySelector("ruby")?.textContent).toBe("猫ねこ")
+  })
+
+  it("keeps the comparison visible after an incorrect Japanese word entry", () => {
+    renderAnswerPanel("犬")
+
+    expect(
+      screen.getByLabelText("Comparison of your answer and the correct answer"),
+    ).toBeInTheDocument()
+    expect(screen.getByText("Yours")).toBeInTheDocument()
+    expect(screen.getByText("Card")).toBeInTheDocument()
   })
 })
