@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
 import { SyncProvider } from "../../lib/sync/SyncContext"
 import { ReviewSessionPage } from "./ReviewSessionPage"
+import { CardEditPage } from "../cards/CardEditPage"
 import { resetDatabase } from "../../test/db"
 import { createDeck } from "../../services/decks"
 import { createVocabularyCard } from "../../services/cards"
@@ -121,6 +122,81 @@ describe("ReviewSessionPage", () => {
     ).not.toBeInTheDocument()
   })
 
+  it("returns from card edit to the same review card and mode", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T", null)
+    const firstCard = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+    const secondCard = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "犬",
+        reading: "いぬ",
+        definitionsEn: ["dog"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          `/review?resumeCardId=${secondCard.id}&resumeModeId=vocab_oral_en`,
+        ]}
+      >
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+              <Route
+                path="/decks/:deckId/cards/:cardId"
+                element={<CardEditPage />}
+              />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    const editLinkBefore = screen.getByRole("link", { name: /edit card/i })
+    expect(editLinkBefore).toHaveAttribute(
+      "href",
+      expect.stringContaining(`/cards/${secondCard.id}`),
+    )
+    expect(editLinkBefore).not.toHaveAttribute(
+      "href",
+      expect.stringContaining(`/cards/${firstCard.id}`),
+    )
+    const hrefBefore = editLinkBefore.getAttribute("href")
+
+    await user.click(editLinkBefore)
+    await user.click(await screen.findByRole("link", { name: /back/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    const editLinkAfter = screen.getByRole("link", { name: /edit card/i })
+    expect(editLinkAfter.getAttribute("href")).toBe(hrefBefore)
+  })
+
   it("keeps the question visible when the answer is shown", async () => {
     await resetDatabase()
     const user = userEvent.setup()
@@ -130,7 +206,7 @@ describe("ReviewSessionPage", () => {
       {
         wordJa: "猫",
         reading: "ねこ",
-        definitionsEn: ["cat"],
+        definitionsEn: [""],
         images: [],
         exampleSentences: [],
         synonymsJa: [],
@@ -159,7 +235,9 @@ describe("ReviewSessionPage", () => {
 
     expect(await screen.findByRole("button", { name: /^correct$/i })).toBeInTheDocument()
     expect(screen.getByText("猫")).toBeInTheDocument()
-    expect(screen.getByText("ねこ")).toBeInTheDocument()
+    expect(
+      document.querySelector('[data-reading-diff-line="correct"]'),
+    ).toHaveTextContent("ねこ")
   })
 
   it("keeps the question visible after undo last judgement reopens the answer", async () => {
@@ -171,7 +249,7 @@ describe("ReviewSessionPage", () => {
       {
         wordJa: "猫",
         reading: "ねこ",
-        definitionsEn: ["cat"],
+        definitionsEn: [""],
         images: [],
         exampleSentences: [],
         synonymsJa: [],
@@ -206,6 +284,54 @@ describe("ReviewSessionPage", () => {
 
     expect(await screen.findByRole("button", { name: /^correct$/i })).toBeInTheDocument()
     expect(screen.getByText("猫")).toBeInTheDocument()
-    expect(screen.getByText("ねこ")).toBeInTheDocument()
+    expect(
+      document.querySelector('[data-reading-diff-line="correct"]'),
+    ).toHaveTextContent("ねこ")
+  })
+
+  it("reveals the aligned reading diff for an incorrect hiragana answer", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("Reading", null)
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "瞬間",
+        reading: "しゅんかん",
+        definitionsEn: [""],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const input = await screen.findByPlaceholderText("ひらがなで")
+    await user.type(input, "しゅかん{Enter}")
+
+    const comparison = await screen.findByRole("group", {
+      name: /hiragana answer comparison/i,
+    })
+    const correctLine = comparison.querySelector(
+      '[data-reading-diff-line="correct"]',
+    )
+    const typedLine = comparison.querySelector('[data-reading-diff-line="yours"]')
+
+    expect(screen.getByText("瞬間")).toBeInTheDocument()
+    expect(correctLine).toHaveTextContent("しゅんかん")
+    expect(typedLine).toHaveTextContent("しゅ-かん")
+    expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
   })
 })

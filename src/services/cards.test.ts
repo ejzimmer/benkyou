@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
+  grammarFromVocabularyContent,
   validateGrammar,
   validateVocabulary,
+  vocabularyFromGrammarContent,
 } from "./cards"
 
 describe("validateVocabulary", () => {
@@ -147,5 +149,49 @@ describe("validateGrammar", () => {
         synonymsJa: [],
       }),
     ).toBeNull()
+  })
+})
+
+describe("card type conversions", () => {
+  it("converts grammar content to vocabulary content", () => {
+    expect(
+      vocabularyFromGrammarContent({
+        sentenceWithGap: "私は___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "student",
+        readings: { 学生: "がくせい" },
+        images: ["image-1"],
+        synonymsJa: ["生徒"],
+      }),
+    ).toEqual({
+      wordJa: "学生",
+      reading: "がくせい",
+      definitionsEn: ["student"],
+      images: ["image-1"],
+      exampleSentences: ["私は___です"],
+      synonymsJa: ["生徒"],
+    })
+  })
+
+  it("converts vocabulary content to grammar content", () => {
+    expect(
+      grammarFromVocabularyContent({
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat", "feline", ""],
+        images: ["image-1"],
+        exampleSentences: ["猫がいます"],
+        synonymsJa: ["ネコ"],
+      }),
+    ).toEqual({
+      sentenceWithGap: "___がいます",
+      gapMarker: "___",
+      construction: "猫",
+      translationEn: "cat; feline",
+      readings: { 猫: "ねこ" },
+      images: ["image-1"],
+      synonymsJa: ["ネコ"],
+    })
   })
 })

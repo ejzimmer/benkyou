@@ -163,6 +163,48 @@ export function defaultGrammar(): GrammarCardContent {
   }
 }
 
+export function vocabularyFromGrammarContent(
+  content: GrammarCardContent,
+): VocabularyCardContent {
+  const wordJa = content.construction
+  const reading = containsKanji(wordJa)
+    ? content.readings[wordJa]?.trim()
+    : undefined
+
+  return {
+    wordJa,
+    reading,
+    definitionsEn: [content.translationEn],
+    images: [...content.images],
+    exampleSentences: [content.sentenceWithGap],
+    synonymsJa: [...content.synonymsJa],
+  }
+}
+
+export function grammarFromVocabularyContent(
+  content: VocabularyCardContent,
+): GrammarCardContent {
+  const gapMarker = "___"
+  const exampleSentence = content.exampleSentences[0] ?? ""
+  const sentenceWithGap =
+    content.wordJa && exampleSentence.includes(content.wordJa)
+      ? exampleSentence.replace(content.wordJa, gapMarker)
+      : exampleSentence
+
+  return {
+    sentenceWithGap,
+    gapMarker,
+    construction: content.wordJa,
+    translationEn: content.definitionsEn.filter((s) => s.trim()).join("; "),
+    readings:
+      content.reading?.trim() && containsKanji(content.wordJa)
+        ? { [content.wordJa]: content.reading }
+        : {},
+    images: [...content.images],
+    synonymsJa: [...content.synonymsJa],
+  }
+}
+
 export async function createVocabularyCard(
   deckId: string,
   content: VocabularyCardContent,

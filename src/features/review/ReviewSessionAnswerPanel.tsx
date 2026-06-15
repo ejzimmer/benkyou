@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react"
+import { diffChars } from "diff"
+import { useEffect, useId, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { CardImage } from "../../ui/CardImage"
 import { GapAnswerDiff } from "../../ui/GapAnswerDiff"
@@ -15,6 +16,65 @@ export type ReviewSessionAnswerPanelProps = {
   onUndoAnswer: () => void
 }
 
+type ReadingDiffCell = {
+  value: string
+  kind: "same" | "missing" | "extra" | "gap"
+}
+
+function buildAlignedReadingDiff(expected: string, typed: string) {
+  const correct: ReadingDiffCell[] = []
+  const yours: ReadingDiffCell[] = []
+
+  for (const part of diffChars(expected, typed)) {
+    for (const value of Array.from(part.value)) {
+      if (part.removed) {
+        correct.push({ value, kind: "missing" })
+        yours.push({ value: "-", kind: "gap" })
+      } else if (part.added) {
+        correct.push({ value: "", kind: "gap" })
+        yours.push({ value, kind: "extra" })
+      } else {
+        correct.push({ value, kind: "same" })
+        yours.push({ value, kind: "same" })
+      }
+    }
+  }
+
+  return { correct, yours }
+}
+
+type ReadingDiffLineProps = {
+  cells: ReadingDiffCell[]
+  labelId: string
+  line: "correct" | "yours"
+}
+
+function ReadingDiffLine({ cells, labelId, line }: ReadingDiffLineProps) {
+  const columns = Math.max(cells.length, 1)
+
+  return (
+    <span
+      className="answer-grid-value reading-answer-value reading-answer-diff-line"
+      lang="ja"
+      aria-labelledby={labelId}
+      data-reading-diff-line={line}
+      style={{
+        gridTemplateColumns: `repeat(${columns}, minmax(1.05em, max-content))`,
+      }}
+    >
+      {cells.map((cell, index) => (
+        <span
+          key={`${line}-${index}`}
+          className={`reading-answer-diff-cell reading-answer-diff-${cell.kind}`}
+          aria-hidden={cell.kind === "gap" && cell.value === ""}
+        >
+          {cell.value}
+        </span>
+      ))}
+    </span>
+  )
+}
+
 export function ReviewSessionAnswerPanel({
   item,
   typed,
@@ -25,13 +85,22 @@ export function ReviewSessionAnswerPanel({
 }: ReviewSessionAnswerPanelProps) {
   const { card, modeId: m } = item
   const typingMode = requiresTyping(m)
+  const oralEnglishMode = m === "vocab_oral_en" || m === "grammar_oral_meaning"
+  const isCorrectTypedWordFromClue =
+    m === "vocab_type_word_from_clue" && typed === expected
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
+  const correctAnswerLabelId = useId()
+  const typedAnswerLabelId = useId()
+  const answeredCorrectly = typed === expected
+  const readingDiff = answeredCorrectly
+    ? null
+    : buildAlignedReadingDiff(expected, typed)
 
   useEffect(() => {
     if (pendingIncorrectDelay) return
     if (typingMode) {
-      if (typed === expected) {
+      if (answeredCorrectly) {
         correctBtnRef.current?.focus({ preventScroll: true })
       } else {
         incorrectBtnRef.current?.focus({ preventScroll: true })
@@ -39,16 +108,51 @@ export function ReviewSessionAnswerPanel({
     } else {
       correctBtnRef.current?.focus({ preventScroll: true })
     }
-  }, [typingMode, typed, expected, pendingIncorrectDelay])
+  }, [typingMode, answeredCorrectly, pendingIncorrectDelay])
+
+  const answerControls = (
+    <div className="toolbar">
+      <button
+        ref={correctBtnRef}
+        type="button"
+        className="btn good"
+        disabled={pendingIncorrectDelay}
+        onClick={() => onJudge(true)}
+      >
+        Correct
+      </button>
+      <button
+        ref={incorrectBtnRef}
+        type="button"
+        className="btn bad"
+        disabled={pendingIncorrectDelay}
+        onClick={() => onJudge(false)}
+      >
+        Incorrect
+      </button>
+      {typingMode && (
+        <button
+          type="button"
+          className="btn"
+          disabled={pendingIncorrectDelay}
+          onClick={() => onUndoAnswer()}
+        >
+          Undo answer
+        </button>
+      )}
+    </div>
+  )
 
   return (
     <div className="answer-block stack">
-      {m !== "vocab_type_reading" && m !== "grammar_type_construction" && (
-        <h3>Answer</h3>
-      )}
+      {m !== "vocab_type_reading" &&
+        m !== "grammar_type_construction" &&
+        !oralEnglishMode && <h3>Answer</h3>}
+      {oralEnglishMode && answerControls}
       {typingMode &&
         m !== "vocab_type_reading" &&
-        m !== "grammar_type_construction" && (
+        m !== "grammar_type_construction" &&
+        !isCorrectTypedWordFromClue && (
           <TextDiffCompare typed={typed} expected={expected} />
         )}
       {m === "vocab_oral_en" && card.kind === "vocabulary" && (
@@ -67,16 +171,63 @@ export function ReviewSessionAnswerPanel({
       )}
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
         <>
-          <div className="answer-grid" lang="ja">
-            <span className="answer-grid-label">correct answer</span>
-            <span className="answer-grid-value">{expected}</span>
-            <span className="answer-grid-label">your answer</span>
-            <span className="answer-grid-value">{typed || "—"}</span>
+          <div
+            className="reading-answer-comparison"
+            role="group"
+            aria-label={
+              answeredCorrectly
+                ? "Hiragana answer"
+                : "Hiragana answer comparison"
+            }
+          >
+            <div className="reading-answer-row">
+              <span id={correctAnswerLabelId} className="answer-grid-label">
+                Correct answer
+              </span>
+              {readingDiff ? (
+                <ReadingDiffLine
+                  cells={readingDiff.correct}
+                  labelId={correctAnswerLabelId}
+                  line="correct"
+                />
+              ) : (
+                <span
+                  className="answer-grid-value reading-answer-value"
+                  lang="ja"
+                  aria-labelledby={correctAnswerLabelId}
+                >
+                  {expected || "—"}
+                </span>
+              )}
+            </div>
+            {!answeredCorrectly && (
+              <div className="reading-answer-row">
+                <span id={typedAnswerLabelId} className="answer-grid-label">
+                  Your answer
+                </span>
+                {readingDiff ? (
+                  <ReadingDiffLine
+                    cells={readingDiff.yours}
+                    labelId={typedAnswerLabelId}
+                    line="yours"
+                  />
+                ) : (
+                  <span
+                    className="answer-grid-value reading-answer-value"
+                    lang="ja"
+                    aria-labelledby={typedAnswerLabelId}
+                  >
+                    {typed || "—"}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <details className="meaning-details">
             <summary className="btn">Show meaning</summary>
             <div className="meaning-details-content stack">
-              {card.content.definitionsEn.filter((s) => s.trim()).length > 0 && (
+              {card.content.definitionsEn.filter((s) => s.trim()).length >
+                0 && (
                 <ul>
                   {card.content.definitionsEn
                     .filter((s) => s.trim())
@@ -119,15 +270,6 @@ export function ReviewSessionAnswerPanel({
       )}
       {m === "grammar_oral_meaning" && card.kind === "grammar" && (
         <>
-          <p className="prompt-main">
-            <RubyWord
-              surface={card.content.construction}
-              reading={readingForConstruction(
-                card.content.construction,
-                card.content.readings,
-              )}
-            />
-          </p>
           {card.content.translationEn.trim() && (
             <p>{card.content.translationEn}</p>
           )}
@@ -136,36 +278,7 @@ export function ReviewSessionAnswerPanel({
           ))}
         </>
       )}
-      <div className="toolbar">
-        <button
-          ref={correctBtnRef}
-          type="button"
-          className="btn good"
-          disabled={pendingIncorrectDelay}
-          onClick={() => onJudge(true)}
-        >
-          Correct
-        </button>
-        <button
-          ref={incorrectBtnRef}
-          type="button"
-          className="btn bad"
-          disabled={pendingIncorrectDelay}
-          onClick={() => onJudge(false)}
-        >
-          Incorrect
-        </button>
-        {typingMode && (
-          <button
-            type="button"
-            className="btn"
-            disabled={pendingIncorrectDelay}
-            onClick={() => onUndoAnswer()}
-          >
-            Undo answer
-          </button>
-        )}
-      </div>
+      {!oralEnglishMode && answerControls}
     </div>
   )
 }

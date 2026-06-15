@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react"
-import { Link, useParams } from "react-router-dom"
+import { Link, useParams, useSearchParams } from "react-router-dom"
 import { toHiragana } from "wanakana"
 import {
   commitJudgement,
@@ -30,8 +30,33 @@ const INCORRECT_ADVANCE_DELAY_MS = 550
 
 type Phase = "prompt" | "answer"
 
+function prioritizeResumeItem(
+  queue: DueItem[],
+  resumeCardId: string | null,
+  resumeModeId: string | null,
+): DueItem[] {
+  if (!resumeCardId) return queue
+
+  const exactIndex = queue.findIndex(
+    (item) => item.card.id === resumeCardId && item.modeId === resumeModeId,
+  )
+  const fallbackIndex =
+    exactIndex >= 0
+      ? exactIndex
+      : queue.findIndex((item) => item.card.id === resumeCardId)
+
+  if (fallbackIndex <= 0) return queue
+
+  const prioritized = [...queue]
+  const [item] = prioritized.splice(fallbackIndex, 1)
+  return [item, ...prioritized]
+}
+
 export function ReviewSessionPage() {
   const { deckId } = useParams()
+  const [searchParams] = useSearchParams()
+  const resumeCardId = searchParams.get("resumeCardId")
+  const resumeModeId = searchParams.get("resumeModeId")
   const { user } = useAuth()
   const [sessionQueue, setSessionQueue] = useState<DueItem[]>([])
   const [phase, setPhase] = useState<Phase>("prompt")
@@ -50,7 +75,12 @@ export function ReviewSessionPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const all = await prefetchDueForSession()
-    const q = deckId ? all.filter((x) => x.card.deckId === deckId) : all
+    const deckQueue = deckId ? all.filter((x) => x.card.deckId === deckId) : all
+    const q = prioritizeResumeItem(
+      deckQueue,
+      resumeCardId,
+      resumeModeId,
+    )
     setSessionQueue(q)
     setPhase("prompt")
     setTyped("")
@@ -61,7 +91,7 @@ export function ReviewSessionPage() {
     setPromptToRevealMs(null)
     setPendingIncorrectDelay(false)
     setLoading(false)
-  }, [deckId])
+  }, [deckId, resumeCardId, resumeModeId])
 
   useEffect(() => {
     load()
@@ -281,6 +311,11 @@ export function ReviewSessionPage() {
 
   const item = current
   const exp = expectedAnswer(item.card, item.modeId)
+  const reviewReturnParams = new URLSearchParams({
+    resumeCardId: item.card.id,
+    resumeModeId: item.modeId,
+  })
+  const reviewReturnTo = `${deckId ? `/decks/${deckId}/review` : "/review"}?${reviewReturnParams}`
 
   return (
     <div className="page review">
@@ -293,7 +328,7 @@ export function ReviewSessionPage() {
           <div className="review-header-actions">
             <Link
               to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(
-                deckId ? `/decks/${deckId}/review` : "/review",
+                reviewReturnTo,
               )}`}
               className="btn"
             >
