@@ -1,15 +1,9 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link, useParams, useSearchParams } from "react-router-dom"
 import { toHiragana } from "wanakana"
 import {
   commitJudgement,
-  prefetchDueForSession,
+  getDueQueue,
   prepareJudgement,
   restoreSchedulingSnapshot,
   undoLastJudgement,
@@ -24,7 +18,11 @@ import {
 } from "../../lib/japanese/synonyms"
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
-import { expectedAnswer, requiresTyping, REVIEW_MODE_LABELS } from "./reviewFlowHelpers"
+import {
+  expectedAnswer,
+  requiresTyping,
+  REVIEW_MODE_LABELS,
+} from "./reviewFlowHelpers"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
@@ -74,13 +72,9 @@ export function ReviewSessionPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const all = await prefetchDueForSession()
+    const all = await getDueQueue()
     const deckQueue = deckId ? all.filter((x) => x.card.deckId === deckId) : all
-    const q = prioritizeResumeItem(
-      deckQueue,
-      resumeCardId,
-      resumeModeId,
-    )
+    const q = prioritizeResumeItem(deckQueue, resumeCardId, resumeModeId)
     setSessionQueue(q)
     setPhase("prompt")
     setTyped("")
@@ -128,7 +122,12 @@ export function ReviewSessionPage() {
   }, [current])
 
   useEffect(() => {
-    if (phase === "prompt" && current && !pendingIncorrectDelay && !requiresTyping(current.modeId)) {
+    if (
+      phase === "prompt" &&
+      current &&
+      !pendingIncorrectDelay &&
+      !requiresTyping(current.modeId)
+    ) {
       showAnswerBtnRef.current?.focus({ preventScroll: true })
     }
   }, [phase, current, pendingIncorrectDelay])
@@ -167,12 +166,19 @@ export function ReviewSessionPage() {
       m === "vocab_type_word_from_clue" ||
       m === "grammar_type_construction"
     ) {
-      if (isSynonymAnswer(c, typedValue) && !matchesPrimaryJapanese(c, typedValue)) {
+      if (
+        isSynonymAnswer(c, typedValue) &&
+        !matchesPrimaryJapanese(c, typedValue)
+      ) {
         setSynonymWarn(true)
         return false
       }
     }
-    if (m === "vocab_type_reading" && typedValue && hasNonHiraganaKana(typedValue)) {
+    if (
+      m === "vocab_type_reading" &&
+      typedValue &&
+      hasNonHiraganaKana(typedValue)
+    ) {
       setReadingWarn(true)
     }
     return true
@@ -191,7 +197,8 @@ export function ReviewSessionPage() {
 
   /** Enter on oral / non-input views (inputs handle Enter separately) */
   useEffect(() => {
-    if (phase !== "prompt" || !current || pendingIncorrectDelay || loading) return
+    if (phase !== "prompt" || !current || pendingIncorrectDelay || loading)
+      return
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Enter") return
       const t = e.target
@@ -371,9 +378,7 @@ export function ReviewSessionPage() {
           </>
         )}
 
-        {pendingIncorrectDelay && (
-          <p className="muted small">Next card…</p>
-        )}
+        {pendingIncorrectDelay && <p className="muted small">Next card…</p>}
 
         {phase === "answer" && !pendingIncorrectDelay && (
           <>

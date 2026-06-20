@@ -7,11 +7,7 @@ import {
   type SchedulingRow,
 } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
-import {
-  applyGrade,
-  deserializeFsrs,
-  serializeFsrs,
-} from "../lib/srs/schedule"
+import { applyGrade, deserializeFsrs, serializeFsrs } from "../lib/srs/schedule"
 import { responseTimeToGrade } from "../lib/srs/time-to-rating"
 import type { Grade } from "ts-fsrs"
 import { loadSchedulingRow, updateSchedulingRow } from "./cards"
@@ -78,7 +74,18 @@ export function randomizeDueQueue(
   return ordered
 }
 
-export async function getDueQueue(now = Date.now()): Promise<DueItem[]> {
+const endOfDay = (timestamp: number) => {
+  const date = new Date(timestamp)
+  date.setHours(23)
+  date.setMinutes(59)
+  date.setSeconds(59)
+  date.setMilliseconds(999)
+  return date.getTime()
+}
+
+export async function getDueQueue(
+  now = endOfDay(Date.now()),
+): Promise<DueItem[]> {
   const rows = await db.scheduling.filter((r) => r.due <= now).toArray()
   const cards = await db.cards.toArray()
   const byId = new Map(cards.map((c) => [c.id, c]))
@@ -91,10 +98,6 @@ export async function getDueQueue(now = Date.now()): Promise<DueItem[]> {
     list.push({ card, modeId: r.modeId, due: r.due })
   }
   return randomizeDueQueue(list)
-}
-
-export async function prefetchDueForSession(now = Date.now()): Promise<DueItem[]> {
-  return getDueQueue(now)
 }
 
 export type JudgementSnapshot = {
@@ -122,7 +125,11 @@ export async function commitJudgement(
   const row = await loadSchedulingRow(cardId, modeId)
   if (!row) return
 
-  const grade = responseTimeToGrade(modeId, promptToRevealMs, selfCorrect) as Grade
+  const grade = responseTimeToGrade(
+    modeId,
+    promptToRevealMs,
+    selfCorrect,
+  ) as Grade
   const now = new Date()
   const prevCard = deserializeFsrs(row.fsrs)
   const nextCard = applyGrade(prevCard, now, grade)
@@ -163,7 +170,9 @@ export async function commitJudgement(
   }
 }
 
-export async function undoLastJudgement(user: User | null): Promise<DueItem | null> {
+export async function undoLastJudgement(
+  user: User | null,
+): Promise<DueItem | null> {
   const last = await db.reviewUndo.orderBy("ts").last()
   if (!last) return null
   let restored: SchedulingRow
