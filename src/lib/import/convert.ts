@@ -97,6 +97,12 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
     kind = "grammar"
   } else if (note.noteType === "Basic (type in the answer)") {
     kind = "type"
+    // TODO: Broaden "reading" detection. The hiragana side of a card may be:
+    //   * quote-wrapped kana (handled below)
+    //   * quote-wrapped kana with a trailing "の読み"
+    //   * bare kana (no quotes) with a trailing "の読み"
+    // Accept all three here, stripping the "の読み" suffix (and any quotes) so
+    // the kana reading itself is what flows through to the merged card.
   } else if (
     note.noteType === "Basic" &&
     isWrappedJapanese(front) &&
