@@ -202,6 +202,31 @@ label {
   margin: 0.5rem 0;
 }
 
+/* Images sit side-by-side and stay small enough that the whole card (prompt,
+   answer input, buttons) fits in the viewport. When they don't fit across,
+   the row — not the card — scrolls horizontally. */
+.card-image-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.card-image-row .card-image {
+  margin: 0;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  max-height: min(34vh, 320px);
+  object-fit: contain;
+}
+
+/* A single image can use the full width but still caps its height. */
+.card-image-row:not(.card-image-row-multi) .card-image {
+  max-width: 100%;
+}
+
 .import-card-preview {
   background: #12121a;
   border-radius: 8px;
@@ -371,21 +396,25 @@ label {
   color: #fef2f2;
 }
 
-.meaning-details {
+.meaning-details,
+.prompt-extras {
   margin-top: 0.25rem;
 }
 
-.meaning-details summary {
+.meaning-details summary,
+.prompt-extras summary {
   cursor: pointer;
   list-style: none;
   width: fit-content;
 }
 
-.meaning-details summary::-webkit-details-marker {
+.meaning-details summary::-webkit-details-marker,
+.prompt-extras summary::-webkit-details-marker {
   display: none;
 }
 
-.meaning-details-content {
+.meaning-details-content,
+.prompt-extras-content {
   margin-top: 0.75rem;
 }
 

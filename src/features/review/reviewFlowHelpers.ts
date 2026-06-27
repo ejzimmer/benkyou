@@ -1,4 +1,40 @@
-import type { Card, ReviewModeId } from "../../domain/types"
+import type {
+  Card,
+  ReviewModeId,
+  VocabularyCardContent,
+} from "../../domain/types"
+
+/** Marker used to blank out the target word in an example sentence. */
+export const EXAMPLE_PLACEHOLDER = "___"
+
+/**
+ * Example sentences shown as clues when asking for the Japanese word: only
+ * sentences that contain the blank placeholder, and never one that already
+ * spells out the answer word.
+ */
+export function clueExampleSentences(content: VocabularyCardContent): string[] {
+  const answer = content.wordJa.trim()
+  return content.exampleSentences
+    .map((s) => s.trim())
+    .filter(
+      (s) =>
+        s.includes(EXAMPLE_PLACEHOLDER) &&
+        (!answer || !s.includes(answer)),
+    )
+}
+
+/**
+ * True when two answers are identical once whitespace and punctuation are
+ * removed, but not byte-for-byte equal — e.g. a missing comma or full stop.
+ */
+export function differsOnlyByPunctuation(a: string, b: string): boolean {
+  if (a === b) return false
+  const strip = (s: string) =>
+    s.normalize("NFKC").replace(/[\s\p{P}\p{S}]/gu, "")
+  const sa = strip(a)
+  const sb = strip(b)
+  return sa.length > 0 && sa === sb
+}
 
 export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {
   vocab_oral_en: "Say the English meaning",

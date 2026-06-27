@@ -3,13 +3,15 @@ import { diffChars } from "diff"
 type Props = {
   typed: string
   expected: string
+  /** Hiragana reading; when set, the card answer shows furigana on hover/focus. */
+  expectedReading?: string
 }
 
 /**
  * Side-by-side character diff (expected vs typed). Highlights use dark-theme-safe
  * backgrounds with light text for contrast (WCAG-friendly on #12121a page bg).
  */
-export function TextDiffCompare({ typed, expected }: Props) {
+export function TextDiffCompare({ typed, expected, expectedReading }: Props) {
   const parts = diffChars(expected, typed)
   let yoursLen = 0
   let cardLen = 0
@@ -17,6 +19,26 @@ export function TextDiffCompare({ typed, expected }: Props) {
     if (!p.removed) yoursLen += p.value.length
     if (!p.added) cardLen += p.value.length
   }
+
+  const showRuby =
+    Boolean(expectedReading?.trim()) && /[一-鿿]/.test(expected)
+  const cardChunks =
+    cardLen === 0 ? (
+      <span className="muted">—</span>
+    ) : (
+      parts.map((part, i) =>
+        part.added ? null : (
+          <span
+            key={`c-${i}`}
+            className={
+              part.removed ? "diff-chunk diff-missing" : "diff-chunk diff-same"
+            }
+          >
+            {part.value}
+          </span>
+        ),
+      )
+    )
 
   return (
     <div
@@ -56,21 +78,15 @@ export function TextDiffCompare({ typed, expected }: Props) {
           aria-labelledby="lbl-card"
           lang="ja"
         >
-          {cardLen === 0 ? (
-            <span className="muted">—</span>
+          {showRuby ? (
+            <span className="ruby-hover" tabIndex={0}>
+              <ruby>
+                {cardChunks}
+                <rt>{expectedReading}</rt>
+              </ruby>
+            </span>
           ) : (
-            parts.map((part, i) =>
-              part.added ? null : (
-                <span
-                  key={`c-${i}`}
-                  className={
-                    part.removed ? "diff-chunk diff-missing" : "diff-chunk diff-same"
-                  }
-                >
-                  {part.value}
-                </span>
-              ),
-            )
+            cardChunks
           )}
         </p>
       </div>
