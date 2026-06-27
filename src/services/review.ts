@@ -74,7 +74,17 @@ export function randomizeDueQueue(
   return ordered
 }
 
-const endOfDay = (timestamp: number) => {
+/**
+ * Last instant of the calendar day containing `timestamp`, expressed in the
+ * user's local timezone.
+ *
+ * `setHours` and friends operate in the runtime's local timezone, which in the
+ * browser is the user's current timezone. Anchoring the due window to the end
+ * of the local day means every card due at any point today — morning, the
+ * moment of review, or later this evening — is included, regardless of what
+ * time of day the review session is started.
+ */
+export const endOfLocalDay = (timestamp: number) => {
   const date = new Date(timestamp)
   date.setHours(23)
   date.setMinutes(59)
@@ -84,7 +94,7 @@ const endOfDay = (timestamp: number) => {
 }
 
 export async function getDueQueue(
-  now = endOfDay(Date.now()),
+  now = endOfLocalDay(Date.now()),
 ): Promise<DueItem[]> {
   const rows = await db.scheduling.filter((r) => r.due <= now).toArray()
   const cards = await db.cards.toArray()
