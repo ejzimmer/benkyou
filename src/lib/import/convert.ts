@@ -32,6 +32,14 @@ import type {
   ModeSchedulingMap,
 } from "./types"
 
+// TODO: Remove the per-note hard-coded handling that specializes this importer
+// to one personal deck. This covers SKIP_NOTE_IDS, MEMORY_NOTE_IDS, the
+// MEMORY_NOTE_IDS branch in classifyNote, the explicit mergeVocabulary calls for
+// "記憶" / "お手本をなぞる" / "おまけ" (and their skip checks in the vocab-key
+// loop), and the throw-on-"Unmapped Anki notes" at the end of
+// convertExtractedPackage — replace these with general classification/merge
+// rules so arbitrary decks convert without bespoke note-id special cases. The
+// single-deck assumption (pickPrimaryDeckId) is intentional and stays.
 const SKIP_NOTE_IDS = new Set([1772835136568, 1772835085326])
 
 const MEMORY_NOTE_IDS = new Set([1771017599643, 1771017640246])
