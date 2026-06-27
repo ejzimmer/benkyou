@@ -6,7 +6,7 @@
 import type { Card, ReviewModeId } from "../domain/types"
 import { deserializeFsrs } from "../lib/srs/schedule"
 import { db } from "../lib/db/schema"
-import { getDueQueue, type DueItem } from "./review"
+import { endOfLocalDay, getDueQueue, type DueItem } from "./review"
 
 export type TroubleCard = {
   card: Card
@@ -17,7 +17,7 @@ export type TroubleCard = {
 }
 
 export async function agentListDue(now?: number): Promise<DueItem[]> {
-  return getDueQueue(now ?? Date.now())
+  return getDueQueue(now ?? endOfLocalDay(Date.now()))
 }
 
 export async function agentListTrouble(

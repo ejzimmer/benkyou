@@ -4,6 +4,7 @@ import { createDeck } from "./decks"
 import { createVocabularyCard } from "./cards"
 import {
   commitJudgement,
+  endOfLocalDay,
   getDueQueue,
   prepareJudgement,
   randomizeDueQueue,
@@ -11,8 +12,33 @@ import {
   type DueItem,
 } from "./review"
 import { loadSchedulingRow } from "./cards"
-import { db } from "../lib/db/schema"
+import { db, type SchedulingRow } from "../lib/db/schema"
+import { emptyFsrs, serializeFsrs } from "../lib/srs/schedule"
 import type { Card, ReviewModeId } from "../domain/types"
+
+const startOfLocalDay = (timestamp: number) => {
+  const date = new Date(timestamp)
+  date.setHours(0, 0, 0, 0)
+  return date.getTime()
+}
+
+async function seedDueCard(
+  id: string,
+  modeId: ReviewModeId,
+  due: number,
+): Promise<void> {
+  const card = vocabularyCard(id)
+  await db.cards.put(card)
+  const row: SchedulingRow = {
+    id: `${id}:${modeId}`,
+    cardId: id,
+    modeId,
+    fsrs: serializeFsrs(emptyFsrs()),
+    due,
+    updatedAt: 1,
+  }
+  await db.scheduling.put(row)
+}
 
 vi.mock("../lib/firebase", () => ({
   getFirebaseApp: () => null,
@@ -184,5 +210,56 @@ describe("review + scheduling (IndexedDB)", () => {
     const restored = await loadSchedulingRow(card.id, "vocab_oral_en")
     expect(restored!.due).toBe(beforeDue)
     expect(await db.reviewEvents.get(eventId)).toBeUndefined()
+  })
+})
+
+describe("endOfLocalDay", () => {
+  it("returns the final instant of the day in the local timezone", () => {
+    const eod = new Date(endOfLocalDay(Date.parse("2026-06-27T09:15:00")))
+    expect(eod.getHours()).toBe(23)
+    expect(eod.getMinutes()).toBe(59)
+    expect(eod.getSeconds()).toBe(59)
+    expect(eod.getMilliseconds()).toBe(999)
+  })
+
+  it("stays on the same local calendar day and never moves backwards", () => {
+    const now = Date.now()
+    const eod = endOfLocalDay(now)
+    expect(eod).toBeGreaterThanOrEqual(now)
+    expect(new Date(eod).getDate()).toBe(new Date(now).getDate())
+  })
+})
+
+describe("getDueQueue day window", () => {
+  beforeEach(async () => {
+    await resetDatabase()
+  })
+
+  it("shows every card due at any point today, whatever time review starts", async () => {
+    const now = Date.now()
+    // A morning card, a card due at the moment of review, and an evening card
+    // should all be surfaced together regardless of the current time of day.
+    await seedDueCard("morning", "vocab_oral_en", startOfLocalDay(now))
+    await seedDueCard("now", "vocab_oral_en", now)
+    await seedDueCard("evening", "vocab_oral_en", endOfLocalDay(now))
+
+    const queue = await getDueQueue()
+    const ids = new Set(queue.map((item) => item.card.id))
+
+    expect(ids).toContain("morning")
+    expect(ids).toContain("now")
+    expect(ids).toContain("evening")
+  })
+
+  it("excludes cards that only become due tomorrow", async () => {
+    const now = Date.now()
+    await seedDueCard("today", "vocab_oral_en", endOfLocalDay(now))
+    await seedDueCard("tomorrow", "vocab_oral_en", endOfLocalDay(now) + 1)
+
+    const queue = await getDueQueue()
+    const ids = new Set(queue.map((item) => item.card.id))
+
+    expect(ids).toContain("today")
+    expect(ids).not.toContain("tomorrow")
   })
 })
