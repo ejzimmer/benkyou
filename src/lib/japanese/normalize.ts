@@ -1,6 +1,23 @@
+import { toHiragana } from "wanakana"
+
 /** NFKC + trim + collapse whitespace for loose matching */
 export function normalizeJapanese(s: string): string {
   return s.normalize("NFKC").trim().replace(/\s+/g, " ")
+}
+
+/**
+ * Finalize a reading answer typed through the wanakana IME converter.
+ *
+ * In IME mode wanakana leaves a trailing romaji "n" un-converted while it waits
+ * to see whether the next keystroke forms な/に/etc. So committing with Enter
+ * right after typing "...n" can leave a dangling Latin "n" — or the full-width
+ * "ｎ" some IMEs emit — instead of ん (e.g. "もちろn"/"もちろｎ" rather than
+ * "もちろん"). NFKC folds full-width Latin to ASCII, a full (non-IME) toHiragana
+ * pass converts the dangling "n" along with any other leftover romaji, and a
+ * final guard maps any still-trailing "n"/"N" to ん.
+ */
+export function finalizeReadingAnswer(s: string): string {
+  return toHiragana(s.normalize("NFKC")).replace(/[nN]$/, "ん")
 }
 
 export function hasKanjiOrKatakana(s: string): boolean {

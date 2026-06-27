@@ -11,7 +11,10 @@ import {
   type JudgementSnapshot,
 } from "../../services/review"
 import { useAuth } from "../../lib/auth/AuthContext"
-import { hasNonHiraganaKana } from "../../lib/japanese/normalize"
+import {
+  finalizeReadingAnswer,
+  hasNonHiraganaKana,
+} from "../../lib/japanese/normalize"
 import {
   isSynonymAnswer,
   matchesPrimaryJapanese,
@@ -188,7 +191,7 @@ export function ReviewSessionPage() {
   tryShowAnswerRef.current = () => {
     let finalTyped = typed
     if (current?.modeId === "vocab_type_reading" && typed) {
-      finalTyped = toHiragana(typed)
+      finalTyped = finalizeReadingAnswer(typed)
       if (finalTyped !== typed) setTyped(finalTyped)
     }
     if (!checkSubmitTyped(finalTyped)) return

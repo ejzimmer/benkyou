@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  finalizeReadingAnswer,
   hasKanjiOrKatakana,
   hasNonHiraganaKana,
   normalizeJapanese,
@@ -35,5 +36,29 @@ describe("hasNonHiraganaKana", () => {
   })
   it("flags katakana", () => {
     expect(hasNonHiraganaKana("スシ")).toBe(true)
+  })
+})
+
+describe("finalizeReadingAnswer", () => {
+  it("converts a trailing half-width romaji n to ん", () => {
+    expect(finalizeReadingAnswer("もちろn")).toBe("もちろん")
+  })
+  it("converts a trailing full-width ｎ (as some IMEs emit) to ん", () => {
+    expect(finalizeReadingAnswer("もちろｎ")).toBe("もちろん")
+  })
+  it("handles a trailing upper-case N in either width", () => {
+    expect(finalizeReadingAnswer("もちろN")).toBe("もちろん")
+    expect(finalizeReadingAnswer("もちろＮ")).toBe("もちろん")
+  })
+  it("converts a lone trailing n", () => {
+    expect(finalizeReadingAnswer("n")).toBe("ん")
+    expect(finalizeReadingAnswer("ｎ")).toBe("ん")
+  })
+  it("leaves an already-correct hiragana reading untouched", () => {
+    expect(finalizeReadingAnswer("もちろん")).toBe("もちろん")
+    expect(finalizeReadingAnswer("しんぶん")).toBe("しんぶん")
+  })
+  it("still converts mid-word kana so ん is not the only thing handled", () => {
+    expect(finalizeReadingAnswer("しんぶn")).toBe("しんぶん")
   })
 })
