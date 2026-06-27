@@ -93,6 +93,21 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
 
   if (MEMORY_NOTE_IDS.has(note.id)) {
     kind = "basic"
+    // TODO: Don't auto-commit grammar classification. A vocab card that merely
+    // includes an example sentence can look identical to a grammar card, and
+    // there's no reliable heuristic to tell them apart — last import misfiled a
+    // bunch of vocab as grammar. Instead of guessing, add a manual confirmation
+    // step: when a note looks like grammar (gap marker present), surface it to
+    // the user and ask "grammar or vocab?" before any grammar card is created.
+    // - Model this on the existing gap-review flow (collectImportGaps /
+    //   AnkiImportGapReview / completeAnkiImport): convert flags grammar
+    //   candidates, parseAnkiPackageFile returns them as pending, the UI asks,
+    //   and the answer feeds back into conversion — nothing is written to the DB
+    //   until the user has decided.
+    // - On "grammar": build the grammar card as today.
+    // - On "vocab": route the note through the vocabulary merge path with the
+    //   sentence kept as an exampleSentence (not a gap), so it joins/creates the
+    //   matching word card instead of becoming grammar.
   } else if (hasGapMarker(raw) && !SKIP_NOTE_IDS.has(note.id)) {
     kind = "grammar"
   } else if (note.noteType === "Basic (type in the answer)") {
@@ -103,6 +118,11 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
     //   * bare kana (no quotes) with a trailing "の読み"
     // Accept all three here, stripping the "の読み" suffix (and any quotes) so
     // the kana reading itself is what flows through to the merged card.
+    // NOTE: this can't be done by just relaxing isWrappedJapanese — the current
+    // branch also requires isKanaOnly(back), and a "…の読み" value contains the
+    // kanji 読, so isKanaOnly rejects it. Match/strip the "の読み" suffix first,
+    // then run the kana test on the remainder (and apply the same strip before
+    // the value is keyed/merged, so "の読み" never leaks into the card).
   } else if (
     note.noteType === "Basic" &&
     isWrappedJapanese(front) &&
