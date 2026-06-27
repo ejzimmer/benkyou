@@ -1,11 +1,15 @@
 import { diffChars } from "diff"
 import { useEffect, useId, useRef } from "react"
 import type { DueItem } from "../../services/review"
-import { CardImage } from "../../ui/CardImage"
+import { CardImageRow } from "../../ui/CardImageRow"
 import { GapAnswerDiff } from "../../ui/GapAnswerDiff"
 import { RubyWord } from "../../ui/KanjiRuby"
 import { TextDiffCompare } from "../../ui/TextDiffCompare"
-import { readingForConstruction, requiresTyping } from "./reviewFlowHelpers"
+import {
+  differsOnlyByPunctuation,
+  readingForConstruction,
+  requiresTyping,
+} from "./reviewFlowHelpers"
 
 export type ReviewSessionAnswerPanelProps = {
   item: DueItem
@@ -85,9 +89,6 @@ export function ReviewSessionAnswerPanel({
 }: ReviewSessionAnswerPanelProps) {
   const { card, modeId: m } = item
   const typingMode = requiresTyping(m)
-  const oralEnglishMode = m === "vocab_oral_en" || m === "grammar_oral_meaning"
-  const isCorrectTypedWordFromClue =
-    m === "vocab_type_word_from_clue" && typed === expected
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
   const correctAnswerLabelId = useId()
@@ -99,16 +100,18 @@ export function ReviewSessionAnswerPanel({
 
   useEffect(() => {
     if (pendingIncorrectDelay) return
-    if (typingMode) {
-      if (answeredCorrectly) {
-        correctBtnRef.current?.focus({ preventScroll: true })
-      } else {
-        incorrectBtnRef.current?.focus({ preventScroll: true })
-      }
-    } else {
+    // Typed answers default focus to Correct when right (or only punctuation is
+    // off); otherwise Incorrect. Oral answers always default to Correct.
+    const focusCorrect =
+      !typingMode ||
+      answeredCorrectly ||
+      differsOnlyByPunctuation(typed, expected)
+    if (focusCorrect) {
       correctBtnRef.current?.focus({ preventScroll: true })
+    } else {
+      incorrectBtnRef.current?.focus({ preventScroll: true })
     }
-  }, [typingMode, answeredCorrectly, pendingIncorrectDelay])
+  }, [typingMode, answeredCorrectly, pendingIncorrectDelay, typed, expected])
 
   const answerControls = (
     <div className="toolbar">
@@ -145,16 +148,6 @@ export function ReviewSessionAnswerPanel({
 
   return (
     <div className="answer-block stack">
-      {m !== "vocab_type_reading" &&
-        m !== "grammar_type_construction" &&
-        !oralEnglishMode && <h3>Answer</h3>}
-      {oralEnglishMode && answerControls}
-      {typingMode &&
-        m !== "vocab_type_reading" &&
-        m !== "grammar_type_construction" &&
-        !isCorrectTypedWordFromClue && (
-          <TextDiffCompare typed={typed} expected={expected} />
-        )}
       {m === "vocab_oral_en" && card.kind === "vocabulary" && (
         <>
           <ul>
@@ -164,121 +157,113 @@ export function ReviewSessionAnswerPanel({
                 <li key={i}>{d}</li>
               ))}
           </ul>
-          {card.content.images.map((id) => (
-            <CardImage key={id} mediaId={id} />
-          ))}
+          <CardImageRow images={card.content.images} />
         </>
       )}
+
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
-        <>
-          <div
-            className="reading-answer-comparison"
-            role="group"
-            aria-label={
-              answeredCorrectly
-                ? "Hiragana answer"
-                : "Hiragana answer comparison"
-            }
-          >
+        <div
+          className="reading-answer-comparison"
+          role="group"
+          aria-label={
+            answeredCorrectly ? "Hiragana answer" : "Hiragana answer comparison"
+          }
+        >
+          <div className="reading-answer-row">
+            <span id={correctAnswerLabelId} className="answer-grid-label">
+              Correct answer
+            </span>
+            {readingDiff ? (
+              <ReadingDiffLine
+                cells={readingDiff.correct}
+                labelId={correctAnswerLabelId}
+                line="correct"
+              />
+            ) : (
+              <span
+                className="answer-grid-value reading-answer-value"
+                lang="ja"
+                aria-labelledby={correctAnswerLabelId}
+              >
+                {expected || "—"}
+              </span>
+            )}
+          </div>
+          {!answeredCorrectly && (
             <div className="reading-answer-row">
-              <span id={correctAnswerLabelId} className="answer-grid-label">
-                Correct answer
+              <span id={typedAnswerLabelId} className="answer-grid-label">
+                Your answer
               </span>
               {readingDiff ? (
                 <ReadingDiffLine
-                  cells={readingDiff.correct}
-                  labelId={correctAnswerLabelId}
-                  line="correct"
+                  cells={readingDiff.yours}
+                  labelId={typedAnswerLabelId}
+                  line="yours"
                 />
               ) : (
                 <span
                   className="answer-grid-value reading-answer-value"
                   lang="ja"
-                  aria-labelledby={correctAnswerLabelId}
+                  aria-labelledby={typedAnswerLabelId}
                 >
-                  {expected || "—"}
+                  {typed || "—"}
                 </span>
               )}
             </div>
-            {!answeredCorrectly && (
-              <div className="reading-answer-row">
-                <span id={typedAnswerLabelId} className="answer-grid-label">
-                  Your answer
-                </span>
-                {readingDiff ? (
-                  <ReadingDiffLine
-                    cells={readingDiff.yours}
-                    labelId={typedAnswerLabelId}
-                    line="yours"
-                  />
-                ) : (
-                  <span
-                    className="answer-grid-value reading-answer-value"
-                    lang="ja"
-                    aria-labelledby={typedAnswerLabelId}
-                  >
-                    {typed || "—"}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-          <details className="meaning-details">
-            <summary className="btn">Show meaning</summary>
-            <div className="meaning-details-content stack">
-              {card.content.definitionsEn.filter((s) => s.trim()).length >
-                0 && (
-                <ul>
-                  {card.content.definitionsEn
-                    .filter((s) => s.trim())
-                    .map((d, i) => (
-                      <li key={i}>{d}</li>
-                    ))}
-                </ul>
-              )}
-              {card.content.exampleSentences
-                .filter((s) => s.trim())
-                .map((s, i) => (
-                  <p key={i} className="muted">
-                    {s}
-                  </p>
-                ))}
-              {card.content.images.map((id) => (
-                <CardImage key={id} mediaId={id} />
-              ))}
-            </div>
-          </details>
-        </>
-      )}
-      {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
-        <p className="prompt-main">
-          <RubyWord
-            surface={card.content.wordJa}
-            reading={card.content.reading}
-          />
-        </p>
-      )}
-      {m === "grammar_type_construction" && card.kind === "grammar" && (
-        <GapAnswerDiff
-          typed={typed}
-          expected={expected}
-          reading={readingForConstruction(
-            card.content.construction,
-            card.content.readings,
           )}
-        />
+        </div>
       )}
+
+      {m === "vocab_type_word_from_clue" &&
+        card.kind === "vocabulary" &&
+        (answeredCorrectly ? (
+          <p className="prompt-main">
+            <RubyWord
+              surface={card.content.wordJa}
+              reading={card.content.reading}
+            />
+          </p>
+        ) : (
+          <TextDiffCompare
+            typed={typed}
+            expected={expected}
+            expectedReading={card.content.reading}
+          />
+        ))}
+
+      {m === "grammar_type_construction" &&
+        card.kind === "grammar" &&
+        (answeredCorrectly ? (
+          <p className="prompt-main">
+            <RubyWord
+              surface={card.content.construction}
+              reading={readingForConstruction(
+                card.content.construction,
+                card.content.readings,
+              )}
+            />
+          </p>
+        ) : (
+          <GapAnswerDiff
+            typed={typed}
+            expected={expected}
+            reading={readingForConstruction(
+              card.content.construction,
+              card.content.readings,
+            )}
+          />
+        ))}
+
       {m === "grammar_oral_meaning" && card.kind === "grammar" && (
         <>
           {card.content.translationEn.trim() && (
             <p>{card.content.translationEn}</p>
           )}
-          {card.content.images.map((id) => (
-            <CardImage key={id} mediaId={id} />
-          ))}
+          <CardImageRow images={card.content.images} />
         </>
       )}
-      {!oralEnglishMode && answerControls}
+
+      {answerControls}
     </div>
   )
 }

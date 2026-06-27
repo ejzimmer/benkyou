@@ -185,7 +185,7 @@ function expectBefore(first: Element, second: Element) {
 }
 
 describe("ReviewSessionAnswerPanel", () => {
-  it("puts oral vocabulary controls before the English meaning and images", () => {
+  it("keeps the oral vocabulary question, then the meaning and images, then controls", () => {
     const { container } = renderRevealedReview(vocabItem("vocab_oral_en"))
 
     const prompt = container.querySelector(".prompt-main")
@@ -197,12 +197,12 @@ describe("ReviewSessionAnswerPanel", () => {
     expect(prompt).not.toBeNull()
     expect(correctButton).toHaveFocus()
     expectBefore(prompt!, example)
-    expectBefore(example, correctButton)
-    expectBefore(correctButton, meaning)
+    expectBefore(example, meaning)
     expectBefore(meaning, image)
+    expectBefore(image, correctButton)
   })
 
-  it("uses the existing grammar prompt before controls and English meaning", () => {
+  it("keeps the grammar question, then the English meaning and images, then controls", () => {
     const { container } = renderRevealedReview(
       grammarItem("grammar_oral_meaning"),
     )
@@ -214,9 +214,9 @@ describe("ReviewSessionAnswerPanel", () => {
 
     expect(prompts).toHaveLength(1)
     expect(correctButton).toHaveFocus()
-    expectBefore(prompts[0]!, correctButton)
-    expectBefore(correctButton, meaning)
+    expectBefore(prompts[0]!, meaning)
     expectBefore(meaning, image)
+    expectBefore(image, correctButton)
   })
 })
 

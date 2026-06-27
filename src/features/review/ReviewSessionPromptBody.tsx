@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { RubySentence, RubyWord } from "../../ui/KanjiRuby"
-import { CardImage } from "../../ui/CardImage"
-import { readingForConstruction } from "./reviewFlowHelpers"
+import { CardImageRow } from "../../ui/CardImageRow"
+import { clueExampleSentences, readingForConstruction } from "./reviewFlowHelpers"
 
 type TypingAnswerInputProps = {
   value: string
@@ -86,28 +86,64 @@ export function ReviewSessionPromptBody({
   const { card, modeId: m } = item
   const focusKey = `${card.id}:${m}`
 
-  // Images for `vocab_oral_en` and `vocab_type_reading` live on the answer
-  // panel alongside the meaning / reading (the Anki "back"). Rendering them
-  // here too would duplicate the same image as soon as the answer flips.
+  // Asking for the English meaning: show the Japanese word + example sentences.
+  // Kanji readings stay available on hover/focus via <RubyWord>.
   if (m === "vocab_oral_en" && card.kind === "vocabulary") {
+    const examples = card.content.exampleSentences.filter((s) => s.trim())
     return (
       <div className="stack">
         <p className="prompt-main">
           <RubyWord surface={card.content.wordJa} reading={card.content.reading} />
         </p>
-        {card.content.exampleSentences[0] && (
-          <p className="muted">{card.content.exampleSentences[0]}</p>
-        )}
+        {examples.map((s, i) => (
+          <p key={i} className="muted">
+            {s}
+          </p>
+        ))}
       </div>
     )
   }
 
+  // Asking for the Japanese reading: show only the kanji. Everything that could
+  // give the reading away (images, meanings, examples) hides behind an expander.
   if (m === "vocab_type_reading" && card.kind === "vocabulary") {
+    const definitions = card.content.definitionsEn.filter((s) => s.trim())
+    const examples = card.content.exampleSentences.filter((s) => s.trim())
+    const hasHidden =
+      definitions.length > 0 ||
+      examples.length > 0 ||
+      card.content.images.length > 0
     return (
       <div className="stack">
-        <p className="prompt-main">{card.content.wordJa}</p>
-        {card.content.exampleSentences[0] && (
-          <p className="muted">{card.content.exampleSentences[0]}</p>
+        <p className="prompt-main">
+          {revealed ? (
+            <RubyWord
+              surface={card.content.wordJa}
+              reading={card.content.reading}
+            />
+          ) : (
+            card.content.wordJa
+          )}
+        </p>
+        {hasHidden && (
+          <details className="prompt-extras">
+            <summary className="btn">Show meaning, examples & images</summary>
+            <div className="prompt-extras-content stack">
+              {definitions.length > 0 && (
+                <ul>
+                  {definitions.map((d, i) => (
+                    <li key={i}>{d}</li>
+                  ))}
+                </ul>
+              )}
+              {examples.map((s, i) => (
+                <p key={i} className="muted">
+                  {s}
+                </p>
+              ))}
+              <CardImageRow images={card.content.images} />
+            </div>
+          </details>
         )}
         {!revealed && (
           <>
@@ -130,7 +166,10 @@ export function ReviewSessionPromptBody({
     )
   }
 
+  // Asking for the Japanese word: show the English meaning, plus any example
+  // sentences that keep the answer blanked out, plus images (sized to fit).
   if (m === "vocab_type_word_from_clue" && card.kind === "vocabulary") {
+    const examples = clueExampleSentences(card.content)
     return (
       <div className="stack">
         <ul>
@@ -140,9 +179,12 @@ export function ReviewSessionPromptBody({
               <li key={i}>{d}</li>
             ))}
         </ul>
-        {card.content.images.map((id) => (
-          <CardImage key={id} mediaId={id} />
+        {examples.map((s, i) => (
+          <p key={i} className="muted">
+            {s}
+          </p>
         ))}
+        <CardImageRow images={card.content.images} />
         {!revealed && (
           <>
             <TypingAnswerInput
@@ -200,9 +242,7 @@ export function ReviewSessionPromptBody({
         {card.content.translationEn.trim() && (
           <p className="muted">{card.content.translationEn}</p>
         )}
-        {card.content.images.map((id) => (
-          <CardImage key={id} mediaId={id} />
-        ))}
+        <CardImageRow images={card.content.images} />
         {!revealed && (
           <>
             {!hasInlineGap && (
