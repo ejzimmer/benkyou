@@ -335,6 +335,61 @@ describe("ReviewSessionPage", () => {
     ).toHaveTextContent("ねこ")
   })
 
+  it("restores the entered answer after undoing the last judgement", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T", null)
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "保険",
+        reading: "ほけん",
+        definitionsEn: [""],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    // Enter a wrong reading (missing ん), reveal, and mark it incorrect.
+    const input = screen.getByRole("textbox")
+    fireEvent.change(input, { target: { value: "ほけ" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    await user.click(await screen.findByRole("button", { name: /^incorrect$/i }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /undo last judgement/i }),
+      ).toBeEnabled()
+    })
+    await user.click(
+      screen.getByRole("button", { name: /undo last judgement/i }),
+    )
+
+    // The answer screen reopens showing what was entered, not a blank answer.
+    expect(await screen.findByText("Your answer")).toBeInTheDocument()
+    expect(
+      document.querySelector('[data-reading-diff-line="yours"]')?.textContent,
+    ).toContain("ほけ")
+  })
+
   it("reveals the aligned reading diff for an incorrect hiragana answer", async () => {
     await resetDatabase()
     const user = userEvent.setup()
