@@ -143,12 +143,21 @@ function collectMediaRefs(flds: string): Set<string> {
   return refs
 }
 
+/** A parsed package plus a media reader, ready to convert (with or without
+ * grammar decisions). Kept separate from conversion so the UI can ask the user
+ * to confirm grammar vs vocab before any cards are built. */
+export type ParsedAnkiPackage = {
+  pkg: ExtractedPackage
+  readFile: (relativePath: string) => Uint8Array
+}
+
 /**
- * Parse a single-deck `.apkg` (or a `.colpkg` / zip with one primary deck) in the browser.
+ * Parse a single-deck `.apkg` (or a `.colpkg` / zip with one primary deck) in
+ * the browser, without converting it into cards.
  */
-export async function parseAnkiPackageToBulkImport(
+export async function parseAnkiPackage(
   arrayBuffer: ArrayBuffer,
-): Promise<BulkImportPayload> {
+): Promise<ParsedAnkiPackage> {
   const zip = await JSZip.loadAsync(arrayBuffer)
   const collectionBytes = await getCollectionBytes(zip)
   const init = await getSqlJs()
@@ -250,13 +259,25 @@ export async function parseAnkiPackageToBulkImport(
       mediaPaths,
     }
 
-    return convertExtractedPackage(pkg, (rel) => {
+    // mediaBytes is fully populated above, so the reader closure is safe to use
+    // after the sql.js database is closed.
+    const readFile = (rel: string): Uint8Array => {
       const fname = rel.startsWith("media/") ? rel.slice("media/".length) : rel
       const b = mediaBytes.get(fname)
       if (!b) throw new Error(`Missing media file: ${fname}`)
       return b
-    })
+    }
+
+    return { pkg, readFile }
   } finally {
     db.close()
   }
+}
+
+/** Parse and convert in one step (no grammar decisions). */
+export async function parseAnkiPackageToBulkImport(
+  arrayBuffer: ArrayBuffer,
+): Promise<BulkImportPayload> {
+  const { pkg, readFile } = await parseAnkiPackage(arrayBuffer)
+  return convertExtractedPackage(pkg, readFile)
 }
