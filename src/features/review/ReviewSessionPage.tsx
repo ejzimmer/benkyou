@@ -71,6 +71,13 @@ export function ReviewSessionPage() {
   const [loading, setLoading] = useState(true)
   const [pendingIncorrectDelay, setPendingIncorrectDelay] = useState(false)
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /**
+   * Typed answers per judgement, newest last, so "undo last judgement" can
+   * restore what was entered. In-session only — not persisted across reloads.
+   */
+  const judgedTypedHistoryRef = useRef<
+    Array<{ cardId: string; modeId: string; typed: string }>
+  >([])
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
 
   const load = useCallback(async () => {
@@ -217,6 +224,12 @@ export function ReviewSessionPage() {
   async function onJudge(correct: boolean) {
     if (!current || pendingIncorrectDelay) return
     const item = current
+    // Remember the answer entered so undoing this judgement can show it again.
+    judgedTypedHistoryRef.current.push({
+      cardId: item.card.id,
+      modeId: item.modeId,
+      typed,
+    })
     await commitJudgement(
       item.card.id,
       item.modeId,
@@ -278,7 +291,14 @@ export function ReviewSessionPage() {
     })
 
     const snap = await prepareJudgement(undone.card.id, undone.modeId)
-    setTyped("")
+    const lastTyped = judgedTypedHistoryRef.current.pop()
+    const restoredTyped =
+      lastTyped &&
+      lastTyped.cardId === undone.card.id &&
+      lastTyped.modeId === undone.modeId
+        ? lastTyped.typed
+        : ""
+    setTyped(restoredTyped)
     setSynonymWarn(false)
     setReadingWarn(false)
     if (!snap) {
