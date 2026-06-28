@@ -27,9 +27,10 @@ export function GrammarClassifyReview({
 }: GrammarClassifyReviewProps) {
   const [decisions, setDecisions] = useState<GrammarDecisionMap>(() => {
     const init: GrammarDecisionMap = {}
-    // Default to "grammar" (the historical behaviour); the user flips the ones
-    // that are really vocabulary.
-    for (const candidate of candidates) init[candidate.key] = "grammar"
+    // Default to "vocab": gap-marked notes are usually vocabulary cards that
+    // just include an example sentence, so the user only flips the genuinely
+    // grammatical ones.
+    for (const candidate of candidates) init[candidate.key] = "vocab"
     return init
   })
 
@@ -52,7 +53,7 @@ export function GrammarClassifyReview({
       </p>
 
       {candidates.map((candidate) => {
-        const decision = decisions[candidate.key] ?? "grammar"
+        const decision = decisions[candidate.key] ?? "vocab"
         return (
           <div key={candidate.key} className="panel stack">
             <p className="prompt-main" style={{ margin: 0 }}>
