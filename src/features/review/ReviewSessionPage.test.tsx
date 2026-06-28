@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
@@ -195,6 +195,52 @@ describe("ReviewSessionPage", () => {
 
     const editLinkAfter = screen.getByRole("link", { name: /edit card/i })
     expect(editLinkAfter.getAttribute("href")).toBe(hrefBefore)
+  })
+
+  it("converts a trailing full-width ｎ to ん on submit so the reading matches", async () => {
+    await resetDatabase()
+    const deck = await createDeck("T", null)
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "保険",
+        reading: "ほけん",
+        definitionsEn: [""],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    // Simulate the input ending in a full-width ｎ (as some IMEs emit) and submit.
+    const input = screen.getByRole("textbox")
+    fireEvent.change(input, { target: { value: "ほけｎ" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+
+    // The answer is revealed and treated as correct: no "Your answer" diff row,
+    // and the converted reading is shown.
+    expect(
+      await screen.findByRole("button", { name: /^correct$/i }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText("Your answer")).not.toBeInTheDocument()
+    expect(screen.getAllByText("ほけん").length).toBeGreaterThan(0)
   })
 
   it("keeps the question visible when the answer is shown", async () => {
