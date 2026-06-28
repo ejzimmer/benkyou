@@ -14,6 +14,7 @@ import {
   extractEnglishLines,
   extractMediaRefs,
   hasGapMarker,
+  hasReadingSuffix,
   isKanaOnly,
   isWrappedJapanese,
   mimeFromFilename,
@@ -22,6 +23,7 @@ import {
   normalizeHeadwordKey,
   readingValue,
   stripHtml,
+  stripReadingSuffix,
   unwrapJapanese,
 } from "./html"
 import type {
@@ -91,9 +93,10 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
     kind = "type"
   } else if (
     note.noteType === "Basic" &&
-    isWrappedJapanese(front) &&
-    // The hiragana side may be bare kana, quote-wrapped kana, or either of
-    // those with a trailing "の読み"; readingValue normalizes all of them.
+    // The word side is either a quote-wrapped Japanese word ("«陣»") or a word
+    // annotated with "の読み" ("陣の読み"); the hiragana side is bare or
+    // quote-wrapped kana, optionally also carrying "の読み".
+    (isWrappedJapanese(front) || hasReadingSuffix(front)) &&
     isKanaOnly(readingValue(back))
   ) {
     kind = "reading"
@@ -489,13 +492,20 @@ export function convertExtractedPackage(
     if (usedNoteIds.has(basic?.note.id ?? -1)) continue
     if (usedNoteIds.has(type?.note.id ?? -1)) continue
     if (usedNoteIds.has(reading?.note.id ?? -1)) continue
-    const wordJa = unwrapJapanese(basic?.front ?? type?.back ?? reading?.front ?? key)
+    const wordJa = stripReadingSuffix(
+      unwrapJapanese(basic?.front ?? type?.back ?? reading?.front ?? key),
+    )
     mergeVocabulary(wordJa, basic, type, reading)
   }
 
   for (const entry of byKind("reading")) {
     if (usedNoteIds.has(entry.note.id)) continue
-    mergeVocabulary(unwrapJapanese(entry.front), undefined, undefined, entry)
+    mergeVocabulary(
+      stripReadingSuffix(unwrapJapanese(entry.front)),
+      undefined,
+      undefined,
+      entry,
+    )
   }
 
   for (const entry of byKind("reversed")) {
