@@ -10,6 +10,7 @@ import { serializeFsrs } from "../srs/schedule"
 import { createEmptyCard } from "ts-fsrs"
 import { ankiSchedulingToFsrs } from "./ankiSrs"
 import {
+  containsJapanese,
   containsKanji as surfaceHasKanji,
   extractEnglishLines,
   extractMediaRefs,
@@ -115,6 +116,17 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
   }
 
   return { note, kind, front, back, frontRaw, backRaw }
+}
+
+/**
+ * The side of a reversed note that holds the Japanese word. The other side is
+ * the English meaning and/or an image, so pick whichever field actually
+ * contains Japanese rather than assuming the front (or assuming kana).
+ */
+function reversedJapaneseSide(entry: ClassifiedNote): string {
+  if (containsJapanese(entry.front)) return entry.front
+  if (containsJapanese(entry.back)) return entry.back
+  return entry.front
 }
 
 /** When Anki has fewer sibling cards than Benkyou review modes, reuse real scheduling instead of a synthetic “new” row (which was always due immediately). */
@@ -417,6 +429,11 @@ export function convertExtractedPackage(
     typeByKey.set(normalizeHeadwordKey(entry.back), entry)
   }
 
+  const reversedByKey = new Map<string, ClassifiedNote>()
+  for (const entry of byKind("reversed")) {
+    reversedByKey.set(normalizeHeadwordKey(reversedJapaneseSide(entry)), entry)
+  }
+
   const { grammarGroups, grammarReserved } = buildGrammarGroups(classified)
 
   const pickReading = (word: string): string | undefined => {
@@ -430,15 +447,25 @@ export function convertExtractedPackage(
     basic: ClassifiedNote | undefined,
     type: ClassifiedNote | undefined,
     reading: ClassifiedNote | undefined,
+    reversed?: ClassifiedNote,
     overrides?: Partial<VocabularyCardContent> & {
       meta?: Record<string, unknown>
     },
   ) => {
+    // A reversed note's English/image can live on either side, so feed both of
+    // its raw fields to the English/image extractors.
     const definitions = extractEnglishLines(
       basic?.backRaw ?? "",
       type?.frontRaw ?? "",
+      reversed?.frontRaw ?? "",
+      reversed?.backRaw ?? "",
     )
-    const images = refsFrom(basic?.backRaw ?? "", type?.frontRaw ?? "")
+    const images = refsFrom(
+      basic?.backRaw ?? "",
+      type?.frontRaw ?? "",
+      reversed?.frontRaw ?? "",
+      reversed?.backRaw ?? "",
+    )
     const wordReading = vocabularyReading(wordJa, overrides, pickReading)
     const content: VocabularyCardContent = {
       wordJa,
@@ -450,14 +477,28 @@ export function convertExtractedPackage(
       exampleSentences: overrides?.exampleSentences ?? [],
       synonymsJa: [],
     }
+    // A reversed note carries two Anki cards (forward + reverse); fall back to
+    // them for the oral / type-the-word modes when there's no Basic/type note.
     const sources: ModeSchedulingMap = {
-      vocab_oral_en: basic ? firstCard(basic.note) : undefined,
-      vocab_type_word_from_clue: type ? firstCard(type.note) : undefined,
+      vocab_oral_en: basic
+        ? firstCard(basic.note)
+        : reversed
+          ? firstCard(reversed.note, 0)
+          : undefined,
+      vocab_type_word_from_clue: type
+        ? firstCard(type.note)
+        : reversed
+          ? firstCard(reversed.note, 1)
+          : undefined,
       vocab_type_reading: reading ? firstCard(reading.note) : undefined,
     }
     const meta = overrides?.meta
     const cardId = stableCardId("vocab", [
-      basic?.note.id ?? type?.note.id ?? reading?.note.id ?? wordJa,
+      basic?.note.id ??
+        type?.note.id ??
+        reading?.note.id ??
+        reversed?.note.id ??
+        wordJa,
     ])
     const built = vocabularyCard(
       deckId,
@@ -471,8 +512,8 @@ export function convertExtractedPackage(
     cards.push(built.card)
     scheduling.push(...built.scheduling)
     markUsed(
-      ...[basic, type, reading].filter((entry): entry is ClassifiedNote =>
-        Boolean(entry),
+      ...[basic, type, reading, reversed].filter(
+        (entry): entry is ClassifiedNote => Boolean(entry),
       ),
     )
   }
@@ -481,21 +522,30 @@ export function convertExtractedPackage(
     ...basicByKey.keys(),
     ...typeByKey.keys(),
     ...readingByKey.keys(),
+    ...reversedByKey.keys(),
   ])
   for (const key of vocabKeys) {
     const basic = basicByKey.get(key)
     const type = typeByKey.get(key)
     const reading = readingByKey.get(key)
-    if (!basic && !type && !reading) continue
+    const reversed = reversedByKey.get(key)
+    if (!basic && !type && !reading && !reversed) continue
     if (grammarReserved.has(basic?.note.id ?? -1)) continue
     if (grammarReserved.has(type?.note.id ?? -1)) continue
     if (usedNoteIds.has(basic?.note.id ?? -1)) continue
     if (usedNoteIds.has(type?.note.id ?? -1)) continue
     if (usedNoteIds.has(reading?.note.id ?? -1)) continue
+    if (usedNoteIds.has(reversed?.note.id ?? -1)) continue
     const wordJa = stripReadingSuffix(
-      unwrapJapanese(basic?.front ?? type?.back ?? reading?.front ?? key),
+      unwrapJapanese(
+        basic?.front ??
+          type?.back ??
+          reading?.front ??
+          (reversed ? reversedJapaneseSide(reversed) : undefined) ??
+          key,
+      ),
     )
-    mergeVocabulary(wordJa, basic, type, reading)
+    mergeVocabulary(wordJa, basic, type, reading, reversed)
   }
 
   for (const entry of byKind("reading")) {
@@ -506,45 +556,6 @@ export function convertExtractedPackage(
       undefined,
       entry,
     )
-  }
-
-  for (const entry of byKind("reversed")) {
-    if (usedNoteIds.has(entry.note.id)) continue
-    const wordJa = isKanaOnly(entry.front) ? entry.front : entry.back
-    const english = isKanaOnly(entry.front) ? entry.back : entry.front
-  const definitions = extractEnglishLines(entry.frontRaw, entry.backRaw)
-    const images = refsFrom(entry.frontRaw, entry.backRaw)
-    const wordReading = vocabularyReading(wordJa, undefined, pickReading)
-    const defs =
-      definitions.length > 0
-        ? definitions
-        : english && !surfaceHasKanji(english)
-          ? [english]
-          : []
-    const content: VocabularyCardContent = {
-      wordJa,
-      reading: wordReading,
-      definitionsEn: defaultDefinitionsEn(defs),
-      images,
-      exampleSentences: [],
-      synonymsJa: [],
-    }
-    const sources: ModeSchedulingMap = {
-      vocab_oral_en: firstCard(entry.note, 0),
-      vocab_type_word_from_clue: firstCard(entry.note, 1),
-    }
-    const built = vocabularyCard(
-      deckId,
-      stableCardId("vocab", [entry.note.id]),
-      content,
-      undefined,
-      sources,
-      pkg.collectionCrt,
-      updatedAt,
-    )
-    cards.push(built.card)
-    scheduling.push(...built.scheduling)
-    markUsed(entry)
   }
 
   for (const [sentenceKey, entries] of grammarGroups) {
