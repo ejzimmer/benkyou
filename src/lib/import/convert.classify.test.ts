@@ -48,6 +48,27 @@ describe("convert: broadened reading detection", () => {
   })
 })
 
+describe("convert: [kanji]の読み reading cards", () => {
+  it("merges a の読み reading card with its meaning card instead of flagging it", () => {
+    const payload = convertExtractedPackage(
+      pkg([
+        note(1, "Basic", ["陣", "formation"]), // meaning
+        note(2, "Basic", ["陣の読み", "じん"]), // reading, の読み on the kanji side
+      ]),
+      noMedia,
+    )
+    const vocab = payload.cards.filter((c) => c.kind === "vocabulary")
+    // The reading card must merge into the one word card, not become a second,
+    // matchless card asking for a reading/meaning.
+    expect(vocab).toHaveLength(1)
+    const card = vocab[0]
+    if (card.kind !== "vocabulary") return
+    expect(card.content.wordJa).toBe("陣")
+    expect(card.content.reading).toBe("じん")
+    expect(card.content.definitionsEn).toContain("formation")
+  })
+})
+
 describe("convert: grammar/vocab confirmation", () => {
   const grammarPkg = pkg([
     note(10, "Basic (type in the answer)", ["私は学生___", "です"]),

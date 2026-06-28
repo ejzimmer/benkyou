@@ -3,6 +3,7 @@ import {
   extractEnglishLines,
   hasGapMarker,
   normalizeGapMarkers,
+  normalizeHeadwordKey,
   readingValue,
 } from "./html"
 
@@ -36,5 +37,19 @@ describe("readingValue", () => {
   })
   it("strips の読み inside the quotes", () => {
     expect(readingValue("«じんの読み»")).toBe("じん")
+  })
+})
+
+describe("normalizeHeadwordKey", () => {
+  it("keys a plain kanji word as itself", () => {
+    expect(normalizeHeadwordKey("陣")).toBe("陣")
+  })
+  it("keys [kanji]の読み by the kanji alone, matching its siblings", () => {
+    expect(normalizeHeadwordKey("陣の読み")).toBe("陣")
+    expect(normalizeHeadwordKey("陣の読み")).toBe(normalizeHeadwordKey("陣"))
+  })
+  it("strips both quotes and a trailing の読み", () => {
+    expect(normalizeHeadwordKey("«陣»の読み")).toBe("陣")
+    expect(normalizeHeadwordKey("«陣の読み»")).toBe("陣")
   })
 })

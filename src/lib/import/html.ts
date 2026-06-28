@@ -74,6 +74,11 @@ export function stripReadingSuffix(text: string): string {
   return text.trim().replace(/の読み$/, "").trim()
 }
 
+/** True when a field carries a trailing "の読み" reading annotation. */
+export function hasReadingSuffix(text: string): boolean {
+  return /の読み$/.test(text.trim())
+}
+
 /**
  * The bare kana reading carried by a "reading" note's hiragana side, tolerating
  * optional quote wrapping and a trailing "の読み" in either nesting order
@@ -88,9 +93,13 @@ export function readingValue(text: string): string {
 }
 
 export function normalizeHeadwordKey(text: string): string {
+  // Match on the headword itself: strip quote wrapping, punctuation/whitespace,
+  // and a trailing "の読み" annotation so "陣の読み" keys the same as "陣" and
+  // finds its meaning/type siblings.
   return unwrapJapanese(text)
     .replace(/[«»"「」]/g, "")
     .replace(/[!！?？…。、\s]/g, "")
+    .replace(/の読み$/, "")
     .trim()
 }
 
