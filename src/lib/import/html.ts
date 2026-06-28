@@ -69,6 +69,24 @@ export function unwrapJapanese(text: string): string {
   return s
 }
 
+/** Drop a trailing "の読み" ("the reading of …") annotation if present. */
+export function stripReadingSuffix(text: string): string {
+  return text.trim().replace(/の読み$/, "").trim()
+}
+
+/**
+ * The bare kana reading carried by a "reading" note's hiragana side, tolerating
+ * optional quote wrapping and a trailing "の読み" in either nesting order
+ * (e.g. "«じん»の読み", "«じんの読み»", and "じんの読み" all yield "じん").
+ */
+export function readingValue(text: string): string {
+  let s = text.trim()
+  for (let i = 0; i < 2; i += 1) {
+    s = stripReadingSuffix(unwrapJapanese(s))
+  }
+  return s
+}
+
 export function normalizeHeadwordKey(text: string): string {
   return unwrapJapanese(text)
     .replace(/[«»"「」]/g, "")

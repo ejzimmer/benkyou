@@ -3,16 +3,23 @@ import { Link } from "react-router-dom"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
 import { formatSyncLogLine } from "../../lib/sync/syncLog"
-import type { BulkImportPayload } from "../../lib/import/types"
+import type {
+  BulkImportPayload,
+  GrammarCandidate,
+  GrammarDecisionMap,
+} from "../../lib/import/types"
 import type { ImportGapDraft } from "../../lib/import/gaps"
 import {
   ankiImportNeedsUserInput,
   completeAnkiImport,
+  convertImportSession,
   importBulkPayload,
-  parseAnkiPackageFile,
+  startAnkiImport,
+  type AnkiImportSession,
 } from "../../services/ankiImport"
 import { BUILD_LABEL } from "../../lib/buildInfo"
 import { AnkiImportGapReview } from "./AnkiImportGapReview"
+import { GrammarClassifyReview } from "./GrammarClassifyReview"
 
 export function SettingsPage() {
   const { user, offlineOnly, loading, signInGoogle, signOut } = useAuth()
@@ -32,17 +39,38 @@ export function SettingsPage() {
   const [pendingImport, setPendingImport] = useState<BulkImportPayload | null>(
     null,
   )
+  const [session, setSession] = useState<AnkiImportSession | null>(null)
+  const [grammarCandidates, setGrammarCandidates] = useState<
+    GrammarCandidate[]
+  >([])
 
   function resetImportState() {
     setPendingImport(null)
+    setSession(null)
+    setGrammarCandidates([])
     setImporting(false)
     setImportErr(null)
+  }
+
+  /** Convert a payload, then either show gap review or import it directly. */
+  async function proceedWithPayload(payload: BulkImportPayload) {
+    if (ankiImportNeedsUserInput(payload)) {
+      setSession(null)
+      setGrammarCandidates([])
+      setPendingImport(payload)
+      return
+    }
+    await importBulkPayload(payload, user)
+    resetImportState()
+    setImportMsg(
+      `Imported ${payload.cards.length} cards into “${payload.deck.name}”. Open it from the home screen.`,
+    )
   }
 
   async function onPickAnkiPackage(file: File | null) {
     setImportMsg(null)
     setImportErr(null)
-    setPendingImport(null)
+    resetImportState()
     if (!file) return
     setImporting(true)
     try {
@@ -50,15 +78,28 @@ export function SettingsPage() {
       if (!lower.endsWith(".apkg") && !lower.endsWith(".colpkg")) {
         throw new Error("Choose an Anki package (.apkg or .colpkg)")
       }
-      const payload = await parseAnkiPackageFile(file)
-      if (ankiImportNeedsUserInput(payload)) {
-        setPendingImport(payload)
+      const { session: parsed, grammarCandidates: candidates } =
+        await startAnkiImport(file)
+      if (candidates.length > 0) {
+        // Pause for the user to confirm grammar vs vocab before building cards.
+        setSession(parsed)
+        setGrammarCandidates(candidates)
         return
       }
-      await importBulkPayload(payload, user)
-      setImportMsg(
-        `Imported ${payload.cards.length} cards into “${payload.deck.name}”. Open it from the home screen.`,
-      )
+      await proceedWithPayload(convertImportSession(parsed))
+    } catch (e) {
+      setImportErr(e instanceof Error ? e.message : "Import failed")
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  async function onConfirmGrammar(decisions: GrammarDecisionMap) {
+    if (!session) return
+    setImporting(true)
+    setImportErr(null)
+    try {
+      await proceedWithPayload(convertImportSession(session, decisions))
     } catch (e) {
       setImportErr(e instanceof Error ? e.message : "Import failed")
     } finally {
@@ -72,7 +113,7 @@ export function SettingsPage() {
     setImportErr(null)
     try {
       const completed = await completeAnkiImport(pendingImport, drafts, user)
-      setPendingImport(null)
+      resetImportState()
       setImportMsg(
         `Imported ${completed.cards.length} cards into “${completed.deck.name}”. Open it from the home screen.`,
       )
@@ -169,7 +210,7 @@ export function SettingsPage() {
           Full <code>.colpkg</code> files also work: the deck with the most cards is
           imported. Prefer a single-deck <code>.apkg</code> for smaller files.
         </p>
-        {!pendingImport && (
+        {!pendingImport && grammarCandidates.length === 0 && (
           <label className="row">
             <span>Anki package</span>
             <input
@@ -180,7 +221,18 @@ export function SettingsPage() {
             />
           </label>
         )}
-        {importing && !pendingImport && <p className="muted">Reading package…</p>}
+        {importing && !pendingImport && grammarCandidates.length === 0 && (
+          <p className="muted">Reading package…</p>
+        )}
+        {session && grammarCandidates.length > 0 && (
+          <GrammarClassifyReview
+            candidates={grammarCandidates}
+            deckName={session.pkg.deckName}
+            importing={importing}
+            onCancel={resetImportState}
+            onConfirm={(decisions) => void onConfirmGrammar(decisions)}
+          />
+        )}
         {pendingImport && (
           <AnkiImportGapReview
             payload={pendingImport}

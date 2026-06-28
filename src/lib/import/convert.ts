@@ -20,6 +20,7 @@ import {
   normalizeConstruction,
   normalizeGapMarkers,
   normalizeHeadwordKey,
+  readingValue,
   stripHtml,
   unwrapJapanese,
 } from "./html"
@@ -29,20 +30,10 @@ import type {
   BulkMediaItem,
   ExtractedAnkiNote,
   ExtractedPackage,
+  GrammarCandidate,
+  GrammarDecisionMap,
   ModeSchedulingMap,
 } from "./types"
-
-// TODO: Remove the per-note hard-coded handling that specializes this importer
-// to one personal deck. This covers SKIP_NOTE_IDS, MEMORY_NOTE_IDS, the
-// MEMORY_NOTE_IDS branch in classifyNote, the explicit mergeVocabulary calls for
-// "記憶" / "お手本をなぞる" / "おまけ" (and their skip checks in the vocab-key
-// loop), and the throw-on-"Unmapped Anki notes" at the end of
-// convertExtractedPackage — replace these with general classification/merge
-// rules so arbitrary decks convert without bespoke note-id special cases. The
-// single-deck assumption (pickPrimaryDeckId) is intentional and stays.
-const SKIP_NOTE_IDS = new Set([1772835136568, 1772835085326])
-
-const MEMORY_NOTE_IDS = new Set([1771017599643, 1771017640246])
 
 type NoteClass =
   | "reading"
@@ -91,42 +82,19 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
   const raw = `${frontRaw}\n${backRaw}`
   let kind: NoteClass = "other"
 
-  if (MEMORY_NOTE_IDS.has(note.id)) {
-    kind = "basic"
-    // TODO: Don't auto-commit grammar classification. A vocab card that merely
-    // includes an example sentence can look identical to a grammar card, and
-    // there's no reliable heuristic to tell them apart — last import misfiled a
-    // bunch of vocab as grammar. Instead of guessing, add a manual confirmation
-    // step: when a note looks like grammar (gap marker present), surface it to
-    // the user and ask "grammar or vocab?" before any grammar card is created.
-    // - Model this on the existing gap-review flow (collectImportGaps /
-    //   AnkiImportGapReview / completeAnkiImport): convert flags grammar
-    //   candidates, parseAnkiPackageFile returns them as pending, the UI asks,
-    //   and the answer feeds back into conversion — nothing is written to the DB
-    //   until the user has decided.
-    // - On "grammar": build the grammar card as today.
-    // - On "vocab": route the note through the vocabulary merge path with the
-    //   sentence kept as an exampleSentence (not a gap), so it joins/creates the
-    //   matching word card instead of becoming grammar.
-  } else if (hasGapMarker(raw) && !SKIP_NOTE_IDS.has(note.id)) {
+  // Gap-marked notes are grammar *candidates*. The user confirms grammar vs
+  // vocab later (see GrammarDecisionMap); the candidate stays classified as
+  // grammar here and the decision is applied when cards are built.
+  if (hasGapMarker(raw)) {
     kind = "grammar"
   } else if (note.noteType === "Basic (type in the answer)") {
     kind = "type"
-    // TODO: Broaden "reading" detection. The hiragana side of a card may be:
-    //   * quote-wrapped kana (handled below)
-    //   * quote-wrapped kana with a trailing "の読み"
-    //   * bare kana (no quotes) with a trailing "の読み"
-    // Accept all three here, stripping the "の読み" suffix (and any quotes) so
-    // the kana reading itself is what flows through to the merged card.
-    // NOTE: this can't be done by just relaxing isWrappedJapanese — the current
-    // branch also requires isKanaOnly(back), and a "…の読み" value contains the
-    // kanji 読, so isKanaOnly rejects it. Match/strip the "の読み" suffix first,
-    // then run the kana test on the remainder (and apply the same strip before
-    // the value is keyed/merged, so "の読み" never leaks into the card).
   } else if (
     note.noteType === "Basic" &&
     isWrappedJapanese(front) &&
-    isKanaOnly(back)
+    // The hiragana side may be bare kana, quote-wrapped kana, or either of
+    // those with a trailing "の読み"; readingValue normalizes all of them.
+    isKanaOnly(readingValue(back))
   ) {
     kind = "reading"
   } else if (
@@ -360,16 +328,58 @@ function buildGrammarGroups(classified: ClassifiedNote[]) {
   return { grammarGroups, grammarReserved }
 }
 
+/** Shared view of a grammar group: its anchor note, gapped sentence, and answer. */
+function grammarGroupParts(entries: ClassifiedNote[]) {
+  const typeEntry = entries.find((entry) =>
+    entry.note.noteType.toLowerCase().includes("type"),
+  )
+  const primary = typeEntry ?? entries[0]
+  const gapRaw = hasGapMarker(primary.frontRaw)
+    ? primary.frontRaw
+    : primary.backRaw
+  const answerRaw = hasGapMarker(primary.frontRaw)
+    ? primary.backRaw
+    : primary.frontRaw
+  return {
+    typeEntry,
+    primary,
+    sentenceWithGap: normalizeGapMarkers(stripHtml(gapRaw)),
+    construction: normalizeConstruction(stripHtml(answerRaw)),
+  }
+}
+
+/**
+ * Notes that look like grammar (a gap marker is present), one entry per merged
+ * group, for the user to confirm as grammar or vocab before any card is built.
+ */
+export function collectGrammarCandidates(
+  pkg: ExtractedPackage,
+): GrammarCandidate[] {
+  const classified = pkg.notes.map(classifyNote)
+  const { grammarGroups } = buildGrammarGroups(classified)
+  const candidates: GrammarCandidate[] = []
+  for (const [key, entries] of grammarGroups) {
+    const { sentenceWithGap, construction } = grammarGroupParts(entries)
+    const imageCount = new Set(
+      entries.flatMap((entry) =>
+        extractMediaRefs(`${entry.frontRaw}\n${entry.backRaw}`),
+      ),
+    ).size
+    candidates.push({ key, sentence: sentenceWithGap, construction, imageCount })
+  }
+  return candidates
+}
+
 export function convertExtractedPackage(
   pkg: ExtractedPackage,
   readFile: (relativePath: string) => Uint8Array,
+  /** Grammar groups the user marked "vocab" are built as word cards instead. */
+  decisions: GrammarDecisionMap = {},
 ): BulkImportPayload {
   const updatedAt = Date.now()
   const deckId = stableCardId("deck", [pkg.deckId])
   const mediaByFilename = buildMediaItems(pkg, readFile)
-  const classified = pkg.notes
-    .filter((note) => !SKIP_NOTE_IDS.has(note.id))
-    .map(classifyNote)
+  const classified = pkg.notes.map(classifyNote)
 
   const cards: Card[] = []
   const scheduling: SchedulingRow[] = []
@@ -409,7 +419,7 @@ export function convertExtractedPackage(
   const pickReading = (word: string): string | undefined => {
     const key = normalizeHeadwordKey(word)
     const reading = readingByKey.get(key)
-    return reading?.back
+    return reading ? readingValue(reading.back) : undefined
   }
 
   const mergeVocabulary = (
@@ -464,55 +474,12 @@ export function convertExtractedPackage(
     )
   }
 
-  mergeVocabulary(
-    "記憶",
-    classified.find((entry) => entry.note.id === 1771017599643),
-    classified.find((entry) => entry.note.id === 1771017640246),
-    undefined,
-    {
-      reading: "きおく",
-      definitionsEn: ["memory"],
-      exampleSentences: ["禁止魔法を使った人が___も消されずに"],
-      images: refsFrom(
-        classified.find((entry) => entry.note.id === 1771017599643)?.backRaw ??
-          "",
-        classified.find((entry) => entry.note.id === 1771017640246)?.frontRaw ??
-          "",
-      ),
-    },
-  )
-
-  mergeVocabulary(
-    "お手本をなぞる",
-    classified.find((entry) => entry.note.id === 1776465272977),
-    classified.find((entry) => entry.note.id === 1776465307565),
-    readingByKey.get(normalizeHeadwordKey("お手本")),
-    {
-      reading: "おてほん",
-    },
-  )
-
-  const omakeBasic = classified.find((entry) => entry.note.id === 1773453941497)
-  const omakeReverse = classified.find(
-    (entry) => entry.note.id === 1773453961600,
-  )
-  if (omakeBasic && omakeReverse) {
-    mergeVocabulary("おまけ", omakeBasic, omakeReverse, undefined)
-  }
-
   const vocabKeys = new Set([
     ...basicByKey.keys(),
     ...typeByKey.keys(),
     ...readingByKey.keys(),
   ])
   for (const key of vocabKeys) {
-    if (
-      key === normalizeHeadwordKey("記憶") ||
-      key === normalizeHeadwordKey("お手本をなぞる") ||
-      key === normalizeHeadwordKey("おまけ")
-    ) {
-      continue
-    }
     const basic = basicByKey.get(key)
     const type = typeByKey.get(key)
     const reading = readingByKey.get(key)
@@ -571,21 +538,49 @@ export function convertExtractedPackage(
   }
 
   for (const [sentenceKey, entries] of grammarGroups) {
-    const typeEntry = entries.find((entry) =>
-      entry.note.noteType.toLowerCase().includes("type"),
-    )
-    const primary = typeEntry ?? entries[0]
-    const gapRaw = hasGapMarker(primary.frontRaw)
-      ? primary.frontRaw
-      : primary.backRaw
-    const answerRaw = hasGapMarker(primary.frontRaw)
-      ? primary.backRaw
-      : primary.frontRaw
-    const sentenceWithGap = normalizeGapMarkers(stripHtml(gapRaw))
-    const construction = normalizeConstruction(stripHtml(answerRaw))
+    const { typeEntry, primary, sentenceWithGap, construction } =
+      grammarGroupParts(entries)
     const images = refsFrom(
       ...entries.flatMap((entry) => [entry.frontRaw, entry.backRaw]),
     )
+
+    // User confirmed this gap-marked group is really a vocabulary card that
+    // merely includes an example sentence — build a word card and keep the
+    // sentence rather than turning it into grammar.
+    if (decisions[sentenceKey] === "vocab") {
+      const wordJa = unwrapJapanese(construction) || sentenceWithGap
+      const definitions = extractEnglishLines(
+        ...entries.flatMap((entry) => [entry.frontRaw, entry.backRaw]),
+      )
+      const content: VocabularyCardContent = {
+        wordJa,
+        reading: vocabularyReading(wordJa, undefined, pickReading),
+        definitionsEn: defaultDefinitionsEn(definitions),
+        images,
+        exampleSentences: sentenceWithGap ? [sentenceWithGap] : [],
+        synonymsJa: [],
+      }
+      const sources: ModeSchedulingMap = {
+        vocab_oral_en: firstCard(primary.note),
+        vocab_type_word_from_clue: typeEntry
+          ? firstCard(typeEntry.note)
+          : undefined,
+      }
+      const built = vocabularyCard(
+        deckId,
+        stableCardId("vocab", [primary.note.id]),
+        content,
+        undefined,
+        sources,
+        pkg.collectionCrt,
+        updatedAt,
+      )
+      cards.push(built.card)
+      scheduling.push(...built.scheduling)
+      markUsed(...entries)
+      continue
+    }
+
     let translationEn =
       extractEnglishLines(
         ...entries.flatMap((entry) => [entry.frontRaw, entry.backRaw]),
@@ -634,10 +629,19 @@ export function convertExtractedPackage(
     markUsed(...entries)
   }
 
-  const unused = classified.filter((entry) => !usedNoteIds.has(entry.note.id))
-  if (unused.length > 0) {
-    const ids = unused.map((entry) => `${entry.note.id}:${entry.kind}`).join(", ")
-    throw new Error(`Unmapped Anki notes: ${ids}`)
+  // General fallback: import any note we didn't otherwise place as a best-effort
+  // vocabulary card rather than dropping it. A "type" note's answer is its back
+  // field; every other kind's headword is its front.
+  for (const entry of classified) {
+    if (usedNoteIds.has(entry.note.id)) continue
+    const isType = entry.note.noteType.toLowerCase().includes("type")
+    const wordJa = unwrapJapanese(isType ? entry.back : entry.front)
+    mergeVocabulary(
+      wordJa,
+      isType ? undefined : entry,
+      isType ? entry : undefined,
+      undefined,
+    )
   }
 
   return {

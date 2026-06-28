@@ -48,3 +48,21 @@ export type BulkImportPayload = {
 export type AnkiSchedulingSource = ExtractedAnkiCard
 
 export type ModeSchedulingMap = Partial<Record<ReviewModeId, AnkiSchedulingSource>>
+
+/** User's choice for a note that looks like grammar (has a gap marker). */
+export type GrammarDecision = "grammar" | "vocab"
+
+/** Grammar group key (gapped-sentence key) → the user's grammar/vocab choice. */
+export type GrammarDecisionMap = Record<string, GrammarDecision>
+
+/** A gap-marked note group surfaced to the user to confirm grammar vs vocab. */
+export type GrammarCandidate = {
+  /** Stable group key; also the key used in GrammarDecisionMap. */
+  key: string
+  /** Normalized gapped sentence, for display. */
+  sentence: string
+  /** Construction / answer, for display. */
+  construction: string
+  /** How many distinct images the group references. */
+  imageCount: number
+}
