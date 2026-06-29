@@ -11,7 +11,13 @@ import {
   parseAnkiPackageToBulkImport,
   type ParsedAnkiPackage,
 } from "../lib/import/parseApkg"
-import { applyBulkImport } from "./bulkImport"
+import {
+  applyBulkImport,
+  type ImportProgress,
+  type ImportProgressFn,
+} from "./bulkImport"
+
+export type { ImportProgress, ImportProgressFn }
 
 /** A parsed package held in memory while the user confirms grammar vs vocab. */
 export type AnkiImportSession = ParsedAnkiPackage
@@ -20,8 +26,9 @@ export type AnkiImportSession = ParsedAnkiPackage
 export async function importBulkPayload(
   payload: BulkImportPayload,
   user: User | null,
+  onProgress?: ImportProgressFn,
 ): Promise<void> {
-  await applyBulkImport(payload, user)
+  await applyBulkImport(payload, user, onProgress)
 }
 
 /** Parse `.apkg` / `.colpkg` in the browser without writing to IndexedDB. */
@@ -63,9 +70,10 @@ export async function completeAnkiImport(
   payload: BulkImportPayload,
   drafts: Record<string, ImportGapDraft>,
   user: User | null,
+  onProgress?: ImportProgressFn,
 ): Promise<BulkImportPayload> {
   const completed = await applyImportDrafts(payload, drafts)
-  await importBulkPayload(completed, user)
+  await importBulkPayload(completed, user, onProgress)
   return completed
 }
 

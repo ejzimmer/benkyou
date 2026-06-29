@@ -16,10 +16,24 @@ import {
   importBulkPayload,
   startAnkiImport,
   type AnkiImportSession,
+  type ImportProgress,
 } from "../../services/ankiImport"
 import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 import { AnkiImportGapReview } from "./AnkiImportGapReview"
 import { GrammarClassifyReview } from "./GrammarClassifyReview"
+
+function importProgressLabel(progress: ImportProgress): string {
+  switch (progress.phase) {
+    case "reading":
+      return "Reading package…"
+    case "saving":
+      return `Saving ${progress.total} card${progress.total === 1 ? "" : "s"}…`
+    case "syncing":
+      return `Syncing to the cloud… ${progress.current}/${progress.total}`
+    case "uploading-media":
+      return "Uploading images…"
+  }
+}
 
 export function SettingsPage() {
   const { user, offlineOnly, loading, signInGoogle, signOut } = useAuth()
@@ -43,6 +57,9 @@ export function SettingsPage() {
   const [grammarCandidates, setGrammarCandidates] = useState<
     GrammarCandidate[]
   >([])
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(
+    null,
+  )
 
   function resetImportState() {
     setPendingImport(null)
@@ -50,6 +67,7 @@ export function SettingsPage() {
     setGrammarCandidates([])
     setImporting(false)
     setImportErr(null)
+    setImportProgress(null)
   }
 
   /** Convert a payload, then either show gap review or import it directly. */
@@ -57,10 +75,11 @@ export function SettingsPage() {
     if (ankiImportNeedsUserInput(payload)) {
       setSession(null)
       setGrammarCandidates([])
+      setImportProgress(null)
       setPendingImport(payload)
       return
     }
-    await importBulkPayload(payload, user)
+    await importBulkPayload(payload, user, setImportProgress)
     resetImportState()
     setImportMsg(
       `Imported ${payload.cards.length} cards into “${payload.deck.name}”. Open it from the home screen.`,
@@ -73,6 +92,7 @@ export function SettingsPage() {
     resetImportState()
     if (!file) return
     setImporting(true)
+    setImportProgress({ phase: "reading" })
     try {
       const lower = file.name.toLowerCase()
       if (!lower.endsWith(".apkg") && !lower.endsWith(".colpkg")) {
@@ -91,6 +111,7 @@ export function SettingsPage() {
       setImportErr(e instanceof Error ? e.message : "Import failed")
     } finally {
       setImporting(false)
+      setImportProgress(null)
     }
   }
 
@@ -104,6 +125,7 @@ export function SettingsPage() {
       setImportErr(e instanceof Error ? e.message : "Import failed")
     } finally {
       setImporting(false)
+      setImportProgress(null)
     }
   }
 
@@ -112,7 +134,12 @@ export function SettingsPage() {
     setImporting(true)
     setImportErr(null)
     try {
-      const completed = await completeAnkiImport(pendingImport, drafts, user)
+      const completed = await completeAnkiImport(
+        pendingImport,
+        drafts,
+        user,
+        setImportProgress,
+      )
       resetImportState()
       setImportMsg(
         `Imported ${completed.cards.length} cards into “${completed.deck.name}”. Open it from the home screen.`,
@@ -121,6 +148,7 @@ export function SettingsPage() {
       setImportErr(e instanceof Error ? e.message : "Import failed")
     } finally {
       setImporting(false)
+      setImportProgress(null)
     }
   }
 
@@ -221,8 +249,17 @@ export function SettingsPage() {
             />
           </label>
         )}
-        {importing && !pendingImport && grammarCandidates.length === 0 && (
-          <p className="muted">Reading package…</p>
+        {importProgress && (
+          <div className="stack" aria-live="polite">
+            <p className="muted">{importProgressLabel(importProgress)}</p>
+            {importProgress.phase === "syncing" && (
+              <progress
+                value={importProgress.current}
+                max={importProgress.total}
+                style={{ width: "100%" }}
+              />
+            )}
+          </div>
         )}
         {session && grammarCandidates.length > 0 && (
           <GrammarClassifyReview
