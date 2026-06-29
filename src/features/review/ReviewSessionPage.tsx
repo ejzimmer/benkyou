@@ -11,6 +11,8 @@ import {
   type JudgementSnapshot,
 } from "../../services/review"
 import { useAuth } from "../../lib/auth/AuthContext"
+import { useSync } from "../../lib/sync/SyncContext"
+import { ReviewSyncGate } from "./ReviewSyncGate"
 import {
   finalizeReadingAnswer,
   hasNonHiraganaKana,
@@ -59,6 +61,7 @@ export function ReviewSessionPage() {
   const resumeCardId = searchParams.get("resumeCardId")
   const resumeModeId = searchParams.get("resumeModeId")
   const { user } = useAuth()
+  const { initialSyncComplete, syncProgress, syncStatusLabel } = useSync()
   const [sessionQueue, setSessionQueue] = useState<DueItem[]>([])
   const [phase, setPhase] = useState<Phase>("prompt")
   const [typed, setTyped] = useState("")
@@ -98,8 +101,11 @@ export function ReviewSessionPage() {
   }, [deckId, resumeCardId, resumeModeId])
 
   useEffect(() => {
+    // Wait for the first sync to finish so the queue reflects the latest cards
+    // and scheduling rather than stale local data.
+    if (!initialSyncComplete) return
     load()
-  }, [load])
+  }, [load, initialSyncComplete])
 
   useEffect(() => {
     return () => {
@@ -311,6 +317,16 @@ export function ReviewSessionPage() {
     // No prompt→reveal pass yet — grading uses neutral timing (null → Good if correct)
     setPromptToRevealMs(null)
     setStartedAt(null)
+  }
+
+  if (!initialSyncComplete) {
+    return (
+      <ReviewSyncGate
+        progress={syncProgress}
+        statusLabel={syncStatusLabel}
+        backTo={deckId ? `/decks/${deckId}` : "/"}
+      />
+    )
   }
 
   if (loading) return <div className="page">Loading queue…</div>

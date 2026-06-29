@@ -172,6 +172,7 @@ export async function pushLocalMediaToRemote(
 /** Pull Storage blobs for every image id referenced by cards (for review UI). */
 export async function hydrateReferencedMedia(
   uid: string,
+  onProgress?: (current: number, total: number) => void,
 ): Promise<{ total: number; pulled: number; alreadyLocal: number; failed: number }> {
   const cards = await db.cards.toArray()
   const ids = new Set<string>()
@@ -182,8 +183,14 @@ export async function hydrateReferencedMedia(
   let pulled = 0
   let alreadyLocal = 0
   let failed = 0
+  let processed = 0
+  const total = ids.size
 
   for (const id of ids) {
+    processed += 1
+    if (onProgress && (processed % 3 === 0 || processed === total)) {
+      onProgress(processed, total)
+    }
     const local = await db.media.get(id)
     if (local?.blob && local.blob.size > 0) {
       alreadyLocal++
