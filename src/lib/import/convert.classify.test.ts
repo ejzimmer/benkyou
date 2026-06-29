@@ -154,6 +154,36 @@ describe("convert: Basic (and reversed card) notes", () => {
   })
 })
 
+describe("convert: kana word with an emoji meaning", () => {
+  it("keeps the emoji as the meaning for a reversed kana card", () => {
+    const reversed = note(1, "Basic (and reversed card)", ["ゆっくり", "🐌🐢"])
+    reversed.cards = [
+      { id: 1, ord: 0, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+      { id: 2, ord: 1, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+    ]
+    const payload = convertExtractedPackage(pkg([reversed]), noMedia)
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "ゆっくり",
+    )
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.definitionsEn).toContain("🐌🐢")
+  })
+
+  it("keeps the emoji as the meaning for a plain Basic kana card", () => {
+    const payload = convertExtractedPackage(
+      pkg([note(5, "Basic", ["アヒル", "🦆"])]),
+      noMedia,
+    )
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "アヒル",
+    )
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.definitionsEn).toContain("🦆")
+  })
+})
+
 describe("convert: grammar/vocab confirmation", () => {
   const grammarPkg = pkg([
     note(10, "Basic (type in the answer)", ["私は学生___", "です"]),

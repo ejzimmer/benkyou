@@ -52,6 +52,11 @@ export function isEnglishLine(text: string): boolean {
   return /[a-zA-Z]/.test(text)
 }
 
+/** Lines whose meaning is carried by emoji / pictographs (e.g. a 🐌🐢 gloss). */
+export function isPictographLine(text: string): boolean {
+  return /\p{Extended_Pictographic}/u.test(text)
+}
+
 export function isWrappedJapanese(text: string): boolean {
   const s = text.trim()
   return (
@@ -142,6 +147,7 @@ function htmlToLines(html: string): string[] {
     .filter(Boolean)
 }
 
+/** English glosses plus emoji/pictograph meanings (e.g. a 🐌🐢 gloss). */
 export function extractEnglishLines(...htmlParts: string[]): string[] {
   const lines: string[] = []
   for (const html of htmlParts) {
@@ -149,7 +155,7 @@ export function extractEnglishLines(...htmlParts: string[]): string[] {
       const trimmed = line.trim()
       if (!trimmed) continue
       if (containsJapanese(trimmed)) continue
-      if (!isEnglishLine(trimmed)) continue
+      if (!isEnglishLine(trimmed) && !isPictographLine(trimmed)) continue
       if (trimmed.includes("___")) continue
       lines.push(trimmed)
     }
