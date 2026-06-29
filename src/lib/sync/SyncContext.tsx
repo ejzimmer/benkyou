@@ -11,7 +11,7 @@ import {
 import { useAuth } from "../auth/AuthContext"
 import { getFirestoreDb, getFirebaseStorage } from "../firebase"
 import { SyncConflictModal } from "./SyncConflictModal"
-import { readLastSyncedAt, runFullSync } from "./runSync"
+import { readLastSyncedAt, runFullSync, type SyncProgress } from "./runSync"
 import {
   clearSyncLog,
   getSyncLogEntries,
@@ -27,6 +27,9 @@ type SyncState = {
   syncing: boolean
   syncPhase: SyncPhase
   syncStatusLabel: string
+  syncProgress: SyncProgress | null
+  /** True once the first sync of this session has settled (or none is needed). */
+  initialSyncComplete: boolean
   syncLog: readonly SyncLogEntry[]
   lastError: string | null
   lastSyncedAt: number | null
@@ -40,6 +43,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, offlineOnly } = useAuth()
   const [syncing, setSyncing] = useState(false)
   const [syncPhase, setSyncPhase] = useState<SyncPhase>("idle")
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null)
+  /** uid whose initial sync has settled this session (success or failure). */
+  const [completedSyncUid, setCompletedSyncUid] = useState<string | null>(null)
   const [lastError, setLastError] = useState<string | null>(null)
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
   const [activeConflict, setActiveConflict] = useState<SyncConflict | null>(null)
@@ -120,10 +126,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           hasFirestore: Boolean(fs),
           hasStorage: Boolean(storage),
         })
+        // Nothing we can do — don't block review on a sync that can't run.
+        setCompletedSyncUid(user.uid)
         return
       }
       setSyncing(true)
       setSyncPhase("running")
+      setSyncProgress(null)
       setLastError(null)
       conflictNumberRef.current = 0
       setConflictNumber(0)
@@ -134,6 +143,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           storage,
           uid: user.uid,
           onConflict,
+          onProgress: setSyncProgress,
         })
         setLastSyncedAt(Date.now())
         syncLog("syncNow finished OK")
@@ -145,6 +155,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       } finally {
         setSyncing(false)
         setSyncPhase("idle")
+        setSyncProgress(null)
+        // The first sync of the session has settled (success or failure); stop
+        // blocking review either way.
+        setCompletedSyncUid(user.uid)
         setActiveConflict(null)
         conflictNumberRef.current = 0
         setConflictNumber(0)
@@ -169,11 +183,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return ""
   }, [syncPhase, syncing, syncLogEntries])
 
+  // No sync to wait for when offline or signed out; otherwise wait until this
+  // user's first sync of the session has settled.
+  const initialSyncComplete =
+    offlineOnly || !user || completedSyncUid === user.uid
+
   const value = useMemo(
     () => ({
       syncing,
       syncPhase,
       syncStatusLabel,
+      syncProgress,
+      initialSyncComplete,
       syncLog: syncLogEntries,
       lastError,
       lastSyncedAt,
@@ -184,6 +205,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       syncing,
       syncPhase,
       syncStatusLabel,
+      syncProgress,
+      initialSyncComplete,
       syncLogEntries,
       lastError,
       lastSyncedAt,

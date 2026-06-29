@@ -54,11 +54,21 @@ async function resolveConflictChoice(
   return onConflict(conflict)
 }
 
+/** Coarse, user-facing sync progress for a loading indicator. */
+export type SyncProgress = {
+  /** Friendly phase label, e.g. "Downloading images…". */
+  phase: string
+  /** Item progress within the phase, when known (e.g. images). */
+  current?: number
+  total?: number
+}
+
 export type RunSyncOptions = {
   fs: Firestore
   storage: FirebaseStorage
   uid: string
   onConflict: (conflict: SyncConflict) => Promise<SyncConflictChoice>
+  onProgress?: (progress: SyncProgress) => void
 }
 
 function tombstoneWins(
@@ -418,10 +428,12 @@ export function writeLastSyncedAt(ts: number): void {
 }
 
 export async function runFullSync(options: RunSyncOptions): Promise<void> {
-  const { fs, storage, uid, onConflict } = options
+  const { fs, storage, uid, onConflict, onProgress } = options
+  const report = onProgress ?? (() => {})
   syncLog("runFullSync start", { uid, lastSyncedAt: readLastSyncedAt() })
   const lastSyncedAt = readLastSyncedAt()
 
+  report({ phase: "Checking for changes…" })
   const remote = await syncLogTimed("pull remote snapshot", () =>
     fetchRemoteSnapshot(fs, uid, "sync"),
   )
@@ -436,10 +448,12 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
   if (prunedTombs > 0) {
     syncLog("pruned orphan media tombstones", { count: prunedTombs })
   }
+  report({ phase: "Merging cards…" })
   await syncLogTimed("merge decks/cards/scheduling", () =>
     collectEntityConflicts(lastSyncedAt, remote, onConflict),
   )
 
+  report({ phase: "Downloading images…" })
   await syncLogTimed("sync media blobs", () =>
     syncMedia(storage, uid, remote, lastSyncedAt, onConflict),
   )
@@ -449,16 +463,20 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
     purgeTombstonedMediaStorage(storage, uid, { remoteMediaIds }),
   )
 
+  report({ phase: "Uploading your changes…" })
   await syncLogTimed("push local to remote", () =>
     pushLocalToRemote(fs, uid, remote),
   )
 
   const hydrate = await syncLogTimed("hydrate card images for review", () =>
-    hydrateReferencedMedia(uid),
+    hydrateReferencedMedia(uid, (current, total) =>
+      report({ phase: "Downloading images…", current, total }),
+    ),
   )
   syncLog("hydrate card images complete", hydrate)
 
   writeLastSyncedAt(Date.now())
+  report({ phase: "Finishing up…" })
   syncLog("runFullSync complete")
 }
 
