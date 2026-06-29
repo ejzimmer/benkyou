@@ -20,6 +20,13 @@ describe("html helpers", () => {
     expect(extractEnglishLines("流し、呼ぶ")).toEqual([])
     expect(extractEnglishLines("formation<br>流し、呼ぶ")).toEqual(["formation"])
   })
+
+  it("keeps emoji / pictograph meanings", () => {
+    expect(extractEnglishLines("🐌🐢")).toEqual(["🐌🐢"])
+    expect(extractEnglishLines("🦆")).toEqual(["🦆"])
+    // emoji attached to the Japanese word's line is still dropped with it
+    expect(extractEnglishLines("ゆっくり")).toEqual([])
+  })
 })
 
 describe("readingValue", () => {
