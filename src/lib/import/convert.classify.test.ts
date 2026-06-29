@@ -69,6 +69,91 @@ describe("convert: [kanji]の読み reading cards", () => {
   })
 })
 
+describe("convert: Basic (and reversed card) notes", () => {
+  function reversedNote(
+    id: number,
+    fields: [string, string],
+  ): ExtractedAnkiNote {
+    const n = note(id, "Basic (and reversed card)", fields)
+    // Anki generates two sibling cards (forward + reverse).
+    n.cards = [
+      { id, ord: 0, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+      { id: id + 1000, ord: 1, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+    ]
+    return n
+  }
+
+  function pkgWithMedia(
+    notes: ExtractedAnkiNote[],
+    mediaPaths: Record<string, string>,
+  ): ExtractedPackage {
+    return { deckId: 1, deckName: "Test", collectionCrt: 0, notes, mediaPaths }
+  }
+
+  it("merges a word-front/image-back reversed card with its reading card", () => {
+    const payload = convertExtractedPackage(
+      pkgWithMedia(
+        [
+          reversedNote(1, ["痛み", '<img src="pain.jpg">']),
+          note(3, "Basic", ["「痛み」", "いたみ"]), // pronunciation card
+        ],
+        { "pain.jpg": "media/pain.jpg" },
+      ),
+      () => new Uint8Array([1, 2, 3]),
+    )
+    const vocab = payload.cards.filter((c) => c.kind === "vocabulary")
+    expect(vocab).toHaveLength(1)
+    const card = vocab[0]
+    if (card.kind !== "vocabulary") return
+    expect(card.content.wordJa).toBe("痛み") // not the empty image side
+    expect(card.content.reading).toBe("いたみ") // pulled from the reading card
+    expect(card.content.images.length).toBeGreaterThan(0)
+  })
+
+  it.each(["「痛み」", "痛みの読み", "「痛み」の読み", "「痛みの読み」"])(
+    "matches the pronunciation card and cleans the word for front=%s",
+    (readingFront) => {
+      const payload = convertExtractedPackage(
+        pkgWithMedia(
+          [
+            reversedNote(1, ["痛み", "(no image)"]),
+            note(3, "Basic", [readingFront, "いたみ"]),
+          ],
+          {},
+        ),
+        () => new Uint8Array(),
+      )
+      const vocab = payload.cards.filter((c) => c.kind === "vocabulary")
+      expect(vocab).toHaveLength(1)
+      const card = vocab[0]
+      if (card.kind !== "vocabulary") return
+      expect(card.content.wordJa).toBe("痛み") // no brackets / の読み in the word
+      expect(card.content.reading).toBe("いたみ")
+    },
+  )
+
+  it("merges an image+English-front/word-back reversed card with its reading card", () => {
+    const payload = convertExtractedPackage(
+      pkgWithMedia(
+        [
+          reversedNote(10, ['<img src="fame.jpg">famous', "有名"]),
+          note(12, "Basic", ["「有名」", "ゆうめい"]),
+        ],
+        { "fame.jpg": "media/fame.jpg" },
+      ),
+      () => new Uint8Array([4, 5, 6]),
+    )
+    const vocab = payload.cards.filter((c) => c.kind === "vocabulary")
+    expect(vocab).toHaveLength(1)
+    const card = vocab[0]
+    if (card.kind !== "vocabulary") return
+    expect(card.content.wordJa).toBe("有名")
+    expect(card.content.reading).toBe("ゆうめい")
+    expect(card.content.definitionsEn).toContain("famous")
+    expect(card.content.images.length).toBeGreaterThan(0)
+  })
+})
+
 describe("convert: grammar/vocab confirmation", () => {
   const grammarPkg = pkg([
     note(10, "Basic (type in the answer)", ["私は学生___", "です"]),
