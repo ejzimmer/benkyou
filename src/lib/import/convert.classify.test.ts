@@ -110,6 +110,28 @@ describe("convert: Basic (and reversed card) notes", () => {
     expect(card.content.images.length).toBeGreaterThan(0)
   })
 
+  it.each(["「痛み」", "痛みの読み", "「痛み」の読み", "「痛みの読み」"])(
+    "matches the pronunciation card and cleans the word for front=%s",
+    (readingFront) => {
+      const payload = convertExtractedPackage(
+        pkgWithMedia(
+          [
+            reversedNote(1, ["痛み", "(no image)"]),
+            note(3, "Basic", [readingFront, "いたみ"]),
+          ],
+          {},
+        ),
+        () => new Uint8Array(),
+      )
+      const vocab = payload.cards.filter((c) => c.kind === "vocabulary")
+      expect(vocab).toHaveLength(1)
+      const card = vocab[0]
+      if (card.kind !== "vocabulary") return
+      expect(card.content.wordJa).toBe("痛み") // no brackets / の読み in the word
+      expect(card.content.reading).toBe("いたみ")
+    },
+  )
+
   it("merges an image+English-front/word-back reversed card with its reading card", () => {
     const payload = convertExtractedPackage(
       pkgWithMedia(

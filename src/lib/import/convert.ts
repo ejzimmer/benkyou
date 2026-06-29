@@ -119,6 +119,16 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
 }
 
 /**
+ * The displayed headword: strip quote wrapping and a trailing "の読み" in either
+ * nesting order ("「痛み」の読み" / "「痛みの読み」" / "痛みの読み" all → "痛み").
+ */
+function headwordText(text: string): string {
+  let s = text
+  for (let i = 0; i < 2; i += 1) s = stripReadingSuffix(unwrapJapanese(s))
+  return s
+}
+
+/**
  * The side of a reversed note that holds the Japanese word. The other side is
  * the English meaning and/or an image, so pick whichever field actually
  * contains Japanese rather than assuming the front (or assuming kana).
@@ -536,26 +546,19 @@ export function convertExtractedPackage(
     if (usedNoteIds.has(type?.note.id ?? -1)) continue
     if (usedNoteIds.has(reading?.note.id ?? -1)) continue
     if (usedNoteIds.has(reversed?.note.id ?? -1)) continue
-    const wordJa = stripReadingSuffix(
-      unwrapJapanese(
-        basic?.front ??
-          type?.back ??
-          reading?.front ??
-          (reversed ? reversedJapaneseSide(reversed) : undefined) ??
-          key,
-      ),
+    const wordJa = headwordText(
+      basic?.front ??
+        type?.back ??
+        reading?.front ??
+        (reversed ? reversedJapaneseSide(reversed) : undefined) ??
+        key,
     )
     mergeVocabulary(wordJa, basic, type, reading, reversed)
   }
 
   for (const entry of byKind("reading")) {
     if (usedNoteIds.has(entry.note.id)) continue
-    mergeVocabulary(
-      stripReadingSuffix(unwrapJapanese(entry.front)),
-      undefined,
-      undefined,
-      entry,
-    )
+    mergeVocabulary(headwordText(entry.front), undefined, undefined, entry)
   }
 
   for (const [sentenceKey, entries] of grammarGroups) {
