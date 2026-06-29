@@ -111,14 +111,10 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
     kind = "kana"
   } else if (note.noteType.toLowerCase().includes("reversed")) {
     kind = "reversed"
-  } else if (
-    note.noteType === "Basic" &&
-    containsJapanese(back) &&
-    !containsJapanese(front)
-  ) {
+  } else if (containsJapanese(back) && !containsJapanese(front)) {
     // Clue (English and/or image) on the front, Japanese word on the back —
-    // same shape as a type card, so key it by the word (back) and treat the
-    // front as the meaning/images.
+    // for any note type (custom/renamed types land here too). Same shape as a
+    // type card: key it by the word (back), treat the front as meaning/images.
     kind = "type"
   } else if (note.noteType === "Basic") {
     kind = "other"
@@ -138,11 +134,12 @@ function headwordText(text: string): string {
 }
 
 /**
- * The side of a reversed note that holds the Japanese word. The other side is
- * the English meaning and/or an image, so pick whichever field actually
- * contains Japanese rather than assuming the front (or assuming kana).
+ * The field holding the Japanese word. The other side is the English/emoji
+ * meaning and/or an image. Pick whichever field actually contains Japanese
+ * rather than assuming a side based on note type — layouts vary (word on the
+ * front or the back) and note types are renamed.
  */
-function reversedJapaneseSide(entry: ClassifiedNote): string {
+function japaneseSide(entry: ClassifiedNote): string {
   if (containsJapanese(entry.front)) return entry.front
   if (containsJapanese(entry.back)) return entry.back
   return entry.front
@@ -440,17 +437,17 @@ export function convertExtractedPackage(
 
   const basicByKey = new Map<string, ClassifiedNote>()
   for (const entry of byKind("basic")) {
-    basicByKey.set(normalizeHeadwordKey(entry.front), entry)
+    basicByKey.set(normalizeHeadwordKey(japaneseSide(entry)), entry)
   }
 
   const typeByKey = new Map<string, ClassifiedNote>()
   for (const entry of byKind("type")) {
-    typeByKey.set(normalizeHeadwordKey(entry.back), entry)
+    typeByKey.set(normalizeHeadwordKey(japaneseSide(entry)), entry)
   }
 
   const reversedByKey = new Map<string, ClassifiedNote>()
   for (const entry of byKind("reversed")) {
-    reversedByKey.set(normalizeHeadwordKey(reversedJapaneseSide(entry)), entry)
+    reversedByKey.set(normalizeHeadwordKey(japaneseSide(entry)), entry)
   }
 
   const { grammarGroups, grammarReserved } = buildGrammarGroups(classified)
@@ -471,20 +468,19 @@ export function convertExtractedPackage(
       meta?: Record<string, unknown>
     },
   ) => {
-    // A reversed note's English/image can live on either side, so feed both of
-    // its raw fields to the English/image extractors.
-    const definitions = extractEnglishLines(
+    // The meaning/image can live on either side of any of these notes, so feed
+    // both raw fields of each to the extractors. The Japanese word side is
+    // filtered out by extractEnglishLines (it skips Japanese lines).
+    const meaningParts = [
+      basic?.frontRaw ?? "",
       basic?.backRaw ?? "",
       type?.frontRaw ?? "",
+      type?.backRaw ?? "",
       reversed?.frontRaw ?? "",
       reversed?.backRaw ?? "",
-    )
-    const images = refsFrom(
-      basic?.backRaw ?? "",
-      type?.frontRaw ?? "",
-      reversed?.frontRaw ?? "",
-      reversed?.backRaw ?? "",
-    )
+    ]
+    const definitions = extractEnglishLines(...meaningParts)
+    const images = refsFrom(...meaningParts)
     const wordReading = vocabularyReading(wordJa, overrides, pickReading)
     const content: VocabularyCardContent = {
       wordJa,
@@ -555,13 +551,8 @@ export function convertExtractedPackage(
     if (usedNoteIds.has(type?.note.id ?? -1)) continue
     if (usedNoteIds.has(reading?.note.id ?? -1)) continue
     if (usedNoteIds.has(reversed?.note.id ?? -1)) continue
-    const wordJa = headwordText(
-      basic?.front ??
-        type?.back ??
-        reading?.front ??
-        (reversed ? reversedJapaneseSide(reversed) : undefined) ??
-        key,
-    )
+    const wordSource = basic ?? type ?? reading ?? reversed
+    const wordJa = headwordText(wordSource ? japaneseSide(wordSource) : key)
     mergeVocabulary(wordJa, basic, type, reading, reversed)
   }
 
@@ -663,16 +654,18 @@ export function convertExtractedPackage(
   }
 
   // General fallback: import any note we didn't otherwise place as a best-effort
-  // vocabulary card rather than dropping it. A "type" note's answer is its back
-  // field; every other kind's headword is its front.
+  // vocabulary card rather than dropping it. Use the Japanese side as the word;
+  // route the note as a "type" (meaning on the other side) when the word is on
+  // the back, otherwise as a "basic".
   for (const entry of classified) {
     if (usedNoteIds.has(entry.note.id)) continue
-    const isType = entry.note.noteType.toLowerCase().includes("type")
-    const wordJa = unwrapJapanese(isType ? entry.back : entry.front)
+    const wordOnBack =
+      !containsJapanese(entry.front) && containsJapanese(entry.back)
+    const wordJa = headwordText(wordOnBack ? entry.back : entry.front)
     mergeVocabulary(
       wordJa,
-      isType ? undefined : entry,
-      isType ? entry : undefined,
+      wordOnBack ? undefined : entry,
+      wordOnBack ? entry : undefined,
       undefined,
     )
   }

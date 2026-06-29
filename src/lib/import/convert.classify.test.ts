@@ -207,6 +207,43 @@ describe("convert: Basic clue→word card (Japanese on the back)", () => {
   })
 })
 
+describe("convert: word side detected by content, not note type", () => {
+  it("type-in-answer with the Japanese word on the FRONT", () => {
+    const payload = convertExtractedPackage(
+      pkg([note(1, "Basic (type in the answer)", ["有名", "Famous"])]),
+      noMedia,
+    )
+    const card = payload.cards.find((c) => c.kind === "vocabulary")
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.wordJa).toBe("有名") // not "Famous"
+    expect(card.content.definitionsEn).toContain("Famous")
+  })
+
+  it("type-in-answer with the Japanese word on the BACK", () => {
+    const payload = convertExtractedPackage(
+      pkg([note(1, "Basic (type in the answer)", ["Famous", "有名"])]),
+      noMedia,
+    )
+    const card = payload.cards.find((c) => c.kind === "vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.wordJa).toBe("有名")
+    expect(card.content.definitionsEn).toContain("Famous")
+  })
+
+  it("a custom/renamed note type with the Japanese word on the back", () => {
+    const payload = convertExtractedPackage(
+      pkg([note(1, "MyJapaneseCards", ["Famous", "有名"])]),
+      noMedia,
+    )
+    const card = payload.cards.find((c) => c.kind === "vocabulary")
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.wordJa).toBe("有名")
+    expect(card.content.definitionsEn).toContain("Famous")
+  })
+})
+
 describe("convert: kana word with an emoji meaning", () => {
   it("keeps the emoji as the meaning for a reversed kana card", () => {
     const reversed = note(1, "Basic (and reversed card)", ["ゆっくり", "🐌🐢"])
