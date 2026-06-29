@@ -154,6 +154,59 @@ describe("convert: Basic (and reversed card) notes", () => {
   })
 })
 
+describe("convert: Basic clue→word card (Japanese on the back)", () => {
+  // Distinct bytes per file so the media dedup keeps them separate.
+  const distinctBytes = (rel: string) =>
+    new Uint8Array(Array.from(rel, (ch) => ch.charCodeAt(0)))
+
+  it("uses the Japanese back as the word and keeps the front's English + images", () => {
+    const payload = convertExtractedPackage(
+      {
+        deckId: 1,
+        deckName: "T",
+        collectionCrt: 0,
+        notes: [
+          note(1, "Basic", [
+            '<img src="a.jpg"><img src="b.jpg"><img src="c.jpg">Famous',
+            "有名",
+          ]),
+        ],
+        mediaPaths: {
+          "a.jpg": "media/a.jpg",
+          "b.jpg": "media/b.jpg",
+          "c.jpg": "media/c.jpg",
+        },
+      },
+      distinctBytes,
+    )
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "有名",
+    )
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.wordJa).toBe("有名") // not "Famous"
+    expect(card.content.definitionsEn).toContain("Famous")
+    expect(card.content.images).toHaveLength(3)
+  })
+
+  it("merges with the matching pronunciation card", () => {
+    const payload = convertExtractedPackage(
+      pkg([
+        note(1, "Basic", ["Famous", "有名"]),
+        note(2, "Basic", ["「有名」", "ゆうめい"]),
+      ]),
+      noMedia,
+    )
+    const vocab = payload.cards.filter((c) => c.kind === "vocabulary")
+    expect(vocab).toHaveLength(1)
+    const card = vocab[0]
+    if (card.kind !== "vocabulary") return
+    expect(card.content.wordJa).toBe("有名")
+    expect(card.content.reading).toBe("ゆうめい")
+    expect(card.content.definitionsEn).toContain("Famous")
+  })
+})
+
 describe("convert: kana word with an emoji meaning", () => {
   it("keeps the emoji as the meaning for a reversed kana card", () => {
     const reversed = note(1, "Basic (and reversed card)", ["ゆっくり", "🐌🐢"])
