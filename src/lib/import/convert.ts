@@ -111,6 +111,15 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
     kind = "kana"
   } else if (note.noteType.toLowerCase().includes("reversed")) {
     kind = "reversed"
+  } else if (
+    note.noteType === "Basic" &&
+    containsJapanese(back) &&
+    !containsJapanese(front)
+  ) {
+    // Clue (English and/or image) on the front, Japanese word on the back —
+    // same shape as a type card, so key it by the word (back) and treat the
+    // front as the meaning/images.
+    kind = "type"
   } else if (note.noteType === "Basic") {
     kind = "other"
   }
