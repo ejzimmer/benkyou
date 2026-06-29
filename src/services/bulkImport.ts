@@ -10,6 +10,15 @@ import {
 } from "../lib/sync/firestoreSync"
 import { tombstoneId } from "../lib/sync/syncCompare"
 
+/** Coarse import progress for the UI. "reading" is emitted by the caller. */
+export type ImportProgress =
+  | { phase: "reading" }
+  | { phase: "saving"; total: number }
+  | { phase: "syncing"; current: number; total: number }
+  | { phase: "uploading-media" }
+
+export type ImportProgressFn = (progress: ImportProgress) => void
+
 function mediaItemBytes(item: BulkImportPayload["media"][number]): Uint8Array {
   if (item.bytes) return item.bytes
   if (item.base64) {
@@ -49,9 +58,12 @@ function tombstoneIdsToClear(payload: BulkImportPayload): string[] {
 export async function applyBulkImport(
   payload: BulkImportPayload,
   user: User | null,
+  onProgress?: ImportProgressFn,
 ): Promise<void> {
+  const report = onProgress ?? (() => {})
   const tombstonesToClear = tombstoneIdsToClear(payload)
 
+  report({ phase: "saving", total: payload.cards.length })
   await db.transaction(
     "rw",
     [db.decks, db.cards, db.scheduling, db.media, db.tombstones],
@@ -90,11 +102,24 @@ export async function applyBulkImport(
     }
   }
 
+  const total = payload.cards.length + payload.scheduling.length
+  let current = 0
+  // Report every few items (each push is a network round-trip) so the bar
+  // advances without flooding React with re-renders.
+  const tick = () => {
+    current += 1
+    if (current % 5 === 0 || current === total) {
+      report({ phase: "syncing", current, total })
+    }
+  }
   for (const card of payload.cards) {
     await pushCardRemote(user, card.id)
+    tick()
   }
   for (const row of payload.scheduling) {
     await pushSchedulingRemote(user, row.id)
+    tick()
   }
+  report({ phase: "uploading-media" })
   await pushLocalMediaToRemote(user.uid, payload.cards)
 }
