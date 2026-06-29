@@ -17,7 +17,7 @@ import {
   startAnkiImport,
   type AnkiImportSession,
 } from "../../services/ankiImport"
-import { BUILD_LABEL } from "../../lib/buildInfo"
+import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 import { AnkiImportGapReview } from "./AnkiImportGapReview"
 import { GrammarClassifyReview } from "./GrammarClassifyReview"
 
@@ -246,7 +246,7 @@ export function SettingsPage() {
       </section>
 
       <p className="muted small" title="If this time is older than the latest GitHub deploy, hard-refresh or clear site data.">
-        App build: {BUILD_LABEL}
+        App build: {BUILD_LABEL_LOCAL}
       </p>
     </div>
   )
