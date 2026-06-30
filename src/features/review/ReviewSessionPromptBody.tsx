@@ -266,13 +266,54 @@ export function ReviewSessionPromptBody({
   }
 
   if (m === "grammar_oral_meaning" && card.kind === "grammar") {
+    const gapMarker = card.content.gapMarker.trim()
+    const sentence = card.content.sentenceWithGap
+    const construction = card.content.construction
+    const hasInlineGap = Boolean(gapMarker) && sentence.includes(gapMarker)
+
+    if (hasInlineGap) {
+      // Fill the gap(s) with the construction so the whole sentence is asked,
+      // with the construction highlighted. When the construction has as many
+      // comma-separated parts as there are gaps, map one part per gap.
+      const gapCount = sentence.split(gapMarker).length - 1
+      const parts = construction.split(", ")
+      const fillFor = (gapIndex: number) =>
+        parts.length === gapCount ? parts[gapIndex] ?? construction : construction
+
+      return (
+        <div className="stack">
+          <p className="prompt-main grammar-gap-sentence">
+            <RubySentence
+              sentence={sentence}
+              gapMarker={card.content.gapMarker}
+              readings={card.content.readings}
+              renderGap={(gapIndex) => {
+                const fill = fillFor(gapIndex)
+                return (
+                  <span className="construction-fill">
+                    <RubyWord
+                      surface={fill}
+                      reading={readingForConstruction(
+                        fill,
+                        card.content.readings,
+                      )}
+                    />
+                  </span>
+                )
+              }}
+            />
+          </p>
+        </div>
+      )
+    }
+
     return (
       <div className="stack">
         <p className="prompt-main">
           <RubyWord
-            surface={card.content.construction}
+            surface={construction}
             reading={readingForConstruction(
-              card.content.construction,
+              construction,
               card.content.readings,
             )}
           />
