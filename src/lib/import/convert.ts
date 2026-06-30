@@ -22,6 +22,7 @@ import {
   normalizeConstruction,
   normalizeGapMarkers,
   normalizeHeadwordKey,
+  normalizeMediaRef,
   readingValue,
   stripHtml,
   stripReadingSuffix,
@@ -197,8 +198,11 @@ function mediaIdsForRefs(
 ): string[] {
   const ids: string[] = []
   for (const ref of refs) {
-    if (!mediaPaths[ref]) continue
-    const item = mediaByFilename.get(ref)
+    // Field refs may be percent-encoded; mediaPaths / mediaByFilename are keyed
+    // by the decoded filename (see parseApkg). Normalize before looking up.
+    const key = normalizeMediaRef(ref)
+    if (!mediaPaths[key]) continue
+    const item = mediaByFilename.get(key)
     if (item) ids.push(item.id)
   }
   return [...new Set(ids)]

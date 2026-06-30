@@ -28,6 +28,22 @@ export function extractMediaRefs(html: string): string[] {
   return refs
 }
 
+/**
+ * Normalize a media filename reference the way the `.apkg` media index keys it:
+ * drop any `?query` suffix and percent-decode. Anki stores media under decoded
+ * filenames, but a field's `<img src>` may be percent-encoded (spaces → `%20`,
+ * non-ASCII, parentheses). Lookups must normalize both sides or the image is
+ * silently dropped, leaving e.g. a kana-only card with no reviewable content.
+ */
+export function normalizeMediaRef(ref: string): string {
+  const base = ref.split("?")[0] ?? ref
+  try {
+    return decodeURIComponent(base)
+  } catch {
+    return base
+  }
+}
+
 export function hasGapMarker(raw: string): boolean {
   return (
     /_{2,}/.test(raw) ||
