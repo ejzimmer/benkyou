@@ -377,7 +377,7 @@ describe("ReviewSessionPage", () => {
     await user.type(input, "しゅかん{Enter}")
 
     const comparison = await screen.findByRole("group", {
-      name: /hiragana answer comparison/i,
+      name: /answer comparison/i,
     })
     const correctLine = comparison.querySelector(
       '[data-reading-diff-line="correct"]',

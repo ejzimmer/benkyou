@@ -51,7 +51,7 @@ describe("ReviewSessionAnswerPanel", () => {
     )
 
     const answer = screen.getByRole("group", {
-      name: "Hiragana answer",
+      name: "Answer",
     })
     const correctLabel = within(answer).getByText("Correct answer")
     const correctValue = within(answer).getByText("ねこ")
@@ -84,7 +84,7 @@ describe("ReviewSessionAnswerPanel", () => {
     )
 
     const comparison = screen.getByRole("group", {
-      name: /hiragana answer comparison/i,
+      name: /answer comparison/i,
     })
     const correctLabel = within(comparison).getByText("Correct answer")
     const typedLabel = within(comparison).getByText("Your answer")
@@ -237,18 +237,20 @@ describe("ReviewSessionAnswerPanel", () => {
   it("shows only the furigana card answer after a correct Japanese word entry", () => {
     const { container } = renderAnswerPanel("猫")
 
-    screen.debug()
-    expect(screen.queryByText("Yours")).toBeNull()
+    expect(screen.queryByText("Your answer")).toBeNull()
+    // The correct answer carries its reading as furigana.
     expect(container.querySelector("ruby")?.textContent).toBe("猫ねこ")
   })
 
   it("keeps the comparison visible after an incorrect Japanese word entry", () => {
-    renderAnswerPanel("犬")
+    const { container } = renderAnswerPanel("犬")
 
     expect(
-      screen.getByLabelText("Comparison of your answer and the correct answer"),
+      screen.getByRole("group", { name: /answer comparison/i }),
     ).toBeInTheDocument()
-    expect(screen.getByText("Yours")).toBeInTheDocument()
-    expect(screen.getByText("Card")).toBeInTheDocument()
+    expect(screen.getByText("Correct answer")).toBeInTheDocument()
+    expect(screen.getByText("Your answer")).toBeInTheDocument()
+    // The correct answer still shows its furigana reading on hover.
+    expect(container.querySelector("rt")?.textContent).toBe("ねこ")
   })
 })
