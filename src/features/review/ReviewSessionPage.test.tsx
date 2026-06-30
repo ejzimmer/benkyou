@@ -276,13 +276,16 @@ describe("ReviewSessionPage", () => {
     await user.click(screen.getByRole("button", { name: /show answer/i }))
     await user.click(screen.getByRole("button", { name: /^correct$/i }))
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /undo last judgement/i })).toBeEnabled()
-    })
+    // Grading is async (it writes the undo record before the queue empties).
+    // Wait for the queue to empty so the undo record is committed before we
+    // undo — otherwise undo can race the grade and find no record.
+    await screen.findByText(/nothing due right now/i)
 
     await user.click(screen.getByRole("button", { name: /undo last judgement/i }))
 
-    expect(await screen.findByRole("button", { name: /^correct$/i })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("button", { name: /^correct$/i }),
+    ).toBeInTheDocument()
     expect(screen.getByText("猫")).toBeInTheDocument()
     expect(
       document.querySelector('[data-reading-diff-line="correct"]'),
@@ -328,11 +331,10 @@ describe("ReviewSessionPage", () => {
     fireEvent.keyDown(input, { key: "Enter" })
     await user.click(await screen.findByRole("button", { name: /^incorrect$/i }))
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: /undo last judgement/i }),
-      ).toBeEnabled()
-    })
+    // Wait for the grade to land (the prompt returns) so the undo record is
+    // committed before we undo — otherwise undo can race the grade.
+    await screen.findByRole("button", { name: /show answer/i })
+
     await user.click(
       screen.getByRole("button", { name: /undo last judgement/i }),
     )
