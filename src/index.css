@@ -189,6 +189,16 @@ label {
   line-height: 2.6;
 }
 
+/* The construction filling the gap in a "say the meaning" prompt — highlighted
+   so it's clear which part of the sentence is the target. */
+.construction-fill {
+  background: #fde047;
+  color: #1a1a2e;
+  border-radius: 4px;
+  padding: 0.05em 0.25em;
+  font-weight: 600;
+}
+
 .inline-gap-input {
   display: inline-block;
   width: min(12rem, 55vw);

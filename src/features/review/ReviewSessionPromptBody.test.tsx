@@ -128,6 +128,46 @@ describe("ReviewSessionPromptBody", () => {
     vi.unstubAllGlobals()
   })
 
+  it("fills the gap with the highlighted construction for the oral-meaning prompt", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-3",
+        deckId: "deck-1",
+        kind: "grammar",
+        updatedAt: 0,
+        content: {
+          sentenceWithGap: "りんご___、大きい",
+          gapMarker: "___",
+          construction: "より",
+          translationEn: "bigger than an apple",
+          readings: {},
+          images: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "grammar_oral_meaning",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    const sentence = container.querySelector(".ruby-sentence")
+    expect(sentence?.textContent).toBe("りんごより、大きい")
+    const fill = container.querySelector(".construction-fill")
+    expect(fill?.textContent).toBe("より")
+    // Oral mode shows the sentence, not a typing input.
+    expect(screen.queryByRole("textbox")).toBeNull()
+  })
+
   it("does not auto-focus inline grammar input on touch-primary devices", () => {
     stubTouchPrimaryDevice(true)
 
