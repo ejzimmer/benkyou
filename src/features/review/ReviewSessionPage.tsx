@@ -61,7 +61,12 @@ export function ReviewSessionPage() {
   const resumeCardId = searchParams.get("resumeCardId")
   const resumeModeId = searchParams.get("resumeModeId")
   const { user } = useAuth()
-  const { initialSyncComplete, syncProgress, syncStatusLabel } = useSync()
+  const {
+    initialSyncComplete,
+    syncProgress,
+    syncStatusLabel,
+    conflictResolutionVersion,
+  } = useSync()
   const [sessionQueue, setSessionQueue] = useState<DueItem[]>([])
   const [phase, setPhase] = useState<Phase>("prompt")
   const [typed, setTyped] = useState("")
@@ -102,10 +107,12 @@ export function ReviewSessionPage() {
 
   useEffect(() => {
     // Wait for the first sync to finish so the queue reflects the latest cards
-    // and scheduling rather than stale local data.
+    // and scheduling rather than stale local data. Also reload whenever a
+    // later sync resolves a conflict — that can overwrite the card/scheduling
+    // row this session is holding with the merged version.
     if (!initialSyncComplete) return
     load()
-  }, [load, initialSyncComplete])
+  }, [load, initialSyncComplete, conflictResolutionVersion])
 
   useEffect(() => {
     return () => {
