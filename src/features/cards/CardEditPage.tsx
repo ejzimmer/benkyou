@@ -29,6 +29,7 @@ import {
 import { saveImageBlob } from "../../services/media"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { db } from "../../lib/db/schema"
+import { CardImage } from "../../ui/CardImage"
 import { normalizeJapanese } from "../../lib/japanese/normalize"
 import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates"
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
@@ -53,15 +54,15 @@ function imageFilesFromClipboard(data: DataTransfer): File[] {
   return Array.from(data.files).filter((file) => file.type.startsWith("image/"))
 }
 
-function ImageIdList({ imageIds }: { imageIds: string[] }) {
+function ImagePreviewList({ imageIds }: { imageIds: string[] }) {
   if (imageIds.length === 0) return null
 
   return (
-    <ul className="muted small">
+    <div className="image-preview-list">
       {imageIds.map((id) => (
-        <li key={id}>{id.slice(0, 8)}…</li>
+        <CardImage key={id} mediaId={id} />
       ))}
-    </ul>
+    </div>
   )
 }
 
@@ -433,7 +434,7 @@ export function CardEditPage() {
               Choose an image file or paste an image from your clipboard
               anywhere in this form.
             </p>
-            <ImageIdList imageIds={vocab.images} />
+            <ImagePreviewList imageIds={vocab.images} />
           </>
         ) : (
           <>
@@ -528,7 +529,7 @@ export function CardEditPage() {
               Choose an image file or paste an image from your clipboard
               anywhere in this form.
             </p>
-            <ImageIdList imageIds={grammar.images} />
+            <ImagePreviewList imageIds={grammar.images} />
           </>
         )}
 
