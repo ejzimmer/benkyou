@@ -20,6 +20,7 @@ import {
   defaultGrammar,
   defaultVocabulary,
   grammarFromVocabularyContent,
+  mergeCards,
   saveCard,
   validateGrammar,
   validateVocabulary,
@@ -29,6 +30,8 @@ import { saveImageBlob } from "../../services/media"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { db } from "../../lib/db/schema"
 import { normalizeJapanese } from "../../lib/japanese/normalize"
+import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates"
+import { DuplicateCardsModal } from "./DuplicateCardsModal"
 import {
   grammarReadingsToText,
   parseGrammarReadingsText,
@@ -60,12 +63,6 @@ function ImageIdList({ imageIds }: { imageIds: string[] }) {
       ))}
     </ul>
   )
-}
-
-function japaneseDefinitionForCard(card: Card): string {
-  return card.kind === "vocabulary"
-    ? card.content.wordJa
-    : card.content.construction
 }
 
 export function CardEditPage() {
@@ -101,6 +98,11 @@ export function CardEditPage() {
   const [imageUploadCount, setImageUploadCount] = useState(0)
   const isUploadingImages = imageUploadCount > 0
 
+  const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
+  const [duplicateMatches, setDuplicateMatches] = useState<Card[]>([])
+  const [mergingId, setMergingId] = useState<string | null>(null)
+  const [mergeErr, setMergeErr] = useState<string | null>(null)
+
   const duplicateJapaneseCards = useLiveQuery(
     async () => {
       if (!isNew) return []
@@ -111,7 +113,7 @@ export function CardEditPage() {
       const cards = await db.cards.toArray()
       return cards.filter(
         (card) =>
-          normalizeJapanese(japaneseDefinitionForCard(card)) ===
+          normalizeJapanese(japaneseWordForCard(card)) ===
           normalizedCurrentJapanese,
       )
     },
@@ -169,6 +171,12 @@ export function CardEditPage() {
     formRef.current?.reset()
   }
 
+  function currentCardDraft(): Card {
+    return kind === "vocabulary"
+      ? { id: cardId, deckId, kind: "vocabulary", content: vocab, updatedAt: Date.now() }
+      : { id: cardId, deckId, kind: "grammar", content: grammar, updatedAt: Date.now() }
+  }
+
   function onKindChange(nextKind: "vocabulary" | "grammar") {
     if (nextKind === kind) return
 
@@ -196,14 +204,7 @@ export function CardEditPage() {
           resetNewCardForm()
           return
         } else {
-          const card: Card = {
-            id: cardId!,
-            deckId,
-            kind: "vocabulary",
-            content: vocab,
-            updatedAt: Date.now(),
-          }
-          await saveCard(card, user)
+          await saveCard(currentCardDraft(), user)
         }
       } else {
         const emsg = validateGrammar(grammar)
@@ -213,19 +214,38 @@ export function CardEditPage() {
           resetNewCardForm()
           return
         } else {
-          const card: Card = {
-            id: cardId!,
-            deckId,
-            kind: "grammar",
-            content: grammar,
-            updatedAt: Date.now(),
-          }
-          await saveCard(card, user)
+          await saveCard(currentCardDraft(), user)
         }
       }
       navigate(returnTo ?? `/decks/${deckId}`)
     } catch (x) {
       setErr(x instanceof Error ? x.message : "Save failed")
+    }
+  }
+
+  async function onFindDuplicates() {
+    setMergeErr(null)
+    const allCards = await db.cards.toArray()
+    setDuplicateMatches(findDuplicateCards(currentCardDraft(), allCards))
+    setShowDuplicatesModal(true)
+  }
+
+  async function onMergeDuplicate(match: Card) {
+    setMergeErr(null)
+    setMergingId(match.id)
+    try {
+      const merged = await mergeCards(currentCardDraft(), match, user)
+      if (merged.kind === "vocabulary") {
+        setVocab(merged.content)
+      } else {
+        setGrammar(merged.content)
+        setReadingsMapDraft(grammarReadingsToText(merged.content.readings))
+      }
+      setDuplicateMatches((matches) => matches.filter((c) => c.id !== match.id))
+    } catch (x) {
+      setMergeErr(x instanceof Error ? x.message : "Merge failed")
+    } finally {
+      setMergingId(null)
     }
   }
 
@@ -276,7 +296,22 @@ export function CardEditPage() {
       <header className="header">
         <Link to={backTo}>{returnTo ? "← Back" : "← Deck"}</Link>
         <h1>{isNew ? "New card" : "Edit card"}</h1>
+        {!isNew && (
+          <button type="button" className="btn" onClick={onFindDuplicates}>
+            Find duplicate cards
+          </button>
+        )}
       </header>
+
+      {showDuplicatesModal && (
+        <DuplicateCardsModal
+          matches={duplicateMatches}
+          mergingId={mergingId}
+          error={mergeErr}
+          onMerge={onMergeDuplicate}
+          onClose={() => setShowDuplicatesModal(false)}
+        />
+      )}
 
       <form
         ref={formRef}

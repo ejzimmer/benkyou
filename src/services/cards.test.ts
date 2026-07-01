@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest"
 import {
   grammarFromVocabularyContent,
+  mergeCardContent,
   validateGrammar,
   validateVocabulary,
   vocabularyFromGrammarContent,
 } from "./cards"
+import type { Card } from "../domain/types"
 
 describe("validateVocabulary", () => {
   it("requires a word", () => {
@@ -192,6 +194,129 @@ describe("card type conversions", () => {
       readings: { 猫: "ねこ" },
       images: ["image-1"],
       synonymsJa: ["ネコ"],
+    })
+  })
+})
+
+describe("mergeCardContent", () => {
+  it("concatenates vocabulary fields, keeping the target's word", () => {
+    const target: Card = {
+      id: "a",
+      deckId: "deck-1",
+      kind: "vocabulary",
+      content: {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat"],
+        images: ["img-a"],
+        exampleSentences: ["猫がいます"],
+        synonymsJa: [],
+      },
+      updatedAt: 0,
+    }
+    const source: Card = {
+      id: "b",
+      deckId: "deck-2",
+      kind: "vocabulary",
+      content: {
+        wordJa: "猫",
+        reading: "",
+        definitionsEn: ["feline"],
+        images: ["img-b"],
+        exampleSentences: [],
+        synonymsJa: ["ネコ"],
+      },
+      updatedAt: 0,
+    }
+
+    const merged = mergeCardContent(target, source)
+    expect(merged.kind).toBe("vocabulary")
+    expect(merged.content).toEqual({
+      wordJa: "猫",
+      reading: "ねこ",
+      definitionsEn: ["cat", "feline"],
+      images: ["img-a", "img-b"],
+      exampleSentences: ["猫がいます"],
+      synonymsJa: ["ネコ"],
+    })
+  })
+
+  it("converts a grammar source into vocabulary before merging", () => {
+    const target: Card = {
+      id: "a",
+      deckId: "deck-1",
+      kind: "vocabulary",
+      content: {
+        wordJa: "学生",
+        definitionsEn: ["student"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      updatedAt: 0,
+    }
+    const source: Card = {
+      id: "b",
+      deckId: "deck-2",
+      kind: "grammar",
+      content: {
+        sentenceWithGap: "私は___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "I am a student",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      },
+      updatedAt: 0,
+    }
+
+    const merged = mergeCardContent(target, source)
+    expect(merged.kind).toBe("vocabulary")
+    if (merged.kind !== "vocabulary") throw new Error("expected vocabulary")
+    expect(merged.content.definitionsEn).toEqual([
+      "student",
+      "I am a student",
+    ])
+    expect(merged.content.exampleSentences).toEqual(["私は___です"])
+  })
+
+  it("merges overlapping grammar readings by concatenating", () => {
+    const target: Card = {
+      id: "a",
+      deckId: "deck-1",
+      kind: "grammar",
+      content: {
+        sentenceWithGap: "___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "student",
+        readings: { 学生: "がくせい" },
+        images: [],
+        synonymsJa: [],
+      },
+      updatedAt: 0,
+    }
+    const source: Card = {
+      id: "b",
+      deckId: "deck-2",
+      kind: "grammar",
+      content: {
+        sentenceWithGap: "",
+        gapMarker: "___",
+        construction: "",
+        translationEn: "",
+        readings: { 学生: "がくせいさん" },
+        images: [],
+        synonymsJa: [],
+      },
+      updatedAt: 0,
+    }
+
+    const merged = mergeCardContent(target, source)
+    if (merged.kind !== "grammar") throw new Error("expected grammar")
+    expect(merged.content.readings).toEqual({
+      学生: "がくせい; がくせいさん",
     })
   })
 })

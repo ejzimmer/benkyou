@@ -103,13 +103,100 @@ export async function saveCard(card: Card, user: User | null): Promise<void> {
   schedulePushAfterMutation(user)
 }
 
+function concatText(a: string, b: string): string {
+  const at = a.trim()
+  const bt = b.trim()
+  if (!at) return bt
+  if (!bt) return at
+  if (at === bt) return at
+  return `${at}; ${bt}`
+}
+
+function mergeImages(a: string[], b: string[]): string[] {
+  return [...new Set([...a, ...b])]
+}
+
+function mergeVocabularyContent(
+  target: VocabularyCardContent,
+  source: VocabularyCardContent,
+): VocabularyCardContent {
+  const reading = concatText(target.reading ?? "", source.reading ?? "")
+  return {
+    wordJa: concatText(target.wordJa, source.wordJa),
+    reading: reading || undefined,
+    definitionsEn: [...target.definitionsEn, ...source.definitionsEn],
+    images: mergeImages(target.images, source.images),
+    exampleSentences: [...target.exampleSentences, ...source.exampleSentences],
+    synonymsJa: [...target.synonymsJa, ...source.synonymsJa],
+  }
+}
+
+function mergeGrammarContent(
+  target: GrammarCardContent,
+  source: GrammarCardContent,
+): GrammarCardContent {
+  const readings = { ...target.readings }
+  for (const [phrase, reading] of Object.entries(source.readings)) {
+    readings[phrase] = readings[phrase]
+      ? concatText(readings[phrase], reading)
+      : reading
+  }
+  return {
+    sentenceWithGap: concatText(target.sentenceWithGap, source.sentenceWithGap),
+    gapMarker: target.gapMarker,
+    construction: concatText(target.construction, source.construction),
+    translationEn: concatText(target.translationEn, source.translationEn),
+    readings,
+    images: mergeImages(target.images, source.images),
+    synonymsJa: [...target.synonymsJa, ...source.synonymsJa],
+  }
+}
+
+/**
+ * Merge `source`'s fields into `target`, concatenating fields that both cards
+ * have a value for (the caller can clean up the concatenated text afterwards).
+ * `source` is converted to `target`'s kind first if the two cards differ.
+ */
+export function mergeCardContent(target: Card, source: Card): Card {
+  if (target.kind === "vocabulary") {
+    const sourceVocab =
+      source.kind === "vocabulary"
+        ? source.content
+        : vocabularyFromGrammarContent(source.content)
+    return { ...target, content: mergeVocabularyContent(target.content, sourceVocab) }
+  }
+  const sourceGrammar =
+    source.kind === "grammar"
+      ? source.content
+      : grammarFromVocabularyContent(source.content)
+  return { ...target, content: mergeGrammarContent(target.content, sourceGrammar) }
+}
+
+/**
+ * Merge `source` into `target`, saving the merged card and deleting `source`.
+ * `source`'s images are always carried over into the merged card, so its
+ * media blobs must not be deleted along with it.
+ */
+export async function mergeCards(
+  target: Card,
+  source: Card,
+  user: User | null,
+): Promise<Card> {
+  const merged: Card = { ...mergeCardContent(target, source), updatedAt: Date.now() }
+  await saveCard(merged, user)
+  await deleteCard(source.id, user, { keepMedia: true })
+  return merged
+}
+
 export async function deleteCard(
   cardId: string,
   user: User | null,
+  options?: { keepMedia?: boolean },
 ): Promise<void> {
+  const keepMedia = options?.keepMedia ?? false
   const card = await db.cards.get(cardId)
   const now = Date.now()
-  if (card) {
+  if (card && !keepMedia) {
     for (const imgId of card.content.images) {
       await recordTombstone("media", imgId, now)
     }
@@ -121,7 +208,7 @@ export async function deleteCard(
   await recordTombstone("card", cardId, now)
 
   await db.transaction("rw", db.cards, db.scheduling, db.media, async () => {
-    if (card) {
+    if (card && !keepMedia) {
       for (const imgId of card.content.images) {
         await db.media.delete(imgId)
       }
