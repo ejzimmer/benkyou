@@ -61,7 +61,12 @@ export function ReviewSessionPage() {
   const resumeCardId = searchParams.get("resumeCardId")
   const resumeModeId = searchParams.get("resumeModeId")
   const { user } = useAuth()
-  const { initialSyncComplete, syncProgress, syncStatusLabel } = useSync()
+  const {
+    initialSyncComplete,
+    syncProgress,
+    syncStatusLabel,
+    conflictResolutionVersion,
+  } = useSync()
   const [sessionQueue, setSessionQueue] = useState<DueItem[]>([])
   const [phase, setPhase] = useState<Phase>("prompt")
   const [typed, setTyped] = useState("")
@@ -82,6 +87,12 @@ export function ReviewSessionPage() {
     Array<{ cardId: string; modeId: string; typed: string }>
   >([])
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
+  const phaseRef = useRef<Phase>(phase)
+  const conflictReloadPendingRef = useRef(false)
+
+  useEffect(() => {
+    phaseRef.current = phase
+  }, [phase])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -102,10 +113,27 @@ export function ReviewSessionPage() {
 
   useEffect(() => {
     // Wait for the first sync to finish so the queue reflects the latest cards
-    // and scheduling rather than stale local data.
+    // and scheduling rather than stale local data. Also reload whenever a
+    // later sync resolves a conflict — that can overwrite the card/scheduling
+    // row this session is holding with the merged version.
     if (!initialSyncComplete) return
+    // Don't yank the current card out from under the user while they're
+    // looking at the revealed answer, deciding correct/incorrect — defer
+    // until they've moved back to a prompt.
+    if (phaseRef.current === "answer") {
+      conflictReloadPendingRef.current = true
+      return
+    }
     load()
-  }, [load, initialSyncComplete])
+    // phaseRef is a ref mirror, read but intentionally not a dependency here.
+  }, [load, initialSyncComplete, conflictResolutionVersion])
+
+  useEffect(() => {
+    if (phase === "prompt" && conflictReloadPendingRef.current) {
+      conflictReloadPendingRef.current = false
+      load()
+    }
+  }, [phase, load])
 
   useEffect(() => {
     return () => {

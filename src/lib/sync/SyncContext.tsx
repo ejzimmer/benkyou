@@ -35,6 +35,12 @@ type SyncState = {
   lastSyncedAt: number | null
   syncNow: () => Promise<void>
   conflictActive: boolean
+  /**
+   * Bumped once a sync that hit at least one conflict has settled. A review
+   * session watches this to reload its queue with the resolved data — the
+   * card/scheduling row it's holding may have just been overwritten.
+   */
+  conflictResolutionVersion: number
 }
 
 const Ctx = createContext<SyncState | null>(null)
@@ -54,6 +60,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   )
   const conflictNumberRef = useRef(0)
   const [conflictNumber, setConflictNumber] = useState(0)
+  const [conflictResolutionVersion, setConflictResolutionVersion] = useState(0)
 
   useEffect(() => {
     setLastSyncedAt(readLastSyncedAt())
@@ -153,6 +160,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setLastError(msg)
         throw e
       } finally {
+        const hadConflict = conflictNumberRef.current > 0
         setSyncing(false)
         setSyncPhase("idle")
         setSyncProgress(null)
@@ -162,6 +170,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setActiveConflict(null)
         conflictNumberRef.current = 0
         setConflictNumber(0)
+        // Conflict resolution can overwrite the card/scheduling row an active
+        // review session is holding — bump so it knows to reload its queue.
+        if (hadConflict) setConflictResolutionVersion((v) => v + 1)
       }
     })()
 
@@ -200,6 +211,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       lastSyncedAt,
       syncNow,
       conflictActive: activeConflict != null,
+      conflictResolutionVersion,
     }),
     [
       syncing,
@@ -212,6 +224,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       lastSyncedAt,
       syncNow,
       activeConflict,
+      conflictResolutionVersion,
     ],
   )
 
