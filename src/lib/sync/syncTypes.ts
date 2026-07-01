@@ -60,6 +60,10 @@ export type RemoteMediaMeta = {
   id: string
   mimeType: string
   updatedAt: number
+  /** SHA-256 hex digest of the blob's bytes; absent on entries written before
+   *  hash tracking was added — sync backfills it the next time it has to
+   *  download that item anyway. */
+  digest?: string
 }
 
 export const LAST_SYNCED_AT_KEY = "benkyou:lastSyncedAt"

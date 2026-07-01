@@ -42,6 +42,8 @@ export type FakeStorageBackend = {
   blobs: Map<string, { bytes: Uint8Array; contentType: string }>
   /** Upload calls recorded for assertions (path + contentType + size). */
   uploads: Array<{ path: string; contentType: string; size: number }>
+  /** Paths fetched via getBlob/getBytes, recorded for assertions. */
+  downloads: string[]
 }
 
 export type FakeBackend = {
@@ -51,7 +53,7 @@ export type FakeBackend = {
 
 const backend: FakeBackend = {
   firestore: { docs: new Map() },
-  storage: { blobs: new Map(), uploads: [] },
+  storage: { blobs: new Map(), uploads: [], downloads: [] },
 }
 
 export function getFakeBackend(): FakeBackend {
@@ -63,6 +65,7 @@ export function resetFakeBackend(): void {
   backend.firestore.docs.clear()
   backend.storage.blobs.clear()
   backend.storage.uploads.length = 0
+  backend.storage.downloads.length = 0
   if (typeof globalThis.localStorage !== "undefined") {
     globalThis.localStorage.clear()
   }
@@ -186,12 +189,14 @@ export async function fakeUploadBytes(
 export async function fakeGetBlob(r: StorageRef): Promise<Blob> {
   const entry = backend.storage.blobs.get(r.__path)
   if (!entry) throw notFoundError()
+  backend.storage.downloads.push(r.__path)
   return new Blob([entry.bytes], { type: entry.contentType })
 }
 
 export async function fakeGetBytes(r: StorageRef): Promise<ArrayBuffer> {
   const entry = backend.storage.blobs.get(r.__path)
   if (!entry) throw notFoundError()
+  backend.storage.downloads.push(r.__path)
   return entry.bytes.slice().buffer
 }
 
