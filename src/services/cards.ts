@@ -112,6 +112,10 @@ function concatText(a: string, b: string): string {
   return `${at}; ${bt}`
 }
 
+function mergeImages(a: string[], b: string[]): string[] {
+  return [...new Set([...a, ...b])]
+}
+
 function mergeVocabularyContent(
   target: VocabularyCardContent,
   source: VocabularyCardContent,
@@ -121,7 +125,7 @@ function mergeVocabularyContent(
     wordJa: concatText(target.wordJa, source.wordJa),
     reading: reading || undefined,
     definitionsEn: [...target.definitionsEn, ...source.definitionsEn],
-    images: [...target.images, ...source.images],
+    images: mergeImages(target.images, source.images),
     exampleSentences: [...target.exampleSentences, ...source.exampleSentences],
     synonymsJa: [...target.synonymsJa, ...source.synonymsJa],
   }
@@ -143,7 +147,7 @@ function mergeGrammarContent(
     construction: concatText(target.construction, source.construction),
     translationEn: concatText(target.translationEn, source.translationEn),
     readings,
-    images: [...target.images, ...source.images],
+    images: mergeImages(target.images, source.images),
     synonymsJa: [...target.synonymsJa, ...source.synonymsJa],
   }
 }
@@ -168,7 +172,11 @@ export function mergeCardContent(target: Card, source: Card): Card {
   return { ...target, content: mergeGrammarContent(target.content, sourceGrammar) }
 }
 
-/** Merge `source` into `target`, saving the merged card and deleting `source`. */
+/**
+ * Merge `source` into `target`, saving the merged card and deleting `source`.
+ * `source`'s images are always carried over into the merged card, so its
+ * media blobs must not be deleted along with it.
+ */
 export async function mergeCards(
   target: Card,
   source: Card,
@@ -176,17 +184,19 @@ export async function mergeCards(
 ): Promise<Card> {
   const merged: Card = { ...mergeCardContent(target, source), updatedAt: Date.now() }
   await saveCard(merged, user)
-  await deleteCard(source.id, user)
+  await deleteCard(source.id, user, { keepMedia: true })
   return merged
 }
 
 export async function deleteCard(
   cardId: string,
   user: User | null,
+  options?: { keepMedia?: boolean },
 ): Promise<void> {
+  const keepMedia = options?.keepMedia ?? false
   const card = await db.cards.get(cardId)
   const now = Date.now()
-  if (card) {
+  if (card && !keepMedia) {
     for (const imgId of card.content.images) {
       await recordTombstone("media", imgId, now)
     }
@@ -198,7 +208,7 @@ export async function deleteCard(
   await recordTombstone("card", cardId, now)
 
   await db.transaction("rw", db.cards, db.scheduling, db.media, async () => {
-    if (card) {
+    if (card && !keepMedia) {
       for (const imgId of card.content.images) {
         await db.media.delete(imgId)
       }
