@@ -87,6 +87,12 @@ export function ReviewSessionPage() {
     Array<{ cardId: string; modeId: string; typed: string }>
   >([])
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
+  const phaseRef = useRef<Phase>(phase)
+  const conflictReloadPendingRef = useRef(false)
+
+  useEffect(() => {
+    phaseRef.current = phase
+  }, [phase])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -111,8 +117,23 @@ export function ReviewSessionPage() {
     // later sync resolves a conflict — that can overwrite the card/scheduling
     // row this session is holding with the merged version.
     if (!initialSyncComplete) return
+    // Don't yank the current card out from under the user while they're
+    // looking at the revealed answer, deciding correct/incorrect — defer
+    // until they've moved back to a prompt.
+    if (phaseRef.current === "answer") {
+      conflictReloadPendingRef.current = true
+      return
+    }
     load()
+    // phaseRef is a ref mirror, read but intentionally not a dependency here.
   }, [load, initialSyncComplete, conflictResolutionVersion])
+
+  useEffect(() => {
+    if (phase === "prompt" && conflictReloadPendingRef.current) {
+      conflictReloadPendingRef.current = false
+      load()
+    }
+  }, [phase, load])
 
   useEffect(() => {
     return () => {
