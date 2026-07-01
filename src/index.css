@@ -500,6 +500,7 @@ code {
   font-size: 0.9em;
 }
 
+.modal-backdrop,
 .sync-conflict-backdrop {
   position: fixed;
   inset: 0;
@@ -511,6 +512,7 @@ code {
   padding: 1rem;
 }
 
+.modal-panel,
 .sync-conflict-panel {
   max-width: 720px;
   width: 100%;
