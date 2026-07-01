@@ -237,6 +237,20 @@ label {
   max-width: 100%;
 }
 
+.image-preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.image-preview-list .card-image {
+  margin: 0;
+  width: 6rem;
+  height: 6rem;
+  max-width: 6rem;
+  object-fit: cover;
+}
+
 .import-card-preview {
   background: #12121a;
   border-radius: 8px;

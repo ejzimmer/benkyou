@@ -14,6 +14,12 @@ vi.mock("../../lib/firebase", () => ({
   isFirebaseConfigured: () => false,
 }))
 
+vi.mock("../../ui/CardImage", () => ({
+  CardImage: ({ mediaId }: { mediaId: string }) => (
+    <div data-testid="card-image" data-mediaid={mediaId} />
+  ),
+}))
+
 function renderNewCardPage() {
   return render(
     <MemoryRouter initialEntries={["/decks/deck-1/cards/new"]}>
@@ -61,7 +67,10 @@ describe("CardEditPage clipboard images", () => {
       return media[0]!.id
     })
     await waitFor(() => {
-      expect(screen.getByText(`${mediaId.slice(0, 8)}…`)).toBeInTheDocument()
+      expect(screen.getByTestId("card-image")).toHaveAttribute(
+        "data-mediaid",
+        mediaId,
+      )
     })
 
     await user.type(screen.getByLabelText(/japanese word/i), "猫")
