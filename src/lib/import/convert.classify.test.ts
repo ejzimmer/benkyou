@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { collectGrammarCandidates, convertExtractedPackage } from "./convert"
+import { cardImportValidationError } from "./gaps"
 import type { ExtractedAnkiNote, ExtractedPackage } from "./types"
 
 function note(
@@ -302,6 +303,69 @@ describe("convert: grammar/vocab confirmation", () => {
     if (card?.kind !== "vocabulary") return
     expect(card.content.wordJa).toBe("です")
     expect(card.content.exampleSentences).toContain("私は学生___")
+  })
+})
+
+describe("convert: cards that were wrongly flagged as needing input", () => {
+  it("a 'type in the answer' note whose typed answer IS the reading (「明日」/あした) doesn't need input", () => {
+    const payload = convertExtractedPackage(
+      pkg([note(1, "Basic (type in the answer)", ["「明日」", "あした"])]),
+      noMedia,
+    )
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "明日",
+    )
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.reading).toBe("あした")
+    expect(cardImportValidationError(card)).toBeNull()
+  })
+
+  it("a reversed note with a Japanese (not English) gloss (オス/男性な動物) doesn't need input", () => {
+    const reversed = note(1, "Basic (and reversed card)", [
+      "オス",
+      "男性な動物（人間じゃない）",
+    ])
+    reversed.cards = [
+      { id: 1, ord: 0, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+      { id: 2, ord: 1, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+    ]
+    const payload = convertExtractedPackage(pkg([reversed]), noMedia)
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "オス",
+    )
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.definitionsEn).toContain("男性な動物（人間じゃない）")
+    expect(cardImportValidationError(card)).toBeNull()
+  })
+
+  it("resolves a percent-encoded media src the same way parseApkg keys mediaPaths", () => {
+    const reversed = note(1, "Basic (and reversed card)", [
+      "ぐうたら",
+      '<img src="paste%20one.jpg">',
+    ])
+    reversed.cards = [
+      { id: 1, ord: 0, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+      { id: 2, ord: 1, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+    ]
+    const payload = convertExtractedPackage(
+      {
+        deckId: 1,
+        deckName: "Test",
+        collectionCrt: 0,
+        notes: [reversed],
+        mediaPaths: { "paste one.jpg": "media/paste one.jpg" },
+      },
+      () => new Uint8Array([1, 2, 3]),
+    )
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "ぐうたら",
+    )
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.images.length).toBeGreaterThan(0)
+    expect(cardImportValidationError(card)).toBeNull()
   })
 })
 

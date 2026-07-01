@@ -13,6 +13,7 @@ import {
   containsJapanese,
   containsKanji as surfaceHasKanji,
   extractEnglishLines,
+  extractJapaneseGlossLines,
   extractMediaRefs,
   hasGapMarker,
   hasReadingSuffix,
@@ -90,17 +91,20 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
   // grammar here and the decision is applied when cards are built.
   if (hasGapMarker(raw)) {
     kind = "grammar"
-  } else if (note.noteType === "Basic (type in the answer)") {
-    kind = "type"
   } else if (
-    note.noteType === "Basic" &&
+    (note.noteType === "Basic" ||
+      note.noteType === "Basic (type in the answer)") &&
     // The word side is either a quote-wrapped Japanese word ("«陣»") or a word
     // annotated with "の読み" ("陣の読み"); the hiragana side is bare or
-    // quote-wrapped kana, optionally also carrying "の読み".
+    // quote-wrapped kana, optionally also carrying "の読み". A "type in the
+    // answer" note with this shape is really "type the reading" — the typed
+    // answer IS the pronunciation, not a separate meaning.
     (isWrappedJapanese(front) || hasReadingSuffix(front)) &&
     isKanaOnly(readingValue(back))
   ) {
     kind = "reading"
+  } else if (note.noteType === "Basic (type in the answer)") {
+    kind = "type"
   } else if (
     note.noteType === "Basic" &&
     surfaceHasKanji(front) &&
@@ -482,12 +486,21 @@ export function convertExtractedPackage(
     const definitions = extractEnglishLines(...meaningParts)
     const images = refsFrom(...meaningParts)
     const wordReading = vocabularyReading(wordJa, overrides, pickReading)
+    // Nothing else would satisfy this card (no reading, no English gloss, no
+    // image) — fall back to a Japanese-language line from the note (e.g. a
+    // monolingual JJ definition) rather than leaving it empty.
+    const fallbackJaGloss =
+      definitions.length === 0 && images.length === 0 && !wordReading
+        ? extractJapaneseGlossLines(normalizeHeadwordKey(wordJa), ...meaningParts)
+        : []
     const content: VocabularyCardContent = {
       wordJa,
       reading: wordReading,
       definitionsEn:
         overrides?.definitionsEn ??
-        defaultDefinitionsEn(definitions),
+        defaultDefinitionsEn(
+          definitions.length > 0 ? definitions : fallbackJaGloss,
+        ),
       images: overrides?.images ?? images,
       exampleSentences: overrides?.exampleSentences ?? [],
       synonymsJa: [],

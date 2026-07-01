@@ -18,12 +18,24 @@ export function stripHtml(html: string): string {
     .trim()
 }
 
+/** Anki media filenames are matched by decoded name, query string stripped —
+ * keep this in sync with how `pkg.mediaPaths` keys are built (parseApkg.ts),
+ * or percent-encoded/query-suffixed `src` values silently fail to resolve. */
+export function normalizeMediaRef(ref: string): string {
+  const base = ref.split("?")[0] ?? ref
+  try {
+    return decodeURIComponent(base)
+  } catch {
+    return base
+  }
+}
+
 export function extractMediaRefs(html: string): string[] {
   const refs: string[] = []
   const re = /(?:src|href)=["']([^"']+)["']/gi
   let m: RegExpExecArray | null
   while ((m = re.exec(html)) !== null) {
-    refs.push(m[1])
+    refs.push(normalizeMediaRef(m[1]))
   }
   return refs
 }
@@ -158,6 +170,30 @@ export function extractEnglishLines(...htmlParts: string[]): string[] {
       if (!isEnglishLine(trimmed) && !isPictographLine(trimmed)) continue
       if (trimmed.includes("___")) continue
       lines.push(trimmed)
+    }
+  }
+  return [...new Set(lines)]
+}
+
+/**
+ * Fallback meaning for notes with no English gloss: a Japanese-language line
+ * distinct from the headword itself (e.g. a monolingual JJ definition like
+ * "男性な動物" on an "オス" card). Only meant to be used when nothing else
+ * (reading, English gloss, image) already satisfies the card — a Japanese
+ * explanation is still more useful to review than an empty, flagged card.
+ */
+export function extractJapaneseGlossLines(
+  headwordKey: string,
+  ...htmlParts: string[]
+): string[] {
+  const lines: string[] = []
+  for (const html of htmlParts) {
+    for (const line of htmlToLines(html)) {
+      if (!containsJapanese(line)) continue
+      if (line.includes("___")) continue
+      const key = normalizeHeadwordKey(line)
+      if (!key || key === headwordKey) continue
+      lines.push(line)
     }
   }
   return [...new Set(lines)]
