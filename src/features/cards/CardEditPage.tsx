@@ -19,6 +19,7 @@ import {
   createVocabularyCard,
   defaultGrammar,
   defaultVocabulary,
+  deleteCard,
   grammarFromVocabularyContent,
   mergeCards,
   saveCard,
@@ -224,6 +225,12 @@ export function CardEditPage() {
     }
   }
 
+  function onDeleteCard() {
+    if (!confirm("Delete this card?")) return
+    navigate(returnTo ?? `/decks/${deckId}`)
+    deleteCard(cardId, user).catch(console.error)
+  }
+
   async function onFindDuplicates() {
     setMergeErr(null)
     const allCards = await db.cards.toArray()
@@ -300,6 +307,11 @@ export function CardEditPage() {
         {!isNew && (
           <button type="button" className="btn" onClick={onFindDuplicates}>
             Find duplicate cards
+          </button>
+        )}
+        {!isNew && (
+          <button type="button" className="btn danger" onClick={onDeleteCard}>
+            Delete card
           </button>
         )}
       </header>
