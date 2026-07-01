@@ -147,7 +147,12 @@ export async function pushLocalToRemote(
   for (const m of localMedia) {
     sets.push({
       ref: doc(mediaMetaCol(fs, uid), m.id),
-      data: { id: m.id, mimeType: m.mimeType, updatedAt: m.updatedAt },
+      data: {
+        id: m.id,
+        mimeType: m.mimeType,
+        updatedAt: m.updatedAt,
+        digest: m.digest,
+      },
     })
   }
 
@@ -258,6 +263,7 @@ export async function upsertMediaMetaRemote(
       id: row.id,
       mimeType: row.mimeType,
       updatedAt: row.updatedAt,
+      digest: row.digest,
     }),
   )
 }

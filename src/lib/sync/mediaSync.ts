@@ -13,7 +13,17 @@ import { getFirebaseStorage, getFirestoreDb } from "../firebase"
 import { upsertMediaMetaRemote } from "./firestoreSync"
 import { syncLog } from "./syncLog"
 import { withStorageTimeout } from "./storageTimeout"
+import { mediaBlobDigest } from "./syncCompare"
 import type { RemoteMediaMeta } from "./syncTypes"
+
+/** Backfills and caches `row.digest` (SHA-256 of the blob) when missing. */
+export async function ensureMediaDigest(row: MediaRow): Promise<MediaRow> {
+  if (row.digest) return row
+  const digest = await mediaBlobDigest(row.blob)
+  const withDigest = { ...row, digest }
+  await db.media.put(withDigest)
+  return withDigest
+}
 
 function isLikelyStorageCorsError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
@@ -164,8 +174,9 @@ export async function pushLocalMediaToRemote(
   for (const mediaId of ids) {
     const row = await db.media.get(mediaId)
     if (!row) continue
-    await uploadMediaBlob(storage, uid, row)
-    if (fs) await upsertMediaMetaRemote(fs, uid, row)
+    const withDigest = await ensureMediaDigest(row)
+    await uploadMediaBlob(storage, uid, withDigest)
+    if (fs) await upsertMediaMetaRemote(fs, uid, withDigest)
   }
 }
 

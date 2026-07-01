@@ -50,6 +50,9 @@ export type MediaRow = {
   blob: Blob
   mimeType: string
   updatedAt: number
+  /** SHA-256 hex digest of `blob`, cached so sync can compare content without
+   *  re-hashing (or re-downloading) unchanged media every run. */
+  digest?: string
 }
 
 export type SyncOutboxRow = {

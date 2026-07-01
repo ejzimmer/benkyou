@@ -6,6 +6,7 @@ import {
   downloadMediaFromRemote,
   uploadMediaBlob,
 } from "../lib/sync/mediaSync"
+import { mediaBlobDigest } from "../lib/sync/syncCompare"
 import { schedulePushAfterMutation } from "../lib/sync/schedulePush"
 import type { User } from "firebase/auth"
 
@@ -15,11 +16,13 @@ export async function saveImageBlob(
 ): Promise<string> {
   const id = newId()
   const now = Date.now()
+  const digest = await mediaBlobDigest(blob)
   const row = {
     id,
     blob,
     mimeType: blob.type || "image/png",
     updatedAt: now,
+    digest,
   }
   await db.media.put(row)
 

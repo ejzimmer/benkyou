@@ -21,6 +21,7 @@ import {
 } from "./firestoreSync"
 import {
   downloadMediaBlob,
+  ensureMediaDigest,
   hydrateReferencedMedia,
   mediaPreviewUrl,
   uploadMediaBlob,
@@ -293,24 +294,40 @@ async function syncOneMediaItem(
   const remoteMeta = remote.mediaMeta.get(mediaId)
 
   if (local && remoteMeta) {
-    const localDigest = await mediaBlobDigest(local.blob)
+    const localWithDigest = await ensureMediaDigest(local)
+    const localDigest = localWithDigest.digest as string
+
+    // Both sides already agree on content — nothing to upload or download.
+    if (
+      remoteMeta.digest &&
+      remoteMeta.digest === localDigest &&
+      remoteMeta.mimeType === localWithDigest.mimeType
+    ) {
+      return
+    }
+
     let remoteRow: MediaRow
     try {
       remoteRow = await downloadMediaBlob(storage, uid, remoteMeta)
     } catch {
-      await uploadMediaBlob(storage, uid, local)
+      await uploadMediaBlob(storage, uid, localWithDigest)
       return
     }
-    const remoteDigest = await mediaBlobDigest(remoteRow.blob)
+    // Remote metadata predates hash tracking — hash it once now so future
+    // syncs can compare without downloading again.
+    const remoteDigest =
+      remoteMeta.digest ?? (await mediaBlobDigest(remoteRow.blob))
+    remoteRow = { ...remoteRow, digest: remoteDigest }
+
     const pick = resolveEntityMerge(
       { updatedAt: local.updatedAt },
       { updatedAt: remoteMeta.updatedAt },
       lastSyncedAt,
-      !mediaChanged(local, remoteMeta, localDigest, remoteDigest),
+      !mediaChanged(localWithDigest, remoteMeta, localDigest, remoteDigest),
     )
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "media", entityId: mediaId })
-      const localUrl = mediaPreviewUrl(local)
+      const localUrl = mediaPreviewUrl(localWithDigest)
       const remoteUrl = mediaPreviewUrl(remoteRow)
       try {
         const choice = await resolveConflictChoice(
@@ -320,21 +337,18 @@ async function syncOneMediaItem(
             entityId: mediaId,
             localUpdatedAt: local.updatedAt,
             remoteUpdatedAt: remoteMeta.updatedAt,
-            localSummary: mediaSummary(local),
+            localSummary: mediaSummary(localWithDigest),
             remoteSummary: mediaSummary(remoteMeta),
-            local,
+            local: localWithDigest,
             remote: remoteRow,
             localPreviewUrl: localUrl,
             remotePreviewUrl: remoteUrl,
           },
           onConflict,
         )
-        await db.media.put(choice === "local" ? local : remoteRow)
-        await uploadMediaBlob(
-          storage,
-          uid,
-          choice === "local" ? local : remoteRow,
-        )
+        const winner = choice === "local" ? localWithDigest : remoteRow
+        await db.media.put(winner)
+        await uploadMediaBlob(storage, uid, winner)
       } finally {
         URL.revokeObjectURL(localUrl)
         URL.revokeObjectURL(remoteUrl)
@@ -342,20 +356,23 @@ async function syncOneMediaItem(
     } else if (pick === "remote") {
       await db.media.put(remoteRow)
     } else {
-      await uploadMediaBlob(storage, uid, local)
+      await uploadMediaBlob(storage, uid, localWithDigest)
     }
     return
   }
 
   if (local && !remoteMeta) {
-    await uploadMediaBlob(storage, uid, local)
+    const localWithDigest = await ensureMediaDigest(local)
+    await uploadMediaBlob(storage, uid, localWithDigest)
     return
   }
 
   if (!local && remoteMeta) {
     try {
       const remoteRow = await downloadMediaBlob(storage, uid, remoteMeta)
-      await db.media.put(remoteRow)
+      const digest =
+        remoteMeta.digest ?? (await mediaBlobDigest(remoteRow.blob))
+      await db.media.put({ ...remoteRow, digest })
     } catch {
       /* missing storage object */
     }
