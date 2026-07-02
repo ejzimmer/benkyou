@@ -229,7 +229,11 @@ export async function parseAnkiPackage(
     const mediaPaths: Record<string, string> = {}
     const mediaBytes = new Map<string, Uint8Array>()
     for (const filename of referenced) {
-      if (filename.startsWith("temp_file_")) continue
+      // "temp_file_<hash>" names look like Anki's in-progress paste staging
+      // names, but real exports can and do ship them as final filenames with
+      // real bytes behind them in the media map — skipping them unconditionally
+      // silently drops legitimate images. The lookups below already no-op for
+      // anything genuinely missing.
       const zipName = filenameToZip.get(filename)
       if (!zipName) continue
       const entry = zip.file(zipName)

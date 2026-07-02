@@ -28,12 +28,12 @@ describe("convertExtractedPackage", () => {
     const grammarCard = payload.cards.find((c) => c.kind === "grammar")
     expect(grammarCard?.kind).toBe("grammar")
     if (grammarCard?.kind !== "grammar") return
+    // No translation in this fixture (Japanese-only note) — only the
+    // fill-in-the-gap mode applies, not "say the meaning".
     const grammarScheduling = payload.scheduling.filter(
       (r) => r.cardId === grammarCard.id,
     )
-    expect(grammarScheduling).toHaveLength(2)
-    const [a, b] = grammarScheduling
-    expect(a.due).toBe(b.due)
+    expect(grammarScheduling).toHaveLength(1)
     expect(grammarCard.content.translationEn).not.toBe("流し、呼ぶ")
   })
 })

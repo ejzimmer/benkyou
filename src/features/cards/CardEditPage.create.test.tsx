@@ -37,7 +37,7 @@ describe("CardEditPage create flow", () => {
 
     await user.type(screen.getByLabelText(/japanese word/i), "猫")
     await user.type(screen.getByLabelText(/reading/i), "ねこ")
-    await user.type(screen.getByLabelText(/english definitions/i), "cat")
+    await user.type(screen.getByLabelText(/meaning \(one per line\)/i), "cat")
     await user.click(screen.getByRole("button", { name: /save/i }))
 
     await waitFor(async () => {
@@ -57,6 +57,6 @@ describe("CardEditPage create flow", () => {
       expect(screen.getByLabelText(/japanese word/i)).toHaveValue("")
     })
     expect(screen.getByLabelText(/reading/i)).toHaveValue("")
-    expect(screen.getByLabelText(/english definitions/i)).toHaveValue("")
+    expect(screen.getByLabelText(/meaning \(one per line\)/i)).toHaveValue("")
   })
 })

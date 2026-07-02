@@ -367,6 +367,63 @@ describe("convert: cards that were wrongly flagged as needing input", () => {
     expect(card.content.images.length).toBeGreaterThan(0)
     expect(cardImportValidationError(card)).toBeNull()
   })
+
+  it("resolves a 'temp_file_' media src (ぐうたら/image) — these can be real, final filenames, not just staging", () => {
+    const reversed = note(1, "Basic (and reversed card)", [
+      "ぐうたら",
+      '<img src="temp_file_-2dd5b9e63e9a8304f830cafed5a9395586cf081e.png">',
+    ])
+    reversed.cards = [
+      { id: 1, ord: 0, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+      { id: 2, ord: 1, type: 0, queue: 0, due: 0, ivl: 0, factor: 2500, reps: 0, lapses: 0 },
+    ]
+    const payload = convertExtractedPackage(
+      {
+        deckId: 1,
+        deckName: "Test",
+        collectionCrt: 0,
+        notes: [reversed],
+        mediaPaths: {
+          "temp_file_-2dd5b9e63e9a8304f830cafed5a9395586cf081e.png":
+            "media/1.png",
+        },
+      },
+      () => new Uint8Array([1, 2, 3]),
+    )
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "ぐうたら",
+    )
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.images.length).toBeGreaterThan(0)
+    expect(cardImportValidationError(card)).toBeNull()
+  })
+
+  it("a Japanese word paired with a Japanese sentence (no gap) uses the sentence as the meaning", () => {
+    const payload = convertExtractedPackage(
+      pkg([note(1, "Basic", ["瞬間", "その瞬間、彼は立ち止まった"])]),
+      noMedia,
+    )
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "瞬間",
+    )
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.definitionsEn).toContain("その瞬間、彼は立ち止まった")
+    expect(cardImportValidationError(card)).toBeNull()
+  })
+
+  it("a Japanese sentence with a gap and no translation is a valid fill-in-the-gap grammar card", () => {
+    const payload = convertExtractedPackage(
+      pkg([note(1, "Basic (type in the answer)", ["彼は___を食べた", "パン"])]),
+      noMedia,
+    )
+    const card = payload.cards.find((c) => c.kind === "grammar")
+    expect(card?.kind).toBe("grammar")
+    if (card?.kind !== "grammar") return
+    expect(card.content.translationEn).toBe("")
+    expect(cardImportValidationError(card)).toBeNull()
+  })
 })
 
 describe("convert: general leftover fallback", () => {

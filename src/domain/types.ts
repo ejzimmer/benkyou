@@ -84,6 +84,8 @@ export function reviewModesForCard(card: Card): ReviewModeId[] {
     }
     return modes
   }
-  return ["grammar_type_construction", "grammar_oral_meaning"]
+  const modes: ReviewModeId[] = ["grammar_type_construction"]
+  if (card.content.translationEn.trim()) modes.push("grammar_oral_meaning")
+  return modes
 }
 

@@ -52,7 +52,7 @@ describe("CardEditPage duplicate warning", () => {
       ),
     ).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText(/english definitions/i), "cat")
+    await user.type(screen.getByLabelText(/meaning \(one per line\)/i), "cat")
     await user.click(screen.getByRole("button", { name: /save/i }))
 
     await waitFor(async () => {

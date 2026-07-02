@@ -43,7 +43,7 @@ export function validateVocabulary(content: VocabularyCardContent): string | nul
   const hasEnglish = hasVocabularyEnglishDefinition(content)
   const hasImg = hasVocabularyImage(content)
   if (!hasPronunciation && !hasEnglish && !hasImg) {
-    return "Add at least one pronunciation (reading), English meaning, or image"
+    return "Add at least one pronunciation (reading), meaning, or image"
   }
   return null
 }
@@ -51,10 +51,8 @@ export function validateVocabulary(content: VocabularyCardContent): string | nul
 export function validateGrammar(content: GrammarCardContent): string | null {
   if (!content.sentenceWithGap.trim()) return "Sentence is required"
   if (!content.construction.trim()) return "Construction is required"
-  const hasTranslation = content.translationEn.trim().length > 0
-  const hasImage = content.images.length > 0
-  if (!hasTranslation && !hasImage)
-    return "Add at least one English translation or one image"
+  // A translation/image isn't required — a sentence + construction is
+  // already a complete fill-in-the-gap drill; not every card needs English.
   const gap = content.gapMarker.trim() || "___"
   if (!content.sentenceWithGap.includes(gap))
     return `Sentence must contain the gap marker (${gap})`

@@ -8,8 +8,10 @@ import JSZip from "jszip"
 import initSqlJs from "sql.js"
 import { isZstdMagic, parseMediaEntriesProtobuf, parseMediaMapJson } from "./mediaIndex"
 
-const APKG =
-  "/home/erin/Downloads/とんがり帽子のアトリエ-20260514195355.apkg"
+const APKG = new URL(
+  "../../../test-decks/とんがり帽子のアトリエ-20260516063503.apkg",
+  import.meta.url,
+)
 
 async function loadMediaMap(zip: JSZip) {
   const mediaFile = zip.file("media")
@@ -47,7 +49,6 @@ describe("apkg media refs", () => {
       let m: RegExpExecArray | null
       while ((m = re.exec(flds)) !== null) {
         const ref = m[1]
-        if (ref.startsWith("temp_file_")) continue
         if (!filenameToZip.has(ref)) missing.push(ref)
       }
     }

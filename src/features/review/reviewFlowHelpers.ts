@@ -37,11 +37,11 @@ export function differsOnlyByPunctuation(a: string, b: string): boolean {
 }
 
 export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {
-  vocab_oral_en: "Say the English meaning",
+  vocab_oral_en: "Say the meaning",
   vocab_type_reading: "Type the reading (hiragana)",
   vocab_type_word_from_clue: "Type the Japanese word",
   grammar_type_construction: "Type the construction",
-  grammar_oral_meaning: "Say the English meaning of the construction",
+  grammar_oral_meaning: "Say the meaning of the construction",
 }
 
 export function readingForConstruction(
