@@ -168,7 +168,7 @@ export function AnkiImportGapReview({
                     )}
                     {gap.canFillEnglish && (
                       <label>
-                        English meaning (one per line)
+                        Meaning (one per line)
                         <textarea
                           className="input"
                           rows={2}
@@ -206,7 +206,7 @@ export function AnkiImportGapReview({
                   <>
                     {gap.canFillEnglish && (
                       <label>
-                        English translation
+                        Translation
                         <textarea
                           className="input"
                           rows={2}

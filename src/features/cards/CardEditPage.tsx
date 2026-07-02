@@ -381,7 +381,7 @@ export function CardEditPage() {
               </p>
             )}
             <p className="muted small">
-              Include at least one of: pronunciation (for kanji words), English
+              Include at least one of: pronunciation (for kanji words),
               meaning, or an image.
             </p>
             {duplicateJapaneseWarning && (
@@ -390,7 +390,7 @@ export function CardEditPage() {
               </p>
             )}
             <label>
-              English definitions (one per line)
+              Meaning (one per line)
               <textarea
                 className="input"
                 rows={4}
@@ -486,7 +486,7 @@ export function CardEditPage() {
               </p>
             )}
             <label>
-              English translation
+              Translation
               <input
                 className="input"
                 value={grammar.translationEn}

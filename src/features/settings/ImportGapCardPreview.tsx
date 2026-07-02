@@ -35,7 +35,7 @@ export function ImportGapCardPreview({
         <Fact label="Japanese word">{c.wordJa}</Fact>
         <Fact label="Pronunciation">{c.reading}</Fact>
         {defs.length > 0 && (
-          <Fact label="English">
+          <Fact label="Meaning">
             <ul className="import-card-list">
               {defs.map((d, i) => (
                 <li key={i}>{d}</li>
@@ -89,7 +89,7 @@ export function ImportGapCardPreview({
       </p>
       <Fact label="Sentence">{c.sentenceWithGap}</Fact>
       <Fact label="Construction">{c.construction}</Fact>
-      <Fact label="English">{c.translationEn.trim() || null}</Fact>
+      <Fact label="Translation">{c.translationEn.trim() || null}</Fact>
       {readingEntries.length > 0 && (
         <Fact label="Readings">
           <ul className="import-card-list">

@@ -83,7 +83,7 @@ describe("CardEditPage duplicate finder / merge", () => {
       within(dialog).getByText(/no other cards contain this word/i),
     ).toBeInTheDocument()
 
-    expect(screen.getByLabelText(/english definitions/i)).toHaveValue(
+    expect(screen.getByLabelText(/meaning \(one per line\)/i)).toHaveValue(
       "cat\nkitten (contains 猫)",
     )
     expect(screen.getByLabelText(/synonyms in japanese/i)).toHaveValue("猫")

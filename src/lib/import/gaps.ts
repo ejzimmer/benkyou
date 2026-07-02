@@ -56,8 +56,8 @@ function gapItemFromCard(card: Card): ImportGapItem {
       kind: "vocabulary",
       title: c.wordJa,
       detail: kanaOnly
-        ? "Add an English meaning or an image."
-        : "Add a pronunciation (reading), English meaning, or an image.",
+        ? "Add a meaning or an image."
+        : "Add a pronunciation (reading), meaning, or an image.",
       canFillReading: !kanaOnly && containsKanji(c.wordJa),
       canFillEnglish: true,
       canFillImage: true,
@@ -68,7 +68,7 @@ function gapItemFromCard(card: Card): ImportGapItem {
     cardId: card.id,
     kind: "grammar",
     title: c.sentenceWithGap.slice(0, 60),
-    detail: "Add an English translation or an image.",
+    detail: "Add a translation or an image.",
     canFillReading: false,
     canFillEnglish: true,
     canFillImage: c.images.length === 0,
