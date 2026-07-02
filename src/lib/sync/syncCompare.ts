@@ -105,6 +105,62 @@ export function schedulingSummary(row: SchedulingRow): string {
   return `Review mode ${row.modeId} · due ${due}`
 }
 
+const FSRS_STATE_LABELS: Record<number, string> = {
+  0: "New",
+  1: "Learning",
+  2: "Review",
+  3: "Relearning",
+}
+
+function fsrsStateLabel(state: number): string {
+  return FSRS_STATE_LABELS[state] ?? `State ${state}`
+}
+
+/** Two decimal places is enough precision to describe FSRS drift to a user. */
+function round2(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
+/** Human-readable list of what differs between two scheduling rows, for
+ *  showing the user what a review-schedule conflict actually consists of. */
+export function schedulingDiffDetails(
+  local: SchedulingRow,
+  remote: SchedulingRow,
+): string[] {
+  const diffs: string[] = []
+  if (local.due !== remote.due) {
+    diffs.push(
+      `Due date — this device: ${new Date(local.due).toLocaleString()}, cloud: ${new Date(remote.due).toLocaleString()}`,
+    )
+  }
+  if (local.fsrs.state !== remote.fsrs.state) {
+    diffs.push(
+      `Review stage — this device: ${fsrsStateLabel(local.fsrs.state)}, cloud: ${fsrsStateLabel(remote.fsrs.state)}`,
+    )
+  }
+  if (local.fsrs.reps !== remote.fsrs.reps) {
+    diffs.push(
+      `Reviews completed — this device: ${local.fsrs.reps}, cloud: ${remote.fsrs.reps}`,
+    )
+  }
+  if (local.fsrs.lapses !== remote.fsrs.lapses) {
+    diffs.push(
+      `Lapses — this device: ${local.fsrs.lapses}, cloud: ${remote.fsrs.lapses}`,
+    )
+  }
+  if (round2(local.fsrs.stability) !== round2(remote.fsrs.stability)) {
+    diffs.push(
+      `Stability — this device: ${local.fsrs.stability.toFixed(2)}, cloud: ${remote.fsrs.stability.toFixed(2)}`,
+    )
+  }
+  if (round2(local.fsrs.difficulty) !== round2(remote.fsrs.difficulty)) {
+    diffs.push(
+      `Difficulty — this device: ${local.fsrs.difficulty.toFixed(2)}, cloud: ${remote.fsrs.difficulty.toFixed(2)}`,
+    )
+  }
+  return diffs
+}
+
 export function mediaSummary(meta: { mimeType: string; updatedAt: number }): string {
   return `${meta.mimeType} · ${new Date(meta.updatedAt).toLocaleString()}`
 }

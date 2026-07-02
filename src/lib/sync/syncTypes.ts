@@ -13,6 +13,11 @@ export type SyncConflictBase = {
   remoteUpdatedAt: number
   localSummary: string
   remoteSummary: string
+  /** Human-readable label identifying what the conflicting row belongs to,
+   *  e.g. the card a scheduling conflict's review schedule is for. */
+  contextLabel?: string
+  /** Human-readable description of what differs between local and remote. */
+  differences?: string[]
 }
 
 export type DeckSyncConflict = SyncConflictBase & {

@@ -30,12 +30,25 @@ export function SyncConflictModal({
     <div className="sync-conflict-backdrop" role="dialog" aria-modal="true">
       <div className="sync-conflict-panel panel">
         <h2>{title}</h2>
+        {conflict.contextLabel && (
+          <p className="small">
+            Card: <strong>{conflict.contextLabel}</strong>
+          </p>
+        )}
         <p className="muted small">
           Conflict #{conflictNumber} — both sides were edited since the last sync.
           {looksSame
             ? " The text below looks the same; you can keep either copy or apply one choice to all remaining conflicts."
             : " Which version should we keep?"}
         </p>
+
+        {conflict.differences && conflict.differences.length > 0 && (
+          <ul className="sync-conflict-differences small">
+            {conflict.differences.map((diff) => (
+              <li key={diff}>{diff}</li>
+            ))}
+          </ul>
+        )}
 
         <div className="sync-conflict-columns">
           <section className="sync-conflict-side">
@@ -90,7 +103,7 @@ export function SyncConflictModal({
                 className="btn primary"
                 onClick={() => onChoose("remote", false)}
               >
-                Keep cloud copy
+                Keep cloud
               </button>
               <button
                 type="button"
