@@ -34,6 +34,7 @@ import { CardImage } from "../../ui/CardImage"
 import { normalizeJapanese } from "../../lib/japanese/normalize"
 import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates"
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
+import { ConfirmModal } from "../../ui/ConfirmModal"
 import {
   grammarReadingsToText,
   parseGrammarReadingsText,
@@ -101,6 +102,7 @@ export function CardEditPage() {
   const isUploadingImages = imageUploadCount > 0
 
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [duplicateMatches, setDuplicateMatches] = useState<Card[]>([])
   const [mergingId, setMergingId] = useState<string | null>(null)
   const [mergeErr, setMergeErr] = useState<string | null>(null)
@@ -226,7 +228,11 @@ export function CardEditPage() {
   }
 
   function onDeleteCard() {
-    if (!confirm("Delete this card?")) return
+    setConfirmingDelete(true)
+  }
+
+  function onConfirmDeleteCard() {
+    setConfirmingDelete(false)
     navigate(returnTo ?? `/decks/${deckId}`)
     deleteCard(cardId, user).catch(console.error)
   }
@@ -323,6 +329,14 @@ export function CardEditPage() {
           error={mergeErr}
           onMerge={onMergeDuplicate}
           onClose={() => setShowDuplicatesModal(false)}
+        />
+      )}
+
+      {confirmingDelete && (
+        <ConfirmModal
+          message="Delete this card?"
+          onConfirm={onConfirmDeleteCard}
+          onCancel={() => setConfirmingDelete(false)}
         />
       )}
 

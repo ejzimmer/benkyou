@@ -4,6 +4,7 @@ import { db } from "../../lib/db/schema"
 import { deleteDeck } from "../../services/decks"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useMemo, useState } from "react"
+import { ConfirmModal } from "../../ui/ConfirmModal"
 
 export function DeckPage() {
   const { deckId = "" } = useParams()
@@ -15,6 +16,7 @@ export function DeckPage() {
     [deckId],
   )
   const [q, setQ] = useState("")
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const filtered = useMemo(() => {
     const list = cards ?? []
@@ -35,7 +37,11 @@ export function DeckPage() {
   }, [cards, q])
 
   function onDeleteDeck() {
-    if (!confirm("Delete this deck and all its cards?")) return
+    setConfirmingDelete(true)
+  }
+
+  function onConfirmDeleteDeck() {
+    setConfirmingDelete(false)
     navigate("/")
     deleteDeck(deckId, user).catch(console.error)
   }
@@ -89,6 +95,14 @@ export function DeckPage() {
         </ul>
         {filtered.length === 0 && <p className="muted">No matching cards.</p>}
       </section>
+
+      {confirmingDelete && (
+        <ConfirmModal
+          message="Delete this deck and all its cards?"
+          onConfirm={onConfirmDeleteDeck}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </div>
   )
 }

@@ -63,7 +63,6 @@ describe("CardEditPage delete card", () => {
   })
 
   it("deletes the card and navigates back after confirming", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true)
     const user = userEvent.setup()
     renderExistingCardPage()
 
@@ -72,8 +71,9 @@ describe("CardEditPage delete card", () => {
     })
 
     await user.click(screen.getByRole("button", { name: /delete card/i }))
+    expect(screen.getByText("Delete this card?")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /^delete$/i }))
 
-    expect(window.confirm).toHaveBeenCalledWith("Delete this card?")
     expect(await screen.findByText("Deck page")).toBeInTheDocument()
 
     await waitFor(async () => {
@@ -82,7 +82,6 @@ describe("CardEditPage delete card", () => {
   })
 
   it("keeps the card when the confirmation is cancelled", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false)
     const user = userEvent.setup()
     renderExistingCardPage()
 
@@ -91,6 +90,8 @@ describe("CardEditPage delete card", () => {
     })
 
     await user.click(screen.getByRole("button", { name: /delete card/i }))
+    expect(screen.getByText("Delete this card?")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /cancel/i }))
 
     expect(screen.queryByText("Deck page")).not.toBeInTheDocument()
     expect(await db.cards.get("card-1")).toBeDefined()
