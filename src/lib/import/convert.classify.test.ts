@@ -304,6 +304,38 @@ describe("convert: grammar/vocab confirmation", () => {
     expect(card.content.wordJa).toBe("です")
     expect(card.content.exampleSentences).toContain("私は学生___")
   })
+
+  it("uses the example sentence as the meaning when a vocab-confirmed card has no English gloss (生まれ)", () => {
+    const notePkg = pkg([
+      note(1, "Basic (type in the answer)", ["私は＿＿＿が１９８２年だ", "生まれ"]),
+    ])
+    const key = collectGrammarCandidates(notePkg)[0].key
+    const payload = convertExtractedPackage(notePkg, noMedia, { [key]: "vocab" })
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "生まれ",
+    )
+    expect(card?.kind).toBe("vocabulary")
+    if (card?.kind !== "vocabulary") return
+    expect(card.content.definitionsEn.length).toBeGreaterThan(0)
+    expect(cardImportValidationError(card)).toBeNull()
+  })
+
+  it("detects a gap marker even when each character is wrapped in its own HTML tag", () => {
+    const notePkg = pkg([
+      note(1, "Basic (type in the answer)", [
+        "私は<b>＿</b><b>＿</b><b>＿</b>が１９８２年だ",
+        "生まれ",
+      ]),
+    ])
+    const candidates = collectGrammarCandidates(notePkg)
+    expect(candidates).toHaveLength(1)
+    const payload = convertExtractedPackage(notePkg, noMedia)
+    const card = payload.cards.find((c) => c.kind === "grammar")
+    expect(card?.kind).toBe("grammar")
+    if (card?.kind !== "grammar") return
+    expect(card.content.sentenceWithGap).toContain("___")
+    expect(cardImportValidationError(card)).toBeNull()
+  })
 })
 
 describe("convert: cards that were wrongly flagged as needing input", () => {
