@@ -10,6 +10,7 @@ import {
   mediaSummary,
   resolveEntityMerge,
   schedulingChanged,
+  schedulingDiffDetails,
   schedulingSummary,
   summariesLookIdentical,
   mediaBlobDigest,
@@ -251,6 +252,9 @@ async function collectEntityConflicts(
         entityType: "scheduling",
         entityId: local.id,
       })
+      // Card merging has already settled by this point, so this reflects
+      // whichever version of the card the user is about to see reviewed.
+      const card = await db.cards.get(local.cardId)
       const choice = await resolveConflictChoice(
         {
           key: `scheduling:${local.id}`,
@@ -260,6 +264,8 @@ async function collectEntityConflicts(
           remoteUpdatedAt: remoteRow.updatedAt,
           localSummary: schedulingSummary(local),
           remoteSummary: schedulingSummary(remoteRow),
+          contextLabel: card ? cardSummary(card) : undefined,
+          differences: schedulingDiffDetails(local, remoteRow),
           local,
           remote: remoteRow,
         },
