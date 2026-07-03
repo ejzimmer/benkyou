@@ -83,13 +83,15 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
   const [frontRaw = "", backRaw = ""] = note.fields
   const front = stripHtml(frontRaw)
   const back = stripHtml(backRaw)
-  const raw = `${frontRaw}\n${backRaw}`
   let kind: NoteClass = "other"
 
   // Gap-marked notes are grammar *candidates*. The user confirms grammar vs
   // vocab later (see GrammarDecisionMap); the candidate stays classified as
-  // grammar here and the decision is applied when cards are built.
-  if (hasGapMarker(raw)) {
+  // grammar here and the decision is applied when cards are built. Checked
+  // against the stripped text, not the raw HTML — a gap run split across
+  // inline tags (e.g. per-character styling: "<b>＿</b><b>＿</b><b>＿</b>")
+  // would otherwise never match the run-length check.
+  if (hasGapMarker(`${front}\n${back}`)) {
     kind = "grammar"
   } else if (
     (note.noteType === "Basic" ||
@@ -315,7 +317,7 @@ function buildGrammarGroups(classified: ClassifiedNote[]) {
   const grammarGroups = new Map<string, ClassifiedNote[]>()
   const grammarAnchors = classified.filter((entry) => entry.kind === "grammar")
   for (const entry of grammarAnchors) {
-    const gapRaw = hasGapMarker(entry.frontRaw) ? entry.frontRaw : entry.backRaw
+    const gapRaw = hasGapMarker(entry.front) ? entry.frontRaw : entry.backRaw
     const key = stripHtml(gapRaw).replace(/\s+/g, " ")
     const list = grammarGroups.get(key) ?? []
     list.push(entry)
@@ -323,7 +325,7 @@ function buildGrammarGroups(classified: ClassifiedNote[]) {
   }
 
   const attachToGroup = (anchor: ClassifiedNote, entry: ClassifiedNote) => {
-    const gapRaw = hasGapMarker(anchor.frontRaw) ? anchor.frontRaw : anchor.backRaw
+    const gapRaw = hasGapMarker(anchor.front) ? anchor.frontRaw : anchor.backRaw
     const key = stripHtml(gapRaw).replace(/\s+/g, " ")
     const list = grammarGroups.get(key) ?? []
     if (!list.some((item) => item.note.id === entry.note.id)) {
@@ -343,7 +345,7 @@ function buildGrammarGroups(classified: ClassifiedNote[]) {
       continue
     }
     const anchorByConstruction = grammarAnchors.find((grammar) => {
-      const answerRaw = hasGapMarker(grammar.frontRaw)
+      const answerRaw = hasGapMarker(grammar.front)
         ? grammar.backRaw
         : grammar.frontRaw
       const construction = normalizeConstruction(stripHtml(answerRaw))
@@ -369,10 +371,8 @@ function grammarGroupParts(entries: ClassifiedNote[]) {
     entry.note.noteType.toLowerCase().includes("type"),
   )
   const primary = typeEntry ?? entries[0]
-  const gapRaw = hasGapMarker(primary.frontRaw)
-    ? primary.frontRaw
-    : primary.backRaw
-  const answerRaw = hasGapMarker(primary.frontRaw)
+  const gapRaw = hasGapMarker(primary.front) ? primary.frontRaw : primary.backRaw
+  const answerRaw = hasGapMarker(primary.front)
     ? primary.backRaw
     : primary.frontRaw
   return {
@@ -589,10 +589,22 @@ export function convertExtractedPackage(
       const definitions = extractEnglishLines(
         ...entries.flatMap((entry) => [entry.frontRaw, entry.backRaw]),
       )
+      const wordReading = vocabularyReading(wordJa, undefined, pickReading)
+      // No English gloss, no reading, no image — per the user's word, the
+      // example sentence itself is a sufficient meaning for a vocab card.
+      const fallbackDefinition =
+        definitions.length === 0 &&
+        images.length === 0 &&
+        !wordReading &&
+        sentenceWithGap
+          ? [sentenceWithGap]
+          : []
       const content: VocabularyCardContent = {
         wordJa,
-        reading: vocabularyReading(wordJa, undefined, pickReading),
-        definitionsEn: defaultDefinitionsEn(definitions),
+        reading: wordReading,
+        definitionsEn: defaultDefinitionsEn(
+          definitions.length > 0 ? definitions : fallbackDefinition,
+        ),
         images,
         exampleSentences: sentenceWithGap ? [sentenceWithGap] : [],
         synonymsJa: [],
