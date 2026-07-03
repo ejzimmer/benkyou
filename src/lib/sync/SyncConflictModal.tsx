@@ -7,6 +7,41 @@ type Props = {
   onChoose: (choice: SyncConflictChoice, applyToAllRemaining: boolean) => void
 }
 
+const STAGE_ORDER = ["New", "Learning", "Review", "Relearning"]
+
+function StageTooltip() {
+  return (
+    <span className="stage-tooltip" tabIndex={0}>
+      stage
+      <span className="stage-tooltip-bubble" role="tooltip">
+        <span className="stage-tooltip-label">Stage order</span>
+        <span className="stage-diagram">
+          {STAGE_ORDER.map((stage, index) => (
+            <span key={stage} className="stage-diagram-step-group">
+              <span className="stage-diagram-step">{stage}</span>
+              {index < STAGE_ORDER.length - 1 && (
+                <span aria-hidden="true">→</span>
+              )}
+            </span>
+          ))}
+        </span>
+      </span>
+    </span>
+  )
+}
+
+function renderDifference(diff: string) {
+  if (diff.startsWith("Review stage")) {
+    return (
+      <>
+        Review <StageTooltip />
+        {diff.slice("Review stage".length)}
+      </>
+    )
+  }
+  return diff
+}
+
 export function SyncConflictModal({
   conflict,
   conflictNumber,
@@ -45,7 +80,7 @@ export function SyncConflictModal({
         {conflict.differences && conflict.differences.length > 0 && (
           <ul className="sync-conflict-differences small">
             {conflict.differences.map((diff) => (
-              <li key={diff}>{diff}</li>
+              <li key={diff}>{renderDifference(diff)}</li>
             ))}
           </ul>
         )}
