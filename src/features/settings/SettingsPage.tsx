@@ -28,7 +28,9 @@ function importProgressLabel(progress: ImportProgress): string {
     case "reading":
       return "Reading package…"
     case "saving":
-      return `Saving ${progress.total} card${progress.total === 1 ? "" : "s"}…`
+      return progress.total > 0
+        ? `Saving cards… ${progress.current}/${progress.total}`
+        : "Saving…"
     case "syncing":
       return `Syncing to the cloud… ${progress.current}/${progress.total}`
     case "uploading-media":
@@ -273,13 +275,15 @@ export function SettingsPage() {
               {importProgressLabel(importProgress)}
               {importElapsedSec > 0 ? ` (${importElapsedSec}s)` : ""}
             </p>
-            {importProgress.phase === "syncing" && (
-              <progress
-                value={importProgress.current}
-                max={importProgress.total}
-                style={{ width: "100%" }}
-              />
-            )}
+            {(importProgress.phase === "saving" ||
+              importProgress.phase === "syncing") &&
+              importProgress.total > 0 && (
+                <progress
+                  value={importProgress.current}
+                  max={importProgress.total}
+                  style={{ width: "100%" }}
+                />
+              )}
             <p className="muted small">
               {wakeLockStatus === "active"
                 ? "Your screen will stay on until this finishes."

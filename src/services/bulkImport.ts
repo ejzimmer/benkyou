@@ -13,7 +13,7 @@ import { tombstoneId } from "../lib/sync/syncCompare"
 /** Coarse import progress for the UI. "reading" is emitted by the caller. */
 export type ImportProgress =
   | { phase: "reading" }
-  | { phase: "saving"; total: number }
+  | { phase: "saving"; current: number; total: number }
   | { phase: "syncing"; current: number; total: number }
   | { phase: "uploading-media" }
 
@@ -63,7 +63,8 @@ export async function applyBulkImport(
   const report = onProgress ?? (() => {})
   const tombstonesToClear = tombstoneIdsToClear(payload)
 
-  report({ phase: "saving", total: payload.cards.length })
+  const savingTotal = payload.cards.length
+  report({ phase: "saving", current: 0, total: savingTotal })
   await db.transaction(
     "rw",
     [db.decks, db.cards, db.scheduling, db.media, db.tombstones],
@@ -81,8 +82,15 @@ export async function applyBulkImport(
           updatedAt: Date.now(),
         })
       }
+      let savedCards = 0
       for (const card of payload.cards) {
         await db.cards.put(card)
+        savedCards += 1
+        // Report every few cards so the bar visibly advances without
+        // flooding React with a re-render per card.
+        if (savedCards % 5 === 0 || savedCards === savingTotal) {
+          report({ phase: "saving", current: savedCards, total: savingTotal })
+        }
       }
       for (const row of payload.scheduling) {
         await db.scheduling.put(row)
