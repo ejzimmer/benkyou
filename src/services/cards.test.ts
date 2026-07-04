@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   grammarFromVocabularyContent,
   mergeCardContent,
+  normalizeGrammarContent,
   validateGrammar,
   validateVocabulary,
   vocabularyFromGrammarContent,
@@ -151,6 +152,36 @@ describe("validateGrammar", () => {
         synonymsJa: [],
       }),
     ).toBeNull()
+  })
+})
+
+describe("normalizeGrammarContent", () => {
+  it("canonicalizes a Japanese-comma-separated construction to ASCII commas", () => {
+    expect(
+      normalizeGrammarContent({
+        sentenceWithGap: "___を___",
+        gapMarker: "___",
+        construction: "流し、呼ぶ",
+        translationEn: "Call a carriage",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }).construction,
+    ).toBe("流し, 呼ぶ")
+  })
+
+  it("leaves a single-answer construction unchanged", () => {
+    expect(
+      normalizeGrammarContent({
+        sentenceWithGap: "私は___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "I am ~",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }).construction,
+    ).toBe("学生")
   })
 })
 

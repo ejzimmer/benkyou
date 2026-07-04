@@ -3,6 +3,7 @@ import type { DueItem } from "../../services/review"
 import { AnswerComparison } from "../../ui/AnswerComparison"
 import { CardImageRow } from "../../ui/CardImageRow"
 import {
+  answersMatch,
   differsOnlyByPunctuation,
   readingForConstruction,
   requiresTyping,
@@ -29,7 +30,7 @@ export function ReviewSessionAnswerPanel({
   const typingMode = requiresTyping(m)
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
-  const answeredCorrectly = typed === expected
+  const answeredCorrectly = answersMatch(m, typed, expected)
 
   useEffect(() => {
     if (pendingIncorrectDelay) return
@@ -114,6 +115,7 @@ export function ReviewSessionAnswerPanel({
             card.content.construction,
             card.content.readings,
           )}
+          answeredCorrectly={answeredCorrectly}
         />
       )}
 

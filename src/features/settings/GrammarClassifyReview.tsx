@@ -47,9 +47,9 @@ export function GrammarClassifyReview({
     <div className="stack">
       <p className="muted">
         {candidates.length} card{candidates.length === 1 ? "" : "s"} in “
-        {deckName}” look like grammar (they contain a blank). Confirm whether
-        each is a grammar card or a vocabulary card that just includes an
-        example sentence.
+        {deckName}” look like fill-in-the-gap cards (they contain a blank).
+        Confirm whether each is a fill-in-the-gap card or a vocabulary card
+        that just includes an example sentence.
       </p>
 
       {candidates.map((candidate) => {
@@ -79,7 +79,7 @@ export function GrammarClassifyReview({
                   disabled={importing}
                   onChange={() => setDecision(candidate.key, "grammar")}
                 />
-                <span>Grammar</span>
+                <span>Fill in the gap</span>
               </label>
               <label className="row">
                 <input
@@ -105,7 +105,7 @@ export function GrammarClassifyReview({
         >
           {importing
             ? "Importing…"
-            : `Continue (${grammarCount} grammar, ${vocabCount} vocab)`}
+            : `Continue (${grammarCount} fill in the gap, ${vocabCount} vocab)`}
         </button>
         <button
           type="button"

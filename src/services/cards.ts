@@ -10,6 +10,7 @@ import {
   isKanaOnly,
 } from "../domain/vocabularyContent"
 import { containsKanji, reviewModesForCard } from "../domain/types"
+import { normalizeGapAnswers } from "../domain/grammarGaps"
 import { db, type SchedulingRow } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
 import {
@@ -57,6 +58,17 @@ export function validateGrammar(content: GrammarCardContent): string | null {
   if (!content.sentenceWithGap.includes(gap))
     return `Sentence must contain the gap marker (${gap})`
   return null
+}
+
+/**
+ * Canonicalize a fill-in-the-gap card's construction so its per-gap answers
+ * are consistently comma-separated (accepting "," or "、" as authored),
+ * regardless of how the user typed the separator.
+ */
+export function normalizeGrammarContent(
+  content: GrammarCardContent,
+): GrammarCardContent {
+  return { ...content, construction: normalizeGapAnswers(content.construction) }
 }
 
 function schedulingId(cardId: string, modeId: string) {
@@ -314,14 +326,15 @@ export async function createGrammarCard(
   content: GrammarCardContent,
   user: User | null,
 ): Promise<Card> {
-  const err = validateGrammar(content)
+  const normalized = normalizeGrammarContent(content)
+  const err = validateGrammar(normalized)
   if (err) throw new Error(err)
   const now = Date.now()
   const card: Card = {
     id: newId(),
     deckId,
     kind: "grammar",
-    content,
+    content: normalized,
     updatedAt: now,
   }
   await saveCard(card, user)

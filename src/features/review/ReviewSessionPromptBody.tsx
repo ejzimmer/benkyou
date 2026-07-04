@@ -3,6 +3,11 @@ import type { DueItem } from "../../services/review"
 import { RubySentence, RubyWord } from "../../ui/KanjiRuby"
 import { CardImageRow } from "../../ui/CardImageRow"
 import { clueExampleSentences, readingForConstruction } from "./reviewFlowHelpers"
+import {
+  countGaps,
+  splitGapAnswers,
+  typedGapValues,
+} from "../../domain/grammarGaps"
 
 type TypingAnswerInputProps = {
   value: string
@@ -209,6 +214,32 @@ export function ReviewSessionPromptBody({
     const gapMarker = card.content.gapMarker.trim()
     const hasInlineGap =
       Boolean(gapMarker) && card.content.sentenceWithGap.includes(gapMarker)
+    const gapCount = hasInlineGap
+      ? countGaps(card.content.sentenceWithGap, gapMarker)
+      : 0
+    // Only split into one input per gap when the construction already has a
+    // matching number of comma-separated answers — otherwise fall back to a
+    // single shared input at every gap (e.g. while the card is still being
+    // authored, or for the common single-gap case).
+    const usesPerGapInputs =
+      gapCount > 1 &&
+      splitGapAnswers(card.content.construction).length === gapCount
+
+    function gapInputValue(gapIndex: number): string {
+      return usesPerGapInputs
+        ? typedGapValues(typed, gapCount)[gapIndex] ?? ""
+        : typed
+    }
+
+    function onGapInputChange(gapIndex: number, value: string) {
+      if (!usesPerGapInputs) {
+        onTypedChange(value)
+        return
+      }
+      const parts = typedGapValues(typed, gapCount)
+      parts[gapIndex] = value
+      onTypedChange(parts.join(", "))
+    }
 
     return (
       <div className="stack">
@@ -221,10 +252,14 @@ export function ReviewSessionPromptBody({
               !revealed && hasInlineGap
                 ? (gapIndex) => (
                     <TypingAnswerInput
-                      value={typed}
-                      onChange={onTypedChange}
+                      value={gapInputValue(gapIndex)}
+                      onChange={(value) => onGapInputChange(gapIndex, value)}
                       onSubmit={onTypedSubmit}
-                      placeholder="Construction"
+                      placeholder={
+                        usesPerGapInputs
+                          ? `Answer ${gapIndex + 1}`
+                          : "Construction"
+                      }
                       focusKey={focusKey}
                       className="inline-gap-input"
                       ariaLabel={`Construction gap ${gapIndex + 1}`}
@@ -232,8 +267,10 @@ export function ReviewSessionPromptBody({
                     />
                   )
                 : revealed
-                  ? () => (
-                      <span className="gap-filled">{typed || "—"}</span>
+                  ? (gapIndex) => (
+                      <span className="gap-filled">
+                        {gapInputValue(gapIndex) || "—"}
+                      </span>
                     )
                   : undefined
             }
@@ -274,9 +311,10 @@ export function ReviewSessionPromptBody({
     if (hasInlineGap) {
       // Fill the gap(s) with the construction so the whole sentence is asked,
       // with the construction highlighted. When the construction has as many
-      // comma-separated parts as there are gaps, map one part per gap.
-      const gapCount = sentence.split(gapMarker).length - 1
-      const parts = construction.split(", ")
+      // comma-separated answers (using either "," or "、") as there are gaps,
+      // map one answer per gap.
+      const gapCount = countGaps(sentence, gapMarker)
+      const parts = splitGapAnswers(construction)
       const fillFor = (gapIndex: number) =>
         parts.length === gapCount ? parts[gapIndex] ?? construction : construction
 

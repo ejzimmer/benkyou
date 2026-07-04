@@ -21,6 +21,7 @@ import {
   isSynonymAnswer,
   matchesPrimaryJapanese,
 } from "../../lib/japanese/synonyms"
+import { CARD_KIND_LABELS } from "../../domain/types"
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import {
@@ -397,7 +398,7 @@ export function ReviewSessionPage() {
         <Link to={deckId ? `/decks/${deckId}` : "/"}>← Exit</Link>
         <div className="review-header-main">
           <p className="muted small">
-            {sessionQueue.length} left · {item.modeId}
+            {sessionQueue.length} left · {CARD_KIND_LABELS[item.card.kind]}
           </p>
           <div className="review-header-actions">
             <Link
