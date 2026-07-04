@@ -22,7 +22,10 @@ import {
   pushCardRemote,
   pushSchedulingRemote,
 } from "./decks"
-import { schedulePushAfterMutation } from "../lib/sync/schedulePush"
+import {
+  pushDocInBackground,
+  schedulePushAfterMutation,
+} from "../lib/sync/schedulePush"
 import { recordTombstone } from "../lib/sync/tombstones"
 import {
   deleteCardRemote,
@@ -96,6 +99,9 @@ export async function ensureSchedulingForCard(card: Card): Promise<void> {
 export async function saveCard(card: Card, user: User | null): Promise<void> {
   await db.cards.put(card)
   await ensureSchedulingForCard(card)
+  // Awaited (unlike updateSchedulingRow's background push): callers like
+  // CardEditPage.onSubmit rely on a rejection here surfacing as a save error
+  // rather than navigating away as if the card had synced.
   await pushCardRemote(user, card.id)
   await pushAllSchedulingForCard(user, card.id)
   schedulePushAfterMutation(user)
@@ -340,7 +346,7 @@ export async function updateSchedulingRow(
   user: User | null,
 ): Promise<void> {
   await db.scheduling.put(row)
-  await pushSchedulingRemote(user, row.id)
+  pushDocInBackground(pushSchedulingRemote(user, row.id))
   schedulePushAfterMutation(user)
 }
 
