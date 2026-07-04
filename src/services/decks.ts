@@ -10,10 +10,7 @@ import {
   upsertSchedulingRemote,
 } from "../lib/sync/firestoreSync"
 import { getFirestoreDb } from "../lib/firebase"
-import {
-  pushDocInBackground,
-  schedulePushAfterMutation,
-} from "../lib/sync/schedulePush"
+import { schedulePushAfterMutation } from "../lib/sync/schedulePush"
 import { recordTombstone } from "../lib/sync/tombstones"
 import type { User } from "firebase/auth"
 
@@ -25,7 +22,9 @@ export async function createDeck(
   const deck: Deck = { id: newId(), name, updatedAt: now }
   await db.decks.put(deck)
   const fs = getFirestoreDb()
-  if (fs && user) pushDocInBackground(upsertDeckRemote(fs, user.uid, deck))
+  // Awaited: DeckListPage.onCreate relies on a rejection here surfacing as a
+  // create error rather than navigating to a deck that never synced.
+  if (fs && user) await upsertDeckRemote(fs, user.uid, deck)
   schedulePushAfterMutation(user)
   return deck
 }
@@ -34,7 +33,7 @@ export async function saveDeck(deck: Deck, user: User | null): Promise<void> {
   const updated = { ...deck, updatedAt: Date.now() }
   await db.decks.put(updated)
   const fs = getFirestoreDb()
-  if (fs && user) pushDocInBackground(upsertDeckRemote(fs, user.uid, updated))
+  if (fs && user) await upsertDeckRemote(fs, user.uid, updated)
   schedulePushAfterMutation(user)
 }
 

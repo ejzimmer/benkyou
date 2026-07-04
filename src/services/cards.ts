@@ -99,8 +99,11 @@ export async function ensureSchedulingForCard(card: Card): Promise<void> {
 export async function saveCard(card: Card, user: User | null): Promise<void> {
   await db.cards.put(card)
   await ensureSchedulingForCard(card)
-  pushDocInBackground(pushCardRemote(user, card.id))
-  pushDocInBackground(pushAllSchedulingForCard(user, card.id))
+  // Awaited (unlike updateSchedulingRow's background push): callers like
+  // CardEditPage.onSubmit rely on a rejection here surfacing as a save error
+  // rather than navigating away as if the card had synced.
+  await pushCardRemote(user, card.id)
+  await pushAllSchedulingForCard(user, card.id)
   schedulePushAfterMutation(user)
 }
 
