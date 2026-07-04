@@ -306,8 +306,13 @@ function grammarCard(
   }
 }
 
-function firstCard(note: ExtractedAnkiNote, ord = 0) {
-  return note.cards.find((c) => c.ord === ord) ?? note.cards[0]
+function noteIsLeech(tags: string): boolean {
+  return tags.split(/\s+/).some((t) => t.toLowerCase() === "leech")
+}
+
+function firstCard(note: ExtractedAnkiNote, ord = 0): AnkiSchedulingSource {
+  const card = note.cards.find((c) => c.ord === ord) ?? note.cards[0]
+  return { ...card, isLeech: noteIsLeech(note.tags) }
 }
 
 function buildGrammarGroups(classified: ClassifiedNote[]) {

@@ -472,3 +472,76 @@ describe("convert: general leftover fallback", () => {
     expect(card.content.definitionsEn).toContain("cat")
   })
 })
+
+describe("convert: suspended/leech Anki cards aren't imported as due now", () => {
+  const ONE_YEAR_MS = 365 * 86_400_000
+
+  function noteWithSchedule(
+    id: number,
+    fields: string[],
+    queue: number,
+    tags = "",
+  ): ExtractedAnkiNote {
+    const n = note(id, "Basic", fields)
+    n.tags = tags
+    n.cards = [
+      {
+        id,
+        ord: 0,
+        type: 2,
+        queue,
+        due: 100,
+        ivl: 10,
+        factor: 2500,
+        reps: 3,
+        lapses: 0,
+      },
+    ]
+    return n
+  }
+
+  it("pushes a suspended card's due date far into the future instead of now", () => {
+    const payload = convertExtractedPackage(
+      pkg([noteWithSchedule(40, ["猫", "cat"], -1)]),
+      noMedia,
+    )
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "猫",
+    )
+    const rows = payload.scheduling.filter((s) => s.cardId === card?.id)
+    expect(rows.length).toBeGreaterThan(0)
+    for (const row of rows) {
+      expect(row.due - Date.now()).toBeGreaterThan(50 * ONE_YEAR_MS)
+    }
+  })
+
+  it("pushes a leech-tagged card's due date far into the future even when not suspended", () => {
+    const payload = convertExtractedPackage(
+      pkg([noteWithSchedule(41, ["犬", "dog"], 2, "marked leech")]),
+      noMedia,
+    )
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "犬",
+    )
+    const rows = payload.scheduling.filter((s) => s.cardId === card?.id)
+    expect(rows.length).toBeGreaterThan(0)
+    for (const row of rows) {
+      expect(row.due - Date.now()).toBeGreaterThan(50 * ONE_YEAR_MS)
+    }
+  })
+
+  it("still imports a normal review card as genuinely due", () => {
+    const payload = convertExtractedPackage(
+      pkg([noteWithSchedule(42, ["鳥", "bird"], 2)]),
+      noMedia,
+    )
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "鳥",
+    )
+    const rows = payload.scheduling.filter((s) => s.cardId === card?.id)
+    expect(rows.length).toBeGreaterThan(0)
+    for (const row of rows) {
+      expect(row.due - Date.now()).toBeLessThan(ONE_YEAR_MS)
+    }
+  })
+})

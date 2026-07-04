@@ -12,11 +12,30 @@ function ankiState(queue: number, type: number): State {
   return State.Review
 }
 
+/** Anki excludes suspended and leech cards from what's due; mirror that by
+ * scheduling them well beyond any review horizon instead of "now". */
+const IGNORED_CARD_YEARS_AHEAD = 100
+
+function isIgnoredCard(source: AnkiSchedulingSource): boolean {
+  return source.queue === -1 || source.isLeech
+}
+
+function ignoredCardDueDate(): Date {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() + IGNORED_CARD_YEARS_AHEAD)
+  return d
+}
+
 function ankiDueDate(
   source: AnkiSchedulingSource,
   collectionCrt: number,
 ): Date {
-  if (source.queue === 2 || source.queue === 3) {
+  // `queue` reflects visibility (a suspended card reads -1 regardless of the
+  // underlying card), so also check `type === 2`, which keeps the real
+  // "review" classification — and thus the day-index `due` format — even
+  // while suspended. (Relearning/day-learning cards store `due` as a
+  // timestamp, matching the fallback below, so `type` isn't checked there.)
+  if (source.queue === 2 || source.queue === 3 || source.type === 2) {
     const dayIndex = source.due
     const base = collectionCrt > 0 ? collectionCrt * 1000 : Date.now()
     return new Date(base + Math.max(0, dayIndex) * DAY_MS)
@@ -32,7 +51,11 @@ export function ankiSchedulingToFsrs(
   collectionCrt: number,
 ): SerializedFsrsCard {
   const empty = createEmptyCard()
-  const due = ankiDueDate(source, collectionCrt)
+  // The real due date still feeds `last_review` below even for ignored
+  // cards, so their interval/history stays accurate — only the due date we
+  // actually expose to the review queue gets pushed out.
+  const realDue = ankiDueDate(source, collectionCrt)
+  const due = isIgnoredCard(source) ? ignoredCardDueDate() : realDue
   const scheduledDays = Math.max(0, source.ivl)
   const stability = Math.max(0.1, scheduledDays || empty.stability)
   const difficulty = Math.min(
@@ -50,7 +73,7 @@ export function ankiSchedulingToFsrs(
     state: ankiState(source.queue, source.type),
     last_review:
       source.reps > 0
-        ? new Date(due.getTime() - scheduledDays * DAY_MS)
+        ? new Date(realDue.getTime() - scheduledDays * DAY_MS)
         : undefined,
   }
   return serializeFsrs(card)

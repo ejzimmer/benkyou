@@ -45,7 +45,10 @@ export type BulkImportPayload = {
   media: BulkMediaItem[]
 }
 
-export type AnkiSchedulingSource = ExtractedAnkiCard
+export type AnkiSchedulingSource = ExtractedAnkiCard & {
+  /** Note carries Anki's "leech" tag — Anki itself stops surfacing these for review. */
+  isLeech: boolean
+}
 
 export type ModeSchedulingMap = Partial<Record<ReviewModeId, AnkiSchedulingSource>>
 
