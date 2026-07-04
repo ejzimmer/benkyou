@@ -60,6 +60,17 @@ describe("applyBulkImport progress", () => {
   it("reports a saving phase with the card total", async () => {
     const events: ImportProgress[] = []
     await applyBulkImport(payload(["a", "b", "c"]), null, (p) => events.push(p))
-    expect(events).toContainEqual({ phase: "saving", total: 3 })
+    expect(events).toContainEqual({ phase: "saving", current: 0, total: 3 })
+    expect(events).toContainEqual({ phase: "saving", current: 3, total: 3 })
+  })
+
+  it("ticks saving progress every few cards, not just at the end", async () => {
+    const events: ImportProgress[] = []
+    const ids = Array.from({ length: 12 }, (_, i) => `card-${i}`)
+    await applyBulkImport(payload(ids), null, (p) => events.push(p))
+    const savingEvents = events.filter((e) => e.phase === "saving")
+    expect(savingEvents).toContainEqual({ phase: "saving", current: 5, total: 12 })
+    expect(savingEvents).toContainEqual({ phase: "saving", current: 10, total: 12 })
+    expect(savingEvents).toContainEqual({ phase: "saving", current: 12, total: 12 })
   })
 })

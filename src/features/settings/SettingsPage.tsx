@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
+import { useWakeLock } from "../../lib/useWakeLock"
 import { formatSyncLogLine } from "../../lib/sync/syncLog"
 import type {
   BulkImportPayload,
@@ -27,7 +28,9 @@ function importProgressLabel(progress: ImportProgress): string {
     case "reading":
       return "Reading package…"
     case "saving":
-      return `Saving ${progress.total} card${progress.total === 1 ? "" : "s"}…`
+      return progress.total > 0
+        ? `Saving cards… ${progress.current}/${progress.total}`
+        : "Saving…"
     case "syncing":
       return `Syncing to the cloud… ${progress.current}/${progress.total}`
     case "uploading-media":
@@ -60,6 +63,22 @@ export function SettingsPage() {
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(
     null,
   )
+  const wakeLockStatus = useWakeLock(importing)
+  const [importElapsedSec, setImportElapsedSec] = useState(0)
+
+  // A visible, second-by-second tick so a stalled/slow phase (e.g. syncing
+  // each card over the network) still looks alive between progress updates.
+  useEffect(() => {
+    if (!importing) {
+      setImportElapsedSec(0)
+      return
+    }
+    const startedAt = Date.now()
+    const id = setInterval(() => {
+      setImportElapsedSec(Math.round((Date.now() - startedAt) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [importing])
 
   function resetImportState() {
     setPendingImport(null)
@@ -251,14 +270,25 @@ export function SettingsPage() {
         )}
         {importProgress && (
           <div className="stack" aria-live="polite">
-            <p className="muted">{importProgressLabel(importProgress)}</p>
-            {importProgress.phase === "syncing" && (
-              <progress
-                value={importProgress.current}
-                max={importProgress.total}
-                style={{ width: "100%" }}
-              />
-            )}
+            <p className="muted">
+              <span className="import-spinner" aria-hidden="true" />
+              {importProgressLabel(importProgress)}
+              {importElapsedSec > 0 ? ` (${importElapsedSec}s)` : ""}
+            </p>
+            {(importProgress.phase === "saving" ||
+              importProgress.phase === "syncing") &&
+              importProgress.total > 0 && (
+                <progress
+                  value={importProgress.current}
+                  max={importProgress.total}
+                  style={{ width: "100%" }}
+                />
+              )}
+            <p className="muted small">
+              {wakeLockStatus === "active"
+                ? "Your screen will stay on until this finishes."
+                : "Keep this screen unlocked until this finishes — locking it may stall or interrupt the import."}
+            </p>
           </div>
         )}
         {session && grammarCandidates.length > 0 && (
