@@ -166,17 +166,26 @@ export async function downloadMediaFromRemote(
 export async function pushLocalMediaToRemote(
   uid: string,
   cards: Card[],
+  onProgress?: (current: number, total: number) => void,
 ): Promise<void> {
   const storage = getFirebaseStorage()
   if (!storage) return
   const fs = getFirestoreDb()
   const ids = collectMediaIdsFromCards(cards)
+  onProgress?.(0, ids.length)
+  let current = 0
   for (const mediaId of ids) {
     const row = await db.media.get(mediaId)
-    if (!row) continue
+    if (!row) {
+      current += 1
+      onProgress?.(current, ids.length)
+      continue
+    }
     const withDigest = await ensureMediaDigest(row)
     await uploadMediaBlob(storage, uid, withDigest)
     if (fs) await upsertMediaMetaRemote(fs, uid, withDigest)
+    current += 1
+    onProgress?.(current, ids.length)
   }
 }
 

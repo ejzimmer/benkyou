@@ -149,6 +149,7 @@ export type ParsedAnkiPackage = {
  */
 export async function parseAnkiPackage(
   arrayBuffer: ArrayBuffer,
+  onMediaProgress?: (current: number, total: number) => void,
 ): Promise<ParsedAnkiPackage> {
   const zip = await JSZip.loadAsync(arrayBuffer)
   const collectionBytes = await getCollectionBytes(zip)
@@ -228,6 +229,9 @@ export async function parseAnkiPackage(
 
     const mediaPaths: Record<string, string> = {}
     const mediaBytes = new Map<string, Uint8Array>()
+    const mediaTotal = referenced.size
+    onMediaProgress?.(0, mediaTotal)
+    let mediaDone = 0
     for (const filename of referenced) {
       // "temp_file_<hash>" names look like Anki's in-progress paste staging
       // names, but real exports can and do ship them as final filenames with
@@ -235,16 +239,18 @@ export async function parseAnkiPackage(
       // silently drops legitimate images. The lookups below already no-op for
       // anything genuinely missing.
       const zipName = filenameToZip.get(filename)
-      if (!zipName) continue
-      const entry = zip.file(zipName)
-      if (!entry) continue
-      const raw = await entry.async("uint8array")
-      // Modern Anki (.colpkg / .anki21b) compresses each individual media
-      // file with Zstandard. Without this decompression we'd hand zstd bytes
-      // to the browser tagged as image/jpeg → unrenderable, ORB-blocked.
-      const data = isZstdMagic(raw) ? decompress(raw) : raw
-      mediaBytes.set(filename, data)
-      mediaPaths[filename] = `media/${filename}`
+      const entry = zipName ? zip.file(zipName) : null
+      if (entry) {
+        const raw = await entry.async("uint8array")
+        // Modern Anki (.colpkg / .anki21b) compresses each individual media
+        // file with Zstandard. Without this decompression we'd hand zstd bytes
+        // to the browser tagged as image/jpeg → unrenderable, ORB-blocked.
+        const data = isZstdMagic(raw) ? decompress(raw) : raw
+        mediaBytes.set(filename, data)
+        mediaPaths[filename] = `media/${filename}`
+      }
+      mediaDone += 1
+      onMediaProgress?.(mediaDone, mediaTotal)
     }
 
     const pkg: ExtractedPackage = {

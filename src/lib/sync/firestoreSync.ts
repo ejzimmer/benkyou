@@ -112,6 +112,66 @@ async function commitBatch(
   if (n > 0) await batch.commit()
 }
 
+type BatchWriteOp =
+  | { kind: "set"; ref: ReturnType<typeof doc>; data: object }
+  | { kind: "delete"; ref: ReturnType<typeof doc> }
+
+async function commitOpsBatched(
+  fs: Firestore,
+  ops: BatchWriteOp[],
+  onProgress?: (done: number, total: number) => void,
+): Promise<void> {
+  const total = ops.length
+  let done = 0
+  for (let i = 0; i < ops.length; i += BATCH_SIZE) {
+    const chunk = ops.slice(i, i + BATCH_SIZE)
+    const batch = writeBatch(fs)
+    for (const op of chunk) {
+      if (op.kind === "set") batch.set(op.ref, stripUndefinedDeep(op.data))
+      else batch.delete(op.ref)
+    }
+    await batch.commit()
+    done += chunk.length
+    onProgress?.(done, total)
+  }
+}
+
+/**
+ * Push a freshly-imported deck (and clear its stale tombstones) in a
+ * handful of batched commits instead of one Firestore round trip per card
+ * and scheduling row — pushed one doc at a time, a few hundred cards can
+ * take many minutes on a slow connection with long gaps between progress
+ * updates that look like the import has stalled.
+ */
+export async function pushImportedDeckBatched(
+  fs: Firestore,
+  uid: string,
+  deck: Deck,
+  cards: Card[],
+  scheduling: SchedulingRow[],
+  tombstoneIdsToClear: string[],
+  onProgress?: (done: number, total: number) => void,
+): Promise<void> {
+  const ops: BatchWriteOp[] = [
+    { kind: "set", ref: doc(decksCol(fs, uid), deck.id), data: deck },
+    ...cards.map((c) => ({
+      kind: "set" as const,
+      ref: doc(cardsCol(fs, uid), c.id),
+      data: c as Record<string, unknown>,
+    })),
+    ...scheduling.map((s) => ({
+      kind: "set" as const,
+      ref: doc(schedCol(fs, uid), s.id),
+      data: s,
+    })),
+    ...tombstoneIdsToClear.map((id) => ({
+      kind: "delete" as const,
+      ref: doc(tombstonesCol(fs, uid), id),
+    })),
+  ]
+  await commitOpsBatched(fs, ops, onProgress)
+}
+
 export async function pushLocalToRemote(
   fs: Firestore,
   uid: string,
