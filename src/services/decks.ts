@@ -71,13 +71,20 @@ export async function deleteDeck(deckId: string, user: User | null): Promise<voi
 
   const fs = getFirestoreDb()
   if (fs && user) {
-    await deleteDeckRemote(fs, user.uid, deckId)
-    for (const c of cards) {
-      await deleteCardRemote(fs, user.uid, c.id)
-      const sched = await db.scheduling.where("cardId").equals(c.id).toArray()
-      for (const row of sched) {
-        await deleteSchedulingRemote(fs, user.uid, row.id)
+    // Best-effort: don't let a failed remote call (offline, transient error)
+    // skip scheduling the safety-net push below — that push reconciles
+    // straight from tombstones and is what actually guarantees the deck
+    // doesn't come back on another device.
+    try {
+      await deleteDeckRemote(fs, user.uid, deckId)
+      for (const c of cards) {
+        await deleteCardRemote(fs, user.uid, c.id)
       }
+      for (const { id } of schedToRemove) {
+        await deleteSchedulingRemote(fs, user.uid, id)
+      }
+    } catch (e) {
+      console.error("Failed to delete deck remotely, relying on safety-net push:", e)
     }
   }
   schedulePushAfterMutation(user)

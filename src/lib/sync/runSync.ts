@@ -31,7 +31,7 @@ import {
 import { purgeTombstonedMediaStorage } from "./purgeMediaStorage"
 import { runWithConcurrency } from "./runWithConcurrency"
 import { mergeTombstone } from "./tombstoneMerge"
-import { pruneOrphanMediaTombstones } from "./tombstones"
+import { pruneOrphanMediaTombstones, recordTombstone } from "./tombstones"
 import { tombstoneId } from "./syncCompare"
 import {
   LAST_SYNCED_AT_KEY,
@@ -81,6 +81,24 @@ function tombstoneWins(
   if (!tomb) return false
   if (entityUpdatedAt == null) return true
   return tomb.deletedAt >= entityUpdatedAt
+}
+
+/**
+ * A local entity with no tombstone is missing from the remote snapshot. If
+ * this device already knew about it as of the last successful sync and
+ * hasn't touched it since, its absence can only mean another device deleted
+ * it (and that device's tombstone just hasn't reached Firestore yet — the
+ * tombstone push is debounced). Otherwise — first-ever sync, or created/
+ * edited locally since — it simply hasn't been pushed yet, so it should be
+ * left alone; `pushLocalToRemote` will upload it later in this same sync.
+ * Without this check, an unrelated device's full sync would re-upload its
+ * (still-local) copy of a just-deleted deck and resurrect it for everyone.
+ */
+function vanishedFromRemote(
+  local: { updatedAt: number },
+  lastSyncedAt: number | null,
+): boolean {
+  return lastSyncedAt != null && local.updatedAt <= lastSyncedAt
 }
 
 function remoteEntityUpdatedAt(
@@ -188,7 +206,16 @@ async function collectEntityConflicts(
   for (const local of localDecks) {
     if (await db.tombstones.get(tombstoneId("deck", local.id))) continue
     const remoteDeck = remote.decks.get(local.id)
-    if (!remoteDeck) continue
+    if (!remoteDeck) {
+      if (vanishedFromRemote(local, lastSyncedAt)) {
+        syncLog("deck vanished from remote, deleting locally", {
+          entityId: local.id,
+        })
+        await recordTombstone("deck", local.id)
+        await db.decks.delete(local.id)
+      }
+      continue
+    }
     const pick = resolveEntityMerge(
       local,
       remoteDeck,
@@ -233,7 +260,17 @@ async function collectEntityConflicts(
   for (const local of localCards) {
     if (await db.tombstones.get(tombstoneId("card", local.id))) continue
     const remoteCard = remote.cards.get(local.id)
-    if (!remoteCard) continue
+    if (!remoteCard) {
+      if (vanishedFromRemote(local, lastSyncedAt)) {
+        syncLog("card vanished from remote, deleting locally", {
+          entityId: local.id,
+        })
+        await recordTombstone("card", local.id)
+        await db.cards.delete(local.id)
+        await db.scheduling.where("cardId").equals(local.id).delete()
+      }
+      continue
+    }
     const pick = resolveEntityMerge(
       local,
       remoteCard,
@@ -278,7 +315,16 @@ async function collectEntityConflicts(
   for (const local of localSched) {
     if (await db.tombstones.get(tombstoneId("scheduling", local.id))) continue
     const remoteRow = remote.scheduling.get(local.id)
-    if (!remoteRow) continue
+    if (!remoteRow) {
+      if (vanishedFromRemote(local, lastSyncedAt)) {
+        syncLog("scheduling row vanished from remote, deleting locally", {
+          entityId: local.id,
+        })
+        await recordTombstone("scheduling", local.id)
+        await db.scheduling.delete(local.id)
+      }
+      continue
+    }
     const pick = resolveEntityMerge(
       local,
       remoteRow,
