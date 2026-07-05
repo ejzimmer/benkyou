@@ -12,7 +12,8 @@ import type {
   GrammarCardContent,
   VocabularyCardContent,
 } from "../../domain/types"
-import { containsKanji } from "../../domain/types"
+import { CARD_KIND_LABELS, containsKanji } from "../../domain/types"
+import { countGaps } from "../../domain/grammarGaps"
 import { isKanaOnly } from "../../domain/vocabularyContent"
 import {
   createGrammarCard,
@@ -22,6 +23,7 @@ import {
   deleteCard,
   grammarFromVocabularyContent,
   mergeCards,
+  normalizeGrammarContent,
   saveCard,
   validateGrammar,
   validateVocabulary,
@@ -34,6 +36,7 @@ import { CardImage } from "../../ui/CardImage"
 import { normalizeJapanese } from "../../lib/japanese/normalize"
 import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates"
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
+import { ConfirmModal } from "../../ui/ConfirmModal"
 import {
   grammarReadingsToText,
   parseGrammarReadingsText,
@@ -101,6 +104,7 @@ export function CardEditPage() {
   const isUploadingImages = imageUploadCount > 0
 
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [duplicateMatches, setDuplicateMatches] = useState<Card[]>([])
   const [mergingId, setMergingId] = useState<string | null>(null)
   const [mergeErr, setMergeErr] = useState<string | null>(null)
@@ -209,14 +213,24 @@ export function CardEditPage() {
           await saveCard(currentCardDraft(), user)
         }
       } else {
-        const emsg = validateGrammar(grammar)
+        const normalizedGrammar = normalizeGrammarContent(grammar)
+        const emsg = validateGrammar(normalizedGrammar)
         if (emsg) throw new Error(emsg)
         if (isNew) {
-          await createGrammarCard(deckId, grammar, user)
+          await createGrammarCard(deckId, normalizedGrammar, user)
           resetNewCardForm()
           return
         } else {
-          await saveCard(currentCardDraft(), user)
+          await saveCard(
+            {
+              id: cardId,
+              deckId,
+              kind: "grammar",
+              content: normalizedGrammar,
+              updatedAt: Date.now(),
+            },
+            user,
+          )
         }
       }
       navigate(returnTo ?? `/decks/${deckId}`)
@@ -226,7 +240,11 @@ export function CardEditPage() {
   }
 
   function onDeleteCard() {
-    if (!confirm("Delete this card?")) return
+    setConfirmingDelete(true)
+  }
+
+  function onConfirmDeleteCard() {
+    setConfirmingDelete(false)
     navigate(returnTo ?? `/decks/${deckId}`)
     deleteCard(cardId, user).catch(console.error)
   }
@@ -326,6 +344,14 @@ export function CardEditPage() {
         />
       )}
 
+      {confirmingDelete && (
+        <ConfirmModal
+          message="Delete this card?"
+          onConfirm={onConfirmDeleteCard}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
+
       <form
         ref={formRef}
         onSubmit={onSubmit}
@@ -341,8 +367,8 @@ export function CardEditPage() {
               onKindChange(e.target.value as "vocabulary" | "grammar")
             }
           >
-            <option value="vocabulary">Vocabulary</option>
-            <option value="grammar">Grammar</option>
+            <option value="vocabulary">{CARD_KIND_LABELS.vocabulary}</option>
+            <option value="grammar">{CARD_KIND_LABELS.grammar}</option>
           </select>
         </label>
 
@@ -480,6 +506,14 @@ export function CardEditPage() {
                 }
               />
             </label>
+            {countGaps(grammar.sentenceWithGap, grammar.gapMarker) > 1 && (
+              <p className="muted small">
+                This sentence has{" "}
+                {countGaps(grammar.sentenceWithGap, grammar.gapMarker)} gaps —
+                separate the answers with a comma (, or 、), in order, e.g.
+                “が, の”.
+              </p>
+            )}
             {duplicateJapaneseWarning && (
               <p className="warn small" role="status">
                 {duplicateJapaneseWarning}

@@ -1,3 +1,5 @@
+import { normalizeGapAnswers } from "../../domain/grammarGaps"
+
 const FIELD_SEP = "\x1f"
 
 export function splitAnkiFields(flds: string): string[] {
@@ -200,11 +202,7 @@ export function extractJapaneseGlossLines(
 }
 
 export function normalizeConstruction(text: string): string {
-  return text
-    .split(/[、,]/)
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .join(", ")
+  return normalizeGapAnswers(text)
 }
 
 export function mimeFromFilename(filename: string): string {

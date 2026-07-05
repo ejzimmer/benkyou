@@ -10,6 +10,11 @@ import {
   isKanaOnly,
 } from "../domain/vocabularyContent"
 import { containsKanji, reviewModesForCard } from "../domain/types"
+import {
+  countGaps,
+  normalizeGapAnswers,
+  splitGapAnswers,
+} from "../domain/grammarGaps"
 import { db, type SchedulingRow } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
 import {
@@ -22,7 +27,10 @@ import {
   pushCardRemote,
   pushSchedulingRemote,
 } from "./decks"
-import { schedulePushAfterMutation } from "../lib/sync/schedulePush"
+import {
+  pushDocInBackground,
+  schedulePushAfterMutation,
+} from "../lib/sync/schedulePush"
 import { recordTombstone } from "../lib/sync/tombstones"
 import {
   deleteCardRemote,
@@ -56,7 +64,30 @@ export function validateGrammar(content: GrammarCardContent): string | null {
   const gap = content.gapMarker.trim() || "___"
   if (!content.sentenceWithGap.includes(gap))
     return `Sentence must contain the gap marker (${gap})`
+  const gapCount = countGaps(content.sentenceWithGap, gap)
+  if (gapCount > 1) {
+    const answerCount = splitGapAnswers(content.construction).length
+    if (answerCount !== gapCount) {
+      return `This sentence has ${gapCount} gaps — provide ${gapCount} answers separated by a comma (, or 、)`
+    }
+  }
   return null
+}
+
+/**
+ * Canonicalize a multi-gap fill-in-the-gap card's construction so its
+ * per-gap answers are consistently comma-separated (accepting "," or "、" as
+ * authored), regardless of how the user typed the separator. Single-gap
+ * cards are left untouched — their construction is one answer, which may
+ * legitimately contain "、" as ordinary Japanese punctuation rather than an
+ * answer separator (e.g. a "〜たり、〜たり" construction).
+ */
+export function normalizeGrammarContent(
+  content: GrammarCardContent,
+): GrammarCardContent {
+  const gap = content.gapMarker.trim() || "___"
+  if (countGaps(content.sentenceWithGap, gap) <= 1) return content
+  return { ...content, construction: normalizeGapAnswers(content.construction) }
 }
 
 function schedulingId(cardId: string, modeId: string) {
@@ -96,6 +127,9 @@ export async function ensureSchedulingForCard(card: Card): Promise<void> {
 export async function saveCard(card: Card, user: User | null): Promise<void> {
   await db.cards.put(card)
   await ensureSchedulingForCard(card)
+  // Awaited (unlike updateSchedulingRow's background push): callers like
+  // CardEditPage.onSubmit rely on a rejection here surfacing as a save error
+  // rather than navigating away as if the card had synced.
   await pushCardRemote(user, card.id)
   await pushAllSchedulingForCard(user, card.id)
   schedulePushAfterMutation(user)
@@ -314,14 +348,15 @@ export async function createGrammarCard(
   content: GrammarCardContent,
   user: User | null,
 ): Promise<Card> {
-  const err = validateGrammar(content)
+  const normalized = normalizeGrammarContent(content)
+  const err = validateGrammar(normalized)
   if (err) throw new Error(err)
   const now = Date.now()
   const card: Card = {
     id: newId(),
     deckId,
     kind: "grammar",
-    content,
+    content: normalized,
     updatedAt: now,
   }
   await saveCard(card, user)
@@ -340,7 +375,7 @@ export async function updateSchedulingRow(
   user: User | null,
 ): Promise<void> {
   await db.scheduling.put(row)
-  await pushSchedulingRemote(user, row.id)
+  pushDocInBackground(pushSchedulingRemote(user, row.id))
   schedulePushAfterMutation(user)
 }
 

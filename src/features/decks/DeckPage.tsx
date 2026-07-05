@@ -1,9 +1,11 @@
 import { useLiveQuery } from "dexie-react-hooks"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { db } from "../../lib/db/schema"
+import { CARD_KIND_LABELS } from "../../domain/types"
 import { deleteDeck } from "../../services/decks"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useMemo, useState } from "react"
+import { ConfirmModal } from "../../ui/ConfirmModal"
 
 export function DeckPage() {
   const { deckId = "" } = useParams()
@@ -15,6 +17,7 @@ export function DeckPage() {
     [deckId],
   )
   const [q, setQ] = useState("")
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const filtered = useMemo(() => {
     const list = cards ?? []
@@ -35,7 +38,11 @@ export function DeckPage() {
   }, [cards, q])
 
   function onDeleteDeck() {
-    if (!confirm("Delete this deck and all its cards?")) return
+    setConfirmingDelete(true)
+  }
+
+  function onConfirmDeleteDeck() {
+    setConfirmingDelete(false)
     navigate("/")
     deleteDeck(deckId, user).catch(console.error)
   }
@@ -55,7 +62,7 @@ export function DeckPage() {
           Add vocabulary
         </Link>
         <Link to={`/decks/${deckId}/cards/new?vocab=0`} className="btn primary">
-          Add grammar
+          Add fill in the gap
         </Link>
         <Link to={`/decks/${deckId}/review`} className="btn">
           Review this deck
@@ -83,12 +90,20 @@ export function DeckPage() {
                   ? c.content.wordJa
                   : c.content.sentenceWithGap}
               </Link>
-              <span className="muted small">{c.kind}</span>
+              <span className="muted small">{CARD_KIND_LABELS[c.kind]}</span>
             </li>
           ))}
         </ul>
         {filtered.length === 0 && <p className="muted">No matching cards.</p>}
       </section>
+
+      {confirmingDelete && (
+        <ConfirmModal
+          message="Delete this deck and all its cards?"
+          onConfirm={onConfirmDeleteDeck}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </div>
   )
 }

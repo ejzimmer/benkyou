@@ -2,20 +2,16 @@ import type { User } from "firebase/auth"
 import { db } from "../lib/db/schema"
 import type { BulkImportPayload } from "../lib/import/types"
 import { pushLocalMediaToRemote } from "../lib/sync/mediaSync"
-import { pushCardRemote, pushSchedulingRemote } from "./decks"
 import { getFirestoreDb } from "../lib/firebase"
-import {
-  deleteTombstoneRemote,
-  upsertDeckRemote,
-} from "../lib/sync/firestoreSync"
+import { pushImportedDeckBatched } from "../lib/sync/firestoreSync"
 import { tombstoneId } from "../lib/sync/syncCompare"
 
 /** Coarse import progress for the UI. "reading" is emitted by the caller. */
 export type ImportProgress =
-  | { phase: "reading" }
-  | { phase: "saving"; total: number }
+  | { phase: "reading"; current: number; total: number }
+  | { phase: "saving"; current: number; total: number }
   | { phase: "syncing"; current: number; total: number }
-  | { phase: "uploading-media" }
+  | { phase: "uploading-media"; current: number; total: number }
 
 export type ImportProgressFn = (progress: ImportProgress) => void
 
@@ -63,7 +59,8 @@ export async function applyBulkImport(
   const report = onProgress ?? (() => {})
   const tombstonesToClear = tombstoneIdsToClear(payload)
 
-  report({ phase: "saving", total: payload.cards.length })
+  const savingTotal = payload.cards.length
+  report({ phase: "saving", current: 0, total: savingTotal })
   await db.transaction(
     "rw",
     [db.decks, db.cards, db.scheduling, db.media, db.tombstones],
@@ -81,8 +78,15 @@ export async function applyBulkImport(
           updatedAt: Date.now(),
         })
       }
+      let savedCards = 0
       for (const card of payload.cards) {
         await db.cards.put(card)
+        savedCards += 1
+        // Report every few cards so the bar visibly advances without
+        // flooding React with a re-render per card.
+        if (savedCards % 5 === 0 || savedCards === savingTotal) {
+          report({ phase: "saving", current: savedCards, total: savingTotal })
+        }
       }
       for (const row of payload.scheduling) {
         await db.scheduling.put(row)
@@ -94,32 +98,27 @@ export async function applyBulkImport(
 
   const fs = getFirestoreDb()
   if (fs) {
-    await upsertDeckRemote(fs, user.uid, payload.deck)
-    // Eagerly remove any stale tombstones from Firestore as well so other
-    // devices won't shadow the re-imported entities on their next pull.
-    for (const id of tombstonesToClear) {
-      await deleteTombstoneRemote(fs, user.uid, id)
-    }
+    // Deck, cards, scheduling rows, and stale-tombstone deletes go up in a
+    // handful of batched commits (up to 400 writes each) rather than one
+    // round trip per card/row — the latter can take many minutes on a slow
+    // connection with long gaps between progress updates.
+    const total =
+      1 + payload.cards.length + payload.scheduling.length + tombstonesToClear.length
+    report({ phase: "syncing", current: 0, total })
+    await pushImportedDeckBatched(
+      fs,
+      user.uid,
+      payload.deck,
+      payload.cards,
+      payload.scheduling,
+      tombstonesToClear,
+      (current) => report({ phase: "syncing", current, total }),
+    )
   }
 
-  const total = payload.cards.length + payload.scheduling.length
-  let current = 0
-  // Report every few items (each push is a network round-trip) so the bar
-  // advances without flooding React with re-renders.
-  const tick = () => {
-    current += 1
-    if (current % 5 === 0 || current === total) {
-      report({ phase: "syncing", current, total })
-    }
-  }
-  for (const card of payload.cards) {
-    await pushCardRemote(user, card.id)
-    tick()
-  }
-  for (const row of payload.scheduling) {
-    await pushSchedulingRemote(user, row.id)
-    tick()
-  }
-  report({ phase: "uploading-media" })
-  await pushLocalMediaToRemote(user.uid, payload.cards)
+  // pushLocalMediaToRemote reports its own initial (0, total) once it knows
+  // the real media count, so no placeholder report is needed here.
+  await pushLocalMediaToRemote(user.uid, payload.cards, (current, total) =>
+    report({ phase: "uploading-media", current, total }),
+  )
 }

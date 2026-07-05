@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
+import { useWakeLock } from "../../lib/useWakeLock"
 import { formatSyncLogLine } from "../../lib/sync/syncLog"
 import type {
   BulkImportPayload,
@@ -25,13 +26,19 @@ import { GrammarClassifyReview } from "./GrammarClassifyReview"
 function importProgressLabel(progress: ImportProgress): string {
   switch (progress.phase) {
     case "reading":
-      return "Reading package…"
+      return progress.total > 0
+        ? `Reading images… ${progress.current}/${progress.total}`
+        : "Reading package…"
     case "saving":
-      return `Saving ${progress.total} card${progress.total === 1 ? "" : "s"}…`
+      return progress.total > 0
+        ? `Saving cards… ${progress.current}/${progress.total}`
+        : "Saving…"
     case "syncing":
       return `Syncing to the cloud… ${progress.current}/${progress.total}`
     case "uploading-media":
-      return "Uploading images…"
+      return progress.total > 0
+        ? `Uploading images… ${progress.current}/${progress.total}`
+        : "Uploading images…"
   }
 }
 
@@ -60,6 +67,22 @@ export function SettingsPage() {
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(
     null,
   )
+  const wakeLockStatus = useWakeLock(importing)
+  const [importElapsedSec, setImportElapsedSec] = useState(0)
+
+  // A visible, second-by-second tick so a stalled/slow phase (e.g. syncing
+  // each card over the network) still looks alive between progress updates.
+  useEffect(() => {
+    if (!importing) {
+      setImportElapsedSec(0)
+      return
+    }
+    const startedAt = Date.now()
+    const id = setInterval(() => {
+      setImportElapsedSec(Math.round((Date.now() - startedAt) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [importing])
 
   function resetImportState() {
     setPendingImport(null)
@@ -92,14 +115,16 @@ export function SettingsPage() {
     resetImportState()
     if (!file) return
     setImporting(true)
-    setImportProgress({ phase: "reading" })
+    setImportProgress({ phase: "reading", current: 0, total: 0 })
     try {
       const lower = file.name.toLowerCase()
       if (!lower.endsWith(".apkg") && !lower.endsWith(".colpkg")) {
         throw new Error("Choose an Anki package (.apkg or .colpkg)")
       }
       const { session: parsed, grammarCandidates: candidates } =
-        await startAnkiImport(file)
+        await startAnkiImport(file, (current, total) =>
+          setImportProgress({ phase: "reading", current, total }),
+        )
       if (candidates.length > 0) {
         // Pause for the user to confirm grammar vs vocab before building cards.
         setSession(parsed)
@@ -251,14 +276,23 @@ export function SettingsPage() {
         )}
         {importProgress && (
           <div className="stack" aria-live="polite">
-            <p className="muted">{importProgressLabel(importProgress)}</p>
-            {importProgress.phase === "syncing" && (
+            <p className="muted">
+              <span className="import-spinner" aria-hidden="true" />
+              {importProgressLabel(importProgress)}
+              {importElapsedSec > 0 ? ` (${importElapsedSec}s)` : ""}
+            </p>
+            {importProgress.total > 0 && (
               <progress
                 value={importProgress.current}
                 max={importProgress.total}
                 style={{ width: "100%" }}
               />
             )}
+            <p className="muted small">
+              {wakeLockStatus === "active"
+                ? "Your screen will stay on until this finishes."
+                : "Keep this screen unlocked until this finishes — locking it may stall or interrupt the import."}
+            </p>
           </div>
         )}
         {session && grammarCandidates.length > 0 && (

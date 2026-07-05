@@ -1,5 +1,7 @@
+import { useState } from "react"
 import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import type { DueItem } from "../../services/review"
 
@@ -184,5 +186,95 @@ describe("ReviewSessionPromptBody", () => {
 
     expect(screen.getByLabelText("Construction gap 1")).not.toHaveFocus()
     vi.unstubAllGlobals()
+  })
+})
+
+const twoGapItem: DueItem = {
+  card: {
+    id: "card-4",
+    deckId: "deck-1",
+    kind: "grammar",
+    updatedAt: 0,
+    content: {
+      sentenceWithGap: "___を___",
+      gapMarker: "___",
+      construction: "流し, 呼ぶ",
+      translationEn: "Call a carriage",
+      readings: {},
+      images: [],
+      synonymsJa: [],
+    },
+  },
+  modeId: "grammar_type_construction",
+  due: 0,
+}
+
+function StatefulPromptBody({ item }: { item: DueItem }) {
+  const [typed, setTyped] = useState("")
+  return (
+    <ReviewSessionPromptBody
+      item={item}
+      typed={typed}
+      onTypedChange={setTyped}
+      readingWarn={false}
+      synonymWarn={false}
+      onTypedSubmit={vi.fn()}
+    />
+  )
+}
+
+describe("ReviewSessionPromptBody — multiple gaps", () => {
+  it("renders one input per gap when answer parts match gap count", () => {
+    stubTouchPrimaryDevice(false)
+
+    render(
+      <ReviewSessionPromptBody
+        item={twoGapItem}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByLabelText("Construction gap 1")).toBeInTheDocument()
+    expect(screen.getByLabelText("Construction gap 2")).toBeInTheDocument()
+    expect(screen.getAllByRole("textbox")).toHaveLength(2)
+    vi.unstubAllGlobals()
+  })
+
+  it("combines each gap's answer into a single comma-separated typed value", async () => {
+    const user = userEvent.setup()
+    render(<StatefulPromptBody item={twoGapItem} />)
+
+    await user.type(screen.getByLabelText("Construction gap 1"), "流し")
+    await user.type(screen.getByLabelText("Construction gap 2"), "呼ぶ")
+
+    expect(
+      screen.getByLabelText<HTMLInputElement>("Construction gap 1").value,
+    ).toBe("流し")
+    expect(
+      screen.getByLabelText<HTMLInputElement>("Construction gap 2").value,
+    ).toBe("呼ぶ")
+  })
+
+  it("shows each gap's own answer once revealed", () => {
+    render(
+      <ReviewSessionPromptBody
+        item={twoGapItem}
+        typed="流し, 呼ぶ"
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+        revealed
+      />,
+    )
+
+    const fills = screen
+      .getAllByText((_, el) => el?.className === "gap-filled")
+      .map((el) => el.textContent)
+    expect(fills).toEqual(["流し", "呼ぶ"])
   })
 })

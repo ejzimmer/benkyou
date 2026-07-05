@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase/firestore"
 import type { FirebaseStorage } from "firebase/storage"
-import { db, type MediaRow } from "../db/schema"
+import type { Card, Deck } from "../../domain/types"
+import { db, type MediaRow, type SchedulingRow } from "../db/schema"
 import {
   cardChanged,
   cardSummary,
@@ -152,6 +153,29 @@ async function applyRemoteTombstones(
   )
 }
 
+/**
+ * Re-checks the tombstone and performs `write` atomically in one Dexie
+ * transaction. `collectEntityConflicts` below checks a tombstone and later
+ * calls `db.<table>.put(...)` for the same entity — those two calls used to
+ * be separate transactions, so a concurrent deleteDeck()/deleteCard() could
+ * record its tombstone and delete the entity in the gap between them,
+ * un-deleting it. Wrapping just this final check+write pair (never the
+ * `onConflict` UI wait, which can block indefinitely) closes that window.
+ */
+async function putIfNotTombstoned(
+  tombstoneKey: string,
+  write: () => Promise<unknown>,
+): Promise<void> {
+  await db.transaction(
+    "rw",
+    [db.tombstones, db.decks, db.cards, db.scheduling],
+    async () => {
+      if (await db.tombstones.get(tombstoneKey)) return
+      await write()
+    },
+  )
+}
+
 async function collectEntityConflicts(
   lastSyncedAt: number | null,
   remote: RemoteSnapshot,
@@ -171,6 +195,7 @@ async function collectEntityConflicts(
       lastSyncedAt,
       !deckChanged(local, remoteDeck),
     )
+    let winner: Deck
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "deck", entityId: local.id })
       const choice = await resolveConflictChoice(
@@ -187,16 +212,22 @@ async function collectEntityConflicts(
         },
         onConflict,
       )
-      await db.decks.put(choice === "local" ? local : remoteDeck)
+      winner = choice === "local" ? local : remoteDeck
     } else {
-      await db.decks.put(pick === "local" ? local : remoteDeck)
+      winner = pick === "local" ? local : remoteDeck
     }
+    await putIfNotTombstoned(tombstoneId("deck", local.id), () =>
+      db.decks.put(winner),
+    )
   }
 
   for (const remoteDeck of remote.decks.values()) {
     if (await db.tombstones.get(tombstoneId("deck", remoteDeck.id))) continue
     if (await db.decks.get(remoteDeck.id)) continue
-    await db.decks.put(remoteDeck)
+    await putIfNotTombstoned(tombstoneId("deck", remoteDeck.id), async () => {
+      if (await db.decks.get(remoteDeck.id)) return
+      await db.decks.put(remoteDeck)
+    })
   }
 
   for (const local of localCards) {
@@ -209,6 +240,7 @@ async function collectEntityConflicts(
       lastSyncedAt,
       !cardChanged(local, remoteCard),
     )
+    let winner: Card
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "card", entityId: local.id })
       const choice = await resolveConflictChoice(
@@ -225,16 +257,22 @@ async function collectEntityConflicts(
         },
         onConflict,
       )
-      await db.cards.put(choice === "local" ? local : remoteCard)
+      winner = choice === "local" ? local : remoteCard
     } else {
-      await db.cards.put(pick === "local" ? local : remoteCard)
+      winner = pick === "local" ? local : remoteCard
     }
+    await putIfNotTombstoned(tombstoneId("card", local.id), () =>
+      db.cards.put(winner),
+    )
   }
 
   for (const remoteCard of remote.cards.values()) {
     if (await db.tombstones.get(tombstoneId("card", remoteCard.id))) continue
     if (await db.cards.get(remoteCard.id)) continue
-    await db.cards.put(remoteCard)
+    await putIfNotTombstoned(tombstoneId("card", remoteCard.id), async () => {
+      if (await db.cards.get(remoteCard.id)) return
+      await db.cards.put(remoteCard)
+    })
   }
 
   for (const local of localSched) {
@@ -247,6 +285,7 @@ async function collectEntityConflicts(
       lastSyncedAt,
       !schedulingChanged(local, remoteRow),
     )
+    let winner: SchedulingRow
     if (pick === "conflict") {
       syncLog("merge conflict", {
         entityType: "scheduling",
@@ -271,16 +310,25 @@ async function collectEntityConflicts(
         },
         onConflict,
       )
-      await db.scheduling.put(choice === "local" ? local : remoteRow)
+      winner = choice === "local" ? local : remoteRow
     } else {
-      await db.scheduling.put(pick === "local" ? local : remoteRow)
+      winner = pick === "local" ? local : remoteRow
     }
+    await putIfNotTombstoned(tombstoneId("scheduling", local.id), () =>
+      db.scheduling.put(winner),
+    )
   }
 
   for (const remoteRow of remote.scheduling.values()) {
     if (await db.tombstones.get(tombstoneId("scheduling", remoteRow.id))) continue
     if (await db.scheduling.get(remoteRow.id)) continue
-    await db.scheduling.put(remoteRow)
+    await putIfNotTombstoned(
+      tombstoneId("scheduling", remoteRow.id),
+      async () => {
+        if (await db.scheduling.get(remoteRow.id)) return
+        await db.scheduling.put(remoteRow)
+      },
+    )
   }
 }
 

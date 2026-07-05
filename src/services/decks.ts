@@ -22,6 +22,8 @@ export async function createDeck(
   const deck: Deck = { id: newId(), name, updatedAt: now }
   await db.decks.put(deck)
   const fs = getFirestoreDb()
+  // Awaited: DeckListPage.onCreate relies on a rejection here surfacing as a
+  // create error rather than navigating to a deck that never synced.
   if (fs && user) await upsertDeckRemote(fs, user.uid, deck)
   schedulePushAfterMutation(user)
   return deck
