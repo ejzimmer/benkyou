@@ -11,7 +11,6 @@ import { createEmptyCard } from "ts-fsrs"
 import { ankiSchedulingToFsrs } from "./ankiSrs"
 import {
   containsJapanese,
-  containsKanji as surfaceHasKanji,
   extractEnglishLines,
   extractJapaneseGlossLines,
   extractMediaRefs,
@@ -45,7 +44,6 @@ type NoteClass =
   | "type"
   | "grammar"
   | "reversed"
-  | "kana"
   | "other"
 
 type ClassifiedNote = {
@@ -109,12 +107,13 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
     kind = "type"
   } else if (
     note.noteType === "Basic" &&
-    surfaceHasKanji(front) &&
+    containsJapanese(front) &&
     !isWrappedJapanese(front)
   ) {
+    // Covers both kanji headwords ("食べる") and kana-only ones ("おまけ") —
+    // same front-word/back-meaning shape, so both merge the same way with
+    // any sibling "type"/"reading" note for the same word.
     kind = "basic"
-  } else if (note.noteType === "Basic" && isKanaOnly(front)) {
-    kind = "kana"
   } else if (note.noteType.toLowerCase().includes("reversed")) {
     kind = "reversed"
   } else if (containsJapanese(back) && !containsJapanese(front)) {

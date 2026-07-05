@@ -273,6 +273,23 @@ describe("convert: kana word with an emoji meaning", () => {
     if (card?.kind !== "vocabulary") return
     expect(card.content.definitionsEn).toContain("🦆")
   })
+
+  it("merges a kana-only Basic word card with its word-on-the-back sibling", () => {
+    // Same shape as e.g. "おまけ" / "Free gift" note pairs seen in real decks:
+    // one note has the (kana-only, no kanji) word on the front, the other has
+    // it on the back. Both describe the same word and must become one card.
+    const payload = convertExtractedPackage(
+      pkg([
+        note(1, "Basic", ["おまけ", "Free gift"]),
+        note(2, "Basic", ["Free gift", "おまけ"]),
+      ]),
+      noMedia,
+    )
+    const matching = payload.cards.filter(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "おまけ",
+    )
+    expect(matching).toHaveLength(1)
+  })
 })
 
 describe("convert: grammar/vocab confirmation", () => {
