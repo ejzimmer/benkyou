@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   grammarFromVocabularyContent,
   mergeCardContent,
+  normalizeGrammarContent,
   validateGrammar,
   validateVocabulary,
   vocabularyFromGrammarContent,
@@ -151,6 +152,80 @@ describe("validateGrammar", () => {
         synonymsJa: [],
       }),
     ).toBeNull()
+  })
+
+  it("rejects a construction with fewer answers than gaps", () => {
+    expect(
+      validateGrammar({
+        sentenceWithGap: "___を___",
+        gapMarker: "___",
+        construction: "流し",
+        translationEn: "Call a carriage",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }),
+    ).toMatch(/2 gaps/)
+  })
+
+  it("rejects a construction with more answers than gaps", () => {
+    expect(
+      validateGrammar({
+        sentenceWithGap: "___を___",
+        gapMarker: "___",
+        construction: "流し, 呼ぶ, 走る",
+        translationEn: "Call a carriage",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }),
+    ).toMatch(/2 gaps/)
+  })
+})
+
+describe("normalizeGrammarContent", () => {
+  it("canonicalizes a Japanese-comma-separated construction to ASCII commas", () => {
+    expect(
+      normalizeGrammarContent({
+        sentenceWithGap: "___を___",
+        gapMarker: "___",
+        construction: "流し、呼ぶ",
+        translationEn: "Call a carriage",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }).construction,
+    ).toBe("流し, 呼ぶ")
+  })
+
+  it("leaves a single-answer construction unchanged", () => {
+    expect(
+      normalizeGrammarContent({
+        sentenceWithGap: "私は___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "I am ~",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }).construction,
+    ).toBe("学生")
+  })
+
+  it("does not touch a single-gap construction containing 、 as ordinary punctuation", () => {
+    // e.g. the "〜たり、〜たり" construction is one answer for one gap, not
+    // two comma-separated answers for two gaps.
+    expect(
+      normalizeGrammarContent({
+        sentenceWithGap: "休日は___する",
+        gapMarker: "___",
+        construction: "食べたり、飲んだり",
+        translationEn: "eating and drinking, among other things",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }).construction,
+    ).toBe("食べたり、飲んだり")
   })
 })
 

@@ -1,6 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { db } from "../../lib/db/schema"
+import { CARD_KIND_LABELS } from "../../domain/types"
 import { deleteDeck } from "../../services/decks"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useMemo, useState } from "react"
@@ -61,7 +62,7 @@ export function DeckPage() {
           Add vocabulary
         </Link>
         <Link to={`/decks/${deckId}/cards/new?vocab=0`} className="btn primary">
-          Add grammar
+          Add fill in the gap
         </Link>
         <Link to={`/decks/${deckId}/review`} className="btn">
           Review this deck
@@ -89,7 +90,7 @@ export function DeckPage() {
                   ? c.content.wordJa
                   : c.content.sentenceWithGap}
               </Link>
-              <span className="muted small">{c.kind}</span>
+              <span className="muted small">{CARD_KIND_LABELS[c.kind]}</span>
             </li>
           ))}
         </ul>

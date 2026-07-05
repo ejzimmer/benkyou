@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import type { Card } from "../../domain/types"
+import { CARD_KIND_LABELS, type Card } from "../../domain/types"
 import { japaneseWordForCard } from "../../domain/duplicates"
 
 type Props = {
@@ -40,7 +40,9 @@ export function DuplicateCardsModal({
                     rel="noreferrer"
                   >
                     {japaneseWordForCard(match)}{" "}
-                    <span className="muted small">({match.kind})</span>
+                    <span className="muted small">
+                      ({CARD_KIND_LABELS[match.kind]})
+                    </span>
                   </Link>
                   <button
                     type="button"

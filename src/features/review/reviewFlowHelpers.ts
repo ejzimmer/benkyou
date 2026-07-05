@@ -3,6 +3,7 @@ import type {
   ReviewModeId,
   VocabularyCardContent,
 } from "../../domain/types"
+import { normalizeGapAnswers } from "../../domain/grammarGaps"
 
 /** Marker used to blank out the target word in an example sentence. */
 export const EXAMPLE_PLACEHOLDER = "___"
@@ -71,4 +72,21 @@ export function expectedAnswer(card: Card, mode: ReviewModeId): string {
   if (mode === "grammar_type_construction")
     return card.kind === "grammar" ? card.content.construction : ""
   return ""
+}
+
+/**
+ * Whether `typed` matches `expected` for grading purposes. Fill-in-the-gap
+ * cards with multiple gaps compare each comma-separated answer positionally,
+ * so "," vs "、" and incidental spacing around the separator don't cause a
+ * correct answer to be treated as wrong.
+ */
+export function answersMatch(
+  mode: ReviewModeId,
+  typed: string,
+  expected: string,
+): boolean {
+  if (mode === "grammar_type_construction") {
+    return normalizeGapAnswers(typed) === normalizeGapAnswers(expected)
+  }
+  return typed === expected
 }

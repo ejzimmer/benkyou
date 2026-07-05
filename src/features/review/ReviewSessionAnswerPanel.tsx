@@ -3,10 +3,12 @@ import type { DueItem } from "../../services/review"
 import { AnswerComparison } from "../../ui/AnswerComparison"
 import { CardImageRow } from "../../ui/CardImageRow"
 import {
+  answersMatch,
   differsOnlyByPunctuation,
   readingForConstruction,
   requiresTyping,
 } from "./reviewFlowHelpers"
+import { countGaps } from "../../domain/grammarGaps"
 
 export type ReviewSessionAnswerPanelProps = {
   item: DueItem
@@ -29,7 +31,15 @@ export function ReviewSessionAnswerPanel({
   const typingMode = requiresTyping(m)
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
-  const answeredCorrectly = typed === expected
+  const answeredCorrectly = answersMatch(m, typed, expected)
+  // For a multi-gap construction, the comma between answers is meaningful
+  // content (a gap boundary), not decorative punctuation — stripping it
+  // could make a wrong, merged answer (e.g. "猫犬" vs "猫, 犬") look like a
+  // punctuation-only typo. Only fall back to the fuzzy check otherwise.
+  const isMultiGapConstruction =
+    m === "grammar_type_construction" &&
+    card.kind === "grammar" &&
+    countGaps(card.content.sentenceWithGap, card.content.gapMarker) > 1
 
   useEffect(() => {
     if (pendingIncorrectDelay) return
@@ -38,13 +48,20 @@ export function ReviewSessionAnswerPanel({
     const focusCorrect =
       !typingMode ||
       answeredCorrectly ||
-      differsOnlyByPunctuation(typed, expected)
+      (!isMultiGapConstruction && differsOnlyByPunctuation(typed, expected))
     if (focusCorrect) {
       correctBtnRef.current?.focus({ preventScroll: true })
     } else {
       incorrectBtnRef.current?.focus({ preventScroll: true })
     }
-  }, [typingMode, answeredCorrectly, pendingIncorrectDelay, typed, expected])
+  }, [
+    typingMode,
+    answeredCorrectly,
+    isMultiGapConstruction,
+    pendingIncorrectDelay,
+    typed,
+    expected,
+  ])
 
   const answerControls = (
     <div className="toolbar">
@@ -114,6 +131,7 @@ export function ReviewSessionAnswerPanel({
             card.content.construction,
             card.content.readings,
           )}
+          answeredCorrectly={answeredCorrectly}
         />
       )}
 

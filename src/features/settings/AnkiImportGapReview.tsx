@@ -9,7 +9,7 @@ import {
   type VocabularyGapDraft,
 } from "../../lib/import/gaps"
 import { PLACEHOLDER_DEFINITION } from "../../domain/vocabularyContent"
-import type { Card } from "../../domain/types"
+import { CARD_KIND_LABELS, type Card } from "../../domain/types"
 import { ImportGapCardPreview } from "./ImportGapCardPreview"
 
 export type AnkiImportGapReviewProps = {
@@ -115,7 +115,7 @@ export function AnkiImportGapReview({
             <div className="row" style={{ justifyContent: "space-between" }}>
               <h3 style={{ margin: 0 }}>
                 <span className="muted small">
-                  {gap.kind === "vocabulary" ? "Vocabulary" : "Grammar"}
+                  {CARD_KIND_LABELS[gap.kind]}
                   {" · "}
                 </span>
                 {gap.title}

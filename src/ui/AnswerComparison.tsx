@@ -11,6 +11,12 @@ export type AnswerComparisonProps = {
    * the correct line shows furigana on hover/focus.
    */
   reading?: string
+  /**
+   * Override for whether `typed` counts as correct. Defaults to strict
+   * equality — pass this when the caller's grading is more lenient (e.g.
+   * comma vs 、 between a fill-in-the-gap card's per-gap answers).
+   */
+  answeredCorrectly?: boolean
 }
 
 type Cell = { value: string; kind: "same" | "missing" | "extra" | "gap" }
@@ -88,12 +94,13 @@ export function AnswerComparison({
   typed,
   expected,
   reading,
+  answeredCorrectly,
 }: AnswerComparisonProps) {
   const correctId = useId()
   const yoursId = useId()
-  const answeredCorrectly = typed === expected
+  const isCorrect = answeredCorrectly ?? typed === expected
   const showRuby = Boolean(reading?.trim()) && KANJI.test(expected)
-  const diff = answeredCorrectly ? null : buildAlignedDiff(expected, typed)
+  const diff = isCorrect ? null : buildAlignedDiff(expected, typed)
 
   const correctBody = diff ? (
     <DiffLine cells={diff.correct} labelId={correctId} line="correct" />
@@ -111,7 +118,7 @@ export function AnswerComparison({
     <div
       className="reading-answer-comparison"
       role="group"
-      aria-label={answeredCorrectly ? "Answer" : "Answer comparison"}
+      aria-label={isCorrect ? "Answer" : "Answer comparison"}
     >
       <div className="reading-answer-row">
         <span id={correctId} className="answer-grid-label">
