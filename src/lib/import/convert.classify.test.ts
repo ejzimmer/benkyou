@@ -315,6 +315,18 @@ describe("convert: gap-marked sibling notes for the same word", () => {
     expect(candidates[0].construction).toBe("常連客")
   })
 
+  it("also groups when the gloss uses full-width parens and trailing punctuation", () => {
+    const fullWidthNotes = [
+      note(1, "Basic (type in the answer)", [
+        "布屋の＿＿＿になる（Regular customer）。",
+        "常連客",
+      ]),
+      note(2, "Basic", ["常連客", "布屋の＿＿＿になる"]),
+    ]
+    const candidates = collectGrammarCandidates(pkg(fullWidthNotes))
+    expect(candidates).toHaveLength(1)
+  })
+
   it("builds exactly one card, carrying the reading, once confirmed as vocab", () => {
     const candidates = collectGrammarCandidates(pkg(notes))
     const decisions = Object.fromEntries(
@@ -328,6 +340,64 @@ describe("convert: gap-marked sibling notes for the same word", () => {
     expect(matching[0].kind).toBe("vocabulary")
     if (matching[0].kind !== "vocabulary") return
     expect(matching[0].content.reading).toBe("じょうれんきゃく")
+  })
+
+  it("a reading note reserved by an unrelated grammar group doesn't stop its unclaimed basic+type siblings from merging together", () => {
+    // A reading note can get swept into a grammar group that has nothing to
+    // do with it (shared image, unrelated construction). Before the fix,
+    // reserving *any* one of basic/type/reading/reversed for a headword
+    // skipped the whole merge for that headword, so an unclaimed basic+type
+    // pair for the same word split into two separate cards instead of one.
+    const otherNotes = [
+      note(10, "Basic", ['<img src="x.jpg">「常連客」', "じょうれんきゃく"]),
+      note(11, "Basic (type in the answer)", [
+        '<img src="x.jpg">＿＿＿を食べた',
+        "違う語",
+      ]),
+      note(12, "Basic", ["常連客", "regular customer"]),
+      note(13, "Basic (type in the answer)", ["a regular customer", "常連客"]),
+    ]
+    const payload = convertExtractedPackage(pkg(otherNotes), noMedia, {})
+    const matching = payload.cards.filter(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "常連客",
+    )
+    expect(matching).toHaveLength(1)
+    if (matching[0].kind !== "vocabulary") return
+    expect(matching[0].content.definitionsEn).toEqual(
+      expect.arrayContaining(["regular customer", "a regular customer"]),
+    )
+    expect(matching[0].content.reading).toBe("じょうれんきゃく")
+  })
+
+  it("carries a reserved reading note's own Anki scheduling into a vocab-confirmed grammar group, instead of a borrowed fallback", () => {
+    const readingNote = note(1, "Basic", ["「常連客」", "じょうれんきゃく"])
+    readingNote.cards = [
+      { id: 1, ord: 0, type: 2, queue: 2, due: 999, ivl: 42, factor: 2500, reps: 7, lapses: 0 },
+    ]
+    const typeNote = note(2, "Basic (type in the answer)", [
+      "布屋の＿＿＿になる (Regular customer)",
+      "常連客",
+    ])
+    typeNote.cards = [
+      { id: 2, ord: 0, type: 2, queue: 2, due: 500, ivl: 10, factor: 2500, reps: 3, lapses: 0 },
+    ]
+    const twoNotes = [readingNote, typeNote]
+    const candidates = collectGrammarCandidates(pkg(twoNotes))
+    const decisions = Object.fromEntries(
+      candidates.map((c) => [c.key, "vocab" as const]),
+    )
+    const payload = convertExtractedPackage(pkg(twoNotes), noMedia, decisions)
+    const card = payload.cards.find(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "常連客",
+    )
+    expect(card).toBeDefined()
+    const readingRow = payload.scheduling.find(
+      (s) => s.cardId === card?.id && s.modeId === "vocab_type_reading",
+    )
+    expect(readingRow).toBeDefined()
+    // ivl=42 only exists on the reading note's own card; a value of 10 here
+    // would mean it fell back to the type note's schedule instead.
+    expect(readingRow?.fsrs.scheduled_days).toBe(42)
   })
 })
 
