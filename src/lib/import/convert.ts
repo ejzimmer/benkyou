@@ -314,6 +314,23 @@ function firstCard(note: ExtractedAnkiNote, ord = 0): AnkiSchedulingSource {
   return { ...card, isLeech: noteIsLeech(note.tags) }
 }
 
+/**
+ * Group key for a gap-marked note: the gapped sentence, with a trailing
+ * English parenthetical gloss stripped off. Some decks put the gap sentence
+ * and its English meaning in the same field ("...になる (Regular customer)"),
+ * others keep the meaning on the answer side and leave the gap side bare
+ * ("...になる") — without stripping the gloss, the same sentence produces two
+ * different keys depending on which note happened to carry it, splitting one
+ * word/sentence into two ungrouped candidates.
+ */
+function grammarGroupKey(entry: ClassifiedNote): string {
+  const gapRaw = hasGapMarker(entry.front) ? entry.frontRaw : entry.backRaw
+  return stripHtml(gapRaw)
+    .replace(/\s*\([^)]*\)\s*$/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 function buildGrammarGroups(classified: ClassifiedNote[]) {
   const mediaKey = (entry: ClassifiedNote) =>
     extractMediaRefs(`${entry.frontRaw}\n${entry.backRaw}`).sort().join("|")
@@ -321,16 +338,14 @@ function buildGrammarGroups(classified: ClassifiedNote[]) {
   const grammarGroups = new Map<string, ClassifiedNote[]>()
   const grammarAnchors = classified.filter((entry) => entry.kind === "grammar")
   for (const entry of grammarAnchors) {
-    const gapRaw = hasGapMarker(entry.front) ? entry.frontRaw : entry.backRaw
-    const key = stripHtml(gapRaw).replace(/\s+/g, " ")
+    const key = grammarGroupKey(entry)
     const list = grammarGroups.get(key) ?? []
     list.push(entry)
     grammarGroups.set(key, list)
   }
 
   const attachToGroup = (anchor: ClassifiedNote, entry: ClassifiedNote) => {
-    const gapRaw = hasGapMarker(anchor.front) ? anchor.frontRaw : anchor.backRaw
-    const key = stripHtml(gapRaw).replace(/\s+/g, " ")
+    const key = grammarGroupKey(anchor)
     const list = grammarGroups.get(key) ?? []
     if (!list.some((item) => item.note.id === entry.note.id)) {
       list.push(entry)
@@ -564,6 +579,8 @@ export function convertExtractedPackage(
     if (!basic && !type && !reading && !reversed) continue
     if (grammarReserved.has(basic?.note.id ?? -1)) continue
     if (grammarReserved.has(type?.note.id ?? -1)) continue
+    if (grammarReserved.has(reading?.note.id ?? -1)) continue
+    if (grammarReserved.has(reversed?.note.id ?? -1)) continue
     if (usedNoteIds.has(basic?.note.id ?? -1)) continue
     if (usedNoteIds.has(type?.note.id ?? -1)) continue
     if (usedNoteIds.has(reading?.note.id ?? -1)) continue
@@ -575,6 +592,7 @@ export function convertExtractedPackage(
 
   for (const entry of byKind("reading")) {
     if (usedNoteIds.has(entry.note.id)) continue
+    if (grammarReserved.has(entry.note.id)) continue
     mergeVocabulary(headwordText(entry.front), undefined, undefined, entry)
   }
 

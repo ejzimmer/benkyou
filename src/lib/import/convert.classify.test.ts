@@ -292,6 +292,45 @@ describe("convert: kana word with an emoji meaning", () => {
   })
 })
 
+describe("convert: gap-marked sibling notes for the same word", () => {
+  // Real-deck shape: a reading note, a "type in the answer" note whose gapped
+  // sentence carries an inline English gloss on the front, and a plain Basic
+  // note with the same gapped sentence (no gloss) on the back — all for the
+  // same word. Before the fix, the gloss-bearing and gloss-free notes keyed
+  // into two different grammar groups (only the gloss text differed), and the
+  // reading note wasn't reserved for either, so up to three separate cards
+  // came out of what should be one word.
+  const notes = [
+    note(1, "Basic", ["「常連客」", "じょうれんきゃく"]),
+    note(2, "Basic (type in the answer)", [
+      "布屋の＿＿＿になる (Regular customer)",
+      "常連客",
+    ]),
+    note(3, "Basic", ["常連客", "布屋の＿＿＿になる"]),
+  ]
+
+  it("collects the two gap-marked notes as a single grammar candidate", () => {
+    const candidates = collectGrammarCandidates(pkg(notes))
+    expect(candidates).toHaveLength(1)
+    expect(candidates[0].construction).toBe("常連客")
+  })
+
+  it("builds exactly one card, carrying the reading, once confirmed as vocab", () => {
+    const candidates = collectGrammarCandidates(pkg(notes))
+    const decisions = Object.fromEntries(
+      candidates.map((c) => [c.key, "vocab" as const]),
+    )
+    const payload = convertExtractedPackage(pkg(notes), noMedia, decisions)
+    const matching = payload.cards.filter(
+      (c) => c.kind === "vocabulary" && c.content.wordJa === "常連客",
+    )
+    expect(matching).toHaveLength(1)
+    expect(matching[0].kind).toBe("vocabulary")
+    if (matching[0].kind !== "vocabulary") return
+    expect(matching[0].content.reading).toBe("じょうれんきゃく")
+  })
+})
+
 describe("convert: grammar/vocab confirmation", () => {
   const grammarPkg = pkg([
     note(10, "Basic (type in the answer)", ["私は学生___", "です"]),
