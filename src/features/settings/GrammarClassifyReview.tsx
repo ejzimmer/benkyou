@@ -4,6 +4,7 @@ import type {
   GrammarDecision,
   GrammarDecisionMap,
 } from "../../lib/import/types"
+import { CARD_KIND_LABELS } from "../../domain/types"
 
 export type GrammarClassifyReviewProps = {
   candidates: GrammarCandidate[]
@@ -47,9 +48,10 @@ export function GrammarClassifyReview({
     <div className="stack">
       <p className="muted">
         {candidates.length} card{candidates.length === 1 ? "" : "s"} in “
-        {deckName}” look like fill-in-the-gap cards (they contain a blank).
-        Confirm whether each is a fill-in-the-gap card or a vocabulary card
-        that just includes an example sentence.
+        {deckName}” look like {CARD_KIND_LABELS.grammar} cards (they contain
+        a blank). Confirm whether each is a {CARD_KIND_LABELS.grammar} card
+        or a {CARD_KIND_LABELS.vocabulary} card that just includes an
+        example sentence.
       </p>
 
       {candidates.map((candidate) => {
@@ -79,7 +81,7 @@ export function GrammarClassifyReview({
                   disabled={importing}
                   onChange={() => setDecision(candidate.key, "grammar")}
                 />
-                <span>Fill in the gap</span>
+                <span>{CARD_KIND_LABELS.grammar}</span>
               </label>
               <label className="row">
                 <input
@@ -89,7 +91,7 @@ export function GrammarClassifyReview({
                   disabled={importing}
                   onChange={() => setDecision(candidate.key, "vocab")}
                 />
-                <span>Vocabulary</span>
+                <span>{CARD_KIND_LABELS.vocabulary}</span>
               </label>
             </div>
           </div>
@@ -105,7 +107,7 @@ export function GrammarClassifyReview({
         >
           {importing
             ? "Importing…"
-            : `Continue (${grammarCount} fill in the gap, ${vocabCount} vocab)`}
+            : `Continue (${grammarCount} ${CARD_KIND_LABELS.grammar}, ${vocabCount} vocab)`}
         </button>
         <button
           type="button"

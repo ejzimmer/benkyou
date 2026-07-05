@@ -254,3 +254,61 @@ describe("ReviewSessionAnswerPanel", () => {
     expect(container.querySelector("rt")?.textContent).toBe("ねこ")
   })
 })
+
+function twoGapItem(): DueItem {
+  return {
+    card: {
+      id: "card-3",
+      deckId: "deck-1",
+      kind: "grammar",
+      updatedAt: 0,
+      content: {
+        sentenceWithGap: "___を___",
+        gapMarker: "___",
+        construction: "流し, 呼ぶ",
+        translationEn: "Call a carriage",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      },
+    },
+    modeId: "grammar_type_construction",
+    due: 0,
+  }
+}
+
+describe("ReviewSessionAnswerPanel — multi-gap focus bias", () => {
+  it("focuses Incorrect for a merged wrong answer, not Correct via punctuation-stripping", async () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={twoGapItem()}
+        typed="流し呼ぶ"
+        expected="流し, 呼ぶ"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
+    })
+  })
+
+  it("still focuses Correct for a genuinely matching two-gap answer", async () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={twoGapItem()}
+        typed="流し, 呼ぶ"
+        expected="流し, 呼ぶ"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
+    })
+  })
+})

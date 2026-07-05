@@ -16,9 +16,12 @@ export function splitGapAnswers(construction: string): string[] {
     .filter(Boolean)
 }
 
+/** Canonical separator used to join per-gap answers back into one string. */
+export const GAP_ANSWER_JOIN = ", "
+
 /** Canonical comma-joined form of a (possibly 、-separated) answer string. */
 export function normalizeGapAnswers(construction: string): string {
-  return splitGapAnswers(construction).join(", ")
+  return splitGapAnswers(construction).join(GAP_ANSWER_JOIN)
 }
 
 /**

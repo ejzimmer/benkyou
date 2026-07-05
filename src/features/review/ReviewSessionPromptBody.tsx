@@ -5,6 +5,7 @@ import { CardImageRow } from "../../ui/CardImageRow"
 import { clueExampleSentences, readingForConstruction } from "./reviewFlowHelpers"
 import {
   countGaps,
+  GAP_ANSWER_JOIN,
   splitGapAnswers,
   typedGapValues,
 } from "../../domain/grammarGaps"
@@ -238,7 +239,7 @@ export function ReviewSessionPromptBody({
       }
       const parts = typedGapValues(typed, gapCount)
       parts[gapIndex] = value
-      onTypedChange(parts.join(", "))
+      onTypedChange(parts.join(GAP_ANSWER_JOIN))
     }
 
     return (

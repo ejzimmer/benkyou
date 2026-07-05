@@ -153,6 +153,34 @@ describe("validateGrammar", () => {
       }),
     ).toBeNull()
   })
+
+  it("rejects a construction with fewer answers than gaps", () => {
+    expect(
+      validateGrammar({
+        sentenceWithGap: "___を___",
+        gapMarker: "___",
+        construction: "流し",
+        translationEn: "Call a carriage",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }),
+    ).toMatch(/2 gaps/)
+  })
+
+  it("rejects a construction with more answers than gaps", () => {
+    expect(
+      validateGrammar({
+        sentenceWithGap: "___を___",
+        gapMarker: "___",
+        construction: "流し, 呼ぶ, 走る",
+        translationEn: "Call a carriage",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }),
+    ).toMatch(/2 gaps/)
+  })
 })
 
 describe("normalizeGrammarContent", () => {
@@ -182,6 +210,22 @@ describe("normalizeGrammarContent", () => {
         synonymsJa: [],
       }).construction,
     ).toBe("学生")
+  })
+
+  it("does not touch a single-gap construction containing 、 as ordinary punctuation", () => {
+    // e.g. the "〜たり、〜たり" construction is one answer for one gap, not
+    // two comma-separated answers for two gaps.
+    expect(
+      normalizeGrammarContent({
+        sentenceWithGap: "休日は___する",
+        gapMarker: "___",
+        construction: "食べたり、飲んだり",
+        translationEn: "eating and drinking, among other things",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }).construction,
+    ).toBe("食べたり、飲んだり")
   })
 })
 

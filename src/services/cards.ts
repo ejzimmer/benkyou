@@ -10,7 +10,11 @@ import {
   isKanaOnly,
 } from "../domain/vocabularyContent"
 import { containsKanji, reviewModesForCard } from "../domain/types"
-import { normalizeGapAnswers } from "../domain/grammarGaps"
+import {
+  countGaps,
+  normalizeGapAnswers,
+  splitGapAnswers,
+} from "../domain/grammarGaps"
 import { db, type SchedulingRow } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
 import {
@@ -57,17 +61,29 @@ export function validateGrammar(content: GrammarCardContent): string | null {
   const gap = content.gapMarker.trim() || "___"
   if (!content.sentenceWithGap.includes(gap))
     return `Sentence must contain the gap marker (${gap})`
+  const gapCount = countGaps(content.sentenceWithGap, gap)
+  if (gapCount > 1) {
+    const answerCount = splitGapAnswers(content.construction).length
+    if (answerCount !== gapCount) {
+      return `This sentence has ${gapCount} gaps — provide ${gapCount} answers separated by a comma (, or 、)`
+    }
+  }
   return null
 }
 
 /**
- * Canonicalize a fill-in-the-gap card's construction so its per-gap answers
- * are consistently comma-separated (accepting "," or "、" as authored),
- * regardless of how the user typed the separator.
+ * Canonicalize a multi-gap fill-in-the-gap card's construction so its
+ * per-gap answers are consistently comma-separated (accepting "," or "、" as
+ * authored), regardless of how the user typed the separator. Single-gap
+ * cards are left untouched — their construction is one answer, which may
+ * legitimately contain "、" as ordinary Japanese punctuation rather than an
+ * answer separator (e.g. a "〜たり、〜たり" construction).
  */
 export function normalizeGrammarContent(
   content: GrammarCardContent,
 ): GrammarCardContent {
+  const gap = content.gapMarker.trim() || "___"
+  if (countGaps(content.sentenceWithGap, gap) <= 1) return content
   return { ...content, construction: normalizeGapAnswers(content.construction) }
 }
 
