@@ -574,6 +574,63 @@ code {
   gap: 0.25rem;
 }
 
+.stage-tooltip {
+  position: relative;
+  border-bottom: 1px dotted #9898b0;
+  cursor: pointer;
+}
+
+.stage-tooltip-bubble {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: #1a1a28;
+  border: 1px solid #33334a;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.stage-tooltip:hover .stage-tooltip-bubble,
+.stage-tooltip:focus .stage-tooltip-bubble,
+.stage-tooltip:focus-within .stage-tooltip-bubble {
+  opacity: 1;
+  visibility: visible;
+}
+
+.stage-tooltip-label {
+  font-size: 0.75rem;
+  color: #9898b0;
+}
+
+.stage-diagram {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.stage-diagram-step-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.stage-diagram-step {
+  background: #252538;
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+}
+
 .import-spinner {
   display: inline-block;
   width: 0.85em;

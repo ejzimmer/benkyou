@@ -1,10 +1,63 @@
 import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
-import { summariesLookIdentical } from "./syncCompare"
+import {
+  FSRS_STATE_ORDER,
+  REVIEW_STAGE_LABEL,
+  summariesLookIdentical,
+} from "./syncCompare"
 
 type Props = {
   conflict: SyncConflict
   conflictNumber: number
   onChoose: (choice: SyncConflictChoice, applyToAllRemaining: boolean) => void
+}
+
+const STAGE_TOOLTIP_ID = "stage-tooltip-bubble"
+
+// "Review stage" -> "Review " (kept inline) + "stage" (the tooltip trigger).
+const stageWordIndex = REVIEW_STAGE_LABEL.lastIndexOf(" ") + 1
+const REVIEW_STAGE_PREFIX = REVIEW_STAGE_LABEL.slice(0, stageWordIndex)
+const STAGE_WORD = REVIEW_STAGE_LABEL.slice(stageWordIndex)
+
+function StageTooltip() {
+  return (
+    <span
+      className="stage-tooltip"
+      tabIndex={0}
+      aria-describedby={STAGE_TOOLTIP_ID}
+      // Empty handler so iOS Safari treats this span as tappable, letting
+      // touch users focus it (and so trigger the CSS-driven tooltip) instead
+      // of only supporting mouse hover.
+      onClick={() => {}}
+    >
+      {STAGE_WORD}
+      <span id={STAGE_TOOLTIP_ID} className="stage-tooltip-bubble" role="tooltip">
+        <span className="stage-tooltip-label">Stage order</span>
+        <span className="stage-diagram">
+          {FSRS_STATE_ORDER.map((stage, index) => (
+            <span key={stage} className="stage-diagram-step-group">
+              <span className="stage-diagram-step">{stage}</span>
+              {index < FSRS_STATE_ORDER.length - 1 && (
+                <span aria-hidden="true">→</span>
+              )}
+            </span>
+          ))}
+        </span>
+      </span>
+    </span>
+  )
+}
+
+function renderDifference(diff: string) {
+  if (diff.startsWith(REVIEW_STAGE_LABEL)) {
+    return (
+      <>
+        {REVIEW_STAGE_PREFIX}
+        <StageTooltip />
+        {diff.slice(REVIEW_STAGE_LABEL.length)}
+      </>
+    )
+  }
+  return diff
 }
 
 export function SyncConflictModal({
@@ -45,7 +98,7 @@ export function SyncConflictModal({
         {conflict.differences && conflict.differences.length > 0 && (
           <ul className="sync-conflict-differences small">
             {conflict.differences.map((diff) => (
-              <li key={diff}>{diff}</li>
+              <li key={diff}>{renderDifference(diff)}</li>
             ))}
           </ul>
         )}

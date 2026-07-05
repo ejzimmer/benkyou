@@ -105,15 +105,13 @@ export function schedulingSummary(row: SchedulingRow): string {
   return `Review mode ${row.modeId} · due ${due}`
 }
 
-const FSRS_STATE_LABELS: Record<number, string> = {
-  0: "New",
-  1: "Learning",
-  2: "Review",
-  3: "Relearning",
-}
+/** FSRS card states, in the order a card progresses through them. */
+export const FSRS_STATE_ORDER = ["New", "Learning", "Review", "Relearning"]
+
+export const REVIEW_STAGE_LABEL = "Review stage"
 
 function fsrsStateLabel(state: number): string {
-  return FSRS_STATE_LABELS[state] ?? `State ${state}`
+  return FSRS_STATE_ORDER[state] ?? `State ${state}`
 }
 
 function fsrsDateLabel(epochMs: number | undefined): string {
@@ -139,7 +137,7 @@ export function schedulingDiffDetails(
   }
   if (local.fsrs.state !== remote.fsrs.state) {
     diffs.push(
-      `Review stage — this device: ${fsrsStateLabel(local.fsrs.state)}, cloud: ${fsrsStateLabel(remote.fsrs.state)}`,
+      `${REVIEW_STAGE_LABEL} — this device: ${fsrsStateLabel(local.fsrs.state)}, cloud: ${fsrsStateLabel(remote.fsrs.state)}`,
     )
   }
   if (local.fsrs.reps !== remote.fsrs.reps) {
