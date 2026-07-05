@@ -11,7 +11,6 @@ import { createEmptyCard } from "ts-fsrs"
 import { ankiSchedulingToFsrs } from "./ankiSrs"
 import {
   containsJapanese,
-  containsKanji as surfaceHasKanji,
   extractEnglishLines,
   extractJapaneseGlossLines,
   extractMediaRefs,
@@ -45,7 +44,6 @@ type NoteClass =
   | "type"
   | "grammar"
   | "reversed"
-  | "kana"
   | "other"
 
 type ClassifiedNote = {
@@ -109,12 +107,13 @@ function classifyNote(note: ExtractedAnkiNote): ClassifiedNote {
     kind = "type"
   } else if (
     note.noteType === "Basic" &&
-    surfaceHasKanji(front) &&
+    containsJapanese(front) &&
     !isWrappedJapanese(front)
   ) {
+    // Covers both kanji headwords ("食べる") and kana-only ones ("おまけ") —
+    // same front-word/back-meaning shape, so both merge the same way with
+    // any sibling "type"/"reading" note for the same word.
     kind = "basic"
-  } else if (note.noteType === "Basic" && isKanaOnly(front)) {
-    kind = "kana"
   } else if (note.noteType.toLowerCase().includes("reversed")) {
     kind = "reversed"
   } else if (containsJapanese(back) && !containsJapanese(front)) {
@@ -315,28 +314,49 @@ function firstCard(note: ExtractedAnkiNote, ord = 0): AnkiSchedulingSource {
   return { ...card, isLeech: noteIsLeech(note.tags) }
 }
 
+/**
+ * Group key for a gap-marked note: the gapped sentence, with a trailing
+ * English parenthetical gloss stripped off. Some decks put the gap sentence
+ * and its English meaning in the same field ("...になる (Regular customer)"),
+ * others keep the meaning on the answer side and leave the gap side bare
+ * ("...になる") — without stripping the gloss, the same sentence produces two
+ * different keys depending on which note happened to carry it, splitting one
+ * word/sentence into two ungrouped candidates.
+ */
+const TRAILING_GLOSS_RE = /\s*[(（][^()（）]*[)）][\s。.!?！？]*$/
+
+function grammarGroupKey(entry: ClassifiedNote): string {
+  const gapRaw = hasGapMarker(entry.front) ? entry.frontRaw : entry.backRaw
+  let key = stripHtml(gapRaw).replace(/\s+/g, " ").trim()
+  // A note can carry more than one trailing gloss ("...sentence (a) (b)"), and
+  // some decks use full-width parens — strip every trailing occurrence, not
+  // just the last ASCII one.
+  while (TRAILING_GLOSS_RE.test(key)) {
+    key = key.replace(TRAILING_GLOSS_RE, "").trim()
+  }
+  return key
+}
+
 function buildGrammarGroups(classified: ClassifiedNote[]) {
   const mediaKey = (entry: ClassifiedNote) =>
     extractMediaRefs(`${entry.frontRaw}\n${entry.backRaw}`).sort().join("|")
 
   const grammarGroups = new Map<string, ClassifiedNote[]>()
   const grammarAnchors = classified.filter((entry) => entry.kind === "grammar")
-  for (const entry of grammarAnchors) {
-    const gapRaw = hasGapMarker(entry.front) ? entry.frontRaw : entry.backRaw
-    const key = stripHtml(gapRaw).replace(/\s+/g, " ")
-    const list = grammarGroups.get(key) ?? []
-    list.push(entry)
-    grammarGroups.set(key, list)
-  }
+  const anchorKeys = new Map(
+    grammarAnchors.map((anchor) => [anchor, grammarGroupKey(anchor)] as const),
+  )
 
-  const attachToGroup = (anchor: ClassifiedNote, entry: ClassifiedNote) => {
-    const gapRaw = hasGapMarker(anchor.front) ? anchor.frontRaw : anchor.backRaw
-    const key = stripHtml(gapRaw).replace(/\s+/g, " ")
+  const addToGroup = (key: string, entry: ClassifiedNote) => {
     const list = grammarGroups.get(key) ?? []
     if (!list.some((item) => item.note.id === entry.note.id)) {
       list.push(entry)
       grammarGroups.set(key, list)
     }
+  }
+
+  for (const entry of grammarAnchors) {
+    addToGroup(anchorKeys.get(entry)!, entry)
   }
 
   for (const entry of classified) {
@@ -346,7 +366,7 @@ function buildGrammarGroups(classified: ClassifiedNote[]) {
       (grammar) => mediaKey(grammar) === refs && mediaKey(grammar).length > 0,
     )
     if (anchorByMedia) {
-      attachToGroup(anchorByMedia, entry)
+      addToGroup(anchorKeys.get(anchorByMedia)!, entry)
       continue
     }
     const anchorByConstruction = grammarAnchors.find((grammar) => {
@@ -359,7 +379,7 @@ function buildGrammarGroups(classified: ClassifiedNote[]) {
         .split(", ")
         .every((part) => part && entry.front.includes(part))
     })
-    if (anchorByConstruction) attachToGroup(anchorByConstruction, entry)
+    if (anchorByConstruction) addToGroup(anchorKeys.get(anchorByConstruction)!, entry)
   }
 
   const grammarReserved = new Set<number>()
@@ -558,17 +578,21 @@ export function convertExtractedPackage(
     ...reversedByKey.keys(),
   ])
   for (const key of vocabKeys) {
-    const basic = basicByKey.get(key)
-    const type = typeByKey.get(key)
-    const reading = readingByKey.get(key)
-    const reversed = reversedByKey.get(key)
+    // A sibling already claimed by a grammar group (or already built into a
+    // card) sits out of THIS merge rather than vetoing it outright — e.g. a
+    // reading note attached elsewhere via anchorByConstruction shouldn't stop
+    // an unclaimed basic+type pair for the same word from merging together.
+    const unclaimed = (entry: ClassifiedNote | undefined) =>
+      entry &&
+      !grammarReserved.has(entry.note.id) &&
+      !usedNoteIds.has(entry.note.id)
+        ? entry
+        : undefined
+    const basic = unclaimed(basicByKey.get(key))
+    const type = unclaimed(typeByKey.get(key))
+    const reading = unclaimed(readingByKey.get(key))
+    const reversed = unclaimed(reversedByKey.get(key))
     if (!basic && !type && !reading && !reversed) continue
-    if (grammarReserved.has(basic?.note.id ?? -1)) continue
-    if (grammarReserved.has(type?.note.id ?? -1)) continue
-    if (usedNoteIds.has(basic?.note.id ?? -1)) continue
-    if (usedNoteIds.has(type?.note.id ?? -1)) continue
-    if (usedNoteIds.has(reading?.note.id ?? -1)) continue
-    if (usedNoteIds.has(reversed?.note.id ?? -1)) continue
     const wordSource = basic ?? type ?? reading ?? reversed
     const wordJa = headwordText(wordSource ? japaneseSide(wordSource) : key)
     mergeVocabulary(wordJa, basic, type, reading, reversed)
@@ -576,6 +600,7 @@ export function convertExtractedPackage(
 
   for (const entry of byKind("reading")) {
     if (usedNoteIds.has(entry.note.id)) continue
+    if (grammarReserved.has(entry.note.id)) continue
     mergeVocabulary(headwordText(entry.front), undefined, undefined, entry)
   }
 
@@ -614,10 +639,14 @@ export function convertExtractedPackage(
         exampleSentences: sentenceWithGap ? [sentenceWithGap] : [],
         synonymsJa: [],
       }
+      const readingEntry = entries.find((entry) => entry.kind === "reading")
       const sources: ModeSchedulingMap = {
         vocab_oral_en: firstCard(primary.note),
         vocab_type_word_from_clue: typeEntry
           ? firstCard(typeEntry.note)
+          : undefined,
+        vocab_type_reading: readingEntry
+          ? firstCard(readingEntry.note)
           : undefined,
       }
       const built = vocabularyCard(
