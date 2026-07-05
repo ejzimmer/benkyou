@@ -577,14 +577,14 @@ code {
 .stage-tooltip {
   position: relative;
   border-bottom: 1px dotted #9898b0;
-  cursor: help;
+  cursor: pointer;
 }
 
 .stage-tooltip-bubble {
   position: absolute;
-  bottom: 100%;
+  top: 100%;
   left: 50%;
-  transform: translateX(-50%) translateY(-6px);
+  transform: translateX(-50%) translateY(6px);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
