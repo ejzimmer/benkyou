@@ -26,7 +26,9 @@ import { GrammarClassifyReview } from "./GrammarClassifyReview"
 function importProgressLabel(progress: ImportProgress): string {
   switch (progress.phase) {
     case "reading":
-      return "Reading package…"
+      return progress.total > 0
+        ? `Reading images… ${progress.current}/${progress.total}`
+        : "Reading package…"
     case "saving":
       return progress.total > 0
         ? `Saving cards… ${progress.current}/${progress.total}`
@@ -34,7 +36,9 @@ function importProgressLabel(progress: ImportProgress): string {
     case "syncing":
       return `Syncing to the cloud… ${progress.current}/${progress.total}`
     case "uploading-media":
-      return "Uploading images…"
+      return progress.total > 0
+        ? `Uploading images… ${progress.current}/${progress.total}`
+        : "Uploading images…"
   }
 }
 
@@ -111,14 +115,16 @@ export function SettingsPage() {
     resetImportState()
     if (!file) return
     setImporting(true)
-    setImportProgress({ phase: "reading" })
+    setImportProgress({ phase: "reading", current: 0, total: 0 })
     try {
       const lower = file.name.toLowerCase()
       if (!lower.endsWith(".apkg") && !lower.endsWith(".colpkg")) {
         throw new Error("Choose an Anki package (.apkg or .colpkg)")
       }
       const { session: parsed, grammarCandidates: candidates } =
-        await startAnkiImport(file)
+        await startAnkiImport(file, (current, total) =>
+          setImportProgress({ phase: "reading", current, total }),
+        )
       if (candidates.length > 0) {
         // Pause for the user to confirm grammar vs vocab before building cards.
         setSession(parsed)
@@ -275,15 +281,13 @@ export function SettingsPage() {
               {importProgressLabel(importProgress)}
               {importElapsedSec > 0 ? ` (${importElapsedSec}s)` : ""}
             </p>
-            {(importProgress.phase === "saving" ||
-              importProgress.phase === "syncing") &&
-              importProgress.total > 0 && (
-                <progress
-                  value={importProgress.current}
-                  max={importProgress.total}
-                  style={{ width: "100%" }}
-                />
-              )}
+            {importProgress.total > 0 && (
+              <progress
+                value={importProgress.current}
+                max={importProgress.total}
+                style={{ width: "100%" }}
+              />
+            )}
             <p className="muted small">
               {wakeLockStatus === "active"
                 ? "Your screen will stay on until this finishes."

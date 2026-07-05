@@ -44,12 +44,15 @@ export async function parseAnkiPackageFile(
  * returned session is converted later via {@link convertImportSession} once the
  * user has chosen grammar or vocab for each candidate.
  */
-export async function startAnkiImport(file: File): Promise<{
+export async function startAnkiImport(
+  file: File,
+  onMediaProgress?: (current: number, total: number) => void,
+): Promise<{
   session: AnkiImportSession
   grammarCandidates: GrammarCandidate[]
 }> {
   const buf = await file.arrayBuffer()
-  const session = await parseAnkiPackage(buf)
+  const session = await parseAnkiPackage(buf, onMediaProgress)
   return { session, grammarCandidates: collectGrammarCandidates(session.pkg) }
 }
 
