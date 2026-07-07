@@ -244,6 +244,7 @@ describe("card type conversions", () => {
     ).toEqual({
       wordJa: "学生",
       reading: "がくせい",
+      readings: { 学生: "がくせい" },
       definitionsEn: ["student"],
       images: ["image-1"],
       exampleSentences: ["私は___です"],
@@ -270,6 +271,20 @@ describe("card type conversions", () => {
       images: ["image-1"],
       synonymsJa: ["ネコ"],
     })
+  })
+
+  it("preserves an explicit per-word reading override when converting to grammar", () => {
+    expect(
+      grammarFromVocabularyContent({
+        wordJa: "猫",
+        reading: "ねこ",
+        readings: { 猫: "みょう" },
+        definitionsEn: ["cat"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      }).readings,
+    ).toEqual({ 猫: "みょう" })
   })
 })
 
@@ -309,6 +324,7 @@ describe("mergeCardContent", () => {
     expect(merged.content).toEqual({
       wordJa: "猫",
       reading: "ねこ",
+      readings: {},
       definitionsEn: ["cat", "feline"],
       images: ["img-a", "img-b"],
       exampleSentences: ["猫がいます"],
@@ -354,6 +370,44 @@ describe("mergeCardContent", () => {
       "I am a student",
     ])
     expect(merged.content.exampleSentences).toEqual(["私は___です"])
+  })
+
+  it("merges overlapping vocabulary example-sentence readings by concatenating", () => {
+    const target: Card = {
+      id: "a",
+      deckId: "deck-1",
+      kind: "vocabulary",
+      content: {
+        wordJa: "猫",
+        definitionsEn: ["cat"],
+        readings: { 大好き: "だいすき" },
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      updatedAt: 0,
+    }
+    const source: Card = {
+      id: "b",
+      deckId: "deck-2",
+      kind: "vocabulary",
+      content: {
+        wordJa: "猫",
+        definitionsEn: [],
+        readings: { 大好き: "だいすき!", 元気: "げんき" },
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      updatedAt: 0,
+    }
+
+    const merged = mergeCardContent(target, source)
+    if (merged.kind !== "vocabulary") throw new Error("expected vocabulary")
+    expect(merged.content.readings).toEqual({
+      大好き: "だいすき; だいすき!",
+      元気: "げんき",
+    })
   })
 
   it("merges overlapping grammar readings by concatenating", () => {

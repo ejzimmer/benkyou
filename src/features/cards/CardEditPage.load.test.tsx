@@ -115,9 +115,13 @@ describe("CardEditPage load existing", () => {
     await user.selectOptions(screen.getByLabelText(/type/i), "vocabulary")
 
     expect(screen.getByLabelText(/japanese word/i)).toHaveValue("学生")
-    expect(screen.getByLabelText(/reading/i)).toHaveValue("がくせい")
+    expect(screen.getByLabelText(/reading \/ pronunciation/i)).toHaveValue(
+      "がくせい",
+    )
     expect(screen.getByLabelText(/meaning \(one per line\)/i)).toHaveValue("student")
-    expect(screen.getByLabelText(/example sentences/i)).toHaveValue("私は___です")
+    expect(
+      screen.getByLabelText(/example sentences \(one per line\)/i),
+    ).toHaveValue("私は___です")
     expect(screen.getByLabelText(/synonyms in japanese/i)).toHaveValue("生徒")
 
     await user.click(screen.getByRole("button", { name: /save/i }))

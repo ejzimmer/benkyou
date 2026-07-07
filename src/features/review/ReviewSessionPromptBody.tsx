@@ -2,7 +2,11 @@ import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { RubySentence, RubyWord } from "../../ui/KanjiRuby"
 import { CardImageRow } from "../../ui/CardImageRow"
-import { clueExampleSentences, readingForConstruction } from "./reviewFlowHelpers"
+import {
+  clueExampleSentences,
+  readingForConstruction,
+  vocabExampleReadings,
+} from "./reviewFlowHelpers"
 import {
   countGaps,
   GAP_ANSWER_JOIN,
@@ -96,6 +100,7 @@ export function ReviewSessionPromptBody({
   // Kanji readings stay available on hover/focus via <RubyWord>.
   if (m === "vocab_oral_en" && card.kind === "vocabulary") {
     const examples = card.content.exampleSentences.filter((s) => s.trim())
+    const exampleReadings = vocabExampleReadings(card.content)
     return (
       <div className="stack">
         <p className="prompt-main">
@@ -103,7 +108,7 @@ export function ReviewSessionPromptBody({
         </p>
         {examples.map((s, i) => (
           <p key={i} className="muted">
-            {s}
+            <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
           </p>
         ))}
       </div>
@@ -115,6 +120,10 @@ export function ReviewSessionPromptBody({
   if (m === "vocab_type_reading" && card.kind === "vocabulary") {
     const definitions = card.content.definitionsEn.filter((s) => s.trim())
     const examples = card.content.exampleSentences.filter((s) => s.trim())
+    // Only the card's own phrase map, not vocabExampleReadings' whole-word
+    // fallback — that fallback is the exact answer this mode is quizzing,
+    // and this hint panel is visible before the answer is revealed.
+    const exampleReadings = card.content.readings ?? {}
     const hasHidden =
       definitions.length > 0 ||
       examples.length > 0 ||
@@ -135,7 +144,7 @@ export function ReviewSessionPromptBody({
               )}
               {examples.map((s, i) => (
                 <p key={i} className="muted">
-                  {s}
+                  <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
                 </p>
               ))}
               <CardImageRow images={card.content.images} />
@@ -167,6 +176,7 @@ export function ReviewSessionPromptBody({
   // sentences that keep the answer blanked out, plus images (sized to fit).
   if (m === "vocab_type_word_from_clue" && card.kind === "vocabulary") {
     const examples = clueExampleSentences(card.content)
+    const exampleReadings = vocabExampleReadings(card.content)
     return (
       <div className="stack">
         <ul>
@@ -178,7 +188,7 @@ export function ReviewSessionPromptBody({
         </ul>
         {examples.map((s, i) => (
           <p key={i} className="muted">
-            {s}
+            <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
           </p>
         ))}
         <CardImageRow images={card.content.images} />

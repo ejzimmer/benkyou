@@ -3,7 +3,9 @@ import type {
   ReviewModeId,
   VocabularyCardContent,
 } from "../../domain/types"
+import { containsKanji } from "../../domain/types"
 import { normalizeGapAnswers } from "../../domain/grammarGaps"
+import { withWordReadingFallback } from "../../domain/readingsMap"
 
 /** Marker used to blank out the target word in an example sentence. */
 export const EXAMPLE_PLACEHOLDER = "___"
@@ -35,6 +37,20 @@ export function differsOnlyByPunctuation(a: string, b: string): boolean {
   const sa = strip(a)
   const sb = strip(b)
   return sa.length > 0 && sa === sb
+}
+
+/**
+ * Phrase→reading map used to add furigana to a vocab card's example
+ * sentences: the card's own per-phrase readings, plus its whole-word
+ * reading so the word itself is annotated where it appears in a sentence
+ * without needing a duplicate entry in the map.
+ */
+export function vocabExampleReadings(
+  content: VocabularyCardContent,
+): Record<string, string> {
+  const readings = content.readings ?? {}
+  if (!containsKanji(content.wordJa)) return { ...readings }
+  return withWordReadingFallback(readings, content.wordJa, content.reading)
 }
 
 export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {

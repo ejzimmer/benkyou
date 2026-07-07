@@ -39,9 +39,9 @@ import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import {
-  grammarReadingsToText,
-  parseGrammarReadingsText,
-} from "../../domain/grammarReadings"
+  parseReadingsMapText,
+  readingsMapToText,
+} from "../../domain/readingsMap"
 
 function safeReturnTo(raw: string | null): string | null {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null
@@ -188,10 +188,10 @@ export function CardEditPage() {
     setKind(loadedCard.kind)
     if (loadedCard.kind === "vocabulary") {
       setVocab(loadedCard.content)
-      setReadingsMapDraft("")
+      setReadingsMapDraft(readingsMapToText(loadedCard.content.readings ?? {}))
     } else {
       setGrammar(loadedCard.content)
-      setReadingsMapDraft(grammarReadingsToText(loadedCard.content.readings))
+      setReadingsMapDraft(readingsMapToText(loadedCard.content.readings))
     }
   }, [cardId, deckId, isNew, loadedCard])
 
@@ -212,14 +212,16 @@ export function CardEditPage() {
     if (nextKind === kind) return
 
     if (nextKind === "vocabulary") {
-      setVocab(vocabularyFromGrammarContent(grammar))
+      const nextVocab = vocabularyFromGrammarContent(grammar)
+      setVocab(nextVocab)
+      setReadingsMapDraft(readingsMapToText(nextVocab.readings ?? {}))
       setKind("vocabulary")
       return
     }
 
     const nextGrammar = grammarFromVocabularyContent(vocab)
     setGrammar(nextGrammar)
-    setReadingsMapDraft(grammarReadingsToText(nextGrammar.readings))
+    setReadingsMapDraft(readingsMapToText(nextGrammar.readings))
     setKind("grammar")
   }
 
@@ -288,9 +290,10 @@ export function CardEditPage() {
       const merged = await mergeCards(currentCardDraft(), match, user)
       if (merged.kind === "vocabulary") {
         setVocab(merged.content)
+        setReadingsMapDraft(readingsMapToText(merged.content.readings ?? {}))
       } else {
         setGrammar(merged.content)
-        setReadingsMapDraft(grammarReadingsToText(merged.content.readings))
+        setReadingsMapDraft(readingsMapToText(merged.content.readings))
       }
       setDuplicateMatches((matches) => matches.filter((c) => c.id !== match.id))
     } catch (x) {
@@ -513,6 +516,24 @@ export function CardEditPage() {
               />
             </label>
             <label>
+              Readings for words in the example sentences (format:
+              kanjiPhrase=reading, one per line)
+              <textarea
+                className="input"
+                rows={4}
+                aria-label="Kanji to reading map"
+                value={readingsMapDraft}
+                onChange={(e) => {
+                  const text = e.target.value
+                  setReadingsMapDraft(text)
+                  setVocab((v) => ({
+                    ...v,
+                    readings: parseReadingsMapText(text),
+                  }))
+                }}
+              />
+            </label>
+            <label>
               Synonyms in Japanese (one per line)
               <textarea
                 className="input"
@@ -610,7 +631,7 @@ export function CardEditPage() {
                   setReadingsMapDraft(text)
                   setGrammar((g) => ({
                     ...g,
-                    readings: parseGrammarReadingsText(text),
+                    readings: parseReadingsMapText(text),
                   }))
                 }}
               />
