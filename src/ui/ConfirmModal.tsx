@@ -12,8 +12,13 @@ export function ConfirmModal({
   onCancel,
 }: Props) {
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal-panel panel">
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onClick={onCancel}
+    >
+      <div className="modal-panel panel" onClick={(e) => e.stopPropagation()}>
         <p>{message}</p>
         <div className="toolbar">
           <button type="button" className="btn danger" onClick={onConfirm}>
