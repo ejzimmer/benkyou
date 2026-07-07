@@ -160,11 +160,17 @@ export function CardEditPage() {
         })()
       : null
 
+  // Tracks which cardId the form has already been hydrated from, so that
+  // live-query emissions caused by unrelated writes to this row (e.g. a
+  // background sync pass rewriting the card) don't clobber in-progress edits.
+  const hydratedCardIdRef = useRef<string | null>(null)
+
   useEffect(() => {
     if (isNew) {
       setLoading(false)
       setErr(null)
       setReadingsMapDraft("")
+      hydratedCardIdRef.current = null
       return
     }
     if (loadedCard === undefined) {
@@ -177,6 +183,8 @@ export function CardEditPage() {
       return
     }
     setErr(null)
+    if (hydratedCardIdRef.current === cardId) return
+    hydratedCardIdRef.current = cardId
     setKind(loadedCard.kind)
     if (loadedCard.kind === "vocabulary") {
       setVocab(loadedCard.content)

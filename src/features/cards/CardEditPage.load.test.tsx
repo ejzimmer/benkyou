@@ -134,4 +134,51 @@ describe("CardEditPage load existing", () => {
       expect(card.content.synonymsJa).toEqual(["生徒"])
     })
   })
+
+  it("keeps an in-progress type change when the card row is rewritten in the background (e.g. by sync)", async () => {
+    const user = userEvent.setup()
+    const original = {
+      id: "card-1",
+      deckId: "deck-1",
+      kind: "grammar" as const,
+      content: {
+        ...defaultGrammar(),
+        sentenceWithGap: "私は___です",
+        construction: "学生",
+        translationEn: "student",
+      },
+      updatedAt: Date.now(),
+    }
+    await db.cards.put(original)
+
+    render(
+      <MemoryRouter initialEntries={["/decks/deck-1/cards/card-1"]}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/decks/:deckId" element={<div>Deck page</div>} />
+            <Route
+              path="/decks/:deckId/cards/:cardId"
+              element={<CardEditPage />}
+            />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("私は___です")).toBeInTheDocument()
+    })
+
+    await user.selectOptions(screen.getByLabelText(/type/i), "vocabulary")
+    expect(screen.getByLabelText(/type/i)).toHaveValue("vocabulary")
+
+    // Simulate a background write to this exact row (e.g. a no-op sync pass)
+    // happening while the user is still mid-edit.
+    await db.cards.put({ ...original, updatedAt: Date.now() + 1 })
+
+    // Give the live query time to re-emit and the hydration effect to run,
+    // then confirm the in-progress type change wasn't reset back to "grammar".
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(screen.getByLabelText(/type/i)).toHaveValue("vocabulary")
+  })
 })
