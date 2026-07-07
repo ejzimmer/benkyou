@@ -10,6 +10,7 @@ function vocabularyTextFields(content: VocabularyCardContent): string[] {
   return [
     content.wordJa,
     content.reading ?? "",
+    ...Object.values(content.readings ?? {}),
     ...content.definitionsEn,
     ...content.exampleSentences,
     ...content.synonymsJa,

@@ -148,6 +148,19 @@ function mergeImages(a: string[], b: string[]): string[] {
   return [...new Set([...a, ...b])]
 }
 
+function mergeReadings(
+  target: Record<string, string>,
+  source: Record<string, string>,
+): Record<string, string> {
+  const readings = { ...target }
+  for (const [phrase, reading] of Object.entries(source)) {
+    readings[phrase] = readings[phrase]
+      ? concatText(readings[phrase], reading)
+      : reading
+  }
+  return readings
+}
+
 function mergeVocabularyContent(
   target: VocabularyCardContent,
   source: VocabularyCardContent,
@@ -156,6 +169,7 @@ function mergeVocabularyContent(
   return {
     wordJa: concatText(target.wordJa, source.wordJa),
     reading: reading || undefined,
+    readings: mergeReadings(target.readings ?? {}, source.readings ?? {}),
     definitionsEn: [...target.definitionsEn, ...source.definitionsEn],
     images: mergeImages(target.images, source.images),
     exampleSentences: [...target.exampleSentences, ...source.exampleSentences],
@@ -167,18 +181,12 @@ function mergeGrammarContent(
   target: GrammarCardContent,
   source: GrammarCardContent,
 ): GrammarCardContent {
-  const readings = { ...target.readings }
-  for (const [phrase, reading] of Object.entries(source.readings)) {
-    readings[phrase] = readings[phrase]
-      ? concatText(readings[phrase], reading)
-      : reading
-  }
   return {
     sentenceWithGap: concatText(target.sentenceWithGap, source.sentenceWithGap),
     gapMarker: target.gapMarker,
     construction: concatText(target.construction, source.construction),
     translationEn: concatText(target.translationEn, source.translationEn),
-    readings,
+    readings: mergeReadings(target.readings, source.readings),
     images: mergeImages(target.images, source.images),
     synonymsJa: [...target.synonymsJa, ...source.synonymsJa],
   }
@@ -274,6 +282,7 @@ export function defaultVocabulary(): VocabularyCardContent {
   return {
     wordJa: "",
     reading: "",
+    readings: {},
     definitionsEn: [""],
     images: [],
     exampleSentences: [],
@@ -304,6 +313,7 @@ export function vocabularyFromGrammarContent(
   return {
     wordJa,
     reading,
+    readings: { ...content.readings },
     definitionsEn: [content.translationEn],
     images: [...content.images],
     exampleSentences: [content.sentenceWithGap],
@@ -321,15 +331,17 @@ export function grammarFromVocabularyContent(
       ? exampleSentence.replace(content.wordJa, gapMarker)
       : exampleSentence
 
+  const readings = { ...(content.readings ?? {}) }
+  if (content.reading?.trim() && containsKanji(content.wordJa)) {
+    readings[content.wordJa] = content.reading
+  }
+
   return {
     sentenceWithGap,
     gapMarker,
     construction: content.wordJa,
     translationEn: content.definitionsEn.filter((s) => s.trim()).join("; "),
-    readings:
-      content.reading?.trim() && containsKanji(content.wordJa)
-        ? { [content.wordJa]: content.reading }
-        : {},
+    readings,
     images: [...content.images],
     synonymsJa: [...content.synonymsJa],
   }

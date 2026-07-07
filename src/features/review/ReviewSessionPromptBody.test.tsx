@@ -170,6 +170,51 @@ describe("ReviewSessionPromptBody", () => {
     expect(screen.queryByRole("textbox")).toBeNull()
   })
 
+  it("shows per-word furigana in vocab example sentences from the readings map", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-5",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "猫",
+          reading: "ねこ",
+          readings: { 大好き: "だいすき" },
+          definitionsEn: ["cat"],
+          images: [],
+          exampleSentences: ["猫が大好きです。"],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_oral_en",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    const sentence = container.querySelector("p.muted .ruby-sentence")
+    expect(sentence).not.toBeNull()
+    const rubies = Array.from(sentence?.querySelectorAll("ruby") ?? [])
+    expect(rubies.map((r) => r.firstChild?.textContent)).toEqual([
+      "猫",
+      "大好き",
+    ])
+    expect(rubies.map((r) => r.querySelector("rt")?.textContent)).toEqual([
+      "ねこ",
+      "だいすき",
+    ])
+  })
+
   it("does not auto-focus inline grammar input on touch-primary devices", () => {
     stubTouchPrimaryDevice(true)
 

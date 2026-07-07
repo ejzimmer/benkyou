@@ -46,3 +46,28 @@ describe("CardEditPage grammar readings draft", () => {
     expect(ta).toHaveValue("私=わたし")
   })
 })
+
+describe("CardEditPage vocabulary readings draft", () => {
+  it("accepts per-word readings for example sentences", async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={["/decks/d1/cards/new"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const ta = screen.getByRole("textbox", { name: /kanji to reading map/i })
+    await user.type(ta, "大好き")
+    expect(ta).toHaveValue("大好き")
+    await user.type(ta, "=")
+    expect(ta).toHaveValue("大好き=")
+    await user.type(ta, "だいすき")
+    expect(ta).toHaveValue("大好き=だいすき")
+  })
+})

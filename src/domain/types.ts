@@ -24,6 +24,8 @@ export type VocabularyCardContent = {
   wordJa: string
   /** Hiragana reading — only for words with kanji (pronunciation study). */
   reading?: string
+  /** Kanji phrases within example sentences → hiragana readings, shown on hover/focus. */
+  readings?: Record<string, string>
   definitionsEn: string[]
   images: string[]
   exampleSentences: string[]
