@@ -29,7 +29,7 @@ import {
   validateVocabulary,
   vocabularyFromGrammarContent,
 } from "../../services/cards"
-import { saveImageBlob } from "../../services/media"
+import { deleteImageBlob, saveImageBlob } from "../../services/media"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { db } from "../../lib/db/schema"
 import { CardImage } from "../../ui/CardImage"
@@ -58,13 +58,29 @@ function imageFilesFromClipboard(data: DataTransfer): File[] {
   return Array.from(data.files).filter((file) => file.type.startsWith("image/"))
 }
 
-function ImagePreviewList({ imageIds }: { imageIds: string[] }) {
+function ImagePreviewList({
+  imageIds,
+  onRemove,
+}: {
+  imageIds: string[]
+  onRemove: (id: string) => void
+}) {
   if (imageIds.length === 0) return null
 
   return (
     <div className="image-preview-list">
       {imageIds.map((id) => (
-        <CardImage key={id} mediaId={id} />
+        <div key={id} className="image-preview-item">
+          <CardImage mediaId={id} />
+          <button
+            type="button"
+            className="image-preview-remove"
+            aria-label="Remove image"
+            onClick={() => onRemove(id)}
+          >
+            ✕
+          </button>
+        </div>
       ))}
     </div>
   )
@@ -300,6 +316,22 @@ export function CardEditPage() {
     }
   }
 
+  async function onRemoveImage(id: string) {
+    if (kind === "vocabulary") {
+      setVocab((v) => ({ ...v, images: v.images.filter((imgId) => imgId !== id) }))
+    } else {
+      setGrammar((g) => ({
+        ...g,
+        images: g.images.filter((imgId) => imgId !== id),
+      }))
+    }
+    try {
+      await deleteImageBlob(id, user)
+    } catch (x) {
+      setErr(x instanceof Error ? x.message : "Failed to delete image")
+    }
+  }
+
   async function onPickImage(files: FileList | null) {
     if (!files?.length) return
     await addImageFiles(
@@ -472,7 +504,7 @@ export function CardEditPage() {
               Choose an image file or paste an image from your clipboard
               anywhere in this form.
             </p>
-            <ImagePreviewList imageIds={vocab.images} />
+            <ImagePreviewList imageIds={vocab.images} onRemove={onRemoveImage} />
           </>
         ) : (
           <>
@@ -575,7 +607,7 @@ export function CardEditPage() {
               Choose an image file or paste an image from your clipboard
               anywhere in this form.
             </p>
-            <ImagePreviewList imageIds={grammar.images} />
+            <ImagePreviewList imageIds={grammar.images} onRemove={onRemoveImage} />
           </>
         )}
 

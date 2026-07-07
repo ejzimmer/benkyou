@@ -251,6 +251,33 @@ label {
   object-fit: cover;
 }
 
+.image-preview-item {
+  position: relative;
+  display: inline-flex;
+}
+
+.image-preview-remove {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #450a0a;
+  color: #e8e8f0;
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.image-preview-remove:hover {
+  background: #7f1d1d;
+}
+
 .import-card-preview {
   background: #12121a;
   border-radius: 8px;
@@ -629,6 +656,24 @@ code {
   background: #252538;
   border-radius: 4px;
   padding: 0.15rem 0.4rem;
+}
+
+.global-sync-indicator {
+  position: fixed;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  color: #9898b0;
+}
+
+.global-sync-indicator .import-spinner {
+  margin-right: 0;
+  width: 1em;
+  height: 1em;
 }
 
 .import-spinner {
