@@ -176,6 +176,14 @@ function renderRevealedReview(item: DueItem) {
   )
 }
 
+/** Visible text of an element, excluding hidden furigana `<rt>` content. */
+function textWithoutRuby(el: Element | null): string {
+  if (!el) return ""
+  const clone = el.cloneNode(true) as Element
+  clone.querySelectorAll("rt").forEach((rt) => rt.remove())
+  return clone.textContent ?? ""
+}
+
 function expectBefore(first: Element, second: Element) {
   expect(
     Boolean(
@@ -196,6 +204,7 @@ describe("ReviewSessionAnswerPanel", () => {
 
     expect(prompt).not.toBeNull()
     expect(example).not.toBeNull()
+    expect(textWithoutRuby(example)).toBe("猫がいます。")
     expect(correctButton).toHaveFocus()
     expectBefore(prompt!, example!)
     expectBefore(example!, meaning)

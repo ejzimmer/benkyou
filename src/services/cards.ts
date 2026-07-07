@@ -15,6 +15,7 @@ import {
   normalizeGapAnswers,
   splitGapAnswers,
 } from "../domain/grammarGaps"
+import { withWordReadingFallback } from "../domain/readingsMap"
 import { db, type SchedulingRow } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
 import {
@@ -331,10 +332,9 @@ export function grammarFromVocabularyContent(
       ? exampleSentence.replace(content.wordJa, gapMarker)
       : exampleSentence
 
-  const readings = { ...(content.readings ?? {}) }
-  if (content.reading?.trim() && containsKanji(content.wordJa)) {
-    readings[content.wordJa] = content.reading
-  }
+  const readings = containsKanji(content.wordJa)
+    ? withWordReadingFallback(content.readings ?? {}, content.wordJa, content.reading)
+    : { ...(content.readings ?? {}) }
 
   return {
     sentenceWithGap,

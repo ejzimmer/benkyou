@@ -120,7 +120,10 @@ export function ReviewSessionPromptBody({
   if (m === "vocab_type_reading" && card.kind === "vocabulary") {
     const definitions = card.content.definitionsEn.filter((s) => s.trim())
     const examples = card.content.exampleSentences.filter((s) => s.trim())
-    const exampleReadings = vocabExampleReadings(card.content)
+    // Only the card's own phrase map, not vocabExampleReadings' whole-word
+    // fallback — that fallback is the exact answer this mode is quizzing,
+    // and this hint panel is visible before the answer is revealed.
+    const exampleReadings = card.content.readings ?? {}
     const hasHidden =
       definitions.length > 0 ||
       examples.length > 0 ||

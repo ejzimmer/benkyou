@@ -5,6 +5,7 @@ import type {
 } from "../../domain/types"
 import { containsKanji } from "../../domain/types"
 import { normalizeGapAnswers } from "../../domain/grammarGaps"
+import { withWordReadingFallback } from "../../domain/readingsMap"
 
 /** Marker used to blank out the target word in an example sentence. */
 export const EXAMPLE_PLACEHOLDER = "___"
@@ -47,15 +48,9 @@ export function differsOnlyByPunctuation(a: string, b: string): boolean {
 export function vocabExampleReadings(
   content: VocabularyCardContent,
 ): Record<string, string> {
-  const readings = { ...(content.readings ?? {}) }
-  if (
-    content.reading?.trim() &&
-    containsKanji(content.wordJa) &&
-    !readings[content.wordJa]
-  ) {
-    readings[content.wordJa] = content.reading
-  }
-  return readings
+  const readings = content.readings ?? {}
+  if (!containsKanji(content.wordJa)) return { ...readings }
+  return withWordReadingFallback(readings, content.wordJa, content.reading)
 }
 
 export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {

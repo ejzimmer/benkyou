@@ -272,6 +272,20 @@ describe("card type conversions", () => {
       synonymsJa: ["ネコ"],
     })
   })
+
+  it("preserves an explicit per-word reading override when converting to grammar", () => {
+    expect(
+      grammarFromVocabularyContent({
+        wordJa: "猫",
+        reading: "ねこ",
+        readings: { 猫: "みょう" },
+        definitionsEn: ["cat"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      }).readings,
+    ).toEqual({ 猫: "みょう" })
+  })
 })
 
 describe("mergeCardContent", () => {

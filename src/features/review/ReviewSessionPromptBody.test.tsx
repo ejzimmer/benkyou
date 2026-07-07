@@ -215,6 +215,52 @@ describe("ReviewSessionPromptBody", () => {
     ])
   })
 
+  it("does not leak the tested reading via example-sentence furigana before reveal", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-6",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "猫",
+          reading: "ねこ",
+          readings: { 大好き: "だいすき" },
+          definitionsEn: ["cat"],
+          images: [],
+          exampleSentences: ["猫が大好きです。"],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_type_reading",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    const sentence = container.querySelector(".prompt-extras-content .ruby-sentence")
+    expect(sentence).not.toBeNull()
+    const rubies = Array.from(sentence?.querySelectorAll("ruby") ?? [])
+    // The unrelated word's explicit reading still shows as a hint...
+    expect(rubies.map((r) => r.firstChild?.textContent)).toEqual(["大好き"])
+    // ...but the tested word itself is plain text, not furigana-annotated.
+    expect(sentence?.textContent).toContain("猫")
+    expect(
+      Array.from(sentence?.querySelectorAll("rt") ?? []).map(
+        (rt) => rt.textContent,
+      ),
+    ).not.toContain("ねこ")
+  })
+
   it("does not auto-focus inline grammar input on touch-primary devices", () => {
     stubTouchPrimaryDevice(true)
 

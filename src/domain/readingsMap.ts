@@ -18,3 +18,18 @@ export function parseReadingsMapText(text: string): Record<string, string> {
   }
   return readings
 }
+
+/**
+ * Add `word => reading` to a phrase map as a fallback, without overwriting
+ * an explicit entry the map already has for that word.
+ */
+export function withWordReadingFallback(
+  readings: Record<string, string>,
+  word: string,
+  reading: string | undefined,
+): Record<string, string> {
+  if (reading?.trim() && !readings[word]) {
+    return { ...readings, [word]: reading }
+  }
+  return { ...readings }
+}
