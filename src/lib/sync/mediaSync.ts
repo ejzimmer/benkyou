@@ -14,6 +14,7 @@ import { upsertMediaMetaRemote } from "./firestoreSync"
 import { syncLog } from "./syncLog"
 import { withStorageTimeout } from "./storageTimeout"
 import { mediaBlobDigest } from "./syncCompare"
+import { runWithConcurrency } from "./runWithConcurrency"
 import type { RemoteMediaMeta } from "./syncTypes"
 
 /** Backfills and caches `row.digest` (SHA-256 of the blob) when missing. */
@@ -189,7 +190,17 @@ export async function pushLocalMediaToRemote(
   }
 }
 
-/** Pull Storage blobs for every image id referenced by cards (for review UI). */
+/**
+ * Pull Storage blobs for every image id referenced by cards (for review UI).
+ *
+ * `syncMedia` (run just before this in `runFullSync`) already reconciles
+ * every media id it knows about against Storage, so in the common case
+ * (nothing changed) every referenced id is already local. Checking that
+ * with one bulk `toArray()` — instead of an `await db.media.get(id)` per
+ * id — avoids turning "start a review" into hundreds of sequential
+ * IndexedDB round trips when nothing needs downloading. Only ids that
+ * turn out to be missing pay for an actual (concurrent) Storage fetch.
+ */
 export async function hydrateReferencedMedia(
   uid: string,
   onProgress?: (current: number, total: number) => void,
@@ -200,41 +211,48 @@ export async function hydrateReferencedMedia(
     for (const id of card.content.images) ids.add(id)
   }
 
-  let pulled = 0
-  let alreadyLocal = 0
-  let failed = 0
-  let processed = 0
-  const total = ids.size
+  const localById = new Map(
+    (await db.media.toArray()).map((m) => [m.id, m]),
+  )
 
-  for (const id of ids) {
-    processed += 1
-    if (onProgress && (processed % 3 === 0 || processed === total)) {
-      onProgress(processed, total)
-    }
-    const local = await db.media.get(id)
-    if (local?.blob && local.blob.size > 0) {
-      alreadyLocal++
-      continue
-    }
+  const total = ids.size
+  const missing = [...ids].filter((id) => {
+    const local = localById.get(id)
+    return !local?.blob || local.blob.size === 0
+  })
+  const alreadyLocal = total - missing.length
+
+  let pulled = 0
+  let failed = 0
+  let processed = alreadyLocal
+  if (onProgress && total > 0) onProgress(processed, total)
+
+  await runWithConcurrency(missing, 4, async (id) => {
     try {
+      const local = localById.get(id)
       const blob = await downloadMediaFromRemote(uid, id)
       if (!blob || blob.size === 0) {
         failed++
-        continue
+      } else {
+        await db.media.put({
+          id,
+          blob,
+          mimeType: local?.mimeType ?? blob.type ?? "image/jpeg",
+          updatedAt: Date.now(),
+        })
+        pulled++
       }
-      await db.media.put({
-        id,
-        blob,
-        mimeType: local?.mimeType ?? blob.type ?? "image/jpeg",
-        updatedAt: Date.now(),
-      })
-      pulled++
     } catch {
       failed++
+    } finally {
+      processed += 1
+      if (onProgress && (processed % 3 === 0 || processed === total)) {
+        onProgress(processed, total)
+      }
     }
-  }
+  })
 
-  return { total: ids.size, pulled, alreadyLocal, failed }
+  return { total, pulled, alreadyLocal, failed }
 }
 
 export async function pullRemoteMediaToLocal(
