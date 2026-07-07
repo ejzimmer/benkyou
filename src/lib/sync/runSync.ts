@@ -250,12 +250,14 @@ async function collectEntityConflicts(
       }
       continue
     }
-    const pick = resolveEntityMerge(
-      local,
-      remoteDeck,
-      lastSyncedAt,
-      !deckChanged(local, remoteDeck),
-    )
+    // Content already matches remote — nothing to reconcile. Checking this
+    // up front (rather than letting resolveEntityMerge pick a "winner" by
+    // timestamp) matters because ties go to remote, whose object is never
+    // `=== local` even when its payload is identical; without this the
+    // `winner === local` guard below misses the tie case and every
+    // unchanged deck gets rewritten to IndexedDB on every sync.
+    if (!deckChanged(local, remoteDeck)) continue
+    const pick = resolveEntityMerge(local, remoteDeck, lastSyncedAt, false)
     let winner: Deck
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "deck", entityId: local.id })
@@ -312,12 +314,10 @@ async function collectEntityConflicts(
       }
       continue
     }
-    const pick = resolveEntityMerge(
-      local,
-      remoteCard,
-      lastSyncedAt,
-      !cardChanged(local, remoteCard),
-    )
+    // See the deck loop above: skip entities whose content already matches
+    // remote instead of letting a timestamp tie route through resolveEntityMerge.
+    if (!cardChanged(local, remoteCard)) continue
+    const pick = resolveEntityMerge(local, remoteCard, lastSyncedAt, false)
     let winner: Card
     if (pick === "conflict") {
       syncLog("merge conflict", { entityType: "card", entityId: local.id })
@@ -374,12 +374,10 @@ async function collectEntityConflicts(
       }
       continue
     }
-    const pick = resolveEntityMerge(
-      local,
-      remoteRow,
-      lastSyncedAt,
-      !schedulingChanged(local, remoteRow),
-    )
+    // See the deck loop above: skip entities whose content already matches
+    // remote instead of letting a timestamp tie route through resolveEntityMerge.
+    if (!schedulingChanged(local, remoteRow)) continue
+    const pick = resolveEntityMerge(local, remoteRow, lastSyncedAt, false)
     let winner: SchedulingRow
     if (pick === "conflict") {
       syncLog("merge conflict", {
