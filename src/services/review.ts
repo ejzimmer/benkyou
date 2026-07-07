@@ -75,6 +75,29 @@ export function randomizeDueQueue(
 }
 
 /**
+ * Where to reinsert a wrongly-answered item so it comes back later in the
+ * same session without landing right next to another due item for the same
+ * card — e.g. that card's other review mode already sitting at the end of
+ * `rest`. Searches backward from the end for the latest slot where neither
+ * neighbour shares the card, so the item stays as late as possible (same
+ * intent as just appending it) while preserving the "never adjacent"
+ * invariant `randomizeDueQueue` establishes for the initial queue. Falls
+ * back to the end if the card dominates the remaining queue and no safe
+ * slot exists.
+ */
+export function requeueAfterIncorrect(
+  rest: DueItem[],
+  item: DueItem,
+): DueItem[] {
+  for (let i = rest.length; i >= 0; i -= 1) {
+    if (rest[i - 1]?.card.id === item.card.id) continue
+    if (rest[i]?.card.id === item.card.id) continue
+    return [...rest.slice(0, i), item, ...rest.slice(i)]
+  }
+  return [...rest, item]
+}
+
+/**
  * Last instant of the calendar day containing `timestamp`, expressed in the
  * user's local timezone.
  *

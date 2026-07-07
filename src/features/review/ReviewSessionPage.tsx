@@ -5,6 +5,7 @@ import {
   commitJudgement,
   getDueQueue,
   prepareJudgement,
+  requeueAfterIncorrect,
   restoreSchedulingSnapshot,
   undoLastJudgement,
   type DueItem,
@@ -285,7 +286,7 @@ export function ReviewSessionPage() {
     if (!first) return
 
     const delayMs = rest.length > 0 ? INCORRECT_ADVANCE_DELAY_MS : 0
-    setSessionQueue([...rest, first])
+    setSessionQueue(requeueAfterIncorrect(rest, first))
 
     resetPromptAfterJudgement()
     setPhase("prompt")

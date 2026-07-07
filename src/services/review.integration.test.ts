@@ -8,6 +8,7 @@ import {
   getDueQueue,
   prepareJudgement,
   randomizeDueQueue,
+  requeueAfterIncorrect,
   undoLastJudgement,
   type DueItem,
 } from "./review"
@@ -124,6 +125,36 @@ describe("review + scheduling (IndexedDB)", () => {
       "a",
     ])
     expect(new Set(randomized)).toEqual(new Set(queue))
+  })
+
+  it("requeues a wrongly-answered item without landing it next to the same card", () => {
+    const cardX = vocabularyCard("x")
+    const cardZ = vocabularyCard("z")
+    // The card's other due mode (x:vocab_type_reading) already sits at the
+    // end of the queue — naively appending the just-missed item there would
+    // put two "x" prompts back to back.
+    const rest = [
+      dueItem(cardZ, "vocab_oral_en", 1),
+      dueItem(cardX, "vocab_type_reading", 2),
+    ]
+    const missed = dueItem(cardX, "vocab_oral_en", 3)
+
+    const requeued = requeueAfterIncorrect(rest, missed)
+
+    for (let i = 1; i < requeued.length; i += 1) {
+      expect(requeued[i].card.id).not.toBe(requeued[i - 1].card.id)
+    }
+    expect(new Set(requeued)).toEqual(new Set([...rest, missed]))
+  })
+
+  it("falls back to appending at the end when the card dominates the remaining queue", () => {
+    const cardX = vocabularyCard("x")
+    const rest = [dueItem(cardX, "vocab_type_reading", 1)]
+    const missed = dueItem(cardX, "vocab_oral_en", 2)
+
+    const requeued = requeueAfterIncorrect(rest, missed)
+
+    expect(requeued).toEqual([...rest, missed])
   })
 
   it("creates due rows for each review mode and updates after judgement", async () => {
