@@ -121,16 +121,7 @@ export function ReviewSessionPromptBody({
       card.content.images.length > 0
     return (
       <div className="stack">
-        <p className="prompt-main">
-          {revealed ? (
-            <RubyWord
-              surface={card.content.wordJa}
-              reading={card.content.reading}
-            />
-          ) : (
-            card.content.wordJa
-          )}
-        </p>
+        <p className="prompt-main">{card.content.wordJa}</p>
         {hasHidden && (
           <details className="prompt-extras">
             <summary className="btn">Show meaning, examples & images</summary>
