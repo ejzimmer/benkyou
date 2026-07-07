@@ -509,6 +509,10 @@ label {
   box-decoration-break: clone;
 }
 
+.ruby-hover ruby {
+  ruby-align: center;
+}
+
 .ruby-hover ruby rt {
   opacity: 0;
   transition: opacity 0.12s ease;
