@@ -11,8 +11,9 @@ import type { Card, Deck } from "../../domain/types"
 import type { MediaRow, SchedulingRow } from "../db/schema"
 import { db } from "../db/schema"
 import type { RemoteMediaMeta, Tombstone } from "./syncTypes"
-import { stripUndefinedDeep } from "./firestoreData"
+import { stableCompareJson, stripUndefinedDeep } from "./firestoreData"
 import { syncLog, syncLogTimed } from "./syncLog"
+import { cardChanged, deckChanged, mediaChanged, schedulingChanged } from "./syncCompare"
 
 const BATCH_SIZE = 400
 
@@ -172,6 +173,16 @@ export async function pushImportedDeckBatched(
   await commitOpsBatched(fs, ops, onProgress)
 }
 
+function mediaMetaPayload(m: MediaRow) {
+  return { id: m.id, mimeType: m.mimeType, updatedAt: m.updatedAt, digest: m.digest }
+}
+
+/** Tombstones have no dedicated payload comparator (they're small and rarely
+ *  churn), so fall back to a raw deep-equality check. */
+function unchanged<T>(local: T, remote: T | undefined): boolean {
+  return remote != null && stableCompareJson(local, remote)
+}
+
 export async function pushLocalToRemote(
   fs: Firestore,
   uid: string,
@@ -187,32 +198,65 @@ export async function pushLocalToRemote(
       db.media.toArray(),
     ])
 
+  // Fetched up front (rather than only for the delete sweep below) so the
+  // upserts below can skip anything that already matches what's remote —
+  // most rows on any given push are untouched since the last one.
+  const remoteSnapshot =
+    remote ??
+    (await syncLogTimed("fetchRemoteSnapshot (push)", () =>
+      fetchRemoteSnapshot(fs, uid, "push"),
+    ))
+
   const sets: Array<{ ref: ReturnType<typeof doc>; data: object }> = []
+  let skipped = 0
 
   for (const d of localDecks) {
+    const remoteDeck = remoteSnapshot.decks.get(d.id)
+    if (remoteDeck && !deckChanged(d, remoteDeck)) {
+      skipped++
+      continue
+    }
     sets.push({ ref: doc(decksCol(fs, uid), d.id), data: d })
   }
   for (const c of localCards) {
+    const remoteCard = remoteSnapshot.cards.get(c.id)
+    if (remoteCard && !cardChanged(c, remoteCard)) {
+      skipped++
+      continue
+    }
     sets.push({
       ref: doc(cardsCol(fs, uid), c.id),
       data: c as Record<string, unknown>,
     })
   }
   for (const s of localSched) {
+    const remoteRow = remoteSnapshot.scheduling.get(s.id)
+    if (remoteRow && !schedulingChanged(s, remoteRow)) {
+      skipped++
+      continue
+    }
     sets.push({ ref: doc(schedCol(fs, uid), s.id), data: s })
   }
   for (const t of localTombs) {
+    if (unchanged(t, remoteSnapshot.tombstones.get(t.id))) {
+      skipped++
+      continue
+    }
     sets.push({ ref: doc(tombstonesCol(fs, uid), t.id), data: t })
   }
   for (const m of localMedia) {
+    const remoteMeta = remoteSnapshot.mediaMeta.get(m.id)
+    if (
+      remoteMeta?.digest &&
+      m.digest &&
+      !mediaChanged(m, remoteMeta, m.digest, remoteMeta.digest)
+    ) {
+      skipped++
+      continue
+    }
     sets.push({
       ref: doc(mediaMetaCol(fs, uid), m.id),
-      data: {
-        id: m.id,
-        mimeType: m.mimeType,
-        updatedAt: m.updatedAt,
-        digest: m.digest,
-      },
+      data: mediaMetaPayload(m),
     })
   }
 
@@ -222,39 +266,40 @@ export async function pushLocalToRemote(
     scheduling: localSched.length,
     tombstones: localTombs.length,
     mediaMeta: localMedia.length,
+    toWrite: sets.length,
+    skippedUnchanged: skipped,
   })
   await syncLogTimed("Firestore commit upserts", () => commitBatch(fs, sets))
 
   const tombstoned = new Set(localTombs.map((t) => t.id))
+  const localDeckIds = new Set(localDecks.map((d) => d.id))
+  const localCardIds = new Set(localCards.map((c) => c.id))
+  const localSchedIds = new Set(localSched.map((s) => s.id))
+  const localMediaIds = new Set(localMedia.map((m) => m.id))
 
   const deleteOps: ReturnType<typeof doc>[] = []
-  const remoteSnapshot =
-    remote ??
-    (await syncLogTimed("fetchRemoteSnapshot (push-deletes)", () =>
-      fetchRemoteSnapshot(fs, uid, "push-deletes"),
-    ))
 
   for (const id of remoteSnapshot.decks.keys()) {
     const tid = `deck:${id}`
-    if (!localDecks.some((d) => d.id === id) || tombstoned.has(tid)) {
+    if (!localDeckIds.has(id) || tombstoned.has(tid)) {
       deleteOps.push(doc(decksCol(fs, uid), id))
     }
   }
   for (const id of remoteSnapshot.cards.keys()) {
     const tid = `card:${id}`
-    if (!localCards.some((c) => c.id === id) || tombstoned.has(tid)) {
+    if (!localCardIds.has(id) || tombstoned.has(tid)) {
       deleteOps.push(doc(cardsCol(fs, uid), id))
     }
   }
   for (const id of remoteSnapshot.scheduling.keys()) {
     const tid = `scheduling:${id}`
-    if (!localSched.some((s) => s.id === id) || tombstoned.has(tid)) {
+    if (!localSchedIds.has(id) || tombstoned.has(tid)) {
       deleteOps.push(doc(schedCol(fs, uid), id))
     }
   }
   for (const id of remoteSnapshot.mediaMeta.keys()) {
     const tid = `media:${id}`
-    if (!localMedia.some((m) => m.id === id) || tombstoned.has(tid)) {
+    if (!localMediaIds.has(id) || tombstoned.has(tid)) {
       deleteOps.push(doc(mediaMetaCol(fs, uid), id))
     }
   }
@@ -319,12 +364,7 @@ export async function upsertMediaMetaRemote(
 ): Promise<void> {
   await setDoc(
     doc(mediaMetaCol(fs, uid), row.id),
-    stripUndefinedDeep({
-      id: row.id,
-      mimeType: row.mimeType,
-      updatedAt: row.updatedAt,
-      digest: row.digest,
-    }),
+    stripUndefinedDeep(mediaMetaPayload(row)),
   )
 }
 
