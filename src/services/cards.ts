@@ -220,6 +220,17 @@ export async function mergeCards(
   return merged
 }
 
+/** True if a card other than `excludeCardId` still references this media id (e.g. bulk import dedups identical images across notes that land on separate cards). */
+export async function isMediaReferencedByOtherCards(
+  mediaId: string,
+  excludeCardId: string,
+): Promise<boolean> {
+  const cards = await db.cards.toArray()
+  return cards.some(
+    (card) => card.id !== excludeCardId && card.content.images.includes(mediaId),
+  )
+}
+
 export async function deleteCard(
   cardId: string,
   user: User | null,

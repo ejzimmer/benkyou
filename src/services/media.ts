@@ -8,6 +8,7 @@ import {
 } from "../lib/sync/mediaSync"
 import { mediaBlobDigest } from "../lib/sync/syncCompare"
 import { schedulePushAfterMutation } from "../lib/sync/schedulePush"
+import { recordTombstone } from "../lib/sync/tombstones"
 import type { User } from "firebase/auth"
 
 export async function saveImageBlob(
@@ -40,6 +41,16 @@ export async function saveImageBlob(
   }
 
   return id
+}
+
+/** Remove an image's blob locally and mark it for removal on the next sync. */
+export async function deleteImageBlob(
+  mediaId: string,
+  user: User | null = null,
+): Promise<void> {
+  await recordTombstone("media", mediaId)
+  await db.media.delete(mediaId)
+  schedulePushAfterMutation(user)
 }
 
 /** Ensure image bytes exist in IndexedDB; download from Storage when missing. */

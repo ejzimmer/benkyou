@@ -22,6 +22,7 @@ import {
   defaultVocabulary,
   deleteCard,
   grammarFromVocabularyContent,
+  isMediaReferencedByOtherCards,
   mergeCards,
   normalizeGrammarContent,
   saveCard,
@@ -29,7 +30,7 @@ import {
   validateVocabulary,
   vocabularyFromGrammarContent,
 } from "../../services/cards"
-import { saveImageBlob } from "../../services/media"
+import { deleteImageBlob, saveImageBlob } from "../../services/media"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { db } from "../../lib/db/schema"
 import { CardImage } from "../../ui/CardImage"
@@ -58,13 +59,29 @@ function imageFilesFromClipboard(data: DataTransfer): File[] {
   return Array.from(data.files).filter((file) => file.type.startsWith("image/"))
 }
 
-function ImagePreviewList({ imageIds }: { imageIds: string[] }) {
+function ImagePreviewList({
+  imageIds,
+  onRemove,
+}: {
+  imageIds: string[]
+  onRemove: (id: string) => void
+}) {
   if (imageIds.length === 0) return null
 
   return (
     <div className="image-preview-list">
       {imageIds.map((id) => (
-        <CardImage key={id} mediaId={id} />
+        <div key={id} className="image-preview-item">
+          <CardImage mediaId={id} />
+          <button
+            type="button"
+            className="image-preview-remove"
+            aria-label="Remove image"
+            onClick={() => onRemove(id)}
+          >
+            ✕
+          </button>
+        </div>
       ))}
     </div>
   )
@@ -308,6 +325,50 @@ export function CardEditPage() {
     }
   }
 
+  async function onRemoveImage(id: string) {
+    setErr(null)
+    try {
+      // Persist the removal immediately (like card deletion) rather than
+      // deferring to Save — the blob is about to be deleted for good, so the
+      // card must stop referencing it even if the user navigates away without
+      // saving the rest of the form.
+      if (kind === "vocabulary") {
+        const updated = {
+          ...vocab,
+          images: vocab.images.filter((imgId) => imgId !== id),
+        }
+        if (!isNew) {
+          await saveCard(
+            { id: cardId, deckId, kind: "vocabulary", content: updated, updatedAt: Date.now() },
+            user,
+          )
+        }
+        setVocab(updated)
+      } else {
+        const updated = {
+          ...grammar,
+          images: grammar.images.filter((imgId) => imgId !== id),
+        }
+        if (!isNew) {
+          await saveCard(
+            { id: cardId, deckId, kind: "grammar", content: updated, updatedAt: Date.now() },
+            user,
+          )
+        }
+        setGrammar(updated)
+      }
+
+      // Bulk import dedups identical images across notes, so this id may
+      // still back a different card — only delete the blob once nothing else
+      // points at it.
+      if (!(await isMediaReferencedByOtherCards(id, cardId))) {
+        await deleteImageBlob(id, user)
+      }
+    } catch (x) {
+      setErr(x instanceof Error ? x.message : "Failed to remove image")
+    }
+  }
+
   async function onPickImage(files: FileList | null) {
     if (!files?.length) return
     await addImageFiles(
@@ -480,7 +541,7 @@ export function CardEditPage() {
               Choose an image file or paste an image from your clipboard
               anywhere in this form.
             </p>
-            <ImagePreviewList imageIds={vocab.images} />
+            <ImagePreviewList imageIds={vocab.images} onRemove={onRemoveImage} />
           </>
         ) : (
           <>
@@ -583,7 +644,7 @@ export function CardEditPage() {
               Choose an image file or paste an image from your clipboard
               anywhere in this form.
             </p>
-            <ImagePreviewList imageIds={grammar.images} />
+            <ImagePreviewList imageIds={grammar.images} onRemove={onRemoveImage} />
           </>
         )}
 
