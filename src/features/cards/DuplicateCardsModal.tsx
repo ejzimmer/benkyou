@@ -18,8 +18,13 @@ export function DuplicateCardsModal({
   onClose,
 }: Props) {
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal-panel panel">
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div className="modal-panel panel" onClick={(e) => e.stopPropagation()}>
         <h2>Duplicate cards</h2>
 
         {matches.length === 0 ? (
