@@ -203,11 +203,17 @@ async function putIfNotTombstoned(
  * overwritten with the merge decision made from the stale copy. Skipping
  * the write here just leaves the row for the next sync pass, which will
  * re-snapshot and compare against the now-current local value.
+ *
+ * Staleness is judged by content, not `updatedAt`: timestamps only have
+ * millisecond resolution, so a racing write landing in the same
+ * millisecond as the snapshot would be invisible to a timestamp comparison
+ * and the stale write would go through anyway.
  */
 async function putIfNotStale<T extends { updatedAt: number }>(
   tombstoneKey: string,
   getCurrent: () => Promise<T | undefined>,
-  snapshotUpdatedAt: number,
+  local: T,
+  changed: (current: T, local: T) => boolean,
   write: () => Promise<unknown>,
 ): Promise<void> {
   await db.transaction(
@@ -216,7 +222,7 @@ async function putIfNotStale<T extends { updatedAt: number }>(
     async () => {
       if (await db.tombstones.get(tombstoneKey)) return
       const current = await getCurrent()
-      if (current && current.updatedAt > snapshotUpdatedAt) return
+      if (current && changed(current, local)) return
       await write()
     },
   )
@@ -277,7 +283,8 @@ async function collectEntityConflicts(
     await putIfNotStale(
       tombstoneId("deck", local.id),
       () => db.decks.get(local.id),
-      local.updatedAt,
+      local,
+      deckChanged,
       () => db.decks.put(winner),
     )
   }
@@ -339,7 +346,8 @@ async function collectEntityConflicts(
     await putIfNotStale(
       tombstoneId("card", local.id),
       () => db.cards.get(local.id),
-      local.updatedAt,
+      local,
+      cardChanged,
       () => db.cards.put(winner),
     )
   }
@@ -408,7 +416,8 @@ async function collectEntityConflicts(
     await putIfNotStale(
       tombstoneId("scheduling", local.id),
       () => db.scheduling.get(local.id),
-      local.updatedAt,
+      local,
+      schedulingChanged,
       () => db.scheduling.put(winner),
     )
   }

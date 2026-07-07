@@ -146,4 +146,48 @@ describe("race: sync reverts a scheduling row answered mid-sync", () => {
     expect(row?.due).toBe(farFuture)
     expect(row?.updatedAt).toBe(answeredRow.updatedAt)
   })
+
+  it("still detects the race when the answer lands in the same millisecond as the snapshot", async () => {
+    // Two `Date.now()` calls (the sync snapshot and a racing answer) can
+    // resolve to the identical millisecond, so the staleness check must not
+    // rely on `updatedAt` alone — it needs to notice the content differs.
+    const fs = getFirestoreDb()!
+    const storage = getFirebaseStorage()!
+
+    const payload = tinyDeckPayload()
+    const snapshotUpdatedAt = payload.scheduling[0].updatedAt
+    await applyBulkImport(payload, FAKE_USER)
+    writeLastSyncedAt(Date.now())
+
+    const farFuture = Date.now() + 1000 * 60 * 60 * 24 * 30
+    const answeredRow = {
+      id: SCHED_ID,
+      cardId: "card-X",
+      modeId: "vocab_oral_en" as const,
+      fsrs: serializeFsrs(emptyFsrs()),
+      due: farFuture,
+      updatedAt: snapshotUpdatedAt,
+    }
+
+    const originalGet = db.tombstones.get.bind(db.tombstones)
+    let answered = false
+    const spy = vi
+      .spyOn(db.tombstones, "get")
+      // @ts-expect-error -- overload signatures don't unify with a single mock impl
+      .mockImplementation(async (key: string) => {
+        const result = await originalGet(key)
+        if (key === `scheduling:${SCHED_ID}` && !answered) {
+          answered = true
+          await db.scheduling.put(answeredRow)
+        }
+        return result
+      })
+
+    await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
+
+    spy.mockRestore()
+
+    const row = await db.scheduling.get(SCHED_ID)
+    expect(row?.due).toBe(farFuture)
+  })
 })
