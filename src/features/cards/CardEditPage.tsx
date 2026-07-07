@@ -22,6 +22,7 @@ import {
   defaultVocabulary,
   deleteCard,
   grammarFromVocabularyContent,
+  isMediaReferencedByOtherCards,
   mergeCards,
   normalizeGrammarContent,
   saveCard,
@@ -317,18 +318,46 @@ export function CardEditPage() {
   }
 
   async function onRemoveImage(id: string) {
-    if (kind === "vocabulary") {
-      setVocab((v) => ({ ...v, images: v.images.filter((imgId) => imgId !== id) }))
-    } else {
-      setGrammar((g) => ({
-        ...g,
-        images: g.images.filter((imgId) => imgId !== id),
-      }))
-    }
+    setErr(null)
     try {
-      await deleteImageBlob(id, user)
+      // Persist the removal immediately (like card deletion) rather than
+      // deferring to Save — the blob is about to be deleted for good, so the
+      // card must stop referencing it even if the user navigates away without
+      // saving the rest of the form.
+      if (kind === "vocabulary") {
+        const updated = {
+          ...vocab,
+          images: vocab.images.filter((imgId) => imgId !== id),
+        }
+        if (!isNew) {
+          await saveCard(
+            { id: cardId, deckId, kind: "vocabulary", content: updated, updatedAt: Date.now() },
+            user,
+          )
+        }
+        setVocab(updated)
+      } else {
+        const updated = {
+          ...grammar,
+          images: grammar.images.filter((imgId) => imgId !== id),
+        }
+        if (!isNew) {
+          await saveCard(
+            { id: cardId, deckId, kind: "grammar", content: updated, updatedAt: Date.now() },
+            user,
+          )
+        }
+        setGrammar(updated)
+      }
+
+      // Bulk import dedups identical images across notes, so this id may
+      // still back a different card — only delete the blob once nothing else
+      // points at it.
+      if (!(await isMediaReferencedByOtherCards(id, cardId))) {
+        await deleteImageBlob(id, user)
+      }
     } catch (x) {
-      setErr(x instanceof Error ? x.message : "Failed to delete image")
+      setErr(x instanceof Error ? x.message : "Failed to remove image")
     }
   }
 

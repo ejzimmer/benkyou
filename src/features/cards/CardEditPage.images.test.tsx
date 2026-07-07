@@ -78,9 +78,11 @@ describe("CardEditPage remove image", () => {
 
     await user.click(screen.getByRole("button", { name: /remove image/i }))
 
-    expect(
-      screen.queryByRole("button", { name: /remove image/i }),
-    ).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: /remove image/i }),
+      ).not.toBeInTheDocument()
+    })
 
     await waitFor(async () => {
       expect(await db.media.get("media-1")).toBeUndefined()
@@ -89,5 +91,41 @@ describe("CardEditPage remove image", () => {
     const tombstone = await db.tombstones.get("media:media-1")
     expect(tombstone?.entityType).toBe("media")
     expect(tombstone?.entityId).toBe("media-1")
+
+    const savedCard = await db.cards.get("card-1")
+    expect(savedCard?.content.images).toEqual([])
+  })
+
+  it("keeps the blob when another card still references it", async () => {
+    await db.cards.put({
+      id: "card-2",
+      deckId: "deck-1",
+      kind: "vocabulary",
+      content: {
+        ...defaultVocabulary(),
+        wordJa: "犬",
+        definitionsEn: ["dog"],
+        images: ["media-1"],
+      },
+      updatedAt: Date.now(),
+    })
+
+    const user = userEvent.setup()
+    renderExistingCardPage()
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole("button", { name: /remove image/i }))
+
+    await waitFor(async () => {
+      const savedCard = await db.cards.get("card-1")
+      expect(savedCard?.content.images).toEqual([])
+    })
+
+    expect(await db.media.get("media-1")).toBeDefined()
+    expect(await db.tombstones.get("media:media-1")).toBeUndefined()
+    const other = await db.cards.get("card-2")
+    expect(other?.content.images).toEqual(["media-1"])
   })
 })
