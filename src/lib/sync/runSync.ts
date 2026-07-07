@@ -194,6 +194,34 @@ async function putIfNotTombstoned(
   )
 }
 
+/**
+ * Like `putIfNotTombstoned`, but also re-checks that the local row hasn't
+ * been written to since `collectEntityConflicts` took its up-front snapshot.
+ * `pick`/`winner` are computed from that stale snapshot, so without this
+ * guard a fresher local write racing with sync (e.g. a review answer
+ * updating a scheduling row's `due` date mid-sync) gets silently
+ * overwritten with the merge decision made from the stale copy. Skipping
+ * the write here just leaves the row for the next sync pass, which will
+ * re-snapshot and compare against the now-current local value.
+ */
+async function putIfNotStale<T extends { updatedAt: number }>(
+  tombstoneKey: string,
+  getCurrent: () => Promise<T | undefined>,
+  snapshotUpdatedAt: number,
+  write: () => Promise<unknown>,
+): Promise<void> {
+  await db.transaction(
+    "rw",
+    [db.tombstones, db.decks, db.cards, db.scheduling],
+    async () => {
+      if (await db.tombstones.get(tombstoneKey)) return
+      const current = await getCurrent()
+      if (current && current.updatedAt > snapshotUpdatedAt) return
+      await write()
+    },
+  )
+}
+
 async function collectEntityConflicts(
   lastSyncedAt: number | null,
   remote: RemoteSnapshot,
@@ -243,8 +271,14 @@ async function collectEntityConflicts(
     } else {
       winner = pick === "local" ? local : remoteDeck
     }
-    await putIfNotTombstoned(tombstoneId("deck", local.id), () =>
-      db.decks.put(winner),
+    // Winner is the exact local record already in the DB — writing it back
+    // would be a no-op that still fires live-query subscribers.
+    if (winner === local) continue
+    await putIfNotStale(
+      tombstoneId("deck", local.id),
+      () => db.decks.get(local.id),
+      local.updatedAt,
+      () => db.decks.put(winner),
     )
   }
 
@@ -298,8 +332,15 @@ async function collectEntityConflicts(
     } else {
       winner = pick === "local" ? local : remoteCard
     }
-    await putIfNotTombstoned(tombstoneId("card", local.id), () =>
-      db.cards.put(winner),
+    // Winner is the exact local record already in the DB — writing it back
+    // would be a no-op that still fires live-query subscribers (e.g. the
+    // card-edit form), potentially clobbering an in-progress edit.
+    if (winner === local) continue
+    await putIfNotStale(
+      tombstoneId("card", local.id),
+      () => db.cards.get(local.id),
+      local.updatedAt,
+      () => db.cards.put(winner),
     )
   }
 
@@ -360,8 +401,15 @@ async function collectEntityConflicts(
     } else {
       winner = pick === "local" ? local : remoteRow
     }
-    await putIfNotTombstoned(tombstoneId("scheduling", local.id), () =>
-      db.scheduling.put(winner),
+    // Winner is the exact local record already in the DB — writing it back
+    // would be a no-op that still fires live-query subscribers (e.g. a
+    // review session queue), potentially re-adding a just-answered card.
+    if (winner === local) continue
+    await putIfNotStale(
+      tombstoneId("scheduling", local.id),
+      () => db.scheduling.get(local.id),
+      local.updatedAt,
+      () => db.scheduling.put(winner),
     )
   }
 
