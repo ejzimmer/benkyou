@@ -13,6 +13,7 @@ import { db } from "../db/schema"
 import type { RemoteMediaMeta, Tombstone } from "./syncTypes"
 import { stableCompareJson, stripUndefinedDeep } from "./firestoreData"
 import { syncLog, syncLogTimed } from "./syncLog"
+import { cardChanged, deckChanged, mediaChanged, schedulingChanged } from "./syncCompare"
 
 const BATCH_SIZE = 400
 
@@ -176,8 +177,8 @@ function mediaMetaPayload(m: MediaRow) {
   return { id: m.id, mimeType: m.mimeType, updatedAt: m.updatedAt, digest: m.digest }
 }
 
-/** Entity already matches the remote copy byte-for-byte — writing it again would
- *  just burn bandwidth and a Firestore write for zero effect. */
+/** Tombstones have no dedicated payload comparator (they're small and rarely
+ *  churn), so fall back to a raw deep-equality check. */
 function unchanged<T>(local: T, remote: T | undefined): boolean {
   return remote != null && stableCompareJson(local, remote)
 }
@@ -210,14 +211,16 @@ export async function pushLocalToRemote(
   let skipped = 0
 
   for (const d of localDecks) {
-    if (unchanged(d, remoteSnapshot.decks.get(d.id))) {
+    const remoteDeck = remoteSnapshot.decks.get(d.id)
+    if (remoteDeck && !deckChanged(d, remoteDeck)) {
       skipped++
       continue
     }
     sets.push({ ref: doc(decksCol(fs, uid), d.id), data: d })
   }
   for (const c of localCards) {
-    if (unchanged(c, remoteSnapshot.cards.get(c.id))) {
+    const remoteCard = remoteSnapshot.cards.get(c.id)
+    if (remoteCard && !cardChanged(c, remoteCard)) {
       skipped++
       continue
     }
@@ -227,7 +230,8 @@ export async function pushLocalToRemote(
     })
   }
   for (const s of localSched) {
-    if (unchanged(s, remoteSnapshot.scheduling.get(s.id))) {
+    const remoteRow = remoteSnapshot.scheduling.get(s.id)
+    if (remoteRow && !schedulingChanged(s, remoteRow)) {
       skipped++
       continue
     }
@@ -241,12 +245,19 @@ export async function pushLocalToRemote(
     sets.push({ ref: doc(tombstonesCol(fs, uid), t.id), data: t })
   }
   for (const m of localMedia) {
-    const payload = mediaMetaPayload(m)
-    if (unchanged(payload, remoteSnapshot.mediaMeta.get(m.id))) {
+    const remoteMeta = remoteSnapshot.mediaMeta.get(m.id)
+    if (
+      remoteMeta?.digest &&
+      m.digest &&
+      !mediaChanged(m, remoteMeta, m.digest, remoteMeta.digest)
+    ) {
       skipped++
       continue
     }
-    sets.push({ ref: doc(mediaMetaCol(fs, uid), m.id), data: payload })
+    sets.push({
+      ref: doc(mediaMetaCol(fs, uid), m.id),
+      data: mediaMetaPayload(m),
+    })
   }
 
   syncLog("pushLocalToRemote upsert batch", {
@@ -353,12 +364,7 @@ export async function upsertMediaMetaRemote(
 ): Promise<void> {
   await setDoc(
     doc(mediaMetaCol(fs, uid), row.id),
-    stripUndefinedDeep({
-      id: row.id,
-      mimeType: row.mimeType,
-      updatedAt: row.updatedAt,
-      digest: row.digest,
-    }),
+    stripUndefinedDeep(mediaMetaPayload(row)),
   )
 }
 
