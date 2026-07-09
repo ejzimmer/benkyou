@@ -510,7 +510,7 @@ label {
 }
 
 .ruby-hover ruby {
-  ruby-align: center;
+  ruby-align: start;
 }
 
 .ruby-hover ruby rt {
