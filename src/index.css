@@ -510,7 +510,8 @@ label {
 }
 
 .ruby-hover ruby {
-  ruby-align: center;
+  ruby-align: start;
+  ruby-position: over;
 }
 
 .ruby-hover ruby rt {
@@ -518,6 +519,16 @@ label {
   transition: opacity 0.12s ease;
   font-size: 0.65em;
   color: #a5b4fc;
+}
+
+/* The diff cells in AnswerComparison give the base text a tightly-fitted
+   colored background, leaving too little room for the browser's automatic
+   ruby-annotation spacing. Reserve extra clearance here specifically —
+   applying it to every .ruby-hover would push wrapped example-sentence
+   furigana into the line above. */
+.answer-ruby ruby rt {
+  line-height: 1.4;
+  padding-bottom: 0.2em;
 }
 
 .ruby-hover:hover rt,
