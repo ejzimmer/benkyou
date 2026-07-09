@@ -511,12 +511,15 @@ label {
 
 .ruby-hover ruby {
   ruby-align: start;
+  ruby-position: over;
 }
 
 .ruby-hover ruby rt {
   opacity: 0;
   transition: opacity 0.12s ease;
   font-size: 0.65em;
+  line-height: 1.4;
+  padding-bottom: 0.2em;
   color: #a5b4fc;
 }
 
