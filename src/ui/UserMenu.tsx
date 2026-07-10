@@ -7,6 +7,12 @@ export function UserMenu() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  function close({ refocus }: { refocus: boolean }) {
+    setOpen(false)
+    if (refocus) triggerRef.current?.focus()
+  }
 
   useEffect(() => {
     if (!open) return
@@ -14,7 +20,7 @@ export function UserMenu() {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
     }
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false)
+      if (e.key === "Escape") close({ refocus: true })
     }
     document.addEventListener("mousedown", onPointerDown)
     document.addEventListener("keydown", onKeyDown)
@@ -30,6 +36,7 @@ export function UserMenu() {
     <div className="user-menu" ref={rootRef}>
       <button
         type="button"
+        ref={triggerRef}
         className="btn user-menu-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -47,7 +54,7 @@ export function UserMenu() {
             role="menuitem"
             className="user-menu-item"
             onClick={() => {
-              setOpen(false)
+              close({ refocus: false })
               navigate("/settings")
             }}
           >
@@ -59,7 +66,7 @@ export function UserMenu() {
               role="menuitem"
               className="user-menu-item"
               onClick={() => {
-                setOpen(false)
+                close({ refocus: true })
                 void signOut()
               }}
             >

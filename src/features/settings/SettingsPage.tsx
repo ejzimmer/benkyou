@@ -22,6 +22,7 @@ import {
 import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 import { AnkiImportGapReview } from "./AnkiImportGapReview"
 import { GrammarClassifyReview } from "./GrammarClassifyReview"
+import { UserMenu } from "../../ui/UserMenu"
 
 function importProgressLabel(progress: ImportProgress): string {
   switch (progress.phase) {
@@ -179,9 +180,12 @@ export function SettingsPage() {
 
   return (
     <div className="page">
-      <header className="header">
-        <Link to="/">← Home</Link>
-        <h1>Settings</h1>
+      <header className="header app-header">
+        <div>
+          <Link to="/">← Home</Link>
+          <h1>Settings</h1>
+        </div>
+        <UserMenu />
       </header>
 
       {(offlineOnly || !user) && (

@@ -307,7 +307,7 @@ label {
 }
 
 .gap-mark {
-  border-bottom: 2px dashed #e94560;
+  border-bottom: 2px dashed var(--pink);
   padding: 0 0.15rem;
 }
 
@@ -563,8 +563,8 @@ label {
 }
 
 .reading-answer-diff-same {
-  background: #166534;
-  color: #dcfce7;
+  background: var(--green);
+  color: var(--on-fluoro);
 }
 
 .reading-answer-diff-missing,
@@ -623,8 +623,8 @@ label {
 }
 
 .reading-diff-same {
-  background: #166534;
-  color: #dcfce7;
+  background: var(--green);
+  color: var(--on-fluoro);
   box-decoration-break: clone;
 }
 
@@ -806,7 +806,7 @@ code {
 
 .global-sync-indicator {
   position: fixed;
-  top: 0.6rem;
+  bottom: 0.6rem;
   right: 0.6rem;
   z-index: 1000;
   display: grid;
@@ -814,6 +814,7 @@ code {
   width: 1.6rem;
   height: 1.6rem;
   color: #9898b0;
+  pointer-events: none;
 }
 
 .global-sync-indicator .import-spinner {
