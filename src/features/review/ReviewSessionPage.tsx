@@ -27,6 +27,7 @@ import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import {
   expectedAnswer,
+  modeHeadingVisible,
   requiresTyping,
   REVIEW_MODE_LABELS,
 } from "./reviewFlowHelpers"
@@ -164,7 +165,6 @@ export function ReviewSessionPage() {
 
   const modeLabel = useMemo(() => {
     if (!current) return ""
-    if (current.modeId === "vocab_type_word_from_clue") return ""
     return REVIEW_MODE_LABELS[current.modeId]
   }, [current])
 
@@ -423,7 +423,11 @@ export function ReviewSessionPage() {
       </header>
 
       <section className="panel prompt">
-        {modeLabel && <h2>{modeLabel}</h2>}
+        {modeLabel && (
+          <h2 className={current && modeHeadingVisible(current.modeId) ? undefined : "sr-only"}>
+            {modeLabel}
+          </h2>
+        )}
 
         {phase === "prompt" && !pendingIncorrectDelay && (
           <>

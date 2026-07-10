@@ -180,7 +180,13 @@ export function ReviewSessionPromptBody({
     const exampleReadings = vocabExampleReadings(card.content)
     return (
       <div className="stack">
-        <p className="prompt-main">{definitions.join(", ")}</p>
+        {definitions.length > 0 && (
+          <div className="prompt-main">
+            {definitions.map((d, i) => (
+              <p key={i}>{d}</p>
+            ))}
+          </div>
+        )}
         {examples.length > 0 && (
           <div className="example-sentences">
             {examples.map((s, i) => (
