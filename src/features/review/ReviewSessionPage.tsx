@@ -62,6 +62,8 @@ export function ReviewSessionPage() {
   const [searchParams] = useSearchParams()
   const resumeCardId = searchParams.get("resumeCardId")
   const resumeModeId = searchParams.get("resumeModeId")
+  const resumePhase = searchParams.get("resumePhase")
+  const resumeTyped = searchParams.get("resumeTyped")
   const { user } = useAuth()
   const {
     initialSyncComplete,
@@ -102,16 +104,38 @@ export function ReviewSessionPage() {
     const deckQueue = deckId ? all.filter((x) => x.card.deckId === deckId) : all
     const q = prioritizeResumeItem(deckQueue, resumeCardId, resumeModeId)
     setSessionQueue(q)
-    setPhase("prompt")
-    setTyped("")
+
+    // Resuming from the edit page: put back the phase/typed answer the user
+    // had before navigating away, as long as the same card+mode is still
+    // the one at the front of the queue (it may not be, e.g. if the edit
+    // removed the mode that was being reviewed).
+    const resumedItem = q[0]
+    const canResume =
+      resumeCardId != null &&
+      resumedItem?.card.id === resumeCardId &&
+      (resumeModeId == null || resumedItem.modeId === resumeModeId)
+
+    setTyped(canResume ? (resumeTyped ?? "") : "")
     setSynonymWarn(false)
     setReadingWarn(false)
     setStartedAt(null)
-    setSnapshot(null)
     setPromptToRevealMs(null)
     setPendingIncorrectDelay(false)
+
+    if (canResume && resumePhase === "answer" && resumedItem) {
+      const snap = await prepareJudgement(
+        resumedItem.card.id,
+        resumedItem.modeId,
+      )
+      setSnapshot(snap)
+      setPhase(snap ? "answer" : "prompt")
+    } else {
+      setSnapshot(null)
+      setPhase("prompt")
+    }
+
     setLoading(false)
-  }, [deckId, resumeCardId, resumeModeId])
+  }, [deckId, resumeCardId, resumeModeId, resumePhase, resumeTyped])
 
   useEffect(() => {
     // Wait for the first sync to finish so the queue reflects the latest cards
@@ -390,6 +414,8 @@ export function ReviewSessionPage() {
   const reviewReturnParams = new URLSearchParams({
     resumeCardId: item.card.id,
     resumeModeId: item.modeId,
+    resumePhase: phase,
+    resumeTyped: typed,
   })
   const reviewReturnTo = `${deckId ? `/decks/${deckId}/review` : "/review"}?${reviewReturnParams}`
 

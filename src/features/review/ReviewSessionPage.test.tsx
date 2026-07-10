@@ -197,6 +197,102 @@ describe("ReviewSessionPage", () => {
     expect(editLinkAfter.getAttribute("href")).toBe(hrefBefore)
   })
 
+  it("keeps a typed but unrevealed answer after returning from card edit", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T", null)
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "保険",
+        reading: "ほけん",
+        definitionsEn: [""],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+              <Route
+                path="/decks/:deckId/cards/:cardId"
+                element={<CardEditPage />}
+              />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const input = await screen.findByPlaceholderText("ひらがなで")
+    await user.type(input, "ほけ")
+
+    await user.click(screen.getByRole("link", { name: /edit card/i }))
+    await user.click(await screen.findByRole("link", { name: /back/i }))
+
+    const restoredInput = await screen.findByPlaceholderText("ひらがなで")
+    expect(restoredInput).toHaveValue("ほけ")
+    expect(
+      screen.queryByRole("button", { name: /^correct$/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it("keeps the revealed answer showing after returning from card edit", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T", null)
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "保険",
+        reading: "ほけん",
+        definitionsEn: [""],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+              <Route
+                path="/decks/:deckId/cards/:cardId"
+                element={<CardEditPage />}
+              />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const input = await screen.findByPlaceholderText("ひらがなで")
+    await user.type(input, "ほけ{Enter}")
+    expect(
+      await screen.findByRole("button", { name: /^correct$/i }),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole("link", { name: /edit card/i }))
+    await user.click(await screen.findByRole("link", { name: /back/i }))
+
+    expect(
+      await screen.findByRole("button", { name: /^correct$/i }),
+    ).toBeInTheDocument()
+    expect(
+      document.querySelector('[data-reading-diff-line="yours"]')?.textContent,
+    ).toContain("ほけ")
+  })
+
   it("keeps the question visible when the answer is shown", async () => {
     await resetDatabase()
     const user = userEvent.setup()
