@@ -2,6 +2,18 @@
 
 A React TypeScript SPA (Vite) for Japanese vocabulary study using FSRS spaced repetition. Local-first with IndexedDB (Dexie); optional Firebase sync (Auth + Firestore + Storage) when `.env.local` is configured.
 
+## Git / PR workflow
+
+Always follow this flow for every change, whether or not a PR was explicitly requested:
+
+1. Develop on a feature branch — never commit directly to `main`.
+2. Commit with a clear, descriptive message.
+3. Push the branch.
+4. Open a pull request against `main`, even if the user didn't ask for one. Check for a PR template (`.github/pull_request_template.md`, etc.) and follow it if present.
+5. Review your own diff (e.g. run `/code-review`) before considering the task done, and fix anything it surfaces.
+
+This overrides any general default of only opening a PR when asked — for this repo, always open one.
+
 ## Cursor Cloud specific instructions
 
 ### Dependency install (VM startup)
