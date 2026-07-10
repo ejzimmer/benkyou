@@ -5,12 +5,14 @@ import { createDeck } from "../../services/decks"
 import { getDueCountsByDeck } from "../../services/review"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useState } from "react"
+import { AppIcon } from "../../ui/AppIcon"
+import { UserMenu } from "../../ui/UserMenu"
 
 export function DeckListPage() {
   const navigate = useNavigate()
   const decks = useLiveQuery(() => db.decks.orderBy("updatedAt").reverse().toArray(), [])
   const dueCounts = useLiveQuery(() => getDueCountsByDeck(), [])
-  const { user, offlineOnly } = useAuth()
+  const { user } = useAuth()
   const [name, setName] = useState("")
   const [err, setErr] = useState<string | null>(null)
 
@@ -28,28 +30,15 @@ export function DeckListPage() {
 
   return (
     <div className="page">
-      <header className="header">
-        <h1>Benkyou</h1>
-        <p className="muted">
-          Japanese SRS — local-first{offlineOnly ? " (offline-only)" : ""}
-          {user ? ` · ${user.email ?? user.uid}` : ""}
-        </p>
+      <header className="header app-header">
+        <Link to="/" className="brand" aria-label="Benkyou home">
+          <AppIcon className="brand-icon" />
+          <span className="brand-name">Benkyou</span>
+        </Link>
+        <UserMenu />
       </header>
 
       <section className="panel">
-        <h2>Decks</h2>
-        <form onSubmit={onCreate} className="row">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="New deck name"
-            className="input"
-          />
-          <button type="submit" className="btn primary">
-            Create
-          </button>
-        </form>
-        {err && <p className="error">{err}</p>}
         <ul className="deck-list">
           {(decks ?? []).map((d) => {
             const due = dueCounts?.get(d.id) ?? 0
@@ -62,11 +51,24 @@ export function DeckListPage() {
           })}
         </ul>
         {(decks?.length ?? 0) === 0 && <p className="muted">No decks yet.</p>}
+        {err && <p className="error">{err}</p>}
+        <form onSubmit={onCreate} className="row">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="New deck name"
+            className="input"
+          />
+          <button type="submit" className="btn">
+            Add deck
+          </button>
+        </form>
       </section>
 
       <nav className="footer-nav">
-        <Link to="/review">Review all due</Link>
-        <Link to="/settings">Settings</Link>
+        <Link to="/review" className="btn primary">
+          Review all due
+        </Link>
       </nav>
     </div>
   )
