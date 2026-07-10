@@ -116,9 +116,7 @@ export const endOfLocalDay = (timestamp: number) => {
   return date.getTime()
 }
 
-export async function getDueQueue(
-  now = endOfLocalDay(Date.now()),
-): Promise<DueItem[]> {
+async function loadDueItems(now: number): Promise<DueItem[]> {
   const rows = await db.scheduling.filter((r) => r.due <= now).toArray()
   const cards = await db.cards.toArray()
   const byId = new Map(cards.map((c) => [c.id, c]))
@@ -130,23 +128,22 @@ export async function getDueQueue(
     if (!allowed.has(r.modeId)) continue
     list.push({ card, modeId: r.modeId, due: r.due })
   }
-  return randomizeDueQueue(list)
+  return list
+}
+
+export async function getDueQueue(
+  now = endOfLocalDay(Date.now()),
+): Promise<DueItem[]> {
+  return randomizeDueQueue(await loadDueItems(now))
 }
 
 /** Number of due cards per deck, keyed by `deckId`. Decks with no due cards are omitted. */
 export async function getDueCountsByDeck(
   now = endOfLocalDay(Date.now()),
 ): Promise<Map<string, number>> {
-  const rows = await db.scheduling.filter((r) => r.due <= now).toArray()
-  const cards = await db.cards.toArray()
-  const byId = new Map(cards.map((c) => [c.id, c]))
   const counts = new Map<string, number>()
-  for (const r of rows) {
-    const card = byId.get(r.cardId)
-    if (!card) continue
-    const allowed = new Set(reviewModesForCard(card))
-    if (!allowed.has(r.modeId)) continue
-    counts.set(card.deckId, (counts.get(card.deckId) ?? 0) + 1)
+  for (const item of await loadDueItems(now)) {
+    counts.set(item.card.deckId, (counts.get(item.card.deckId) ?? 0) + 1)
   }
   return counts
 }
