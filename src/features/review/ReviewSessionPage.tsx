@@ -27,6 +27,7 @@ import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import {
   expectedAnswer,
+  modeHeadingVisible,
   requiresTyping,
   REVIEW_MODE_LABELS,
 } from "./reviewFlowHelpers"
@@ -422,7 +423,11 @@ export function ReviewSessionPage() {
       </header>
 
       <section className="panel prompt">
-        <h2>{modeLabel}</h2>
+        {modeLabel && (
+          <h2 className={current && modeHeadingVisible(current.modeId) ? undefined : "sr-only"}>
+            {modeLabel}
+          </h2>
+        )}
 
         {phase === "prompt" && !pendingIncorrectDelay && (
           <>
