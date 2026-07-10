@@ -2,12 +2,14 @@ import { useLiveQuery } from "dexie-react-hooks"
 import { Link, useNavigate } from "react-router-dom"
 import { db } from "../../lib/db/schema"
 import { createDeck } from "../../services/decks"
+import { getDueCountsByDeck } from "../../services/review"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useState } from "react"
 
 export function DeckListPage() {
   const navigate = useNavigate()
   const decks = useLiveQuery(() => db.decks.orderBy("updatedAt").reverse().toArray(), [])
+  const dueCounts = useLiveQuery(() => getDueCountsByDeck(), [])
   const { user, offlineOnly } = useAuth()
   const [name, setName] = useState("")
   const [err, setErr] = useState<string | null>(null)
@@ -49,11 +51,15 @@ export function DeckListPage() {
         </form>
         {err && <p className="error">{err}</p>}
         <ul className="deck-list">
-          {(decks ?? []).map((d) => (
-            <li key={d.id}>
-              <Link to={`/decks/${d.id}`}>{d.name}</Link>
-            </li>
-          ))}
+          {(decks ?? []).map((d) => {
+            const due = dueCounts?.get(d.id) ?? 0
+            return (
+              <li key={d.id}>
+                <Link to={`/decks/${d.id}`}>{d.name}</Link>
+                <span className="muted small">{due} due</span>
+              </li>
+            )
+          })}
         </ul>
         {(decks?.length ?? 0) === 0 && <p className="muted">No decks yet.</p>}
       </section>

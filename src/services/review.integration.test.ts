@@ -5,6 +5,7 @@ import { createVocabularyCard } from "./cards"
 import {
   commitJudgement,
   endOfLocalDay,
+  getDueCountsByDeck,
   getDueQueue,
   prepareJudgement,
   randomizeDueQueue,
@@ -27,8 +28,9 @@ async function seedDueCard(
   id: string,
   modeId: ReviewModeId,
   due: number,
+  deckId = "deck",
 ): Promise<void> {
-  const card = vocabularyCard(id)
+  const card = vocabularyCard(id, deckId)
   await db.cards.put(card)
   const row: SchedulingRow = {
     id: `${id}:${modeId}`,
@@ -55,10 +57,10 @@ vi.mock("../lib/sync/firestoreSync", () => ({
   upsertSchedulingRemote: vi.fn(),
 }))
 
-function vocabularyCard(id: string): Card {
+function vocabularyCard(id: string, deckId?: string): Card {
   return {
     id,
-    deckId: "deck",
+    deckId: deckId ?? "deck",
     kind: "vocabulary",
     content: {
       wordJa: id,
@@ -86,7 +88,7 @@ describe("review + scheduling (IndexedDB)", () => {
   })
 
   it("randomizes due review modes while spacing prompts from the same card", () => {
-    const cards = ["a", "b", "c"].map(vocabularyCard)
+    const cards = ["a", "b", "c"].map((id) => vocabularyCard(id))
     const queue = [
       dueItem(cards[0], "vocab_oral_en", 1),
       dueItem(cards[0], "vocab_type_reading", 2),
@@ -292,5 +294,25 @@ describe("getDueQueue day window", () => {
 
     expect(ids).toContain("today")
     expect(ids).not.toContain("tomorrow")
+  })
+})
+
+describe("getDueCountsByDeck", () => {
+  beforeEach(async () => {
+    await resetDatabase()
+  })
+
+  it("counts due cards per deck, skipping decks with nothing due", async () => {
+    const now = Date.now()
+    await seedDueCard("a1", "vocab_oral_en", now, "deckA")
+    await seedDueCard("a2", "vocab_oral_en", now, "deckA")
+    await seedDueCard("b1", "vocab_oral_en", now, "deckB")
+    await seedDueCard("c1", "vocab_oral_en", endOfLocalDay(now) + 1, "deckC")
+
+    const counts = await getDueCountsByDeck()
+
+    expect(counts.get("deckA")).toBe(2)
+    expect(counts.get("deckB")).toBe(1)
+    expect(counts.has("deckC")).toBe(false)
   })
 })
