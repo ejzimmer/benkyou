@@ -133,6 +133,24 @@ export async function getDueQueue(
   return randomizeDueQueue(list)
 }
 
+/** Number of due cards per deck, keyed by `deckId`. Decks with no due cards are omitted. */
+export async function getDueCountsByDeck(
+  now = endOfLocalDay(Date.now()),
+): Promise<Map<string, number>> {
+  const rows = await db.scheduling.filter((r) => r.due <= now).toArray()
+  const cards = await db.cards.toArray()
+  const byId = new Map(cards.map((c) => [c.id, c]))
+  const counts = new Map<string, number>()
+  for (const r of rows) {
+    const card = byId.get(r.cardId)
+    if (!card) continue
+    const allowed = new Set(reviewModesForCard(card))
+    if (!allowed.has(r.modeId)) continue
+    counts.set(card.deckId, (counts.get(card.deckId) ?? 0) + 1)
+  }
+  return counts
+}
+
 export type JudgementSnapshot = {
   schedulingRow: SchedulingRow
 }
