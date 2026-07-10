@@ -175,6 +175,16 @@ label {
   font-size: 1.5rem;
 }
 
+.example-sentences {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.example-sentences p {
+  margin: 0;
+}
+
 .gap-mark {
   border-bottom: 2px dashed #e94560;
   padding: 0 0.15rem;

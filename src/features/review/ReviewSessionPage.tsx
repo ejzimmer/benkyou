@@ -164,6 +164,7 @@ export function ReviewSessionPage() {
 
   const modeLabel = useMemo(() => {
     if (!current) return ""
+    if (current.modeId === "vocab_type_word_from_clue") return ""
     return REVIEW_MODE_LABELS[current.modeId]
   }, [current])
 
@@ -422,7 +423,7 @@ export function ReviewSessionPage() {
       </header>
 
       <section className="panel prompt">
-        <h2>{modeLabel}</h2>
+        {modeLabel && <h2>{modeLabel}</h2>}
 
         {phase === "prompt" && !pendingIncorrectDelay && (
           <>

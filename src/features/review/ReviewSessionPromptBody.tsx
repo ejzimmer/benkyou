@@ -175,32 +175,34 @@ export function ReviewSessionPromptBody({
   // Asking for the Japanese word: show the English meaning, plus any example
   // sentences that keep the answer blanked out, plus images (sized to fit).
   if (m === "vocab_type_word_from_clue" && card.kind === "vocabulary") {
+    const definitions = card.content.definitionsEn.filter((s) => s.trim())
     const examples = clueExampleSentences(card.content)
     const exampleReadings = vocabExampleReadings(card.content)
     return (
       <div className="stack">
-        <ul>
-          {card.content.definitionsEn
-            .filter((s) => s.trim())
-            .map((d, i) => (
-              <li key={i}>{d}</li>
+        <p className="prompt-main">{definitions.join(", ")}</p>
+        {examples.length > 0 && (
+          <div className="example-sentences">
+            {examples.map((s, i) => (
+              <p key={i} className="muted">
+                <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
+              </p>
             ))}
-        </ul>
-        {examples.map((s, i) => (
-          <p key={i} className="muted">
-            <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
-          </p>
-        ))}
+          </div>
+        )}
         <CardImageRow images={card.content.images} />
         {!revealed && (
           <>
-            <TypingAnswerInput
-              value={typed}
-              onChange={onTypedChange}
-              onSubmit={onTypedSubmit}
-              placeholder="Japanese word"
-              focusKey={focusKey}
-            />
+            <label>
+              Type the Japanese word
+              <TypingAnswerInput
+                value={typed}
+                onChange={onTypedChange}
+                onSubmit={onTypedSubmit}
+                placeholder="Japanese word"
+                focusKey={focusKey}
+              />
+            </label>
             {synonymWarn && (
               <p className="warn">
                 That matches a synonym — try the main form on the card.
