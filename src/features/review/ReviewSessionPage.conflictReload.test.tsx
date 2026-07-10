@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
 import { ReviewSessionPage } from "./ReviewSessionPage"
-import type { DueItem } from "../../services/review"
+import { prepareJudgement, type DueItem, type JudgementSnapshot } from "../../services/review"
 import type { Card } from "../../domain/types"
 
 vi.mock("../../lib/firebase", () => ({
@@ -138,5 +138,72 @@ describe("ReviewSessionPage conflict reload", () => {
 
     await waitFor(() => expect(getDueQueue).toHaveBeenCalledTimes(2))
     expect(await screen.findByText("犬")).toBeInTheDocument()
+  })
+
+  it("only replays a resume-to-answer URL state once, not on a later conflict reload", async () => {
+    const snapshot: JudgementSnapshot = {
+      schedulingRow: {
+        id: "s1",
+        cardId: "card-1",
+        modeId: "vocab_oral_en",
+        fsrs: {} as unknown as JudgementSnapshot["schedulingRow"]["fsrs"],
+        due: 0,
+        updatedAt: 0,
+      },
+    }
+    vi.mocked(prepareJudgement).mockResolvedValue(snapshot)
+    const user = userEvent.setup()
+
+    getDueQueue.mockResolvedValueOnce([dueItemFor("猫")])
+
+    const { rerender } = render(
+      <MemoryRouter
+        initialEntries={[
+          "/review?resumeCardId=card-1&resumeModeId=vocab_oral_en&resumePhase=answer&resumeTyped=foo",
+        ]}
+      >
+        <AuthProvider>
+          <Routes>
+            <Route path="/review" element={<ReviewSessionPage />} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    // Resumes straight into the answer phase, as intended.
+    expect(
+      await screen.findByRole("button", { name: /^correct$/i }),
+    ).toBeInTheDocument()
+
+    // Grade it: queue empties and phase returns to "prompt".
+    await user.click(screen.getByRole("button", { name: /^correct$/i }))
+    await screen.findByText(/nothing due right now/i)
+
+    // A later mid-session conflict reload happens to find the same card+mode
+    // due again (e.g. requeued elsewhere) — the stale resumePhase=answer /
+    // resumeTyped=foo from the URL must not be replayed a second time.
+    getDueQueue.mockResolvedValueOnce([dueItemFor("猫")])
+    conflictResolutionVersion = 1
+    rerender(
+      <MemoryRouter
+        initialEntries={[
+          "/review?resumeCardId=card-1&resumeModeId=vocab_oral_en&resumePhase=answer&resumeTyped=foo",
+        ]}
+      >
+        <AuthProvider>
+          <Routes>
+            <Route path="/review" element={<ReviewSessionPage />} />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => expect(getDueQueue).toHaveBeenCalledTimes(2))
+    expect(
+      screen.getByRole("button", { name: /show answer/i }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /^correct$/i }),
+    ).not.toBeInTheDocument()
   })
 })

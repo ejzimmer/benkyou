@@ -93,6 +93,14 @@ export function ReviewSessionPage() {
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
   const phaseRef = useRef<Phase>(phase)
   const conflictReloadPendingRef = useRef(false)
+  /**
+   * The resumeCardId/resumeModeId/resumePhase/resumeTyped query params stay
+   * in the URL for the rest of the session (nothing clears them), so a later
+   * reload — e.g. a mid-session sync conflict bumping conflictResolutionVersion
+   * — must not keep replaying that stale resume state. Apply it at most once
+   * per mount.
+   */
+  const resumeAppliedRef = useRef(false)
 
   useEffect(() => {
     phaseRef.current = phase
@@ -111,11 +119,14 @@ export function ReviewSessionPage() {
     // removed the mode that was being reviewed).
     const resumedItem = q[0]
     const canResume =
+      !resumeAppliedRef.current &&
       resumeCardId != null &&
       resumedItem?.card.id === resumeCardId &&
       (resumeModeId == null || resumedItem.modeId === resumeModeId)
+    resumeAppliedRef.current = true
 
-    setTyped(canResume ? (resumeTyped ?? "") : "")
+    const restoredTyped = canResume ? (resumeTyped ?? "") : ""
+    setTyped(restoredTyped)
     setSynonymWarn(false)
     setReadingWarn(false)
     setStartedAt(null)
@@ -129,6 +140,14 @@ export function ReviewSessionPage() {
       )
       setSnapshot(snap)
       setPhase(snap ? "answer" : "prompt")
+      if (
+        snap &&
+        resumedItem.modeId === "vocab_type_reading" &&
+        restoredTyped &&
+        hasNonHiraganaKana(restoredTyped)
+      ) {
+        setReadingWarn(true)
+      }
     } else {
       setSnapshot(null)
       setPhase("prompt")
