@@ -4,6 +4,7 @@ import { toHiragana } from "wanakana"
 import {
   commitJudgement,
   getDueQueue,
+  insertPreferringFront,
   prepareJudgement,
   requeueAfterIncorrect,
   restoreSchedulingSnapshot,
@@ -52,9 +53,9 @@ function prioritizeResumeItem(
 
   if (fallbackIndex <= 0) return queue
 
-  const prioritized = [...queue]
-  const [item] = prioritized.splice(fallbackIndex, 1)
-  return [item, ...prioritized]
+  const rest = [...queue]
+  const [item] = rest.splice(fallbackIndex, 1)
+  return insertPreferringFront(rest, item)
 }
 
 export function ReviewSessionPage() {
@@ -323,7 +324,7 @@ export function ReviewSessionPage() {
         (item) =>
           item.card.id !== undone.card.id || item.modeId !== undone.modeId,
       )
-      return [undone, ...filtered]
+      return insertPreferringFront(filtered, undone)
     })
 
     const snap = await prepareJudgement(undone.card.id, undone.modeId)

@@ -98,6 +98,27 @@ export function requeueAfterIncorrect(
 }
 
 /**
+ * Where to reinsert an item that should jump to the front of the queue
+ * (resuming after "Edit card", restoring after "Undo last judgement") without
+ * landing it next to another due item for the same card. Searches forward
+ * from the front for the earliest slot where neither neighbour shares the
+ * card, so the item shows up as soon as possible while preserving the "never
+ * adjacent" invariant. Falls back to the front if the card dominates the
+ * queue and no safe slot exists.
+ */
+export function insertPreferringFront(
+  queue: DueItem[],
+  item: DueItem,
+): DueItem[] {
+  for (let i = 0; i <= queue.length; i += 1) {
+    if (queue[i - 1]?.card.id === item.card.id) continue
+    if (queue[i]?.card.id === item.card.id) continue
+    return [...queue.slice(0, i), item, ...queue.slice(i)]
+  }
+  return [item, ...queue]
+}
+
+/**
  * Last instant of the calendar day containing `timestamp`, expressed in the
  * user's local timezone.
  *
