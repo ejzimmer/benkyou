@@ -9,6 +9,11 @@ import {
   requiresTyping,
 } from "./reviewFlowHelpers"
 import { countGaps } from "../../domain/grammarGaps"
+import {
+  phraseReadingSegments,
+  wordJaReading,
+} from "../../domain/vocabularyContent"
+import { constructionReadingSegments } from "../../domain/grammarContent"
 
 export type ReviewSessionAnswerPanelProps = {
   item: DueItem
@@ -32,14 +37,26 @@ export function ReviewSessionAnswerPanel({
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
   const answeredCorrectly = answersMatch(m, typed, expected)
-  // For a multi-gap construction, the comma between answers is meaningful
-  // content (a gap boundary), not decorative punctuation — stripping it
-  // could make a wrong, merged answer (e.g. "猫犬" vs "猫, 犬") look like a
-  // punctuation-only typo. Only fall back to the fuzzy check otherwise.
-  const isMultiGapConstruction =
-    m === "grammar_type_construction" &&
-    card.kind === "grammar" &&
-    countGaps(card.content.sentenceWithGap, card.content.gapMarker) > 1
+  // When the card structurally has multiple answer parts (a multi-gap
+  // construction, or a phrase word/construction reading quizzed segment by
+  // segment), the comma between them is meaningful content (a part
+  // boundary), not decorative punctuation — stripping it could make a
+  // wrong, merged answer (e.g. "猫犬" vs "猫, 犬") look like a
+  // punctuation-only typo. Only fall back to the fuzzy check otherwise, so a
+  // single-part answer that happens to contain a literal comma/、 (e.g. a
+  // one-gap construction like "はい、そうです") isn't mistaken for multi-part.
+  const isMultiPartAnswer =
+    (m === "grammar_type_construction" &&
+      card.kind === "grammar" &&
+      countGaps(card.content.sentenceWithGap, card.content.gapMarker) > 1) ||
+    (m === "vocab_type_reading" &&
+      card.kind === "vocabulary" &&
+      Boolean(phraseReadingSegments(card.content))) ||
+    (m === "grammar_type_reading" &&
+      card.kind === "grammar" &&
+      (constructionReadingSegments(card.content)?.filter((s) =>
+        s.reading?.trim(),
+      ).length ?? 0) > 1)
 
   useEffect(() => {
     if (pendingIncorrectDelay) return
@@ -48,7 +65,7 @@ export function ReviewSessionAnswerPanel({
     const focusCorrect =
       !typingMode ||
       answeredCorrectly ||
-      (!isMultiGapConstruction && differsOnlyByPunctuation(typed, expected))
+      (!isMultiPartAnswer && differsOnlyByPunctuation(typed, expected))
     if (focusCorrect) {
       correctBtnRef.current?.focus({ preventScroll: true })
     } else {
@@ -57,7 +74,7 @@ export function ReviewSessionAnswerPanel({
   }, [
     typingMode,
     answeredCorrectly,
-    isMultiGapConstruction,
+    isMultiPartAnswer,
     pendingIncorrectDelay,
     typed,
     expected,
@@ -112,14 +129,18 @@ export function ReviewSessionAnswerPanel({
       )}
 
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
-        <AnswerComparison typed={typed} expected={expected} />
+        <AnswerComparison
+          typed={typed}
+          expected={expected}
+          answeredCorrectly={answeredCorrectly}
+        />
       )}
 
       {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
         <AnswerComparison
           typed={typed}
           expected={expected}
-          reading={card.content.reading}
+          reading={wordJaReading(card.content)}
         />
       )}
 
@@ -131,6 +152,14 @@ export function ReviewSessionAnswerPanel({
             card.content.construction,
             card.content.readings,
           )}
+          answeredCorrectly={answeredCorrectly}
+        />
+      )}
+
+      {m === "grammar_type_reading" && card.kind === "grammar" && (
+        <AnswerComparison
+          typed={typed}
+          expected={expected}
           answeredCorrectly={answeredCorrectly}
         />
       )}

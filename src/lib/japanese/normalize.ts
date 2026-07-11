@@ -14,10 +14,14 @@ export function normalizeJapanese(s: string): string {
  * "ｎ" some IMEs emit — instead of ん (e.g. "もちろn"/"もちろｎ" rather than
  * "もちろん"). NFKC folds full-width Latin to ASCII, a full (non-IME) toHiragana
  * pass converts the dangling "n" along with any other leftover romaji, and a
- * final guard maps any still-trailing "n"/"N" to ん.
+ * final guard maps any still-trailing "n"/"N" to ん — including right before a
+ * comma/、, since a multi-segment reading answer joins segments with one and a
+ * dangling "n" can be left at the end of an earlier segment, not just the last.
  */
 export function finalizeReadingAnswer(s: string): string {
-  return toHiragana(s.normalize("NFKC")).replace(/[nN]$/, "ん")
+  return toHiragana(s.normalize("NFKC"))
+    .replace(/[nN](?=[,、])/g, "ん")
+    .replace(/[nN]$/, "ん")
 }
 
 export function hasKanjiOrKatakana(s: string): boolean {

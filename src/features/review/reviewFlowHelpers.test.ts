@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
+  answersMatch,
   expectedAnswer,
+  hasNonHiraganaReadingAnswer,
+  isReadingTypingMode,
   requiresTyping,
   vocabExampleReadings,
 } from "./reviewFlowHelpers"
@@ -58,5 +61,69 @@ describe("reviewFlowHelpers", () => {
         synonymsJa: [],
       }),
     ).toEqual({})
+  })
+
+  it("expectedAnswer joins a phrase word's per-segment readings for vocab_type_reading", () => {
+    const c: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "vocabulary",
+      updatedAt: 1,
+      content: {
+        wordJa: "結論に至る",
+        readings: { 結論: "けつろん", 至る: "いたる" },
+        definitionsEn: [],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+    }
+    expect(expectedAnswer(c, "vocab_type_reading")).toBe("けつろん, いたる")
+  })
+
+  it("expectedAnswer joins a construction's per-segment readings for grammar_type_reading", () => {
+    const c: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "grammar",
+      updatedAt: 1,
+      content: {
+        sentenceWithGap: "___",
+        gapMarker: "___",
+        construction: "結論に至る",
+        translationEn: "",
+        readings: { 結論: "けつろん", 至る: "いたる" },
+        images: [],
+        synonymsJa: [],
+      },
+    }
+    expect(expectedAnswer(c, "grammar_type_reading")).toBe("けつろん, いたる")
+  })
+
+  it("answersMatch is lenient about the separator between phrase-reading segments", () => {
+    expect(
+      answersMatch("vocab_type_reading", "けつろん、いたる", "けつろん, いたる"),
+    ).toBe(true)
+    expect(answersMatch("vocab_type_reading", "けつろん", "けつろんに")).toBe(
+      false,
+    )
+  })
+
+  it("hasNonHiraganaReadingAnswer tolerates the segment separator between valid hiragana parts", () => {
+    expect(hasNonHiraganaReadingAnswer("けつろん, いたる")).toBe(false)
+    expect(hasNonHiraganaReadingAnswer("けつろん、いたる")).toBe(false)
+    expect(hasNonHiraganaReadingAnswer("けつろん")).toBe(false)
+  })
+
+  it("hasNonHiraganaReadingAnswer still catches kanji/katakana within a segment", () => {
+    expect(hasNonHiraganaReadingAnswer("結論, いたる")).toBe(true)
+    expect(hasNonHiraganaReadingAnswer("ケツロン")).toBe(true)
+  })
+
+  it("requiresTyping and isReadingTypingMode cover grammar_type_reading", () => {
+    expect(requiresTyping("grammar_type_reading")).toBe(true)
+    expect(isReadingTypingMode("grammar_type_reading")).toBe(true)
+    expect(isReadingTypingMode("vocab_type_reading")).toBe(true)
+    expect(isReadingTypingMode("grammar_type_construction")).toBe(false)
   })
 })

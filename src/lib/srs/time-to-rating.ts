@@ -21,6 +21,8 @@ export const REVEAL_THRESHOLDS_SEC: Record<ReviewModeId, RevealThresholdsSec> = 
   vocab_type_word_from_clue: { easyBelow: 12, goodBelow: 45, hardBelow: 95 },
   /** Typed construction — typically slowest */
   grammar_type_construction: { easyBelow: 20, goodBelow: 55, hardBelow: 120 },
+  /** Short hiragana typing, same pacing as the vocab reading quiz */
+  grammar_type_reading: { easyBelow: 6, goodBelow: 25, hardBelow: 55 },
 }
 
 /**

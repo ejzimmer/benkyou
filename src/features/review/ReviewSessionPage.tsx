@@ -14,10 +14,7 @@ import {
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
 import { ReviewSyncGate } from "./ReviewSyncGate"
-import {
-  finalizeReadingAnswer,
-  hasNonHiraganaKana,
-} from "../../lib/japanese/normalize"
+import { finalizeReadingAnswer } from "../../lib/japanese/normalize"
 import {
   isSynonymAnswer,
   matchesPrimaryJapanese,
@@ -27,6 +24,8 @@ import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import {
   expectedAnswer,
+  hasNonHiraganaReadingAnswer,
+  isReadingTypingMode,
   modeHeadingVisible,
   requiresTyping,
   REVIEW_MODE_LABELS,
@@ -153,9 +152,9 @@ export function ReviewSessionPage() {
       setPhase(snap ? "answer" : "prompt")
       if (
         snap &&
-        resumedItem.modeId === "vocab_type_reading" &&
+        isReadingTypingMode(resumedItem.modeId) &&
         restoredTyped &&
-        hasNonHiraganaKana(restoredTyped)
+        hasNonHiraganaReadingAnswer(restoredTyped)
       ) {
         setReadingWarn(true)
       }
@@ -201,13 +200,13 @@ export function ReviewSessionPage() {
 
   const handleTypedChange = useCallback(
     (value: string) => {
-      if (current?.modeId === "vocab_type_reading") {
+      if (current && isReadingTypingMode(current.modeId)) {
         setTyped(toHiragana(value, { IMEMode: true }))
       } else {
         setTyped(value)
       }
     },
-    [current?.modeId],
+    [current],
   )
 
   useEffect(() => {
@@ -250,9 +249,9 @@ export function ReviewSessionPage() {
     setSnapshot(snap)
     setPhase("answer")
     if (
-      current.modeId === "vocab_type_reading" &&
+      isReadingTypingMode(current.modeId) &&
       typedValue &&
-      hasNonHiraganaKana(typedValue)
+      hasNonHiraganaReadingAnswer(typedValue)
     ) {
       setReadingWarn(true)
     }
@@ -274,11 +273,7 @@ export function ReviewSessionPage() {
         return false
       }
     }
-    if (
-      m === "vocab_type_reading" &&
-      typedValue &&
-      hasNonHiraganaKana(typedValue)
-    ) {
+    if (isReadingTypingMode(m) && typedValue && hasNonHiraganaReadingAnswer(typedValue)) {
       setReadingWarn(true)
     }
     return true
@@ -287,7 +282,7 @@ export function ReviewSessionPage() {
   const tryShowAnswerRef = useRef(() => {})
   tryShowAnswerRef.current = () => {
     let finalTyped = typed
-    if (current?.modeId === "vocab_type_reading" && typed) {
+    if (current && isReadingTypingMode(current.modeId) && typed) {
       finalTyped = finalizeReadingAnswer(typed)
       if (finalTyped !== typed) setTyped(finalTyped)
     }

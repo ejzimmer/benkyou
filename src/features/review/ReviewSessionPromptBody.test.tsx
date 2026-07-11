@@ -261,6 +261,243 @@ describe("ReviewSessionPromptBody", () => {
     ).not.toContain("ねこ")
   })
 
+  it("shows per-segment furigana for a phrase word in the oral-meaning prompt", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-7",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "結論に至る",
+          readings: { 結論: "けつろん", 至る: "いたる" },
+          definitionsEn: ["to reach a conclusion"],
+          images: [],
+          exampleSentences: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_oral_en",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    const prompt = container.querySelector(".prompt-main")
+    const rubies = Array.from(prompt?.querySelectorAll("ruby") ?? [])
+    expect(rubies.map((r) => r.firstChild?.textContent)).toEqual([
+      "結論",
+      "至る",
+    ])
+    expect(rubies.map((r) => r.querySelector("rt")?.textContent)).toEqual([
+      "けつろん",
+      "いたる",
+    ])
+    expect(prompt?.textContent).toBe("結論けつろんに至るいたる")
+  })
+
+  it("asks for a phrase word's reading segment by segment, hiding both from example furigana", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-8",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "結論に至る",
+          readings: { 結論: "けつろん", 至る: "いたる" },
+          definitionsEn: ["to reach a conclusion"],
+          images: [],
+          exampleSentences: ["彼は結論に至るのが早い。"],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_type_reading",
+      due: 0,
+    }
+
+    render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByLabelText("Reading for 結論")).toBeInTheDocument()
+    expect(screen.getByLabelText("Reading for 至る")).toBeInTheDocument()
+    expect(screen.getAllByRole("textbox")).toHaveLength(2)
+
+    const extras = screen.getByText(/show meaning, examples/i)
+    expect(extras.closest(".prompt-extras")?.querySelectorAll("ruby")).toHaveLength(
+      0,
+    )
+  })
+
+  it("combines each phrase-word segment's answer into a single comma-separated typed value", async () => {
+    const user = userEvent.setup()
+    const item: DueItem = {
+      card: {
+        id: "card-9",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "結論に至る",
+          readings: { 結論: "けつろん", 至る: "いたる" },
+          definitionsEn: [],
+          images: [],
+          exampleSentences: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_type_reading",
+      due: 0,
+    }
+
+    render(<StatefulPromptBody item={item} />)
+
+    await user.type(screen.getByLabelText("Reading for 結論"), "けつろん")
+    await user.type(screen.getByLabelText("Reading for 至る"), "いたる")
+
+    expect(
+      screen.getByLabelText<HTMLInputElement>("Reading for 結論").value,
+    ).toBe("けつろん")
+    expect(
+      screen.getByLabelText<HTMLInputElement>("Reading for 至る").value,
+    ).toBe("いたる")
+  })
+
+  it("fills the grammar reading-quiz gap with plain kanji and asks per segment", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-10",
+        deckId: "deck-1",
+        kind: "grammar",
+        updatedAt: 0,
+        content: {
+          sentenceWithGap: "彼は___と思った",
+          gapMarker: "___",
+          construction: "結論に至る",
+          translationEn: "he came to a conclusion",
+          readings: { 結論: "けつろん", 至る: "いたる" },
+          images: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "grammar_type_reading",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    const fill = container.querySelector(".construction-fill")
+    expect(fill?.textContent).toBe("結論に至る")
+    expect(fill?.querySelector("ruby")).toBeNull()
+    expect(screen.getByLabelText("Reading for 結論")).toBeInTheDocument()
+    expect(screen.getByLabelText("Reading for 至る")).toBeInTheDocument()
+    // The meaning sits behind the collapsed expander, not shown up front.
+    const details = screen.getByText(/show meaning/i).closest("details")
+    expect(details).not.toHaveAttribute("open")
+    expect(details).toHaveTextContent("he came to a conclusion")
+  })
+
+  it("fills each gap of a multi-gap grammar reading quiz with its own answer, not the whole construction", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-11",
+        deckId: "deck-1",
+        kind: "grammar",
+        updatedAt: 0,
+        content: {
+          sentenceWithGap: "___を___",
+          gapMarker: "___",
+          construction: "流し, 呼ぶ",
+          translationEn: "call a carriage",
+          readings: { 流し: "ながし", 呼ぶ: "よぶ" },
+          images: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "grammar_type_reading",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    const fills = Array.from(container.querySelectorAll(".construction-fill"))
+    expect(fills.map((f) => f.textContent)).toEqual(["流し", "呼ぶ"])
+    expect(container.querySelector(".ruby-sentence")?.textContent).toBe(
+      "流しを呼ぶ",
+    )
+  })
+
+  it("prefers the explicit reading field over a conflicting readings-map entry for the same word", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-12",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "猫",
+          reading: "ねこ",
+          readings: { 猫: "ネコ" },
+          definitionsEn: ["cat"],
+          images: [],
+          exampleSentences: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_oral_en",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    const rt = container.querySelector(".prompt-main rt")
+    expect(rt?.textContent).toBe("ねこ")
+  })
+
   it("does not auto-focus inline grammar input on touch-primary devices", () => {
     stubTouchPrimaryDevice(true)
 

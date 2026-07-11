@@ -263,6 +263,40 @@ describe("ReviewSessionAnswerPanel", () => {
     // The correct answer still shows its furigana reading on hover.
     expect(container.querySelector("rt")?.textContent).toBe("ねこ")
   })
+
+  it("shows a concatenated fallback reading for a phrase word with no whole-word reading field", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-phrase",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "結論に至る",
+          readings: { 結論: "けつろん", 至る: "いたる" },
+          definitionsEn: ["to reach a conclusion"],
+          images: [],
+          exampleSentences: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_type_word_from_clue",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionAnswerPanel
+        item={item}
+        typed="結論に至る"
+        expected="結論に至る"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    expect(container.querySelector("rt")?.textContent).toBe("けつろんにいたる")
+  })
 })
 
 function twoGapItem(): DueItem {
@@ -286,6 +320,66 @@ function twoGapItem(): DueItem {
     due: 0,
   }
 }
+
+describe("ReviewSessionAnswerPanel — grammar reading quiz", () => {
+  function readingItem(): DueItem {
+    return {
+      card: {
+        id: "card-4",
+        deckId: "deck-1",
+        kind: "grammar",
+        updatedAt: 0,
+        content: {
+          sentenceWithGap: "彼は___と思った",
+          gapMarker: "___",
+          construction: "結論に至る",
+          translationEn: "he came to a conclusion",
+          readings: { 結論: "けつろん", 至る: "いたる" },
+          images: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "grammar_type_reading",
+      due: 0,
+    }
+  }
+
+  it("shows only the correct answer for a matching per-segment reading", async () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={readingItem()}
+        typed="けつろん, いたる"
+        expected="けつろん, いたる"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText("Correct answer")).toBeInTheDocument()
+    expect(screen.queryByText("Your answer")).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
+    })
+  })
+
+  it("focuses Incorrect for a merged answer missing the segment separator", async () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={readingItem()}
+        typed="けつろんいたる"
+        expected="けつろん, いたる"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
+    })
+  })
+})
 
 describe("ReviewSessionAnswerPanel — multi-gap focus bias", () => {
   it("focuses Incorrect for a merged wrong answer, not Correct via punctuation-stripping", async () => {
@@ -311,6 +405,46 @@ describe("ReviewSessionAnswerPanel — multi-gap focus bias", () => {
         item={twoGapItem()}
         typed="流し, 呼ぶ"
         expected="流し, 呼ぶ"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
+    })
+  })
+
+  it("still applies punctuation-fuzzy focus for a single-gap construction whose answer text itself contains a 、", async () => {
+    // The construction is a single gap-filler that happens to contain a
+    // Japanese comma as ordinary sentence punctuation, not a multi-gap
+    // separator — countGaps is 1, so this must not be treated as multi-part.
+    const item: DueItem = {
+      card: {
+        id: "card-5",
+        deckId: "deck-1",
+        kind: "grammar",
+        updatedAt: 0,
+        content: {
+          sentenceWithGap: "彼は___と言った",
+          gapMarker: "___",
+          construction: "はい、そうです",
+          translationEn: "he said, yes that's right",
+          readings: {},
+          images: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "grammar_type_construction",
+      due: 0,
+    }
+
+    render(
+      <ReviewSessionAnswerPanel
+        item={item}
+        typed="はいそうです"
+        expected="はい、そうです"
         pendingIncorrectDelay={false}
         onJudge={vi.fn()}
         onUndoAnswer={vi.fn()}

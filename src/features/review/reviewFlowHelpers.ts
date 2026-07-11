@@ -4,8 +4,18 @@ import type {
   VocabularyCardContent,
 } from "../../domain/types"
 import { containsKanji } from "../../domain/types"
-import { normalizeGapAnswers } from "../../domain/grammarGaps"
-import { withWordReadingFallback } from "../../domain/readingsMap"
+import {
+  GAP_ANSWER_JOIN,
+  normalizeGapAnswers,
+  splitGapAnswers,
+} from "../../domain/grammarGaps"
+import {
+  fullyCoveredSegments,
+  withWordReadingFallback,
+} from "../../domain/readingsMap"
+import { phraseReadingSegments } from "../../domain/vocabularyContent"
+import { constructionReadingSegments } from "../../domain/grammarContent"
+import { hasNonHiraganaKana } from "../../lib/japanese/normalize"
 
 /** Marker used to blank out the target word in an example sentence. */
 export const EXAMPLE_PLACEHOLDER = "___"
@@ -58,13 +68,53 @@ export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {
   vocab_type_reading: "Type the reading (hiragana)",
   vocab_type_word_from_clue: "Type the Japanese word",
   grammar_type_construction: "Type the construction",
+  grammar_type_reading: "Type the reading of the construction (hiragana)",
   grammar_oral_meaning: "Say the meaning of the construction",
+}
+
+/** Modes that test a hiragana reading — the IME conversion, non-hiragana
+ * warning, and reading finalization on submit all apply to both. */
+export function isReadingTypingMode(mode: ReviewModeId): boolean {
+  return mode === "vocab_type_reading" || mode === "grammar_type_reading"
+}
+
+/**
+ * hasNonHiraganaKana, but tolerant of the comma/、 separator a multi-segment
+ * reading answer is joined with (each segment's own text is still checked).
+ * A plain single-segment answer has no separator to split on, so this is
+ * identical to hasNonHiraganaKana for the common case.
+ */
+export function hasNonHiraganaReadingAnswer(typed: string): boolean {
+  return splitGapAnswers(typed).some((part) => hasNonHiraganaKana(part))
+}
+
+/**
+ * Ordered per-segment reading answers for a typed reading-quiz mode, joined
+ * the same way multi-gap construction answers are (comma-separated) so the
+ * existing lenient comma-vs-、 grading applies uniformly. A word/construction
+ * with a single reading (the common case) comes back as one un-joined part.
+ */
+function segmentedReadingAnswer(
+  segments: { reading?: string }[] | undefined,
+): string {
+  return (segments ?? [])
+    .filter((s) => s.reading?.trim())
+    .map((s) => s.reading!)
+    .join(GAP_ANSWER_JOIN)
 }
 
 export function readingForConstruction(
   construction: string,
   readings: Record<string, string>,
 ): string | undefined {
+  // When the map fully covers the construction (e.g. a multi-cluster phrase
+  // like 結論に至る with both 結論 and 至る mapped), concatenate the whole
+  // reading rather than surfacing just whichever cluster happens to match —
+  // returning only "けつろん" for "結論に至る" would be a wrong reading, not
+  // a partial one.
+  const segments = fullyCoveredSegments(construction, readings)
+  if (segments) return segments.map((s) => s.reading ?? s.text).join("")
+
   const keys = Object.keys(readings).sort((a, b) => b.length - a.length)
   for (const k of keys) {
     if (construction.includes(k) && readings[k]?.trim()) return readings[k]
@@ -76,7 +126,8 @@ export function requiresTyping(mode: ReviewModeId): boolean {
   return (
     mode === "vocab_type_reading" ||
     mode === "vocab_type_word_from_clue" ||
-    mode === "grammar_type_construction"
+    mode === "grammar_type_construction" ||
+    mode === "grammar_type_reading"
   )
 }
 
@@ -90,12 +141,19 @@ export function modeHeadingVisible(mode: ReviewModeId): boolean {
 }
 
 export function expectedAnswer(card: Card, mode: ReviewModeId): string {
-  if (mode === "vocab_type_reading")
-    return card.kind === "vocabulary" ? card.content.reading ?? "" : ""
+  if (mode === "vocab_type_reading") {
+    if (card.kind !== "vocabulary") return ""
+    if (card.content.reading?.trim()) return card.content.reading
+    return segmentedReadingAnswer(phraseReadingSegments(card.content))
+  }
   if (mode === "vocab_type_word_from_clue")
     return card.kind === "vocabulary" ? card.content.wordJa : ""
   if (mode === "grammar_type_construction")
     return card.kind === "grammar" ? card.content.construction : ""
+  if (mode === "grammar_type_reading") {
+    if (card.kind !== "grammar") return ""
+    return segmentedReadingAnswer(constructionReadingSegments(card.content))
+  }
   return ""
 }
 
@@ -110,7 +168,11 @@ export function answersMatch(
   typed: string,
   expected: string,
 ): boolean {
-  if (mode === "grammar_type_construction") {
+  if (
+    mode === "grammar_type_construction" ||
+    mode === "vocab_type_reading" ||
+    mode === "grammar_type_reading"
+  ) {
     return normalizeGapAnswers(typed) === normalizeGapAnswers(expected)
   }
   return typed === expected

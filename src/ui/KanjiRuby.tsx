@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react"
+import { segmentText } from "../domain/readingsMap"
 
 type Props = {
   /** Full phrase ruby (when only one reading string for whole expression) */
@@ -31,37 +32,25 @@ type MapProps = {
   renderGap?: (gapIndex: number, marker: string) => ReactNode
 }
 
-function RubySegment({
+/** Renders `segment` with furigana per matched phrase, via `segmentText`. */
+export function RubySegment({
   segment,
   readings,
 }: {
   segment: string
   readings: Record<string, string>
 }) {
-  const keys = Object.keys(readings).sort((a, b) => b.length - a.length)
-  const parts: ReactNode[] = []
-  let i = 0
-  let keyIdx = 0
-  while (i < segment.length) {
-    let matched = false
-    for (const k of keys) {
-      if (!k || !readings[k]?.trim()) continue
-      if (segment.slice(i, i + k.length) === k) {
-        parts.push(
-          <RubyWord key={keyIdx++} surface={k} reading={readings[k]} />,
-        )
-        i += k.length
-        matched = true
-        break
-      }
-    }
-    if (!matched) {
-      const ch = segment[i]
-      parts.push(<span key={keyIdx++}>{ch}</span>)
-      i += 1
-    }
-  }
-  return <>{parts}</>
+  return (
+    <>
+      {segmentText(segment, readings).map((s, i) =>
+        s.reading?.trim() ? (
+          <RubyWord key={i} surface={s.text} reading={s.reading} />
+        ) : (
+          <span key={i}>{s.text}</span>
+        ),
+      )}
+    </>
+  )
 }
 
 /** Ruby per substring + gap markers between segments (supports repeated gaps). */

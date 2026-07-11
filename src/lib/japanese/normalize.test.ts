@@ -61,4 +61,9 @@ describe("finalizeReadingAnswer", () => {
   it("still converts mid-word kana so ん is not the only thing handled", () => {
     expect(finalizeReadingAnswer("しんぶn")).toBe("しんぶん")
   })
+  it("converts a dangling n left at the end of an earlier comma-separated segment", () => {
+    // toHiragana itself converts the ASCII "," to "、" along the way.
+    expect(finalizeReadingAnswer("けつろn, いたる")).toBe("けつろん、 いたる")
+    expect(finalizeReadingAnswer("けつろn、いたる")).toBe("けつろん、いたる")
+  })
 })
