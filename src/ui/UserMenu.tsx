@@ -37,7 +37,7 @@ export function UserMenu() {
       <button
         type="button"
         ref={triggerRef}
-        className="btn user-menu-trigger"
+        className="btn secondary user-menu-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
