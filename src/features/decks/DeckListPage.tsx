@@ -58,7 +58,7 @@ export function DeckListPage() {
                       <path
                         d="M4.5 8.4l2.2 2.2 4.8-4.8"
                         fill="none"
-                        stroke="#fff"
+                        stroke="var(--on-fluoro)"
                         strokeWidth="1.6"
                         strokeLinecap="round"
                         strokeLinejoin="round"
