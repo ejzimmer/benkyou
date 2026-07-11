@@ -8,7 +8,12 @@ import {
   readingForConstruction,
   requiresTyping,
 } from "./reviewFlowHelpers"
-import { splitGapAnswers } from "../../domain/grammarGaps"
+import { countGaps } from "../../domain/grammarGaps"
+import {
+  phraseReadingSegments,
+  wordJaReading,
+} from "../../domain/vocabularyContent"
+import { constructionReadingSegments } from "../../domain/grammarContent"
 
 export type ReviewSessionAnswerPanelProps = {
   item: DueItem
@@ -32,13 +37,26 @@ export function ReviewSessionAnswerPanel({
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
   const answeredCorrectly = answersMatch(m, typed, expected)
-  // When the expected answer has multiple comma-separated parts (a multi-gap
+  // When the card structurally has multiple answer parts (a multi-gap
   // construction, or a phrase word/construction reading quizzed segment by
-  // segment), the comma is meaningful content (a part boundary), not
-  // decorative punctuation — stripping it could make a wrong, merged answer
-  // (e.g. "猫犬" vs "猫, 犬") look like a punctuation-only typo. Only fall
-  // back to the fuzzy check for single-part answers.
-  const isMultiPartAnswer = splitGapAnswers(expected).length > 1
+  // segment), the comma between them is meaningful content (a part
+  // boundary), not decorative punctuation — stripping it could make a
+  // wrong, merged answer (e.g. "猫犬" vs "猫, 犬") look like a
+  // punctuation-only typo. Only fall back to the fuzzy check otherwise, so a
+  // single-part answer that happens to contain a literal comma/、 (e.g. a
+  // one-gap construction like "はい、そうです") isn't mistaken for multi-part.
+  const isMultiPartAnswer =
+    (m === "grammar_type_construction" &&
+      card.kind === "grammar" &&
+      countGaps(card.content.sentenceWithGap, card.content.gapMarker) > 1) ||
+    (m === "vocab_type_reading" &&
+      card.kind === "vocabulary" &&
+      Boolean(phraseReadingSegments(card.content))) ||
+    (m === "grammar_type_reading" &&
+      card.kind === "grammar" &&
+      (constructionReadingSegments(card.content)?.filter((s) =>
+        s.reading?.trim(),
+      ).length ?? 0) > 1)
 
   useEffect(() => {
     if (pendingIncorrectDelay) return
@@ -122,7 +140,7 @@ export function ReviewSessionAnswerPanel({
         <AnswerComparison
           typed={typed}
           expected={expected}
-          reading={card.content.reading}
+          reading={wordJaReading(card.content)}
         />
       )}
 

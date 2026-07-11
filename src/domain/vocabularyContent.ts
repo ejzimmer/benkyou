@@ -46,16 +46,24 @@ export function hasVocabularyImage(content: VocabularyCardContent): boolean {
  * 結論に至る split into 結論/けつろん and 至る/いたる, from the card's own
  * phrase map — used when the word is multiple kanji clusters joined by
  * particles/okurigana rather than a single reading. Only produced when
- * `reading` is unset (that field wins for a plain single-reading word) and
- * every kanji character in `wordJa` is covered by the phrase map; otherwise
- * undefined, so callers fall back to the whole-word `reading` field.
+ * `reading` is unset (that field wins for a plain single-reading word), the
+ * phrase map fully covers every kanji character in `wordJa`, AND there are
+ * at least two kanji-cluster segments — a single cluster is what the
+ * `reading` field is for, and treating a lone self-keyed map entry (e.g.
+ * added only so a word gets furigana inside its own example sentences) as a
+ * pronunciation would silently offer the reading quiz on cards that never
+ * asked for it. Otherwise undefined, so callers fall back to the whole-word
+ * `reading` field.
  */
 export function phraseReadingSegments(
   content: VocabularyCardContent,
 ): ReadingSegment[] | undefined {
   if (content.reading?.trim()) return undefined
   if (!containsKanji(content.wordJa)) return undefined
-  return fullyCoveredSegments(content.wordJa, content.readings ?? {})
+  const segments = fullyCoveredSegments(content.wordJa, content.readings ?? {})
+  if (!segments) return undefined
+  const kanjiSegmentCount = segments.filter((s) => s.reading?.trim()).length
+  return kanjiSegmentCount > 1 ? segments : undefined
 }
 
 /** Kanji word with a hiragana reading (pronunciation), whole-word or per-segment. */
@@ -65,7 +73,20 @@ export function hasVocabularyPronunciation(
   if (containsKanji(content.wordJa) && Boolean(content.reading?.trim())) {
     return true
   }
-  return Boolean(
-    phraseReadingSegments(content)?.some((s) => s.reading?.trim()),
-  )
+  return Boolean(phraseReadingSegments(content))
+}
+
+/**
+ * Best-effort single reading string for the whole word: the explicit
+ * `reading` field when set, else the phrase segments concatenated. For
+ * views that can only show one flat `<ruby>` over the whole word (e.g. a
+ * character-diffed answer comparison) rather than one ruby per segment.
+ */
+export function wordJaReading(
+  content: VocabularyCardContent,
+): string | undefined {
+  if (content.reading?.trim()) return content.reading
+  const segments = phraseReadingSegments(content)
+  if (!segments) return undefined
+  return segments.map((s) => s.reading ?? s.text).join("")
 }

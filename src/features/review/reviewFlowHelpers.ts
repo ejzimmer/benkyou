@@ -4,13 +4,18 @@ import type {
   VocabularyCardContent,
 } from "../../domain/types"
 import { containsKanji } from "../../domain/types"
-import { GAP_ANSWER_JOIN, normalizeGapAnswers } from "../../domain/grammarGaps"
+import {
+  GAP_ANSWER_JOIN,
+  normalizeGapAnswers,
+  splitGapAnswers,
+} from "../../domain/grammarGaps"
 import {
   fullyCoveredSegments,
   withWordReadingFallback,
 } from "../../domain/readingsMap"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
 import { constructionReadingSegments } from "../../domain/grammarContent"
+import { hasNonHiraganaKana } from "../../lib/japanese/normalize"
 
 /** Marker used to blank out the target word in an example sentence. */
 export const EXAMPLE_PLACEHOLDER = "___"
@@ -71,6 +76,16 @@ export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {
  * warning, and reading finalization on submit all apply to both. */
 export function isReadingTypingMode(mode: ReviewModeId): boolean {
   return mode === "vocab_type_reading" || mode === "grammar_type_reading"
+}
+
+/**
+ * hasNonHiraganaKana, but tolerant of the comma/、 separator a multi-segment
+ * reading answer is joined with (each segment's own text is still checked).
+ * A plain single-segment answer has no separator to split on, so this is
+ * identical to hasNonHiraganaKana for the common case.
+ */
+export function hasNonHiraganaReadingAnswer(typed: string): boolean {
+  return splitGapAnswers(typed).some((part) => hasNonHiraganaKana(part))
 }
 
 /**

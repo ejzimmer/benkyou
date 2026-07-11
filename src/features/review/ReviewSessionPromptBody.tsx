@@ -106,7 +106,14 @@ export function ReviewSessionPromptBody({
     return (
       <div className="stack">
         <p className="prompt-main">
-          <RubySegment segment={card.content.wordJa} readings={exampleReadings} />
+          {card.content.reading?.trim() ? (
+            // The `reading` field is authoritative for the headline word —
+            // don't let a same-keyed map entry (e.g. authored only to
+            // stylize furigana inside an example sentence) override it.
+            <RubyWord surface={card.content.wordJa} reading={card.content.reading} />
+          ) : (
+            <RubySegment segment={card.content.wordJa} readings={card.content.readings ?? {}} />
+          )}
         </p>
         {examples.map((s, i) => (
           <p key={i} className="muted">
@@ -369,6 +376,15 @@ export function ReviewSessionPromptBody({
     const sentence = card.content.sentenceWithGap
     const construction = card.content.construction
     const hasInlineGap = Boolean(gapMarker) && sentence.includes(gapMarker)
+    // For a multi-gap sentence with one comma-separated answer per gap, fill
+    // each gap with its own answer rather than the whole comma-joined
+    // construction — mirroring grammar_oral_meaning's fillFor below.
+    const gapCount = hasInlineGap ? countGaps(sentence, gapMarker) : 0
+    const constructionParts = splitGapAnswers(construction)
+    const fillFor = (gapIndex: number) =>
+      constructionParts.length === gapCount
+        ? (constructionParts[gapIndex] ?? construction)
+        : construction
     const segments = constructionReadingSegments(card.content) ?? []
     const kanjiSegments = segments.filter((s) => s.reading?.trim())
     const usesPerSegmentInputs = kanjiSegments.length > 1
@@ -399,8 +415,8 @@ export function ReviewSessionPromptBody({
               sentence={sentence}
               gapMarker={card.content.gapMarker}
               readings={card.content.readings}
-              renderGap={() => (
-                <span className="construction-fill">{construction}</span>
+              renderGap={(gapIndex) => (
+                <span className="construction-fill">{fillFor(gapIndex)}</span>
               )}
             />
           ) : (

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   answersMatch,
   expectedAnswer,
+  hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
   requiresTyping,
   vocabExampleReadings,
@@ -106,6 +107,17 @@ describe("reviewFlowHelpers", () => {
     expect(answersMatch("vocab_type_reading", "けつろん", "けつろんに")).toBe(
       false,
     )
+  })
+
+  it("hasNonHiraganaReadingAnswer tolerates the segment separator between valid hiragana parts", () => {
+    expect(hasNonHiraganaReadingAnswer("けつろん, いたる")).toBe(false)
+    expect(hasNonHiraganaReadingAnswer("けつろん、いたる")).toBe(false)
+    expect(hasNonHiraganaReadingAnswer("けつろん")).toBe(false)
+  })
+
+  it("hasNonHiraganaReadingAnswer still catches kanji/katakana within a segment", () => {
+    expect(hasNonHiraganaReadingAnswer("結論, いたる")).toBe(true)
+    expect(hasNonHiraganaReadingAnswer("ケツロン")).toBe(true)
   })
 
   it("requiresTyping and isReadingTypingMode cover grammar_type_reading", () => {

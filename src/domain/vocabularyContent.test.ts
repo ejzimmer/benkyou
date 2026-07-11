@@ -4,6 +4,7 @@ import {
   hasVocabularyPronunciation,
   phraseReadingSegments,
   PLACEHOLDER_DEFINITION,
+  wordJaReading,
 } from "./vocabularyContent"
 import type { VocabularyCardContent } from "./types"
 
@@ -49,6 +50,15 @@ describe("vocabularyContent helpers", () => {
       }),
     ).toBe(false)
   })
+
+  it("does not treat a lone self-keyed readings-map entry as pronunciation — that's what the reading field is for", () => {
+    // A pre-existing card might have `陣: "じん"` in its readings map only so
+    // the word gets furigana inside its own example sentences, without ever
+    // intending to opt into the reading-quiz mode via the dedicated field.
+    expect(
+      hasVocabularyPronunciation({ ...base, wordJa: "陣", readings: { 陣: "じん" } }),
+    ).toBe(false)
+  })
 })
 
 describe("phraseReadingSegments", () => {
@@ -84,5 +94,31 @@ describe("phraseReadingSegments", () => {
         readings: { 結論: "けつろん" },
       }),
     ).toBeUndefined()
+  })
+
+  it("is undefined for a single kanji cluster even when fully covered by the map", () => {
+    expect(
+      phraseReadingSegments({ ...base, wordJa: "陣", readings: { 陣: "じん" } }),
+    ).toBeUndefined()
+  })
+})
+
+describe("wordJaReading", () => {
+  it("returns the explicit reading field when set", () => {
+    expect(wordJaReading({ ...base, wordJa: "陣", reading: "じん" })).toBe("じん")
+  })
+
+  it("concatenates phrase segments into one flat reading when there's no reading field", () => {
+    expect(
+      wordJaReading({
+        ...base,
+        wordJa: "結論に至る",
+        readings: { 結論: "けつろん", 至る: "いたる" },
+      }),
+    ).toBe("けつろんにいたる")
+  })
+
+  it("is undefined when neither a reading field nor a full phrase segmentation is available", () => {
+    expect(wordJaReading({ ...base, wordJa: "陣" })).toBeUndefined()
   })
 })

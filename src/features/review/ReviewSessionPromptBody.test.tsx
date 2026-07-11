@@ -423,6 +423,81 @@ describe("ReviewSessionPromptBody", () => {
     expect(details).toHaveTextContent("he came to a conclusion")
   })
 
+  it("fills each gap of a multi-gap grammar reading quiz with its own answer, not the whole construction", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-11",
+        deckId: "deck-1",
+        kind: "grammar",
+        updatedAt: 0,
+        content: {
+          sentenceWithGap: "___を___",
+          gapMarker: "___",
+          construction: "流し, 呼ぶ",
+          translationEn: "call a carriage",
+          readings: { 流し: "ながし", 呼ぶ: "よぶ" },
+          images: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "grammar_type_reading",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    const fills = Array.from(container.querySelectorAll(".construction-fill"))
+    expect(fills.map((f) => f.textContent)).toEqual(["流し", "呼ぶ"])
+    expect(container.querySelector(".ruby-sentence")?.textContent).toBe(
+      "流しを呼ぶ",
+    )
+  })
+
+  it("prefers the explicit reading field over a conflicting readings-map entry for the same word", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-12",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "猫",
+          reading: "ねこ",
+          readings: { 猫: "ネコ" },
+          definitionsEn: ["cat"],
+          images: [],
+          exampleSentences: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_oral_en",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        onTypedSubmit={vi.fn()}
+      />,
+    )
+
+    const rt = container.querySelector(".prompt-main rt")
+    expect(rt?.textContent).toBe("ねこ")
+  })
+
   it("does not auto-focus inline grammar input on touch-primary devices", () => {
     stubTouchPrimaryDevice(true)
 

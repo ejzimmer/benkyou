@@ -14,10 +14,7 @@ import {
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
 import { ReviewSyncGate } from "./ReviewSyncGate"
-import {
-  finalizeReadingAnswer,
-  hasNonHiraganaKana,
-} from "../../lib/japanese/normalize"
+import { finalizeReadingAnswer } from "../../lib/japanese/normalize"
 import {
   isSynonymAnswer,
   matchesPrimaryJapanese,
@@ -27,6 +24,7 @@ import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import {
   expectedAnswer,
+  hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
   modeHeadingVisible,
   requiresTyping,
@@ -156,7 +154,7 @@ export function ReviewSessionPage() {
         snap &&
         isReadingTypingMode(resumedItem.modeId) &&
         restoredTyped &&
-        hasNonHiraganaKana(restoredTyped)
+        hasNonHiraganaReadingAnswer(restoredTyped)
       ) {
         setReadingWarn(true)
       }
@@ -253,7 +251,7 @@ export function ReviewSessionPage() {
     if (
       isReadingTypingMode(current.modeId) &&
       typedValue &&
-      hasNonHiraganaKana(typedValue)
+      hasNonHiraganaReadingAnswer(typedValue)
     ) {
       setReadingWarn(true)
     }
@@ -275,7 +273,7 @@ export function ReviewSessionPage() {
         return false
       }
     }
-    if (isReadingTypingMode(m) && typedValue && hasNonHiraganaKana(typedValue)) {
+    if (isReadingTypingMode(m) && typedValue && hasNonHiraganaReadingAnswer(typedValue)) {
       setReadingWarn(true)
     }
     return true
