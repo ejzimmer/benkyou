@@ -4,7 +4,6 @@ import { toHiragana } from "wanakana"
 import {
   commitJudgement,
   getDueQueue,
-  insertPreferringFront,
   prepareJudgement,
   requeueAfterIncorrect,
   restoreSchedulingSnapshot,
@@ -55,7 +54,17 @@ function prioritizeResumeItem(
 
   const rest = [...queue]
   const [item] = rest.splice(fallbackIndex, 1)
-  return insertPreferringFront(rest, item)
+
+  // `item` must land exactly at the front — CardEditPage's "back" link and
+  // the resume URL params depend on the resumed card/mode reappearing
+  // immediately. If that leaves another due item for the same card right
+  // behind it (rest[0]), move that one conflicting neighbour back instead of
+  // disturbing where `item` goes.
+  if (rest[0]?.card.id === item.card.id) {
+    const [conflict, ...remainder] = rest
+    return [item, ...requeueAfterIncorrect(remainder, conflict)]
+  }
+  return [item, ...rest]
 }
 
 export function ReviewSessionPage() {
@@ -324,7 +333,11 @@ export function ReviewSessionPage() {
         (item) =>
           item.card.id !== undone.card.id || item.modeId !== undone.modeId,
       )
-      return insertPreferringFront(filtered, undone)
+      // Must land exactly at the front, not just near it: the code below
+      // sets phase/snapshot/typed for `undone` and treats it as `current`
+      // (sessionQueue[0]) — placing it anywhere else would decouple what's
+      // rendered from the judgement state held here.
+      return [undone, ...filtered]
     })
 
     const snap = await prepareJudgement(undone.card.id, undone.modeId)

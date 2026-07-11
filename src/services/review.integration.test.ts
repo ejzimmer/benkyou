@@ -6,7 +6,6 @@ import {
   commitJudgement,
   endOfLocalDay,
   getDueQueue,
-  insertPreferringFront,
   prepareJudgement,
   randomizeDueQueue,
   requeueAfterIncorrect,
@@ -156,36 +155,6 @@ describe("review + scheduling (IndexedDB)", () => {
     const requeued = requeueAfterIncorrect(rest, missed)
 
     expect(requeued).toEqual([...rest, missed])
-  })
-
-  it("inserts near the front without landing next to the same card (edit-card resume, undo)", () => {
-    const cardX = vocabularyCard("x")
-    const cardZ = vocabularyCard("z")
-    // The card's other due mode (x:vocab_type_reading) already sits at the
-    // front of the queue — naively unshifting the resumed/undone item there
-    // would put two "x" prompts back to back.
-    const queue = [
-      dueItem(cardX, "vocab_type_reading", 1),
-      dueItem(cardZ, "vocab_oral_en", 2),
-    ]
-    const item = dueItem(cardX, "vocab_oral_en", 3)
-
-    const inserted = insertPreferringFront(queue, item)
-
-    for (let i = 1; i < inserted.length; i += 1) {
-      expect(inserted[i].card.id).not.toBe(inserted[i - 1].card.id)
-    }
-    expect(new Set(inserted)).toEqual(new Set([...queue, item]))
-  })
-
-  it("insertPreferringFront falls back to the front when the card dominates the queue", () => {
-    const cardX = vocabularyCard("x")
-    const rest = [dueItem(cardX, "vocab_type_reading", 1)]
-    const item = dueItem(cardX, "vocab_oral_en", 2)
-
-    const inserted = insertPreferringFront(rest, item)
-
-    expect(inserted).toEqual([item, ...rest])
   })
 
   it("creates due rows for each review mode and updates after judgement", async () => {
