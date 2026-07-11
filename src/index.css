@@ -59,10 +59,17 @@ a:hover {
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
+  margin-top: 40px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .app-header + .panel {
-  margin-top: 1.75rem;
+  margin-top: 60px;
 }
 
 .brand {
@@ -104,6 +111,10 @@ a:hover {
   max-width: 12rem;
 }
 
+.btn.secondary.user-menu-trigger {
+  border-color: transparent;
+}
+
 .user-menu-trigger-label {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -114,6 +125,7 @@ a:hover {
   flex: 0 0 auto;
   font-size: 1.3rem;
   line-height: 1;
+  transform: scaleX(1.6);
   opacity: 0.7;
 }
 
@@ -306,6 +318,10 @@ label {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.due-complete {
+  display: inline-flex;
 }
 
 .prompt-main {
@@ -694,7 +710,9 @@ label {
 .footer-nav {
   margin-top: 2rem;
   display: flex;
+  justify-content: flex-end;
   gap: 1rem;
+  padding-right: 1.25rem;
 }
 
 .sr-only {
@@ -828,20 +846,15 @@ code {
   padding: 0.15rem 0.4rem;
 }
 
-.global-sync-indicator {
-  position: fixed;
-  bottom: 0.6rem;
-  right: 0.6rem;
-  z-index: 1000;
+.sync-indicator {
   display: grid;
   place-items: center;
   width: 1.6rem;
   height: 1.6rem;
   color: #9898b0;
-  pointer-events: none;
 }
 
-.global-sync-indicator .import-spinner {
+.sync-indicator .import-spinner {
   margin-right: 0;
   width: 1em;
   height: 1em;

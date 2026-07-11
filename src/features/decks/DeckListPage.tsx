@@ -7,6 +7,7 @@ import { useAuth } from "../../lib/auth/AuthContext"
 import { useState } from "react"
 import { AppIcon } from "../../ui/AppIcon"
 import { UserMenu } from "../../ui/UserMenu"
+import { SyncIndicator } from "../../ui/SyncIndicator"
 
 export function DeckListPage() {
   const navigate = useNavigate()
@@ -35,7 +36,10 @@ export function DeckListPage() {
           <AppIcon className="brand-icon" />
           <span className="brand-name">Benkyou</span>
         </Link>
-        <UserMenu />
+        <div className="header-actions">
+          <SyncIndicator />
+          <UserMenu />
+        </div>
       </header>
 
       <section className="panel">
@@ -45,7 +49,23 @@ export function DeckListPage() {
             return (
               <li key={d.id}>
                 <Link to={`/decks/${d.id}`}>{d.name}</Link>
-                <span className="muted small">{due} due</span>
+                {due > 0 ? (
+                  <span className="muted small">{due} due</span>
+                ) : (
+                  <span className="due-complete" title="No reviews due" aria-label="No reviews due">
+                    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                      <circle cx="8" cy="8" r="8" fill="var(--green)" />
+                      <path
+                        d="M4.5 8.4l2.2 2.2 4.8-4.8"
+                        fill="none"
+                        stroke="#fff"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                )}
               </li>
             )
           })}

@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef } from "react"
 
 export function App() {
   const { user, offlineOnly, loading } = useAuth()
-  const { syncNow, syncing, syncStatusLabel } = useSync()
+  const { syncNow } = useSync()
   const syncedUidRef = useRef<string | null>(null)
   const tabWasHiddenRef = useRef(false)
 
@@ -76,16 +76,6 @@ export function App() {
 
   return (
     <div className="app-shell">
-      {syncing && (
-        <div
-          className="global-sync-indicator"
-          role="status"
-          aria-live="polite"
-          title={syncStatusLabel || "Syncing…"}
-        >
-          <span className="import-spinner" aria-hidden="true" />
-        </div>
-      )}
       <Routes>
         <Route path="/" element={<DeckListPage />} />
         <Route path="/decks/:deckId" element={<DeckPage />} />
