@@ -56,10 +56,10 @@ export function DeckListPage() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="New deck name"
+            aria-label="New deck name"
             className="input"
           />
-          <button type="submit" className="btn">
+          <button type="submit" className="btn secondary">
             Add deck
           </button>
         </form>
