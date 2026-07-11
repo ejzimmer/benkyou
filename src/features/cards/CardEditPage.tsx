@@ -517,7 +517,12 @@ export function CardEditPage() {
             </label>
             <label>
               Readings for words in the example sentences (format:
-              kanjiPhrase=reading, one per line)
+              kanjiPhrase=reading, one per line). For a phrase word made of
+              multiple kanji clusters (e.g. 結論に至る), leave the
+              pronunciation field above blank and add each cluster here
+              instead (結論=けつろん, 至る=いたる) — the reading quiz then
+              asks for each cluster separately, and furigana shows
+              per-cluster too.
               <textarea
                 className="input"
                 rows={4}
@@ -620,7 +625,10 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Readings map (format: kanjiPhrase=reading, one per line)
+              Readings map (format: kanjiPhrase=reading, one per line). If
+              the construction is covered here — one entry per kanji
+              cluster for a multi-cluster construction — a reading quiz
+              mode becomes available too.
               <textarea
                 className="input"
                 rows={4}

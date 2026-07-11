@@ -11,6 +11,7 @@ import {
   hasVocabularyImage,
   hasVocabularyPronunciation,
 } from "./vocabularyContent"
+import { constructionReadingSegments } from "./grammarContent"
 
 export { containsKanji }
 
@@ -70,6 +71,7 @@ export const REVIEW_MODES = [
   "vocab_type_reading",
   "vocab_type_word_from_clue",
   "grammar_type_construction",
+  "grammar_type_reading",
   "grammar_oral_meaning",
 ] as const
 
@@ -93,6 +95,9 @@ export function reviewModesForCard(card: Card): ReviewModeId[] {
     return modes
   }
   const modes: ReviewModeId[] = ["grammar_type_construction"]
+  if (constructionReadingSegments(card.content)) {
+    modes.push("grammar_type_reading")
+  }
   if (card.content.translationEn.trim()) modes.push("grammar_oral_meaning")
   return modes
 }

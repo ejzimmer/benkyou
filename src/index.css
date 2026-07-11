@@ -361,6 +361,20 @@ label {
   vertical-align: baseline;
 }
 
+/* One labeled input per kanji segment of a phrase word/construction being
+   quizzed on its reading (e.g. 結論に至る asks for 結論 and 至る separately). */
+.phrase-reading-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.phrase-reading-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .card-image {
   max-width: 100%;
   border-radius: 8px;

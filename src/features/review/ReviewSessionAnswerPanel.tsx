@@ -8,7 +8,7 @@ import {
   readingForConstruction,
   requiresTyping,
 } from "./reviewFlowHelpers"
-import { countGaps } from "../../domain/grammarGaps"
+import { splitGapAnswers } from "../../domain/grammarGaps"
 
 export type ReviewSessionAnswerPanelProps = {
   item: DueItem
@@ -32,14 +32,13 @@ export function ReviewSessionAnswerPanel({
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
   const answeredCorrectly = answersMatch(m, typed, expected)
-  // For a multi-gap construction, the comma between answers is meaningful
-  // content (a gap boundary), not decorative punctuation — stripping it
-  // could make a wrong, merged answer (e.g. "猫犬" vs "猫, 犬") look like a
-  // punctuation-only typo. Only fall back to the fuzzy check otherwise.
-  const isMultiGapConstruction =
-    m === "grammar_type_construction" &&
-    card.kind === "grammar" &&
-    countGaps(card.content.sentenceWithGap, card.content.gapMarker) > 1
+  // When the expected answer has multiple comma-separated parts (a multi-gap
+  // construction, or a phrase word/construction reading quizzed segment by
+  // segment), the comma is meaningful content (a part boundary), not
+  // decorative punctuation — stripping it could make a wrong, merged answer
+  // (e.g. "猫犬" vs "猫, 犬") look like a punctuation-only typo. Only fall
+  // back to the fuzzy check for single-part answers.
+  const isMultiPartAnswer = splitGapAnswers(expected).length > 1
 
   useEffect(() => {
     if (pendingIncorrectDelay) return
@@ -48,7 +47,7 @@ export function ReviewSessionAnswerPanel({
     const focusCorrect =
       !typingMode ||
       answeredCorrectly ||
-      (!isMultiGapConstruction && differsOnlyByPunctuation(typed, expected))
+      (!isMultiPartAnswer && differsOnlyByPunctuation(typed, expected))
     if (focusCorrect) {
       correctBtnRef.current?.focus({ preventScroll: true })
     } else {
@@ -57,7 +56,7 @@ export function ReviewSessionAnswerPanel({
   }, [
     typingMode,
     answeredCorrectly,
-    isMultiGapConstruction,
+    isMultiPartAnswer,
     pendingIncorrectDelay,
     typed,
     expected,
@@ -112,7 +111,11 @@ export function ReviewSessionAnswerPanel({
       )}
 
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
-        <AnswerComparison typed={typed} expected={expected} />
+        <AnswerComparison
+          typed={typed}
+          expected={expected}
+          answeredCorrectly={answeredCorrectly}
+        />
       )}
 
       {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
@@ -131,6 +134,14 @@ export function ReviewSessionAnswerPanel({
             card.content.construction,
             card.content.readings,
           )}
+          answeredCorrectly={answeredCorrectly}
+        />
+      )}
+
+      {m === "grammar_type_reading" && card.kind === "grammar" && (
+        <AnswerComparison
+          typed={typed}
+          expected={expected}
           answeredCorrectly={answeredCorrectly}
         />
       )}

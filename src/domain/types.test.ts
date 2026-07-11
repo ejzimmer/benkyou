@@ -114,4 +114,70 @@ describe("reviewModesForCard", () => {
       "grammar_oral_meaning",
     ])
   })
+
+  it("grammar inserts a reading mode once the readings map covers the construction", () => {
+    const card: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "grammar",
+      updatedAt: 1,
+      content: {
+        sentenceWithGap: "私は___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "I am a student",
+        readings: { 学生: "がくせい" },
+        images: [],
+        synonymsJa: [],
+      },
+    }
+    expect(reviewModesForCard(card)).toEqual([
+      "grammar_type_construction",
+      "grammar_type_reading",
+      "grammar_oral_meaning",
+    ])
+  })
+
+  it("vocabulary phrase word gets a reading mode from a fully-covering readings map", () => {
+    const card: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "vocabulary",
+      updatedAt: 1,
+      content: {
+        wordJa: "結論に至る",
+        readings: { 結論: "けつろん", 至る: "いたる" },
+        definitionsEn: ["to reach a conclusion"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+    }
+    expect(reviewModesForCard(card)).toEqual([
+      "vocab_oral_en",
+      "vocab_type_reading",
+      "vocab_type_word_from_clue",
+    ])
+  })
+
+  it("vocabulary phrase word omits the reading mode when the map is partial", () => {
+    const card: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "vocabulary",
+      updatedAt: 1,
+      content: {
+        wordJa: "結論に至る",
+        readings: { 結論: "けつろん" },
+        definitionsEn: ["to reach a conclusion"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+    }
+    expect(reviewModesForCard(card)).toEqual([
+      "vocab_oral_en",
+      "vocab_type_word_from_clue",
+    ])
+  })
 })

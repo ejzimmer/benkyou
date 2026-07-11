@@ -287,6 +287,66 @@ function twoGapItem(): DueItem {
   }
 }
 
+describe("ReviewSessionAnswerPanel — grammar reading quiz", () => {
+  function readingItem(): DueItem {
+    return {
+      card: {
+        id: "card-4",
+        deckId: "deck-1",
+        kind: "grammar",
+        updatedAt: 0,
+        content: {
+          sentenceWithGap: "彼は___と思った",
+          gapMarker: "___",
+          construction: "結論に至る",
+          translationEn: "he came to a conclusion",
+          readings: { 結論: "けつろん", 至る: "いたる" },
+          images: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "grammar_type_reading",
+      due: 0,
+    }
+  }
+
+  it("shows only the correct answer for a matching per-segment reading", async () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={readingItem()}
+        typed="けつろん, いたる"
+        expected="けつろん, いたる"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText("Correct answer")).toBeInTheDocument()
+    expect(screen.queryByText("Your answer")).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
+    })
+  })
+
+  it("focuses Incorrect for a merged answer missing the segment separator", async () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={readingItem()}
+        typed="けつろんいたる"
+        expected="けつろん, いたる"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
+    })
+  })
+})
+
 describe("ReviewSessionAnswerPanel — multi-gap focus bias", () => {
   it("focuses Incorrect for a merged wrong answer, not Correct via punctuation-stripping", async () => {
     render(

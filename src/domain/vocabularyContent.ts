@@ -1,4 +1,5 @@
 import type { VocabularyCardContent } from "./types"
+import { fullyCoveredSegments, type ReadingSegment } from "./readingsMap"
 
 export const PLACEHOLDER_DEFINITION = "[translation pending]"
 
@@ -40,9 +41,31 @@ export function hasVocabularyImage(content: VocabularyCardContent): boolean {
   return content.images.length > 0
 }
 
-/** Kanji word with a hiragana reading (pronunciation) field. */
+/**
+ * Ordered per-kanji-segment readings for a phrase-style word — e.g.
+ * 結論に至る split into 結論/けつろん and 至る/いたる, from the card's own
+ * phrase map — used when the word is multiple kanji clusters joined by
+ * particles/okurigana rather than a single reading. Only produced when
+ * `reading` is unset (that field wins for a plain single-reading word) and
+ * every kanji character in `wordJa` is covered by the phrase map; otherwise
+ * undefined, so callers fall back to the whole-word `reading` field.
+ */
+export function phraseReadingSegments(
+  content: VocabularyCardContent,
+): ReadingSegment[] | undefined {
+  if (content.reading?.trim()) return undefined
+  if (!containsKanji(content.wordJa)) return undefined
+  return fullyCoveredSegments(content.wordJa, content.readings ?? {})
+}
+
+/** Kanji word with a hiragana reading (pronunciation), whole-word or per-segment. */
 export function hasVocabularyPronunciation(
   content: VocabularyCardContent,
 ): boolean {
-  return containsKanji(content.wordJa) && Boolean(content.reading?.trim())
+  if (containsKanji(content.wordJa) && Boolean(content.reading?.trim())) {
+    return true
+  }
+  return Boolean(
+    phraseReadingSegments(content)?.some((s) => s.reading?.trim()),
+  )
 }
