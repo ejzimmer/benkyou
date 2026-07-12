@@ -110,7 +110,7 @@ export const FSRS_STATE_ORDER = ["New", "Learning", "Review", "Relearning"]
 
 export const REVIEW_STAGE_LABEL = "Review stage"
 
-function fsrsStateLabel(state: number): string {
+export function fsrsStateLabel(state: number): string {
   return FSRS_STATE_ORDER[state] ?? `State ${state}`
 }
 

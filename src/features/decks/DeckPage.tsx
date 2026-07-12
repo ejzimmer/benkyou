@@ -1,11 +1,12 @@
 import { useLiveQuery } from "dexie-react-hooks"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { db } from "../../lib/db/schema"
-import { CARD_KIND_LABELS } from "../../domain/types"
+import { db, type SchedulingRow } from "../../lib/db/schema"
 import { deleteDeck } from "../../services/decks"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useMemo, useState } from "react"
 import { ConfirmModal } from "../../ui/ConfirmModal"
+import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
+import { fsrsStateLabel } from "../../lib/sync/syncCompare"
 
 export function DeckPage() {
   const { deckId = "" } = useParams()
@@ -18,6 +19,22 @@ export function DeckPage() {
   )
   const [q, setQ] = useState("")
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  const schedulingRows = useLiveQuery(async () => {
+    const cardIds = (cards ?? []).map((c) => c.id)
+    if (cardIds.length === 0) return []
+    return db.scheduling.where("cardId").anyOf(cardIds).toArray()
+  }, [cards])
+
+  /** Soonest-due scheduling row per card — the one that determines when it next surfaces for review. */
+  const nextScheduleByCard = useMemo(() => {
+    const map = new Map<string, SchedulingRow>()
+    for (const row of schedulingRows ?? []) {
+      const current = map.get(row.cardId)
+      if (!current || row.due < current.due) map.set(row.cardId, row)
+    }
+    return map
+  }, [schedulingRows])
 
   const filtered = useMemo(() => {
     const list = cards ?? []
@@ -52,22 +69,26 @@ export function DeckPage() {
 
   return (
     <div className="page">
-      <header className="header">
-        <Link to="/">← Decks</Link>
+      <header className="header deck-header">
+        <Link to="/" className="back-link" aria-label="Back to decks">
+          <ChevronLeftIcon className="back-chevron" />
+          Decks
+        </Link>
         <h1>{deck.name}</h1>
       </header>
 
       <div className="toolbar">
-        <Link to={`/decks/${deckId}/cards/new?vocab=1`} className="btn primary">
-          Add vocabulary
+        <Link to={`/decks/${deckId}/cards/new`} className="btn primary blue">
+          Add card
         </Link>
-        <Link to={`/decks/${deckId}/cards/new?vocab=0`} className="btn primary">
-          Add fill in the gap
-        </Link>
-        <Link to={`/decks/${deckId}/review`} className="btn">
+        <Link to={`/decks/${deckId}/review`} className="btn secondary green">
           Review this deck
         </Link>
-        <button type="button" className="btn danger" onClick={onDeleteDeck}>
+        <button
+          type="button"
+          className="btn secondary pink"
+          onClick={onDeleteDeck}
+        >
           Delete deck
         </button>
       </div>
@@ -81,18 +102,25 @@ export function DeckPage() {
           onChange={(e) => setQ(e.target.value)}
         />
         <ul className="card-list">
-          {filtered.map((c) => (
-            <li key={c.id}>
-              <Link
-                to={`/decks/${deckId}/cards/${encodeURIComponent(c.id)}`}
-              >
-                {c.kind === "vocabulary"
-                  ? c.content.wordJa
-                  : c.content.sentenceWithGap}
-              </Link>
-              <span className="muted small">{CARD_KIND_LABELS[c.kind]}</span>
-            </li>
-          ))}
+          {filtered.map((c) => {
+            const schedule = nextScheduleByCard.get(c.id)
+            return (
+              <li key={c.id}>
+                <Link
+                  to={`/decks/${deckId}/cards/${encodeURIComponent(c.id)}`}
+                >
+                  {c.kind === "vocabulary"
+                    ? c.content.wordJa
+                    : c.content.sentenceWithGap}
+                </Link>
+                <span className="muted small">
+                  {schedule
+                    ? `${fsrsStateLabel(schedule.fsrs.state)} · next review ${new Date(schedule.due).toLocaleDateString()}`
+                    : "—"}
+                </span>
+              </li>
+            )
+          })}
         </ul>
         {filtered.length === 0 && <p className="muted">No matching cards.</p>}
       </section>

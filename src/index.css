@@ -80,6 +80,52 @@ a:hover {
   margin-top: 60px;
 }
 
+.deck-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.deck-header + .toolbar {
+  margin-top: 60px;
+}
+
+.deck-header h1 {
+  font-size: 1.75rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: inherit;
+  transition: text-shadow 0.15s ease;
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  text-decoration: none;
+  text-shadow:
+    0 0 6px var(--blue),
+    0 0 16px var(--blue);
+}
+
+.back-chevron {
+  width: 0.85em;
+  height: 0.85em;
+  color: var(--blue);
+  transition: filter 0.15s ease;
+}
+
+.back-link:hover .back-chevron,
+.back-link:focus-visible .back-chevron {
+  filter:
+    drop-shadow(0 0 4px var(--blue))
+    drop-shadow(0 0 8px var(--blue));
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -308,6 +354,27 @@ label {
   background: var(--blue);
   color: var(--on-fluoro);
   text-decoration: none;
+}
+
+.btn.secondary.green {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.btn.secondary.pink {
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.btn.primary.blue {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.btn.primary.blue:hover {
+  box-shadow:
+    0 0 8px var(--blue),
+    0 0 20px var(--blue);
 }
 
 .btn.good {
