@@ -103,7 +103,7 @@ export function ReviewSessionAnswerPanel({
       {typingMode && (
         <button
           type="button"
-          className="btn"
+          className="btn secondary"
           disabled={pendingIncorrectDelay}
           onClick={() => onUndoAnswer()}
         >

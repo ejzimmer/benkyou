@@ -45,6 +45,12 @@ a:hover {
   padding: 1rem 1rem 3rem;
 }
 
+/* The review screen's two-column layout needs more breathing room than the
+   rest of the app, which stays narrow for readability. */
+.app-shell:has(.page.review) {
+  max-width: 1100px;
+}
+
 .page.centred {
   display: grid;
   place-items: center;
@@ -296,8 +302,10 @@ label {
 }
 
 .btn.bad {
-  background: #7f1d1d;
-  border-color: #ef4444;
+  background: var(--pink);
+  border-color: var(--pink);
+  color: var(--on-fluoro);
+  font-weight: 600;
 }
 
 .btn.danger {
@@ -307,6 +315,20 @@ label {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* The review screen's primary action ("Show answer") is blue, not the
+   app-wide green, so it doesn't compete with the green Correct button for
+   "the button that means done" once the answer's on screen. */
+.page.review .btn.primary {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.page.review .btn.primary:hover {
+  box-shadow:
+    0 0 8px var(--blue),
+    0 0 20px var(--blue);
 }
 
 .error {
@@ -562,6 +584,28 @@ label {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.review-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+@media (min-width: 760px) {
+  .review-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+}
+
+/* Stretch "Show answer" to the column's full width so oral/no-input modes —
+   where it's the column's only content — still read as filling the right
+   side, not a stray button floating near the gap. */
+.review-answer .toolbar .btn.primary {
+  width: 100%;
 }
 
 .compare-diff {

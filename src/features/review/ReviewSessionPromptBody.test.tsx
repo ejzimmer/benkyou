@@ -2,7 +2,10 @@ import { useState } from "react"
 import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
+import {
+  ReviewSessionPromptBody,
+  type ReviewSessionPromptBodyProps,
+} from "./ReviewSessionPromptBody"
 import type { DueItem } from "../../services/review"
 
 const vocabItem: DueItem = {
@@ -62,6 +65,20 @@ function stubTouchPrimaryDevice(matches: boolean) {
   )
 }
 
+/** Renders both columns together, matching how ReviewSessionPage composes
+ * them pre-reveal — needed for tests that assert on content split across
+ * the clue (question) and the typing input (answer). */
+function renderBothColumns(
+  props: Omit<ReviewSessionPromptBodyProps, "column">,
+) {
+  return render(
+    <>
+      <ReviewSessionPromptBody {...props} column="question" />
+      <ReviewSessionPromptBody {...props} column="answer" />
+    </>,
+  )
+}
+
 describe("ReviewSessionPromptBody", () => {
   it("focuses the typing input on non-touch devices when the prompt is shown", () => {
     stubTouchPrimaryDevice(false)
@@ -73,6 +90,7 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="answer"
       />,
     )
 
@@ -91,6 +109,7 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="answer"
       />,
     )
 
@@ -109,6 +128,7 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />,
     )
 
@@ -159,6 +179,7 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />,
     )
 
@@ -199,6 +220,7 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />,
     )
 
@@ -244,6 +266,7 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />,
     )
 
@@ -289,6 +312,7 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />,
     )
 
@@ -325,16 +349,14 @@ describe("ReviewSessionPromptBody", () => {
       due: 0,
     }
 
-    render(
-      <ReviewSessionPromptBody
-        item={item}
-        typed=""
-        onTypedChange={vi.fn()}
-        readingWarn={false}
-        synonymWarn={false}
-        onTypedSubmit={vi.fn()}
-      />,
-    )
+    renderBothColumns({
+      item,
+      typed: "",
+      onTypedChange: vi.fn(),
+      readingWarn: false,
+      synonymWarn: false,
+      onTypedSubmit: vi.fn(),
+    })
 
     expect(screen.getByLabelText("Reading for 結論")).toBeInTheDocument()
     expect(screen.getByLabelText("Reading for 至る")).toBeInTheDocument()
@@ -367,7 +389,7 @@ describe("ReviewSessionPromptBody", () => {
       due: 0,
     }
 
-    render(<StatefulPromptBody item={item} />)
+    render(<StatefulPromptBody item={item} column="answer" />)
 
     await user.type(screen.getByLabelText("Reading for 結論"), "けつろん")
     await user.type(screen.getByLabelText("Reading for 至る"), "いたる")
@@ -401,16 +423,14 @@ describe("ReviewSessionPromptBody", () => {
       due: 0,
     }
 
-    const { container } = render(
-      <ReviewSessionPromptBody
-        item={item}
-        typed=""
-        onTypedChange={vi.fn()}
-        readingWarn={false}
-        synonymWarn={false}
-        onTypedSubmit={vi.fn()}
-      />,
-    )
+    const { container } = renderBothColumns({
+      item,
+      typed: "",
+      onTypedChange: vi.fn(),
+      readingWarn: false,
+      synonymWarn: false,
+      onTypedSubmit: vi.fn(),
+    })
 
     const fill = container.querySelector(".construction-fill")
     expect(fill?.textContent).toBe("結論に至る")
@@ -452,6 +472,7 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />,
     )
 
@@ -491,6 +512,7 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />,
     )
 
@@ -509,11 +531,30 @@ describe("ReviewSessionPromptBody", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />,
     )
 
     expect(screen.getByLabelText("Construction gap 1")).not.toHaveFocus()
     vi.unstubAllGlobals()
+  })
+
+  it("shows the synonym warning for an inline-gap construction, in the answer column", () => {
+    render(
+      <ReviewSessionPromptBody
+        item={grammarItem}
+        typed="で"
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn
+        onTypedSubmit={vi.fn()}
+        column="answer"
+      />,
+    )
+
+    expect(
+      screen.getByText(/that matches a synonym/i),
+    ).toBeInTheDocument()
   })
 })
 
@@ -537,7 +578,13 @@ const twoGapItem: DueItem = {
   due: 0,
 }
 
-function StatefulPromptBody({ item }: { item: DueItem }) {
+function StatefulPromptBody({
+  item,
+  column,
+}: {
+  item: DueItem
+  column: ReviewSessionPromptBodyProps["column"]
+}) {
   const [typed, setTyped] = useState("")
   return (
     <ReviewSessionPromptBody
@@ -547,6 +594,7 @@ function StatefulPromptBody({ item }: { item: DueItem }) {
       readingWarn={false}
       synonymWarn={false}
       onTypedSubmit={vi.fn()}
+      column={column}
     />
   )
 }
@@ -563,6 +611,7 @@ describe("ReviewSessionPromptBody — multiple gaps", () => {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />,
     )
 
@@ -574,7 +623,7 @@ describe("ReviewSessionPromptBody — multiple gaps", () => {
 
   it("combines each gap's answer into a single comma-separated typed value", async () => {
     const user = userEvent.setup()
-    render(<StatefulPromptBody item={twoGapItem} />)
+    render(<StatefulPromptBody item={twoGapItem} column="question" />)
 
     await user.type(screen.getByLabelText("Construction gap 1"), "流し")
     await user.type(screen.getByLabelText("Construction gap 2"), "呼ぶ")
@@ -597,6 +646,7 @@ describe("ReviewSessionPromptBody — multiple gaps", () => {
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
         revealed
+        column="question"
       />,
     )
 
