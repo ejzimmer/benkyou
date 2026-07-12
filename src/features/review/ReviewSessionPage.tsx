@@ -416,13 +416,13 @@ export function ReviewSessionPage() {
 
   if (!current) {
     return (
-      <div className="page">
+      <div className="page review">
         <header className="header review-header">
           <Link to={deckId ? `/decks/${deckId}` : "/"}>← Back</Link>
           <div className="review-header-actions">
             <button
               type="button"
-              className="btn"
+              className="btn secondary"
               onClick={() => void onUndoJudgementFromHeader()}
             >
               Undo last judgement
@@ -461,13 +461,13 @@ export function ReviewSessionPage() {
               to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(
                 reviewReturnTo,
               )}`}
-              className="btn"
+              className="btn secondary"
             >
               Edit card
             </Link>
             <button
               type="button"
-              className="btn"
+              className="btn secondary"
               onClick={() => void onUndoJudgementFromHeader()}
             >
               Undo last judgement
@@ -483,51 +483,59 @@ export function ReviewSessionPage() {
           </h2>
         )}
 
-        {phase === "prompt" && !pendingIncorrectDelay && (
-          <>
-            <ReviewSessionPromptBody
-              item={item}
-              typed={typed}
-              onTypedChange={handleTypedChange}
-              readingWarn={readingWarn}
-              synonymWarn={synonymWarn}
-              onTypedSubmit={() => tryShowAnswerRef.current()}
-            />
-            <div className="toolbar">
-              <button
-                ref={showAnswerBtnRef}
-                type="button"
-                className="btn primary"
-                onClick={() => tryShowAnswerRef.current()}
-              >
-                Show answer
-              </button>
+        {pendingIncorrectDelay ? (
+          <p className="muted small">Next card…</p>
+        ) : (
+          <div className="review-columns">
+            <div className="review-question">
+              <ReviewSessionPromptBody
+                item={item}
+                typed={typed}
+                onTypedChange={handleTypedChange}
+                readingWarn={readingWarn}
+                synonymWarn={synonymWarn}
+                onTypedSubmit={() => tryShowAnswerRef.current()}
+                revealed={phase === "answer"}
+                column="question"
+              />
             </div>
-          </>
-        )}
+            <div className="review-answer">
+              {phase === "prompt" && (
+                <>
+                  <ReviewSessionPromptBody
+                    item={item}
+                    typed={typed}
+                    onTypedChange={handleTypedChange}
+                    readingWarn={readingWarn}
+                    synonymWarn={synonymWarn}
+                    onTypedSubmit={() => tryShowAnswerRef.current()}
+                    column="answer"
+                  />
+                  <div className="toolbar">
+                    <button
+                      ref={showAnswerBtnRef}
+                      type="button"
+                      className="btn primary"
+                      onClick={() => tryShowAnswerRef.current()}
+                    >
+                      Show answer
+                    </button>
+                  </div>
+                </>
+              )}
 
-        {pendingIncorrectDelay && <p className="muted small">Next card…</p>}
-
-        {phase === "answer" && !pendingIncorrectDelay && (
-          <>
-            <ReviewSessionPromptBody
-              item={item}
-              typed={typed}
-              onTypedChange={handleTypedChange}
-              readingWarn={readingWarn}
-              synonymWarn={synonymWarn}
-              onTypedSubmit={() => {}}
-              revealed
-            />
-            <ReviewSessionAnswerPanel
-              item={item}
-              typed={typed}
-              expected={exp}
-              pendingIncorrectDelay={pendingIncorrectDelay}
-              onJudge={(correct) => void onJudge(correct)}
-              onUndoAnswer={() => void onUndoAnswer()}
-            />
-          </>
+              {phase === "answer" && (
+                <ReviewSessionAnswerPanel
+                  item={item}
+                  typed={typed}
+                  expected={exp}
+                  pendingIncorrectDelay={pendingIncorrectDelay}
+                  onJudge={(correct) => void onJudge(correct)}
+                  onUndoAnswer={() => void onUndoAnswer()}
+                />
+              )}
+            </div>
+          </div>
         )}
       </section>
     </div>

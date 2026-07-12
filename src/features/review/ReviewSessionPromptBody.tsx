@@ -84,6 +84,14 @@ export type ReviewSessionPromptBodyProps = {
   onTypedSubmit: () => void
   /** Answer is visible — show the prompt only, not typing inputs or warnings */
   revealed?: boolean
+  /**
+   * Which half of the two-column review layout to render: the clue/context
+   * ("question") or the typing input and its warnings ("answer"). Most modes
+   * have nothing for one side (e.g. oral modes have no typing input, and a
+   * grammar card's inline gap keeps its input in the question sentence
+   * itself) — those return null for that column.
+   */
+  column: "question" | "answer"
 }
 
 export function ReviewSessionPromptBody({
@@ -94,13 +102,16 @@ export function ReviewSessionPromptBody({
   synonymWarn,
   onTypedSubmit,
   revealed = false,
+  column,
 }: ReviewSessionPromptBodyProps) {
   const { card, modeId: m } = item
   const focusKey = `${card.id}:${m}`
 
   // Asking for the English meaning: show the Japanese word + example sentences.
-  // Kanji readings stay available on hover/focus via <RubyWord>.
+  // Kanji readings stay available on hover/focus via <RubyWord>. No typing
+  // input for this mode — it's answered aloud.
   if (m === "vocab_oral_en" && card.kind === "vocabulary") {
+    if (column === "answer") return null
     const examples = card.content.exampleSentences.filter((s) => s.trim())
     const exampleReadings = vocabExampleReadings(card.content)
     return (
@@ -127,8 +138,6 @@ export function ReviewSessionPromptBody({
   // Asking for the Japanese reading: show only the kanji. Everything that could
   // give the reading away (images, meanings, examples) hides behind an expander.
   if (m === "vocab_type_reading" && card.kind === "vocabulary") {
-    const definitions = card.content.definitionsEn.filter((s) => s.trim())
-    const examples = card.content.exampleSentences.filter((s) => s.trim())
     // A phrase word (e.g. 結論に至る) has no whole-word `reading`; its per-kanji
     // segments (結論/至る) live in the same phrase map instead, and are exactly
     // this mode's answer — so, like the whole-word fallback below, they must
@@ -138,16 +147,48 @@ export function ReviewSessionPromptBody({
       : (phraseReadingSegments(card.content) ?? [])
     const kanjiSegments = wordSegments.filter((s) => s.reading?.trim())
     const usesPerSegmentInputs = kanjiSegments.length > 1
-    const quizzedKeys = new Set(kanjiSegments.map((s) => s.text))
-    const exampleReadings = Object.fromEntries(
-      Object.entries(card.content.readings ?? {}).filter(
-        ([k]) => !quizzedKeys.has(k),
-      ),
-    )
-    const hasHidden =
-      definitions.length > 0 ||
-      examples.length > 0 ||
-      card.content.images.length > 0
+
+    if (column === "question") {
+      const definitions = card.content.definitionsEn.filter((s) => s.trim())
+      const examples = card.content.exampleSentences.filter((s) => s.trim())
+      const quizzedKeys = new Set(kanjiSegments.map((s) => s.text))
+      const exampleReadings = Object.fromEntries(
+        Object.entries(card.content.readings ?? {}).filter(
+          ([k]) => !quizzedKeys.has(k),
+        ),
+      )
+      const hasHidden =
+        definitions.length > 0 ||
+        examples.length > 0 ||
+        card.content.images.length > 0
+      return (
+        <div className="stack">
+          <p className="prompt-main">{card.content.wordJa}</p>
+          {hasHidden && (
+            <details className="prompt-extras">
+              <summary className="btn">Show meaning, examples & images</summary>
+              <div className="prompt-extras-content stack">
+                {definitions.length > 0 && (
+                  <ul>
+                    {definitions.map((d, i) => (
+                      <li key={i}>{d}</li>
+                    ))}
+                  </ul>
+                )}
+                {examples.map((s, i) => (
+                  <p key={i} className="muted">
+                    <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
+                  </p>
+                ))}
+                <CardImageRow images={card.content.images} />
+              </div>
+            </details>
+          )}
+        </div>
+      )
+    }
+
+    if (revealed) return null
 
     function segInputValue(i: number) {
       return usesPerSegmentInputs
@@ -166,63 +207,38 @@ export function ReviewSessionPromptBody({
 
     return (
       <div className="stack">
-        <p className="prompt-main">{card.content.wordJa}</p>
-        {hasHidden && (
-          <details className="prompt-extras">
-            <summary className="btn">Show meaning, examples & images</summary>
-            <div className="prompt-extras-content stack">
-              {definitions.length > 0 && (
-                <ul>
-                  {definitions.map((d, i) => (
-                    <li key={i}>{d}</li>
-                  ))}
-                </ul>
-              )}
-              {examples.map((s, i) => (
-                <p key={i} className="muted">
-                  <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
-                </p>
-              ))}
-              <CardImageRow images={card.content.images} />
-            </div>
-          </details>
+        {usesPerSegmentInputs ? (
+          <div className="phrase-reading-inputs">
+            {kanjiSegments.map((seg, i) => (
+              <label key={i} className="phrase-reading-input">
+                {seg.text}
+                <TypingAnswerInput
+                  value={segInputValue(i)}
+                  onChange={(value) => onSegInputChange(i, value)}
+                  onSubmit={onTypedSubmit}
+                  placeholder="ひらがなで"
+                  focusKey={focusKey}
+                  autoComplete="off"
+                  autoFocus={i === 0}
+                  ariaLabel={`Reading for ${seg.text}`}
+                />
+              </label>
+            ))}
+          </div>
+        ) : (
+          <TypingAnswerInput
+            value={typed}
+            onChange={onTypedChange}
+            onSubmit={onTypedSubmit}
+            placeholder="ひらがなで"
+            focusKey={focusKey}
+            autoComplete="off"
+          />
         )}
-        {!revealed && (
-          <>
-            {usesPerSegmentInputs ? (
-              <div className="phrase-reading-inputs">
-                {kanjiSegments.map((seg, i) => (
-                  <label key={i} className="phrase-reading-input">
-                    {seg.text}
-                    <TypingAnswerInput
-                      value={segInputValue(i)}
-                      onChange={(value) => onSegInputChange(i, value)}
-                      onSubmit={onTypedSubmit}
-                      placeholder="ひらがなで"
-                      focusKey={focusKey}
-                      autoComplete="off"
-                      autoFocus={i === 0}
-                      ariaLabel={`Reading for ${seg.text}`}
-                    />
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <TypingAnswerInput
-                value={typed}
-                onChange={onTypedChange}
-                onSubmit={onTypedSubmit}
-                placeholder="ひらがなで"
-                focusKey={focusKey}
-                autoComplete="off"
-              />
-            )}
-            {readingWarn && (
-              <p className="error">
-                Use hiragana only for readings (no kanji or katakana).
-              </p>
-            )}
-          </>
+        {readingWarn && (
+          <p className="error">
+            Use hiragana only for readings (no kanji or katakana).
+          </p>
         )}
       </div>
     )
@@ -231,46 +247,50 @@ export function ReviewSessionPromptBody({
   // Asking for the Japanese word: show the English meaning, plus any example
   // sentences that keep the answer blanked out, plus images (sized to fit).
   if (m === "vocab_type_word_from_clue" && card.kind === "vocabulary") {
-    const definitions = card.content.definitionsEn.filter((s) => s.trim())
-    const examples = clueExampleSentences(card.content)
-    const exampleReadings = vocabExampleReadings(card.content)
+    if (column === "question") {
+      const definitions = card.content.definitionsEn.filter((s) => s.trim())
+      const examples = clueExampleSentences(card.content)
+      const exampleReadings = vocabExampleReadings(card.content)
+      return (
+        <div className="stack">
+          {definitions.length > 0 && (
+            <div className="prompt-main">
+              {definitions.map((d, i) => (
+                <p key={i}>{d}</p>
+              ))}
+            </div>
+          )}
+          {examples.length > 0 && (
+            <div className="example-sentences">
+              {examples.map((s, i) => (
+                <p key={i} className="muted">
+                  <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
+                </p>
+              ))}
+            </div>
+          )}
+          <CardImageRow images={card.content.images} />
+        </div>
+      )
+    }
+
+    if (revealed) return null
     return (
       <div className="stack">
-        {definitions.length > 0 && (
-          <div className="prompt-main">
-            {definitions.map((d, i) => (
-              <p key={i}>{d}</p>
-            ))}
-          </div>
-        )}
-        {examples.length > 0 && (
-          <div className="example-sentences">
-            {examples.map((s, i) => (
-              <p key={i} className="muted">
-                <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
-              </p>
-            ))}
-          </div>
-        )}
-        <CardImageRow images={card.content.images} />
-        {!revealed && (
-          <>
-            <label>
-              Type the Japanese word
-              <TypingAnswerInput
-                value={typed}
-                onChange={onTypedChange}
-                onSubmit={onTypedSubmit}
-                placeholder="Japanese word"
-                focusKey={focusKey}
-              />
-            </label>
-            {synonymWarn && (
-              <p className="warn">
-                That matches a synonym — try the main form on the card.
-              </p>
-            )}
-          </>
+        <label>
+          Type the Japanese word
+          <TypingAnswerInput
+            value={typed}
+            onChange={onTypedChange}
+            onSubmit={onTypedSubmit}
+            placeholder="Japanese word"
+            focusKey={focusKey}
+          />
+        </label>
+        {synonymWarn && (
+          <p className="warn">
+            That matches a synonym — try the main form on the card.
+          </p>
         )}
       </div>
     )
@@ -280,89 +300,95 @@ export function ReviewSessionPromptBody({
     const gapMarker = card.content.gapMarker.trim()
     const hasInlineGap =
       Boolean(gapMarker) && card.content.sentenceWithGap.includes(gapMarker)
-    const gapCount = hasInlineGap
-      ? countGaps(card.content.sentenceWithGap, gapMarker)
-      : 0
-    // Only split into one input per gap when the construction already has a
-    // matching number of comma-separated answers — otherwise fall back to a
-    // single shared input at every gap (e.g. while the card is still being
-    // authored, or for the common single-gap case).
-    const usesPerGapInputs =
-      gapCount > 1 &&
-      splitGapAnswers(card.content.construction).length === gapCount
 
-    function gapInputValue(gapIndex: number): string {
-      return usesPerGapInputs
-        ? typedGapValues(typed, gapCount)[gapIndex] ?? ""
-        : typed
-    }
+    if (column === "question") {
+      const gapCount = hasInlineGap
+        ? countGaps(card.content.sentenceWithGap, gapMarker)
+        : 0
+      // Only split into one input per gap when the construction already has a
+      // matching number of comma-separated answers — otherwise fall back to a
+      // single shared input at every gap (e.g. while the card is still being
+      // authored, or for the common single-gap case).
+      const usesPerGapInputs =
+        gapCount > 1 &&
+        splitGapAnswers(card.content.construction).length === gapCount
 
-    function onGapInputChange(gapIndex: number, value: string) {
-      if (!usesPerGapInputs) {
-        onTypedChange(value)
-        return
+      function gapInputValue(gapIndex: number): string {
+        return usesPerGapInputs
+          ? typedGapValues(typed, gapCount)[gapIndex] ?? ""
+          : typed
       }
-      const parts = typedGapValues(typed, gapCount)
-      parts[gapIndex] = value
-      onTypedChange(parts.join(GAP_ANSWER_JOIN))
+
+      function onGapInputChange(gapIndex: number, value: string) {
+        if (!usesPerGapInputs) {
+          onTypedChange(value)
+          return
+        }
+        const parts = typedGapValues(typed, gapCount)
+        parts[gapIndex] = value
+        onTypedChange(parts.join(GAP_ANSWER_JOIN))
+      }
+
+      return (
+        <div className="stack">
+          <div className="grammar-gap-sentence">
+            <RubySentence
+              sentence={card.content.sentenceWithGap}
+              gapMarker={card.content.gapMarker}
+              readings={card.content.readings}
+              renderGap={
+                !revealed && hasInlineGap
+                  ? (gapIndex) => (
+                      <TypingAnswerInput
+                        value={gapInputValue(gapIndex)}
+                        onChange={(value) => onGapInputChange(gapIndex, value)}
+                        onSubmit={onTypedSubmit}
+                        placeholder={
+                          usesPerGapInputs
+                            ? `Answer ${gapIndex + 1}`
+                            : "Construction"
+                        }
+                        focusKey={focusKey}
+                        className="inline-gap-input"
+                        ariaLabel={`Construction gap ${gapIndex + 1}`}
+                        autoFocus={gapIndex === 0}
+                      />
+                    )
+                  : revealed
+                    ? (gapIndex) => (
+                        <span className="gap-filled">
+                          {gapInputValue(gapIndex) || "—"}
+                        </span>
+                      )
+                    : undefined
+              }
+            />
+          </div>
+          {card.content.translationEn.trim() && (
+            <p className="muted">{card.content.translationEn}</p>
+          )}
+          <CardImageRow images={card.content.images} />
+        </div>
+      )
     }
 
+    // column === "answer": only the rare fallback where the construction has
+    // no inline gap gets a standalone input — an inline gap's input lives in
+    // the question sentence itself.
+    if (revealed || hasInlineGap) return null
     return (
       <div className="stack">
-        <div className="grammar-gap-sentence">
-          <RubySentence
-            sentence={card.content.sentenceWithGap}
-            gapMarker={card.content.gapMarker}
-            readings={card.content.readings}
-            renderGap={
-              !revealed && hasInlineGap
-                ? (gapIndex) => (
-                    <TypingAnswerInput
-                      value={gapInputValue(gapIndex)}
-                      onChange={(value) => onGapInputChange(gapIndex, value)}
-                      onSubmit={onTypedSubmit}
-                      placeholder={
-                        usesPerGapInputs
-                          ? `Answer ${gapIndex + 1}`
-                          : "Construction"
-                      }
-                      focusKey={focusKey}
-                      className="inline-gap-input"
-                      ariaLabel={`Construction gap ${gapIndex + 1}`}
-                      autoFocus={gapIndex === 0}
-                    />
-                  )
-                : revealed
-                  ? (gapIndex) => (
-                      <span className="gap-filled">
-                        {gapInputValue(gapIndex) || "—"}
-                      </span>
-                    )
-                  : undefined
-            }
-          />
-        </div>
-        {card.content.translationEn.trim() && (
-          <p className="muted">{card.content.translationEn}</p>
-        )}
-        <CardImageRow images={card.content.images} />
-        {!revealed && (
-          <>
-            {!hasInlineGap && (
-              <TypingAnswerInput
-                value={typed}
-                onChange={onTypedChange}
-                onSubmit={onTypedSubmit}
-                placeholder="Construction"
-                focusKey={focusKey}
-              />
-            )}
-            {synonymWarn && (
-              <p className="warn">
-                That matches a synonym — try the construction written on the card.
-              </p>
-            )}
-          </>
+        <TypingAnswerInput
+          value={typed}
+          onChange={onTypedChange}
+          onSubmit={onTypedSubmit}
+          placeholder="Construction"
+          focusKey={focusKey}
+        />
+        {synonymWarn && (
+          <p className="warn">
+            That matches a synonym — try the construction written on the card.
+          </p>
         )}
       </div>
     )
@@ -388,9 +414,43 @@ export function ReviewSessionPromptBody({
     const segments = constructionReadingSegments(card.content) ?? []
     const kanjiSegments = segments.filter((s) => s.reading?.trim())
     const usesPerSegmentInputs = kanjiSegments.length > 1
-    const hasHidden =
-      card.content.translationEn.trim().length > 0 ||
-      card.content.images.length > 0
+
+    if (column === "question") {
+      const hasHidden =
+        card.content.translationEn.trim().length > 0 ||
+        card.content.images.length > 0
+      return (
+        <div className="stack">
+          <p className="prompt-main grammar-gap-sentence">
+            {hasInlineGap ? (
+              <RubySentence
+                sentence={sentence}
+                gapMarker={card.content.gapMarker}
+                readings={card.content.readings}
+                renderGap={(gapIndex) => (
+                  <span className="construction-fill">{fillFor(gapIndex)}</span>
+                )}
+              />
+            ) : (
+              construction
+            )}
+          </p>
+          {hasHidden && (
+            <details className="prompt-extras">
+              <summary className="btn">Show meaning & images</summary>
+              <div className="prompt-extras-content stack">
+                {card.content.translationEn.trim() && (
+                  <p>{card.content.translationEn}</p>
+                )}
+                <CardImageRow images={card.content.images} />
+              </div>
+            </details>
+          )}
+        </div>
+      )
+    }
+
+    if (revealed) return null
 
     function segInputValue(i: number) {
       return usesPerSegmentInputs
@@ -409,73 +469,45 @@ export function ReviewSessionPromptBody({
 
     return (
       <div className="stack">
-        <p className="prompt-main grammar-gap-sentence">
-          {hasInlineGap ? (
-            <RubySentence
-              sentence={sentence}
-              gapMarker={card.content.gapMarker}
-              readings={card.content.readings}
-              renderGap={(gapIndex) => (
-                <span className="construction-fill">{fillFor(gapIndex)}</span>
-              )}
-            />
-          ) : (
-            construction
-          )}
-        </p>
-        {hasHidden && (
-          <details className="prompt-extras">
-            <summary className="btn">Show meaning & images</summary>
-            <div className="prompt-extras-content stack">
-              {card.content.translationEn.trim() && (
-                <p>{card.content.translationEn}</p>
-              )}
-              <CardImageRow images={card.content.images} />
-            </div>
-          </details>
+        {usesPerSegmentInputs ? (
+          <div className="phrase-reading-inputs">
+            {kanjiSegments.map((seg, i) => (
+              <label key={i} className="phrase-reading-input">
+                {seg.text}
+                <TypingAnswerInput
+                  value={segInputValue(i)}
+                  onChange={(value) => onSegInputChange(i, value)}
+                  onSubmit={onTypedSubmit}
+                  placeholder="ひらがなで"
+                  focusKey={focusKey}
+                  autoComplete="off"
+                  autoFocus={i === 0}
+                  ariaLabel={`Reading for ${seg.text}`}
+                />
+              </label>
+            ))}
+          </div>
+        ) : (
+          <TypingAnswerInput
+            value={typed}
+            onChange={onTypedChange}
+            onSubmit={onTypedSubmit}
+            placeholder="ひらがなで"
+            focusKey={focusKey}
+            autoComplete="off"
+          />
         )}
-        {!revealed && (
-          <>
-            {usesPerSegmentInputs ? (
-              <div className="phrase-reading-inputs">
-                {kanjiSegments.map((seg, i) => (
-                  <label key={i} className="phrase-reading-input">
-                    {seg.text}
-                    <TypingAnswerInput
-                      value={segInputValue(i)}
-                      onChange={(value) => onSegInputChange(i, value)}
-                      onSubmit={onTypedSubmit}
-                      placeholder="ひらがなで"
-                      focusKey={focusKey}
-                      autoComplete="off"
-                      autoFocus={i === 0}
-                      ariaLabel={`Reading for ${seg.text}`}
-                    />
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <TypingAnswerInput
-                value={typed}
-                onChange={onTypedChange}
-                onSubmit={onTypedSubmit}
-                placeholder="ひらがなで"
-                focusKey={focusKey}
-                autoComplete="off"
-              />
-            )}
-            {readingWarn && (
-              <p className="error">
-                Use hiragana only for readings (no kanji or katakana).
-              </p>
-            )}
-          </>
+        {readingWarn && (
+          <p className="error">
+            Use hiragana only for readings (no kanji or katakana).
+          </p>
         )}
       </div>
     )
   }
 
   if (m === "grammar_oral_meaning" && card.kind === "grammar") {
+    if (column === "answer") return null
     const gapMarker = card.content.gapMarker.trim()
     const sentence = card.content.sentenceWithGap
     const construction = card.content.construction
@@ -533,6 +565,7 @@ export function ReviewSessionPromptBody({
     )
   }
 
+  if (column === "answer") return null
   return (
     <p className="muted small">
       Unsupported review mode for this card type.

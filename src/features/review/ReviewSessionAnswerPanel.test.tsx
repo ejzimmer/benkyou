@@ -163,6 +163,7 @@ function renderRevealedReview(item: DueItem) {
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
         revealed
+        column="question"
       />
       <ReviewSessionAnswerPanel
         item={item}

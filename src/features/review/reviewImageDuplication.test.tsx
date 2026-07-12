@@ -82,6 +82,7 @@ function renderBoth(item: DueItem) {
         readingWarn={false}
         synonymWarn={false}
         onTypedSubmit={vi.fn()}
+        column="question"
       />
       <ReviewSessionAnswerPanel
         item={item}
