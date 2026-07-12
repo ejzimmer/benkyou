@@ -300,8 +300,11 @@ label {
   text-decoration: none;
 }
 
-.add-card-btn:hover {
+.btn.secondary.add-card-btn {
   border-color: transparent;
+}
+
+.add-card-btn:hover {
   background: var(--blue);
   color: var(--on-fluoro);
   text-decoration: none;
