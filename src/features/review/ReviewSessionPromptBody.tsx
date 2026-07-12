@@ -373,18 +373,21 @@ export function ReviewSessionPromptBody({
     }
 
     // column === "answer": only the rare fallback where the construction has
-    // no inline gap gets a standalone input — an inline gap's input lives in
-    // the question sentence itself.
-    if (revealed || hasInlineGap) return null
+    // no inline gap gets a standalone input here — an inline gap's input
+    // lives in the question sentence itself. The synonym warning still
+    // belongs here regardless, since it's about what was typed either way.
+    if (revealed) return null
     return (
       <div className="stack">
-        <TypingAnswerInput
-          value={typed}
-          onChange={onTypedChange}
-          onSubmit={onTypedSubmit}
-          placeholder="Construction"
-          focusKey={focusKey}
-        />
+        {!hasInlineGap && (
+          <TypingAnswerInput
+            value={typed}
+            onChange={onTypedChange}
+            onSubmit={onTypedSubmit}
+            placeholder="Construction"
+            focusKey={focusKey}
+          />
+        )}
         {synonymWarn && (
           <p className="warn">
             That matches a synonym — try the construction written on the card.

@@ -538,6 +538,24 @@ describe("ReviewSessionPromptBody", () => {
     expect(screen.getByLabelText("Construction gap 1")).not.toHaveFocus()
     vi.unstubAllGlobals()
   })
+
+  it("shows the synonym warning for an inline-gap construction, in the answer column", () => {
+    render(
+      <ReviewSessionPromptBody
+        item={grammarItem}
+        typed="で"
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn
+        onTypedSubmit={vi.fn()}
+        column="answer"
+      />,
+    )
+
+    expect(
+      screen.getByText(/that matches a synonym/i),
+    ).toBeInTheDocument()
+  })
 })
 
 const twoGapItem: DueItem = {

@@ -412,7 +412,7 @@ export function ReviewSessionPage() {
     )
   }
 
-  if (loading) return <div className="page">Loading queue…</div>
+  if (loading) return <div className="page review">Loading queue…</div>
 
   if (!current) {
     return (

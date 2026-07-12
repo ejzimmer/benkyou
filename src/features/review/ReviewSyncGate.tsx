@@ -25,7 +25,7 @@ export function ReviewSyncGate({
   const remaining = hasCount ? progress!.total! - progress!.current! : 0
 
   return (
-    <div className="page">
+    <div className="page review">
       <header className="header review-header">
         <Link to={backTo}>← Back</Link>
         <h1>Syncing…</h1>
