@@ -13,6 +13,7 @@ export function DeckListPage() {
   const navigate = useNavigate()
   const decks = useLiveQuery(() => db.decks.orderBy("updatedAt").reverse().toArray(), [])
   const dueCounts = useLiveQuery(() => getDueCountsByDeck(), [])
+  const totalDue = dueCounts ? [...dueCounts.values()].reduce((sum, n) => sum + n, 0) : 0
   const { user } = useAuth()
   const [name, setName] = useState("")
   const [err, setErr] = useState<string | null>(null)
@@ -86,9 +87,13 @@ export function DeckListPage() {
       </section>
 
       <nav className="footer-nav">
-        <Link to="/review" className="btn primary">
-          Review all due
-        </Link>
+        {totalDue > 0 ? (
+          <Link to="/review" className="btn primary">
+            Review all due
+          </Link>
+        ) : (
+          <span className="muted">No reviews currently due</span>
+        )}
       </nav>
     </div>
   )
