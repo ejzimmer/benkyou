@@ -8,7 +8,9 @@
   color: #e8e8f0;
   background: #12121a;
 
-  /* Fluoro accents from the original app's colour scheme. */
+  /* Fluoro accents from the original app's colour scheme.
+     General rule: blue = administration tasks, green = review-related
+     tasks, pink = highlights. */
   --blue: hsl(200 100% 50%);
   --green: hsl(140 87% 42%);
   --pink: hsl(320 84% 57%);
@@ -113,6 +115,7 @@ a:hover {
 
 .btn.secondary.user-menu-trigger {
   border-color: transparent;
+  color: #e8e8f0;
 }
 
 .user-menu-trigger-label {
@@ -266,8 +269,8 @@ label {
 
 .btn.secondary {
   background: none;
-  border-color: var(--green);
-  color: var(--green);
+  border-color: var(--blue);
+  color: var(--blue);
 }
 
 .btn.secondary:focus {
@@ -320,8 +323,30 @@ label {
   align-items: center;
 }
 
+.deck-list a {
+  color: var(--green);
+}
+
+.deck-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .due-complete {
   display: inline-flex;
+}
+
+.btn.icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .prompt-main {
