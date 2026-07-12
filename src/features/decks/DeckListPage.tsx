@@ -70,7 +70,7 @@ export function DeckListPage() {
                   )}
                   <Link
                     to={`/decks/${d.id}/cards/new`}
-                    className="btn secondary icon"
+                    className="btn secondary icon add-card-btn"
                     aria-label={`Add card to ${d.name}`}
                     title="Add card"
                   >

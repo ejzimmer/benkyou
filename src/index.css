@@ -295,6 +295,12 @@ label {
 }
 
 .add-deck-btn:hover {
+  background: var(--blue);
+  color: var(--on-fluoro);
+  text-decoration: none;
+}
+
+.add-card-btn:hover {
   border-color: transparent;
   background: var(--blue);
   color: var(--on-fluoro);
