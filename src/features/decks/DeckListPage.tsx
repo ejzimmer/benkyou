@@ -99,7 +99,7 @@ export function DeckListPage() {
       <nav className="footer-nav">
         {totalDue > 0 ? (
           <Link to="/review" className="btn primary">
-            Review all due
+            Review {totalDue} due
           </Link>
         ) : (
           <span className="muted">No reviews currently due</span>

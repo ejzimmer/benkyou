@@ -252,6 +252,11 @@ label {
   padding: 0.45rem 0.85rem;
   border-radius: 8px;
   cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.btn:hover {
+  text-decoration: none;
 }
 
 .btn:focus {
@@ -265,6 +270,12 @@ label {
   border-color: var(--green);
   color: var(--on-fluoro);
   font-weight: 600;
+}
+
+.btn.primary:hover {
+  box-shadow:
+    0 0 8px var(--green),
+    0 0 20px var(--green);
 }
 
 .btn.secondary {
