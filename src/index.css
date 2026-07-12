@@ -294,6 +294,13 @@ label {
   outline-offset: 2px;
 }
 
+.add-deck-btn:hover {
+  border-color: transparent;
+  background: var(--blue);
+  color: var(--on-fluoro);
+  text-decoration: none;
+}
+
 .btn.good {
   background: var(--green);
   border-color: var(--green);

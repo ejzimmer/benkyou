@@ -90,7 +90,7 @@ export function DeckListPage() {
             aria-label="New deck name"
             className="input"
           />
-          <button type="submit" className="btn secondary">
+          <button type="submit" className="btn secondary add-deck-btn">
             Add deck
           </button>
         </form>
