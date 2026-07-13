@@ -97,7 +97,6 @@ a:hover {
 .back-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
   font-size: 1.75rem;
   line-height: 1;
   color: inherit;
@@ -298,6 +297,7 @@ label {
 }
 
 .btn {
+  font: inherit;
   border: 1px solid #33334a;
   background: #252538;
   color: inherit;
@@ -329,10 +329,18 @@ label {
     0 0 20px var(--green);
 }
 
+/* Standard secondary CTA: coloured border/text on a dark fill, inverting to
+   a solid fill with dark text on hover. */
 .btn.secondary {
-  background: none;
+  background: var(--on-fluoro);
   border-color: var(--blue);
   color: var(--blue);
+}
+
+.btn.secondary:hover {
+  background: var(--blue);
+  color: var(--on-fluoro);
+  text-decoration: none;
 }
 
 .btn.secondary:focus-visible {
@@ -340,20 +348,13 @@ label {
   outline-offset: 2px;
 }
 
-.add-deck-btn:hover {
-  background: var(--blue);
-  color: var(--on-fluoro);
-  text-decoration: none;
-}
-
 .btn.secondary.add-card-btn {
   border-color: transparent;
 }
 
-.add-card-btn:hover {
-  background: var(--blue);
-  color: var(--on-fluoro);
-  text-decoration: none;
+.btn.secondary.user-menu-trigger:hover {
+  background: none;
+  color: #e8e8f0;
 }
 
 .btn.secondary.green {
@@ -361,9 +362,19 @@ label {
   color: var(--green);
 }
 
+.btn.secondary.green:hover {
+  background: var(--green);
+  color: var(--on-fluoro);
+}
+
 .btn.secondary.pink {
   border-color: var(--pink);
   color: var(--pink);
+}
+
+.btn.secondary.pink:hover {
+  background: var(--pink);
+  color: var(--on-fluoro);
 }
 
 .btn.primary.blue {
@@ -449,6 +460,30 @@ label {
 
 .due-complete {
   display: inline-flex;
+}
+
+.card-schedule {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.srs-stage-diagram {
+  display: inline-flex;
+}
+
+.srs-stage-diagram-line {
+  stroke: #33334a;
+  stroke-width: 2;
+}
+
+.srs-stage-diagram-dot {
+  fill: #33334a;
+}
+
+.srs-stage-diagram-dot-current {
+  fill: var(--green);
+  filter: drop-shadow(0 0 3px var(--green));
 }
 
 .btn.icon {
