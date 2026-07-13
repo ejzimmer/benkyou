@@ -329,8 +329,7 @@ label {
     0 0 20px var(--green);
 }
 
-/* Standard secondary CTA: coloured border/text on a dark fill, inverting to
-   a solid fill with dark text on hover. */
+/* Standard secondary CTA: coloured border/text on a dark fill. */
 .btn.secondary {
   background: var(--on-fluoro);
   border-color: var(--blue);
@@ -362,9 +361,14 @@ label {
   color: var(--green);
 }
 
+/* CTA hover glows instead of inverting — same soft double-blur used on the
+   deck page's back-link hover. */
 .btn.secondary.green:hover {
-  background: var(--green);
-  color: var(--on-fluoro);
+  background: var(--on-fluoro);
+  color: var(--green);
+  box-shadow:
+    0 0 8px var(--green),
+    0 0 20px var(--green);
 }
 
 .btn.secondary.pink {
@@ -373,8 +377,11 @@ label {
 }
 
 .btn.secondary.pink:hover {
-  background: var(--pink);
-  color: var(--on-fluoro);
+  background: var(--on-fluoro);
+  color: var(--pink);
+  box-shadow:
+    0 0 8px var(--pink),
+    0 0 20px var(--pink);
 }
 
 .btn.primary.blue {
