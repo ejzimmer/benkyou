@@ -78,7 +78,7 @@ export function DeckPage() {
         </PageHeading>
       </header>
 
-      <div className="toolbar">
+      <div className="toolbar deck-toolbar">
         <Link to={`/decks/${deckId}/cards/new`} className="btn primary blue">
           Add card
         </Link>

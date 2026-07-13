@@ -89,7 +89,7 @@ a:hover {
   gap: 0.75rem;
 }
 
-header + .toolbar {
+.toolbar.deck-toolbar {
   margin-top: 60px;
 }
 
