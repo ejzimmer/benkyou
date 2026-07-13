@@ -845,8 +845,37 @@ label {
 }
 
 .reading-answer-diff-line {
+  position: relative;
   display: inline-grid;
   gap: 0.08em;
+}
+
+/* Placed on the grid, spanning only the columns of the real (non-gap) cells
+   it annotates, so the reading floats immediately above those characters
+   even when gap cells (from extra typed characters) push other parts of
+   the word further along the row. Absolutely positioned so it doesn't
+   reserve row height while hidden. */
+.reading-answer-diff-furigana {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 0.15em;
+  text-align: center;
+  pointer-events: none;
+}
+
+.reading-answer-diff-furigana rt {
+  white-space: nowrap;
+  font-size: 0.65em;
+  color: #a5b4fc;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.reading-answer-diff-line:hover .reading-answer-diff-furigana rt,
+.reading-answer-diff-line:focus-within .reading-answer-diff-furigana rt {
+  opacity: 1;
 }
 
 .reading-answer-diff-cell {
