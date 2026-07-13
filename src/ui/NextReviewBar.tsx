@@ -1,18 +1,21 @@
 type Props = {
   due: number
-  lastReview?: number
   className?: string
 }
 
 const TRACK_WIDTH = 40
 const HEIGHT = 8
 
-/** Countdown bar to a card's next review — full right after being scheduled, shrinking to empty as the due date arrives (or if it's already overdue). */
-export function NextReviewBar({ due, lastReview, className }: Props) {
-  const now = Date.now()
-  const total = lastReview != null ? due - lastReview : 0
-  const remaining = due - now
-  const fraction = total > 0 ? Math.min(1, Math.max(0, remaining / total)) : 0
+/** Cards due at or beyond this far out render a full bar — an absolute,
+ * shared horizon so bars are directly comparable across cards, rather than
+ * each card's fullness being relative to its own (wildly varying) interval
+ * length. */
+const MAX_HORIZON_MS = 30 * 24 * 60 * 60 * 1000
+
+/** Countdown bar to a card's next review, on a fixed 30-day horizon shared by every card — full at 30+ days away, shrinking to empty as the due date arrives (or if it's already overdue). */
+export function NextReviewBar({ due, className }: Props) {
+  const remaining = due - Date.now()
+  const fraction = Math.min(1, Math.max(0, remaining / MAX_HORIZON_MS))
   const fillWidth = TRACK_WIDTH * fraction
   const label = `Next review: ${new Date(due).toLocaleDateString()}`
 
