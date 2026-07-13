@@ -9,6 +9,16 @@ import { PageHeading } from "../../ui/PageHeading"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { NextReviewBar } from "../../ui/NextReviewBar"
 
+const DAY_MS = 86_400_000
+
+/** Anki import pushes suspended/leech cards' due date ~100 years out so they
+ * never surface as due (see ankiSrs.ts). Detect that placeholder rather than
+ * showing a nonsense "next review" date — no real FSRS schedule reaches this
+ * far out from normal reviewing. */
+function isSuspendedDue(due: number): boolean {
+  return due - Date.now() > 10 * 365 * DAY_MS
+}
+
 export function DeckPage() {
   const { deckId = "" } = useParams()
   const navigate = useNavigate()
@@ -120,10 +130,14 @@ export function DeckPage() {
                   {schedule ? (
                     <>
                       <SrsStageDiagram state={schedule.fsrs.state} />
-                      <NextReviewBar
-                        due={schedule.due}
-                        lastReview={schedule.fsrs.last_review}
-                      />
+                      {isSuspendedDue(schedule.due) ? (
+                        <span className="muted small">Suspended</span>
+                      ) : (
+                        <NextReviewBar
+                          due={schedule.due}
+                          lastReview={schedule.fsrs.last_review}
+                        />
+                      )}
                     </>
                   ) : (
                     <span className="muted small">—</span>
