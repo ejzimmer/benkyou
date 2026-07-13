@@ -228,6 +228,18 @@ async function putIfNotStale<T extends { updatedAt: number }>(
   )
 }
 
+/**
+ * Snapshot of what's tombstoned/local right now, used for the up-front
+ * "should I even look at this row" checks in `collectEntityConflicts`. Those
+ * checks used to be individual `db.tombstones.get(...)` / `db.<table>.get(...)`
+ * calls per row — for a few thousand cards/scheduling rows that's thousands
+ * of sequential IndexedDB round trips (measured ~9.4s of a real sync for
+ * ~1700 cards + ~3300 scheduling rows), which is most of what made the app
+ * unresponsive right after load. One bulk read up front plus in-memory Set
+ * lookups replaces all of them; the actual writes still re-check tombstones
+ * and staleness just before writing (via `putIfNotStale`/`putIfNotTombstoned`),
+ * so this snapshot only needs to be an up-front fast path, not authoritative.
+ */
 async function collectEntityConflicts(
   lastSyncedAt: number | null,
   remote: RemoteSnapshot,
@@ -236,9 +248,15 @@ async function collectEntityConflicts(
   const localDecks = await db.decks.toArray()
   const localCards = await db.cards.toArray()
   const localSched = await db.scheduling.toArray()
+  const tombstoneIds = new Set(
+    (await db.tombstones.toArray()).map((t) => t.id),
+  )
+  const localDeckIds = new Set(localDecks.map((d) => d.id))
+  const localCardIds = new Set(localCards.map((c) => c.id))
+  const localSchedIds = new Set(localSched.map((s) => s.id))
 
   for (const local of localDecks) {
-    if (await db.tombstones.get(tombstoneId("deck", local.id))) continue
+    if (tombstoneIds.has(tombstoneId("deck", local.id))) continue
     const remoteDeck = remote.decks.get(local.id)
     if (!remoteDeck) {
       if (vanishedFromRemote(local, lastSyncedAt)) {
@@ -292,8 +310,8 @@ async function collectEntityConflicts(
   }
 
   for (const remoteDeck of remote.decks.values()) {
-    if (await db.tombstones.get(tombstoneId("deck", remoteDeck.id))) continue
-    if (await db.decks.get(remoteDeck.id)) continue
+    if (tombstoneIds.has(tombstoneId("deck", remoteDeck.id))) continue
+    if (localDeckIds.has(remoteDeck.id)) continue
     await putIfNotTombstoned(tombstoneId("deck", remoteDeck.id), async () => {
       if (await db.decks.get(remoteDeck.id)) return
       await db.decks.put(remoteDeck)
@@ -301,7 +319,7 @@ async function collectEntityConflicts(
   }
 
   for (const local of localCards) {
-    if (await db.tombstones.get(tombstoneId("card", local.id))) continue
+    if (tombstoneIds.has(tombstoneId("card", local.id))) continue
     const remoteCard = remote.cards.get(local.id)
     if (!remoteCard) {
       if (vanishedFromRemote(local, lastSyncedAt)) {
@@ -353,8 +371,8 @@ async function collectEntityConflicts(
   }
 
   for (const remoteCard of remote.cards.values()) {
-    if (await db.tombstones.get(tombstoneId("card", remoteCard.id))) continue
-    if (await db.cards.get(remoteCard.id)) continue
+    if (tombstoneIds.has(tombstoneId("card", remoteCard.id))) continue
+    if (localCardIds.has(remoteCard.id)) continue
     await putIfNotTombstoned(tombstoneId("card", remoteCard.id), async () => {
       if (await db.cards.get(remoteCard.id)) return
       await db.cards.put(remoteCard)
@@ -362,7 +380,7 @@ async function collectEntityConflicts(
   }
 
   for (const local of localSched) {
-    if (await db.tombstones.get(tombstoneId("scheduling", local.id))) continue
+    if (tombstoneIds.has(tombstoneId("scheduling", local.id))) continue
     const remoteRow = remote.scheduling.get(local.id)
     if (!remoteRow) {
       if (vanishedFromRemote(local, lastSyncedAt)) {
@@ -421,8 +439,8 @@ async function collectEntityConflicts(
   }
 
   for (const remoteRow of remote.scheduling.values()) {
-    if (await db.tombstones.get(tombstoneId("scheduling", remoteRow.id))) continue
-    if (await db.scheduling.get(remoteRow.id)) continue
+    if (tombstoneIds.has(tombstoneId("scheduling", remoteRow.id))) continue
+    if (localSchedIds.has(remoteRow.id)) continue
     await putIfNotTombstoned(
       tombstoneId("scheduling", remoteRow.id),
       async () => {
