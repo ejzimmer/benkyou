@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
 import { useWakeLock } from "../../lib/useWakeLock"
@@ -24,6 +23,7 @@ import { AnkiImportGapReview } from "./AnkiImportGapReview"
 import { GrammarClassifyReview } from "./GrammarClassifyReview"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncIndicator } from "../../ui/SyncIndicator"
+import { PageHeading } from "../../ui/PageHeading"
 
 function importProgressLabel(progress: ImportProgress): string {
   switch (progress.phase) {
@@ -182,10 +182,9 @@ export function SettingsPage() {
   return (
     <div className="page">
       <header className="header app-header">
-        <div>
-          <Link to="/">← Home</Link>
-          <h1>Settings</h1>
-        </div>
+        <PageHeading backTo="/" backLabel="Back to decks">
+          Settings
+        </PageHeading>
         <div className="header-actions">
           <SyncIndicator />
           <UserMenu />

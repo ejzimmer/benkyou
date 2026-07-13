@@ -5,7 +5,7 @@ import { deleteDeck } from "../../services/decks"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useMemo, useState } from "react"
 import { ConfirmModal } from "../../ui/ConfirmModal"
-import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
+import { PageHeading } from "../../ui/PageHeading"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { NextReviewBar } from "../../ui/NextReviewBar"
 
@@ -72,14 +72,13 @@ export function DeckPage() {
 
   return (
     <div className="page">
-      <header className="header deck-header">
-        <Link to="/" className="back-link" aria-label="Back to decks">
-          <ChevronLeftIcon className="back-chevron" />
-        </Link>
-        <h1>{deck.name}</h1>
+      <header className="header">
+        <PageHeading backTo="/" backLabel="Back to decks">
+          {deck.name}
+        </PageHeading>
       </header>
 
-      <div className="toolbar">
+      <div className="toolbar deck-toolbar">
         <Link to={`/decks/${deckId}/cards/new`} className="btn primary blue">
           Add card
         </Link>

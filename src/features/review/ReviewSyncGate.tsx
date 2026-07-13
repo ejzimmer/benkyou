@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom"
 import type { SyncProgress } from "../../lib/sync/runSync"
+import { PageHeading } from "../../ui/PageHeading"
 
 export type ReviewSyncGateProps = {
   progress: SyncProgress | null
@@ -26,9 +26,10 @@ export function ReviewSyncGate({
 
   return (
     <div className="page review">
-      <header className="header review-header">
-        <Link to={backTo}>← Back</Link>
-        <h1>Syncing…</h1>
+      <header className="header">
+        <PageHeading backTo={backTo} backLabel="Back">
+          Syncing…
+        </PageHeading>
       </header>
       <div className="stack" aria-live="polite">
         <p>Getting your latest cards before you review…</p>

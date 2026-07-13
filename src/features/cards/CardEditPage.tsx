@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useLiveQuery } from "dexie-react-hooks"
 import {
-  Link,
   useMatch,
   useNavigate,
   useParams,
@@ -38,6 +37,7 @@ import { normalizeJapanese } from "../../lib/japanese/normalize"
 import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates"
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
 import { ConfirmModal } from "../../ui/ConfirmModal"
+import { PageHeading } from "../../ui/PageHeading"
 import {
   deriveFurigana,
   parseReadingsMapText,
@@ -503,19 +503,21 @@ export function CardEditPage() {
   return (
     <div className="page">
       <header className="header">
-        <Link to={backTo}>{returnTo ? "← Back" : "← Deck"}</Link>
-        <h1>{isNew ? "New card" : "Edit card"}</h1>
-        {!isNew && (
+        <PageHeading backTo={backTo} backLabel={returnTo ? "Back" : "Back to deck"}>
+          {isNew ? "New card" : "Edit card"}
+        </PageHeading>
+      </header>
+
+      {!isNew && (
+        <div className="toolbar">
           <button type="button" className="btn" onClick={onFindDuplicates}>
             Find duplicate cards
           </button>
-        )}
-        {!isNew && (
           <button type="button" className="btn danger" onClick={onDeleteCard}>
             Delete card
           </button>
-        )}
-      </header>
+        </div>
+      )}
 
       {showDuplicatesModal && (
         <DuplicateCardsModal

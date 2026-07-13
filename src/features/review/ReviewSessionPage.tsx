@@ -30,6 +30,8 @@ import {
   requiresTyping,
   REVIEW_MODE_LABELS,
 } from "./reviewFlowHelpers"
+import { PageHeading } from "../../ui/PageHeading"
+import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
@@ -417,19 +419,20 @@ export function ReviewSessionPage() {
   if (!current) {
     return (
       <div className="page review">
-        <header className="header review-header">
-          <Link to={deckId ? `/decks/${deckId}` : "/"}>← Back</Link>
-          <div className="review-header-actions">
-            <button
-              type="button"
-              className="btn secondary"
-              onClick={() => void onUndoJudgementFromHeader()}
-            >
-              Undo last judgement
-            </button>
-          </div>
-          <h1>Done</h1>
+        <header className="header">
+          <PageHeading backTo={deckId ? `/decks/${deckId}` : "/"} backLabel="Back">
+            Done
+          </PageHeading>
         </header>
+        <div className="toolbar">
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={() => void onUndoJudgementFromHeader()}
+          >
+            Undo last judgement
+          </button>
+        </div>
         <p className="muted">Nothing due right now.</p>
         <button type="button" className="btn" onClick={load}>
           Refresh
@@ -451,7 +454,13 @@ export function ReviewSessionPage() {
   return (
     <div className="page review">
       <header className="header review-header">
-        <Link to={deckId ? `/decks/${deckId}` : "/"}>← Exit</Link>
+        <Link
+          to={deckId ? `/decks/${deckId}` : "/"}
+          className="back-link"
+          aria-label="Exit review"
+        >
+          <ChevronLeftIcon className="back-chevron" />
+        </Link>
         <div className="review-header-main">
           <p className="muted small">
             {sessionQueue.length} left · {CARD_KIND_LABELS[item.card.kind]}
