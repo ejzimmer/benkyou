@@ -132,16 +132,14 @@ export function requiresTyping(mode: ReviewModeId): boolean {
 }
 
 /**
- * Modes whose prompt body already shows the clue prominently, making the
- * generic mode heading redundant. The heading stays in the DOM for
- * screen-reader heading navigation, just visually hidden.
+ * Modes whose prompt body doesn't already show the clue prominently enough
+ * to make the generic mode heading redundant. Every other mode hides it (the
+ * heading stays in the DOM for screen-reader heading navigation, just
+ * visually hidden) — so a new mode defaults to hidden unless added here.
  */
 export function modeHeadingVisible(mode: ReviewModeId): boolean {
   return (
-    mode !== "vocab_type_word_from_clue" &&
-    mode !== "vocab_oral_en" &&
-    mode !== "vocab_type_reading" &&
-    mode !== "grammar_oral_meaning"
+    mode === "grammar_type_construction" || mode === "grammar_type_reading"
   )
 }
 
