@@ -133,10 +133,7 @@ export function DeckPage() {
                       {isSuspendedDue(schedule.due) ? (
                         <span className="muted small">Suspended</span>
                       ) : (
-                        <NextReviewBar
-                          due={schedule.due}
-                          lastReview={schedule.fsrs.last_review}
-                        />
+                        <NextReviewBar due={schedule.due} />
                       )}
                     </>
                   ) : (
