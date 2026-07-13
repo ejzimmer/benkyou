@@ -37,6 +37,8 @@ export function DeckPage() {
     return map
   }, [schedulingRows])
 
+  const cardCount = cards?.length ?? 0
+
   const filtered = useMemo(() => {
     const list = cards ?? []
     if (!q.trim()) return list
@@ -91,10 +93,12 @@ export function DeckPage() {
         >
           Delete deck
         </button>
+        <span className="muted small toolbar-count">
+          {cardCount} card{cardCount === 1 ? "" : "s"}
+        </span>
       </div>
 
       <section className="panel">
-        <h2>Cards</h2>
         <input
           className="input"
           placeholder="Search…"
