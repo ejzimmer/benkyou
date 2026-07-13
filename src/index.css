@@ -172,6 +172,13 @@ a:hover {
   color: #e8e8f0;
 }
 
+.btn.secondary.user-menu-trigger:hover {
+  box-shadow: none;
+  text-shadow:
+    0 0 6px #fff,
+    0 0 16px #fff;
+}
+
 .user-menu-trigger-label {
   overflow: hidden;
   text-overflow: ellipsis;
