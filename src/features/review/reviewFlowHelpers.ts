@@ -140,7 +140,8 @@ export function modeHeadingVisible(mode: ReviewModeId): boolean {
   return (
     mode !== "vocab_type_word_from_clue" &&
     mode !== "vocab_oral_en" &&
-    mode !== "vocab_type_reading"
+    mode !== "vocab_type_reading" &&
+    mode !== "grammar_oral_meaning"
   )
 }
 
