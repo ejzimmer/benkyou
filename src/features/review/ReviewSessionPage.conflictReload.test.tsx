@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { MemoryRouter, Route, Routes } from "react-router-dom"
+import { MemoryRouter, Route, Routes, useSearchParams } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
 import { ReviewSessionPage } from "./ReviewSessionPage"
 import { prepareJudgement, type DueItem, type JudgementSnapshot } from "../../services/review"
@@ -52,6 +52,11 @@ vi.mock("../../lib/sync/SyncContext", () => ({
     conflictResolutionVersion,
   }),
 }))
+
+function SearchParamsProbe() {
+  const [params] = useSearchParams()
+  return <div data-testid="url-params">{params.toString()}</div>
+}
 
 describe("ReviewSessionPage conflict reload", () => {
   beforeEach(() => {
@@ -205,5 +210,59 @@ describe("ReviewSessionPage conflict reload", () => {
     expect(
       screen.queryByRole("button", { name: /^correct$/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it("strips resume params from the URL once consumed, so a later page refresh can't replay them", async () => {
+    // Reproduces the reported bug: after returning from card edit, the
+    // resumeCardId/resumeModeId/resumePhase/resumeTyped params used to stay
+    // in the URL for the rest of the session. Refreshing the page later —
+    // a full remount, which resets the in-memory "already applied" guard —
+    // would then replay that stale answer-phase state onto whatever card
+    // happened to be due at that point.
+    const snapshot: JudgementSnapshot = {
+      schedulingRow: {
+        id: "s1",
+        cardId: "card-1",
+        modeId: "vocab_oral_en",
+        fsrs: {} as unknown as JudgementSnapshot["schedulingRow"]["fsrs"],
+        due: 0,
+        updatedAt: 0,
+      },
+    }
+    vi.mocked(prepareJudgement).mockResolvedValue(snapshot)
+    getDueQueue.mockResolvedValueOnce([dueItemFor("猫")])
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          "/review?resumeCardId=card-1&resumeModeId=vocab_oral_en&resumePhase=answer&resumeTyped=foo",
+        ]}
+      >
+        <AuthProvider>
+          <Routes>
+            <Route
+              path="/review"
+              element={
+                <>
+                  <ReviewSessionPage />
+                  <SearchParamsProbe />
+                </>
+              }
+            />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    // Resumes straight into the answer phase, as intended.
+    expect(
+      await screen.findByRole("button", { name: /^correct$/i }),
+    ).toBeInTheDocument()
+
+    // Once applied, the resume params must be gone from the URL — otherwise
+    // a browser refresh (a fresh mount) would read them again.
+    await waitFor(() => {
+      expect(screen.getByTestId("url-params").textContent).toBe("")
+    })
   })
 })

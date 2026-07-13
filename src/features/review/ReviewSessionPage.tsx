@@ -70,11 +70,29 @@ function prioritizeResumeItem(
 
 export function ReviewSessionPage() {
   const { deckId } = useParams()
-  const [searchParams] = useSearchParams()
-  const resumeCardId = searchParams.get("resumeCardId")
-  const resumeModeId = searchParams.get("resumeModeId")
-  const resumePhase = searchParams.get("resumePhase")
-  const resumeTyped = searchParams.get("resumeTyped")
+  const [searchParams, setSearchParams] = useSearchParams()
+  /**
+   * Captured once per mount so `load` doesn't depend on live `searchParams` —
+   * we strip these from the URL right after consuming them (see `load`) to
+   * stop a later browser refresh from replaying stale resume state, and that
+   * strip must not itself trigger a second, destructive `load()` call.
+   */
+  const resumeParamsRef = useRef({
+    cardId: searchParams.get("resumeCardId"),
+    modeId: searchParams.get("resumeModeId"),
+    phase: searchParams.get("resumePhase"),
+    typed: searchParams.get("resumeTyped"),
+  })
+  /**
+   * `setSearchParams`'s identity can change when `searchParams` changes (e.g.
+   * from `load`'s own call to it below). Reading it via a ref keeps `load`'s
+   * identity stable across that, so stripping the resume params doesn't
+   * retrigger the mount effect into calling `load` a second time.
+   */
+  const setSearchParamsRef = useRef(setSearchParams)
+  useEffect(() => {
+    setSearchParamsRef.current = setSearchParams
+  }, [setSearchParams])
   const { user } = useAuth()
   const {
     initialSyncComplete,
@@ -105,11 +123,10 @@ export function ReviewSessionPage() {
   const phaseRef = useRef<Phase>(phase)
   const conflictReloadPendingRef = useRef(false)
   /**
-   * The resumeCardId/resumeModeId/resumePhase/resumeTyped query params stay
-   * in the URL for the rest of the session (nothing clears them), so a later
-   * reload — e.g. a mid-session sync conflict bumping conflictResolutionVersion
-   * — must not keep replaying that stale resume state. Apply it at most once
-   * per mount.
+   * `load` can rerun within the same mount — e.g. a mid-session sync conflict
+   * bumping conflictResolutionVersion — and must not replay resumeParamsRef
+   * again once it's been applied. (Across mounts, `load` also strips the
+   * resume params from the URL, so a fresh mount reads none to begin with.)
    */
   const resumeAppliedRef = useRef(false)
 
@@ -119,6 +136,12 @@ export function ReviewSessionPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    const {
+      cardId: resumeCardId,
+      modeId: resumeModeId,
+      phase: resumePhase,
+      typed: resumeTyped,
+    } = resumeParamsRef.current
     const all = await getDueQueue()
     const deckQueue = deckId ? all.filter((x) => x.card.deckId === deckId) : all
     const q = prioritizeResumeItem(deckQueue, resumeCardId, resumeModeId)
@@ -165,7 +188,25 @@ export function ReviewSessionPage() {
     }
 
     setLoading(false)
-  }, [deckId, resumeCardId, resumeModeId, resumePhase, resumeTyped])
+
+    // Consumed (or deemed inapplicable) — strip from the URL so a later
+    // browser refresh (a fresh mount, which resets resumeAppliedRef) doesn't
+    // replay this now-stale resume state onto whatever card happens to be
+    // due at that point.
+    if (resumeCardId != null) {
+      setSearchParamsRef.current(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete("resumeCardId")
+          next.delete("resumeModeId")
+          next.delete("resumePhase")
+          next.delete("resumeTyped")
+          return next
+        },
+        { replace: true },
+      )
+    }
+  }, [deckId])
 
   useEffect(() => {
     // Wait for the first sync to finish so the queue reflects the latest cards
