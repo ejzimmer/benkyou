@@ -277,6 +277,74 @@ describe("card type conversions", () => {
     })
   })
 
+  it("derives the reading from the legacy readings map when converting a pre-existing grammar card with no constructionReading", () => {
+    expect(
+      vocabularyFromGrammarContent({
+        sentenceWithGap: "私は___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "student",
+        readings: { 学生: "がくせい" },
+        images: [],
+        synonymsJa: [],
+      }),
+    ).toMatchObject({
+      wordJa: "学生",
+      reading: "がくせい",
+      readingParts: {},
+    })
+  })
+
+  it("derives per-cluster readingParts from a legacy multi-cluster construction when converting to vocabulary", () => {
+    expect(
+      vocabularyFromGrammarContent({
+        sentenceWithGap: "___",
+        gapMarker: "___",
+        construction: "結論に至る",
+        translationEn: "",
+        readings: { 結論: "けつろん", 至る: "いたる" },
+        images: [],
+        synonymsJa: [],
+      }),
+    ).toMatchObject({
+      wordJa: "結論に至る",
+      reading: undefined,
+      readingParts: { 結論: "けつろん", 至る: "いたる" },
+    })
+  })
+
+  it("does not set a reading when converting a kana-only construction, even with a stale constructionReading", () => {
+    expect(
+      vocabularyFromGrammarContent({
+        sentenceWithGap: "___",
+        gapMarker: "___",
+        construction: "です",
+        constructionReading: "です",
+        translationEn: "",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      }).reading,
+    ).toBeUndefined()
+  })
+
+  it("derives per-cluster constructionReadingParts from a legacy multi-cluster vocab word when converting to grammar", () => {
+    expect(
+      grammarFromVocabularyContent({
+        wordJa: "結論に至る",
+        readings: { 結論: "けつろん", 至る: "いたる" },
+        definitionsEn: [],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      }),
+    ).toMatchObject({
+      construction: "結論に至る",
+      constructionReading: undefined,
+      constructionReadingParts: { 結論: "けつろん", 至る: "いたる" },
+    })
+  })
+
   it("preserves an explicit per-word reading override when converting to grammar", () => {
     expect(
       grammarFromVocabularyContent({

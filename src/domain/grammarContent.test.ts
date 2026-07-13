@@ -64,6 +64,43 @@ describe("constructionReadingSegments", () => {
       { text: "もう一つ", reading: "もうひとつ" },
     ])
   })
+
+  it("falls back to the legacy readings map when constructionReadingParts was never authored", () => {
+    // Cards built before constructionReading/constructionReadingParts
+    // existed (or imported from Anki) had only the furigana map to work
+    // with — this must keep enabling grammar_type_reading without any
+    // manual migration.
+    expect(
+      constructionReadingSegments({
+        ...base,
+        readings: { 学生: "がくせい" },
+      }),
+    ).toEqual([{ text: "学生", reading: "がくせい" }])
+  })
+
+  it("legacy fallback needs only one covered cluster, unlike the explicit-field rule (grammar never had a separate single-reading field before)", () => {
+    expect(
+      constructionReadingSegments({
+        ...base,
+        construction: "結論に至る",
+        readings: { 結論: "けつろん", 至る: "いたる" },
+      }),
+    ).toEqual([
+      { text: "結論", reading: "けつろん" },
+      { text: "に" },
+      { text: "至る", reading: "いたる" },
+    ])
+  })
+
+  it("does not fall back once constructionReadingParts has been explicitly started", () => {
+    expect(
+      constructionReadingSegments({
+        ...base,
+        constructionReadingParts: { 学生: "がくせい" },
+        readings: { 学生: "がくせい" },
+      }),
+    ).toBeUndefined()
+  })
 })
 
 describe("hasConstructionReading", () => {
@@ -93,5 +130,11 @@ describe("hasConstructionReading", () => {
         constructionReadingParts: { 学生: "がくせい" },
       }),
     ).toBe(false)
+  })
+
+  it("is true from the legacy readings map alone (pre-existing/imported card)", () => {
+    expect(
+      hasConstructionReading({ ...base, readings: { 学生: "がくせい" } }),
+    ).toBe(true)
   })
 })

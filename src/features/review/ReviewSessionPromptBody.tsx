@@ -15,6 +15,7 @@ import {
 } from "../../domain/grammarGaps"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
 import { constructionReadingSegments } from "../../domain/grammarContent"
+import { deriveFurigana, type LabeledReading } from "../../domain/readingsMap"
 
 type TypingAnswerInputProps = {
   value: string
@@ -150,12 +151,24 @@ export function ReviewSessionPromptBody({
       // The furigana map is seeded from the tested reading (whole-word or
       // per-segment), so it normally contains an entry for the word itself —
       // that's exactly this mode's answer, and must not leak through the
-      // "hidden" example-sentence furigana before reveal. Excluding any key
-      // that's a substring of wordJa covers both the whole-word and
-      // per-segment (possibly kanji-only-stripped, e.g. 至る → 至) cases.
+      // "hidden" example-sentence furigana before reveal. A tested label
+      // isn't necessarily a substring of wordJa (e.g. a dictionary-form
+      // reading for a conjugated word), so derive the exact keys that would
+      // be seeded from what's actually tested, rather than guessing via a
+      // substring match.
+      const testedParts: LabeledReading[] = card.content.reading?.trim()
+        ? [{ label: card.content.wordJa, reading: card.content.reading }]
+        : kanjiSegments.map((s) => ({ label: s.text, reading: s.reading ?? "" }))
+      // Exclude both the raw tested label (結論, 至る) and its auto-seeded
+      // kanji-only-stripped form (至) — a hand-maintained readings map may
+      // use either convention.
+      const quizzedFuriganaKeys = new Set([
+        ...testedParts.map((p) => p.label),
+        ...Object.keys(deriveFurigana(testedParts)),
+      ])
       const exampleReadings = Object.fromEntries(
         Object.entries(card.content.readings ?? {}).filter(
-          ([k]) => !card.content.wordJa.includes(k),
+          ([k]) => !quizzedFuriganaKeys.has(k),
         ),
       )
       const hasHidden =

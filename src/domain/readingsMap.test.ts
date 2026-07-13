@@ -114,6 +114,16 @@ describe("kanjiOnlyEntry", () => {
       reading: "です",
     })
   })
+
+  it("leaves the reading unstripped when it's shorter than the suffix, rather than garbling it", () => {
+    // label's non-kanji suffix (5 chars) is longer than the reading (3
+    // chars) — e.g. a reading that's still mid-typed. slice(0, negative)
+    // would otherwise wrap around and return a truncated garbage string.
+    expect(kanjiOnlyEntry("至るかもしれ", "いたる")).toEqual({
+      label: "至",
+      reading: "いたる",
+    })
+  })
 })
 
 describe("deriveFurigana", () => {

@@ -101,6 +101,40 @@ describe("phraseReadingSegments", () => {
       phraseReadingSegments({ ...base, readingParts: { 陣: "じん" } }),
     ).toBeUndefined()
   })
+
+  it("falls back to the legacy readings map when readingParts was never authored (pre-existing/imported cards)", () => {
+    // Cards built before readingParts existed (or imported from Anki) put
+    // their phrase segments straight in the furigana map, matched against
+    // wordJa. This must keep working without any manual migration.
+    expect(
+      phraseReadingSegments({
+        ...base,
+        wordJa: "結論に至る",
+        readings: { 結論: "けつろん", 至る: "いたる" },
+      }),
+    ).toEqual([
+      { text: "結論", reading: "けつろん" },
+      { text: "に" },
+      { text: "至る", reading: "いたる" },
+    ])
+  })
+
+  it("does not fall back once readingParts has been explicitly started, even with just one entry", () => {
+    expect(
+      phraseReadingSegments({
+        ...base,
+        wordJa: "結論に至る",
+        readingParts: { 結論: "けつろん" },
+        readings: { 結論: "けつろん", 至る: "いたる" },
+      }),
+    ).toBeUndefined()
+  })
+
+  it("legacy fallback still requires 2+ covered clusters, matching the explicit-field rule", () => {
+    expect(
+      phraseReadingSegments({ ...base, wordJa: "陣", readings: { 陣: "じん" } }),
+    ).toBeUndefined()
+  })
 })
 
 describe("wordJaReading", () => {

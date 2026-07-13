@@ -564,10 +564,13 @@ export function CardEditPage() {
                 value={vocab.wordJa}
                 onChange={(e) => {
                   const wordJa = e.target.value
+                  const kanaOnly = isKanaOnly(wordJa)
                   updateVocab({
                     wordJa,
-                    reading: isKanaOnly(wordJa) ? undefined : vocab.reading,
+                    reading: kanaOnly ? undefined : vocab.reading,
+                    readingParts: kanaOnly ? {} : vocab.readingParts,
                   })
+                  if (kanaOnly) setReadingPartsDraft("")
                 }}
                 required
               />
@@ -720,9 +723,20 @@ export function CardEditPage() {
               <input
                 className="input"
                 value={grammar.construction}
-                onChange={(e) =>
-                  updateGrammar({ construction: e.target.value })
-                }
+                onChange={(e) => {
+                  const construction = e.target.value
+                  const kanaOnly = isKanaOnly(construction)
+                  updateGrammar({
+                    construction,
+                    constructionReading: kanaOnly
+                      ? undefined
+                      : grammar.constructionReading,
+                    constructionReadingParts: kanaOnly
+                      ? {}
+                      : grammar.constructionReadingParts,
+                  })
+                  if (kanaOnly) setConstructionReadingPartsDraft("")
+                }}
               />
             </label>
             {countGaps(grammar.sentenceWithGap, grammar.gapMarker) > 1 && (

@@ -60,8 +60,11 @@ export function kanjiOnlyEntry(label: string, reading: string): LabeledReading {
   while (end > 0 && !containsKanji(label[end - 1]!)) end--
   if (end === 0 || end === label.length) return { label, reading }
   const suffixLen = label.length - end
-  const strippedReading = reading.slice(0, reading.length - suffixLen)
-  return { label: label.slice(0, end), reading: strippedReading || reading }
+  // A `reading` shorter than the suffix (e.g. still mid-typed) can't be
+  // stripped meaningfully — `slice`'s negative-end wraparound would return a
+  // garbled partial string rather than an empty one, so bail out unstripped.
+  if (suffixLen >= reading.length) return { label: label.slice(0, end), reading }
+  return { label: label.slice(0, end), reading: reading.slice(0, reading.length - suffixLen) }
 }
 
 /** Derive a kanji-only furigana map from a list of tested word/reading pairs. */
@@ -89,11 +92,21 @@ export function reseedFurigana(
   nextSeed: Record<string, string>,
 ): Record<string, string> {
   const next = { ...current }
+  // A key whose current value no longer matches what was last seeded there
+  // has been diverged by the author — whether edited to a new value, or
+  // deleted outright (current[key] is then undefined, which also doesn't
+  // match). Either way, never auto-manage that key again, even if a later
+  // seed would produce the exact same key.
+  const diverged = new Set<string>()
   for (const [key, value] of Object.entries(previousSeed)) {
-    if (next[key] === value) delete next[key]
+    if (next[key] === value) {
+      delete next[key]
+    } else {
+      diverged.add(key)
+    }
   }
   for (const [key, value] of Object.entries(nextSeed)) {
-    if (!(key in next)) next[key] = value
+    if (!(key in next) && !diverged.has(key)) next[key] = value
   }
   return next
 }
