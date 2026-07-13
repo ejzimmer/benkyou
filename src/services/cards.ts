@@ -22,6 +22,7 @@ import { newId } from "../lib/db/id"
 import {
   deserializeFsrs,
   emptyFsrs,
+  isSuspendedDue,
   serializeFsrs,
 } from "../lib/srs/schedule"
 import {
@@ -443,6 +444,30 @@ export async function updateSchedulingRow(
   await db.scheduling.put(row)
   pushDocInBackground(pushSchedulingRemote(user, row.id))
   schedulePushAfterMutation(user)
+}
+
+/** Bring a suspended/leech card (see ankiSrs.ts) back into review by
+ * resetting its pushed-out due date to now — mirrors Anki's own
+ * "unsuspend" action, which likewise just clears the exclusion without
+ * touching the card's study history. */
+export async function unsuspendCard(
+  cardId: string,
+  user: User | null,
+): Promise<void> {
+  const now = Date.now()
+  const rows = await db.scheduling.where("cardId").equals(cardId).toArray()
+  for (const row of rows) {
+    if (!isSuspendedDue(row.due, now)) continue
+    await updateSchedulingRow(
+      {
+        ...row,
+        due: now,
+        fsrs: { ...row.fsrs, due: now },
+        updatedAt: now,
+      },
+      user,
+    )
+  }
 }
 
 /** Deserialize FSRS card from scheduling row */

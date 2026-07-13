@@ -16,7 +16,11 @@ const MAX_HORIZON_MS = 30 * 24 * 60 * 60 * 1000
 export function NextReviewBar({ due, className }: Props) {
   const remaining = due - Date.now()
   const fraction = Math.min(1, Math.max(0, remaining / MAX_HORIZON_MS))
-  const fillWidth = TRACK_WIDTH * fraction
+  // A rounded rect narrower than its own height renders as a pointy lens,
+  // not a dot, once its clamped corner radius exceeds half its width.
+  // Floor the fill at HEIGHT so the smallest non-zero amount is a clean
+  // circle instead.
+  const fillWidth = fraction > 0 ? Math.max(HEIGHT, TRACK_WIDTH * fraction) : 0
   const label = `Next review: ${new Date(due).toLocaleDateString()}`
 
   return (
