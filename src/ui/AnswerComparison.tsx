@@ -50,26 +50,86 @@ function buildAlignedDiff(expected: string, typed: string): {
 
 const KANJI = /[一-鿿]/
 
+/**
+ * Furigana grouped by which diff cells it sits above. When the reading has
+ * exactly one character per real (non-gap) cell — the common case for a
+ * kanji+okurigana word — each cell gets its own character, so the
+ * annotation tracks the diff's column alignment even when gap cells (from
+ * extra typed characters) split the word into separate runs. Otherwise the
+ * whole reading spans from the first to the last real cell, matching prior
+ * behaviour.
+ */
+function furiganaGroups(cells: Cell[], reading: string | undefined) {
+  const trimmed = reading?.trim()
+  if (!trimmed) return []
+  const realIndexes = cells.reduce<number[]>((acc, cell, index) => {
+    if (cell.kind !== "gap") acc.push(index)
+    return acc
+  }, [])
+  if (realIndexes.length === 0) return []
+  if (trimmed.length === realIndexes.length) {
+    return realIndexes.map((index, i) => ({
+      start: index,
+      end: index,
+      text: trimmed[i]!,
+    }))
+  }
+  return [
+    {
+      start: realIndexes[0]!,
+      end: realIndexes[realIndexes.length - 1]!,
+      text: trimmed,
+    },
+  ]
+}
+
 function DiffLine({
   cells,
   labelId,
   line,
+  reading,
 }: {
   cells: Cell[]
   labelId: string
   line: "correct" | "yours"
+  reading?: string
 }) {
+  const descId = useId()
   const columns = Math.max(cells.length, 1)
+  const groups = furiganaGroups(cells, reading)
+  const hasFurigana = groups.length > 0
   return (
     <span
-      className="answer-grid-value reading-answer-value reading-answer-diff-line"
+      className={
+        "answer-grid-value reading-answer-value reading-answer-diff-line" +
+        (hasFurigana ? " reading-answer-diff-line-has-furigana" : "")
+      }
       lang="ja"
       aria-labelledby={labelId}
+      aria-describedby={hasFurigana ? descId : undefined}
       data-reading-diff-line={line}
+      tabIndex={hasFurigana ? 0 : undefined}
       style={{
         gridTemplateColumns: `repeat(${columns}, minmax(1.05em, max-content))`,
       }}
     >
+      {hasFurigana && (
+        <span id={descId} className="sr-only">
+          {reading?.trim()}
+        </span>
+      )}
+      {groups.map((group, i) => (
+        <ruby
+          key={`furigana-${i}`}
+          className="reading-answer-diff-furigana"
+          style={{
+            gridColumn: `${group.start + 1} / ${group.end + 2}`,
+            gridRow: 1,
+          }}
+        >
+          <rt>{group.text}</rt>
+        </ruby>
+      ))}
       {cells.map((cell, index) => (
         <span
           key={`${line}-${index}`}
@@ -103,7 +163,12 @@ export function AnswerComparison({
   const diff = isCorrect ? null : buildAlignedDiff(expected, typed)
 
   const correctBody = diff ? (
-    <DiffLine cells={diff.correct} labelId={correctId} line="correct" />
+    <DiffLine
+      cells={diff.correct}
+      labelId={correctId}
+      line="correct"
+      reading={showRuby ? reading : undefined}
+    />
   ) : (
     <span
       className="answer-grid-value reading-answer-value"
@@ -124,7 +189,7 @@ export function AnswerComparison({
         <span id={correctId} className="answer-grid-label">
           Correct answer
         </span>
-        {showRuby ? (
+        {showRuby && !diff ? (
           <span className="ruby-hover answer-ruby" tabIndex={0}>
             <ruby>
               {correctBody}
