@@ -850,6 +850,12 @@ label {
   gap: 0.08em;
 }
 
+/* Mirrors .answer-ruby's clearance below the "Correct answer" label, so
+   the furigana revealed above the diff row doesn't overlap it. */
+.reading-answer-diff-line-has-furigana {
+  margin-top: 1.1em;
+}
+
 /* Placed on the grid, spanning only the columns of the real (non-gap) cells
    it annotates, so the reading floats immediately above those characters
    even when gap cells (from extra typed characters) push other parts of
@@ -863,19 +869,6 @@ label {
   margin-bottom: 0.15em;
   text-align: center;
   pointer-events: none;
-}
-
-.reading-answer-diff-furigana rt {
-  white-space: nowrap;
-  font-size: 0.65em;
-  color: #a5b4fc;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-
-.reading-answer-diff-line:hover .reading-answer-diff-furigana rt,
-.reading-answer-diff-line:focus-within .reading-answer-diff-furigana rt {
-  opacity: 1;
 }
 
 .reading-answer-diff-cell {
@@ -978,6 +971,13 @@ label {
   bottom: 100%;
   transform: translateX(-50%);
   margin-bottom: 0.15em;
+}
+
+/* Shared by the whole-word ruby-hover annotation above and the per-cell
+   .reading-answer-diff-furigana annotation in the diff view — same look,
+   different positioning strategy. */
+.ruby-hover ruby rt,
+.reading-answer-diff-furigana rt {
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
@@ -994,7 +994,9 @@ label {
 }
 
 .ruby-hover:hover rt,
-.ruby-hover:focus-within rt {
+.ruby-hover:focus-within rt,
+.reading-answer-diff-line:hover .reading-answer-diff-furigana rt,
+.reading-answer-diff-line:focus-within .reading-answer-diff-furigana rt {
   opacity: 1;
 }
 

@@ -94,19 +94,30 @@ function DiffLine({
   line: "correct" | "yours"
   reading?: string
 }) {
+  const descId = useId()
   const columns = Math.max(cells.length, 1)
   const groups = furiganaGroups(cells, reading)
+  const hasFurigana = groups.length > 0
   return (
     <span
-      className="answer-grid-value reading-answer-value reading-answer-diff-line"
+      className={
+        "answer-grid-value reading-answer-value reading-answer-diff-line" +
+        (hasFurigana ? " reading-answer-diff-line-has-furigana" : "")
+      }
       lang="ja"
       aria-labelledby={labelId}
+      aria-describedby={hasFurigana ? descId : undefined}
       data-reading-diff-line={line}
-      tabIndex={groups.length > 0 ? 0 : undefined}
+      tabIndex={hasFurigana ? 0 : undefined}
       style={{
         gridTemplateColumns: `repeat(${columns}, minmax(1.05em, max-content))`,
       }}
     >
+      {hasFurigana && (
+        <span id={descId} className="sr-only">
+          {reading?.trim()}
+        </span>
+      )}
       {groups.map((group, i) => (
         <ruby
           key={`furigana-${i}`}
