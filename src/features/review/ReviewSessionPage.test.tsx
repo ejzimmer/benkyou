@@ -230,13 +230,13 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByPlaceholderText("ひらがなで")
+    const input = await screen.findByLabelText("読み方")
     await user.type(input, "ほけ")
 
     await user.click(screen.getByRole("link", { name: /edit card/i }))
     await user.click(await screen.findByRole("link", { name: /back/i }))
 
-    const restoredInput = await screen.findByPlaceholderText("ひらがなで")
+    const restoredInput = await screen.findByLabelText("読み方")
     expect(restoredInput).toHaveValue("ほけ")
     expect(
       screen.queryByRole("button", { name: /^correct$/i }),
@@ -276,7 +276,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByPlaceholderText("ひらがなで")
+    const input = await screen.findByLabelText("読み方")
     await user.type(input, "ほけ{Enter}")
     expect(
       await screen.findByRole("button", { name: /^correct$/i }),
@@ -471,7 +471,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByPlaceholderText("ひらがなで")
+    const input = await screen.findByLabelText("読み方")
     await user.type(input, "しゅかん{Enter}")
 
     const comparison = await screen.findByRole("group", {

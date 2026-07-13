@@ -19,7 +19,6 @@ import {
   isSynonymAnswer,
   matchesPrimaryJapanese,
 } from "../../lib/japanese/synonyms"
-import { CARD_KIND_LABELS } from "../../domain/types"
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import {
@@ -461,27 +460,25 @@ export function ReviewSessionPage() {
         >
           <ChevronLeftIcon className="back-chevron" />
         </Link>
-        <div className="review-header-main">
-          <p className="muted small">
-            {sessionQueue.length} left · {CARD_KIND_LABELS[item.card.kind]}
-          </p>
-          <div className="review-header-actions">
-            <Link
-              to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(
-                reviewReturnTo,
-              )}`}
-              className="btn secondary"
-            >
-              Edit card
-            </Link>
-            <button
-              type="button"
-              className="btn secondary"
-              onClick={() => void onUndoJudgementFromHeader()}
-            >
-              Undo last judgement
-            </button>
-          </div>
+        <p className="muted small review-header-count">
+          {sessionQueue.length} left
+        </p>
+        <div className="review-header-actions">
+          <Link
+            to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(
+              reviewReturnTo,
+            )}`}
+            className="btn secondary"
+          >
+            Edit card
+          </Link>
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={() => void onUndoJudgementFromHeader()}
+          >
+            Undo last judgement
+          </button>
         </div>
       </header>
 

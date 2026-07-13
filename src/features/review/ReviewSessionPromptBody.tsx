@@ -240,14 +240,17 @@ export function ReviewSessionPromptBody({
             ))}
           </div>
         ) : (
-          <TypingAnswerInput
-            value={typed}
-            onChange={onTypedChange}
-            onSubmit={onTypedSubmit}
-            placeholder="ひらがなで"
-            focusKey={focusKey}
-            autoComplete="off"
-          />
+          <label>
+            読み方
+            <TypingAnswerInput
+              value={typed}
+              onChange={onTypedChange}
+              onSubmit={onTypedSubmit}
+              placeholder=""
+              focusKey={focusKey}
+              autoComplete="off"
+            />
+          </label>
         )}
         {readingWarn && (
           <p className="error">
@@ -292,7 +295,7 @@ export function ReviewSessionPromptBody({
     return (
       <div className="stack">
         <label>
-          Type the Japanese word
+          日本語で
           <TypingAnswerInput
             value={typed}
             onChange={onTypedChange}

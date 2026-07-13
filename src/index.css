@@ -640,6 +640,20 @@ label {
   max-width: 100%;
 }
 
+/* Once the review columns sit side-by-side, each column is too narrow for
+   images to usefully scroll across — stack them instead. */
+@media (min-width: 760px) {
+  .card-image-row {
+    flex-direction: column;
+    align-items: stretch;
+    overflow-x: visible;
+  }
+
+  .card-image-row .card-image {
+    width: 100%;
+  }
+}
+
 .image-preview-list {
   display: flex;
   flex-wrap: wrap;
@@ -730,16 +744,13 @@ label {
 
 .review-header {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.review-header-main {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+.review-header-count {
+  margin-left: auto;
 }
 
 .review-header-actions {
@@ -759,15 +770,25 @@ label {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    align-items: start;
+    align-items: stretch;
   }
 }
 
-/* Stretch "Show answer" to the column's full width so oral/no-input modes —
-   where it's the column's only content — still read as filling the right
-   side, not a stray button floating near the gap. */
-.review-answer .toolbar .btn.primary {
-  width: 100%;
+.review-question,
+.review-answer {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-answer .answer-block {
+  flex: 1;
+}
+
+/* Keep "Show answer" / Correct / Incorrect / Undo pinned to the bottom of
+   the card regardless of how much prompt/answer content sits above them,
+   so they don't shift position as the content above them changes size. */
+.review-answer .toolbar {
+  margin-top: auto;
 }
 
 .compare-diff {
