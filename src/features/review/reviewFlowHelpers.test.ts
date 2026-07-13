@@ -71,7 +71,7 @@ describe("reviewFlowHelpers", () => {
       updatedAt: 1,
       content: {
         wordJa: "結論に至る",
-        readings: { 結論: "けつろん", 至る: "いたる" },
+        readingParts: { 結論: "けつろん", 至る: "いたる" },
         definitionsEn: [],
         images: [],
         exampleSentences: [],
@@ -92,12 +92,33 @@ describe("reviewFlowHelpers", () => {
         gapMarker: "___",
         construction: "結論に至る",
         translationEn: "",
-        readings: { 結論: "けつろん", 至る: "いたる" },
+        constructionReadingParts: { 結論: "けつろん", 至る: "いたる" },
+        readings: {},
         images: [],
         synonymsJa: [],
       },
     }
     expect(expectedAnswer(c, "grammar_type_reading")).toBe("けつろん, いたる")
+  })
+
+  it("expectedAnswer uses constructionReading directly for grammar_type_reading when set", () => {
+    const c: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "grammar",
+      updatedAt: 1,
+      content: {
+        sentenceWithGap: "___",
+        gapMarker: "___",
+        construction: "芳しく",
+        constructionReading: "かんばしい",
+        translationEn: "",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      },
+    }
+    expect(expectedAnswer(c, "grammar_type_reading")).toBe("かんばしい")
   })
 
   it("answersMatch is lenient about the separator between phrase-reading segments", () => {

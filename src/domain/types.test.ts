@@ -115,7 +115,7 @@ describe("reviewModesForCard", () => {
     ])
   })
 
-  it("grammar inserts a reading mode once the readings map covers the construction", () => {
+  it("grammar inserts a reading mode once constructionReading is set", () => {
     const card: Card = {
       id: "1",
       deckId: "d",
@@ -125,8 +125,9 @@ describe("reviewModesForCard", () => {
         sentenceWithGap: "私は___です",
         gapMarker: "___",
         construction: "学生",
+        constructionReading: "がくせい",
         translationEn: "I am a student",
-        readings: { 学生: "がくせい" },
+        readings: {},
         images: [],
         synonymsJa: [],
       },
@@ -138,7 +139,7 @@ describe("reviewModesForCard", () => {
     ])
   })
 
-  it("vocabulary phrase word gets a reading mode from a fully-covering readings map", () => {
+  it("vocabulary phrase word gets a reading mode from readingParts", () => {
     const card: Card = {
       id: "1",
       deckId: "d",
@@ -146,7 +147,7 @@ describe("reviewModesForCard", () => {
       updatedAt: 1,
       content: {
         wordJa: "結論に至る",
-        readings: { 結論: "けつろん", 至る: "いたる" },
+        readingParts: { 結論: "けつろん", 至る: "いたる" },
         definitionsEn: ["to reach a conclusion"],
         images: [],
         exampleSentences: [],
@@ -160,7 +161,7 @@ describe("reviewModesForCard", () => {
     ])
   })
 
-  it("vocabulary phrase word omits the reading mode when the map is partial", () => {
+  it("vocabulary phrase word omits the reading mode with only a single reading part", () => {
     const card: Card = {
       id: "1",
       deckId: "d",
@@ -168,7 +169,7 @@ describe("reviewModesForCard", () => {
       updatedAt: 1,
       content: {
         wordJa: "結論に至る",
-        readings: { 結論: "けつろん" },
+        readingParts: { 結論: "けつろん" },
         definitionsEn: ["to reach a conclusion"],
         images: [],
         exampleSentences: [],

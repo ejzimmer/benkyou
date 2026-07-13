@@ -87,6 +87,7 @@ describe("CardEditPage load existing", () => {
         ...defaultGrammar(),
         sentenceWithGap: "私は___です",
         construction: "学生",
+        constructionReading: "がくせい",
         translationEn: "student",
         readings: { 学生: "がくせい" },
         images: ["image-1"],

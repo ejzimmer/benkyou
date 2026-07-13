@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest"
 import {
+  deriveFurigana,
   fullyCoveredSegments,
+  kanjiOnlyEntry,
   parseReadingsMapText,
   readingsMapToText,
+  reseedFurigana,
   segmentText,
   withWordReadingFallback,
 } from "./readingsMap"
@@ -80,5 +83,75 @@ describe("fullyCoveredSegments", () => {
 
   it("returns undefined for an uncovered kanji word with no map entries", () => {
     expect(fullyCoveredSegments("学生", {})).toBeUndefined()
+  })
+})
+
+describe("kanjiOnlyEntry", () => {
+  it("strips a trailing okurigana suffix from both label and reading", () => {
+    expect(kanjiOnlyEntry("至る", "いたる")).toEqual({
+      label: "至",
+      reading: "いた",
+    })
+  })
+
+  it("leaves a pure kanji run unchanged", () => {
+    expect(kanjiOnlyEntry("結論", "けつろん")).toEqual({
+      label: "結論",
+      reading: "けつろん",
+    })
+  })
+
+  it("strips a multi-character trailing suffix", () => {
+    expect(kanjiOnlyEntry("芳しい", "かんばしい")).toEqual({
+      label: "芳",
+      reading: "かんば",
+    })
+  })
+
+  it("leaves a label with no kanji at all unchanged", () => {
+    expect(kanjiOnlyEntry("です", "です")).toEqual({
+      label: "です",
+      reading: "です",
+    })
+  })
+})
+
+describe("deriveFurigana", () => {
+  it("derives a kanji-only furigana map from tested word/reading pairs", () => {
+    expect(
+      deriveFurigana([
+        { label: "結論", reading: "けつろん" },
+        { label: "至る", reading: "いたる" },
+      ]),
+    ).toEqual({ 結論: "けつろん", 至: "いた" })
+  })
+
+  it("skips blank labels or readings", () => {
+    expect(deriveFurigana([{ label: "", reading: "けつろん" }])).toEqual({})
+    expect(deriveFurigana([{ label: "結論", reading: "" }])).toEqual({})
+  })
+})
+
+describe("reseedFurigana", () => {
+  it("replaces a stale (untouched) auto-seeded entry with the new one", () => {
+    expect(
+      reseedFurigana({ 至: "いた" }, { 至: "いた" }, { 至: "いたr" }),
+    ).toEqual({ 至: "いたr" })
+  })
+
+  it("leaves an entry the author manually edited since the last seed untouched", () => {
+    expect(
+      reseedFurigana({ 至: "いた!" }, { 至: "いた" }, { 至: "いたる" }),
+    ).toEqual({ 至: "いた!" })
+  })
+
+  it("adds new seed entries without touching unrelated manual entries", () => {
+    expect(
+      reseedFurigana({ 大好き: "だいすき" }, {}, { 結論: "けつろん" }),
+    ).toEqual({ 大好き: "だいすき", 結論: "けつろん" })
+  })
+
+  it("removes an old seed entry that's no longer produced by the new seed", () => {
+    expect(reseedFurigana({ 至: "いた" }, { 至: "いた" }, {})).toEqual({})
   })
 })

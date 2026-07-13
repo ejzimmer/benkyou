@@ -152,6 +152,8 @@ export function expectedAnswer(card: Card, mode: ReviewModeId): string {
     return card.kind === "grammar" ? card.content.construction : ""
   if (mode === "grammar_type_reading") {
     if (card.kind !== "grammar") return ""
+    if (card.content.constructionReading?.trim())
+      return card.content.constructionReading
     return segmentedReadingAnswer(constructionReadingSegments(card.content))
   }
   return ""

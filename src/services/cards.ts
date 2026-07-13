@@ -15,7 +15,6 @@ import {
   normalizeGapAnswers,
   splitGapAnswers,
 } from "../domain/grammarGaps"
-import { withWordReadingFallback } from "../domain/readingsMap"
 import { db, type SchedulingRow } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
 import {
@@ -170,6 +169,10 @@ function mergeVocabularyContent(
   return {
     wordJa: concatText(target.wordJa, source.wordJa),
     reading: reading || undefined,
+    readingParts: mergeReadings(
+      target.readingParts ?? {},
+      source.readingParts ?? {},
+    ),
     readings: mergeReadings(target.readings ?? {}, source.readings ?? {}),
     definitionsEn: [...target.definitionsEn, ...source.definitionsEn],
     images: mergeImages(target.images, source.images),
@@ -182,10 +185,19 @@ function mergeGrammarContent(
   target: GrammarCardContent,
   source: GrammarCardContent,
 ): GrammarCardContent {
+  const constructionReading = concatText(
+    target.constructionReading ?? "",
+    source.constructionReading ?? "",
+  )
   return {
     sentenceWithGap: concatText(target.sentenceWithGap, source.sentenceWithGap),
     gapMarker: target.gapMarker,
     construction: concatText(target.construction, source.construction),
+    constructionReading: constructionReading || undefined,
+    constructionReadingParts: mergeReadings(
+      target.constructionReadingParts ?? {},
+      source.constructionReadingParts ?? {},
+    ),
     translationEn: concatText(target.translationEn, source.translationEn),
     readings: mergeReadings(target.readings, source.readings),
     images: mergeImages(target.images, source.images),
@@ -283,6 +295,7 @@ export function defaultVocabulary(): VocabularyCardContent {
   return {
     wordJa: "",
     reading: "",
+    readingParts: {},
     readings: {},
     definitionsEn: [""],
     images: [],
@@ -296,6 +309,8 @@ export function defaultGrammar(): GrammarCardContent {
     sentenceWithGap: "",
     gapMarker: "___",
     construction: "",
+    constructionReading: "",
+    constructionReadingParts: {},
     translationEn: "",
     readings: {},
     images: [],
@@ -306,14 +321,10 @@ export function defaultGrammar(): GrammarCardContent {
 export function vocabularyFromGrammarContent(
   content: GrammarCardContent,
 ): VocabularyCardContent {
-  const wordJa = content.construction
-  const reading = containsKanji(wordJa)
-    ? content.readings[wordJa]?.trim()
-    : undefined
-
   return {
-    wordJa,
-    reading,
+    wordJa: content.construction,
+    reading: content.constructionReading,
+    readingParts: { ...(content.constructionReadingParts ?? {}) },
     readings: { ...content.readings },
     definitionsEn: [content.translationEn],
     images: [...content.images],
@@ -332,16 +343,14 @@ export function grammarFromVocabularyContent(
       ? exampleSentence.replace(content.wordJa, gapMarker)
       : exampleSentence
 
-  const readings = containsKanji(content.wordJa)
-    ? withWordReadingFallback(content.readings ?? {}, content.wordJa, content.reading)
-    : { ...(content.readings ?? {}) }
-
   return {
     sentenceWithGap,
     gapMarker,
     construction: content.wordJa,
+    constructionReading: content.reading,
+    constructionReadingParts: { ...(content.readingParts ?? {}) },
     translationEn: content.definitionsEn.filter((s) => s.trim()).join("; "),
-    readings,
+    readings: { ...(content.readings ?? {}) },
     images: [...content.images],
     synonymsJa: [...content.synonymsJa],
   }

@@ -138,10 +138,6 @@ export function ReviewSessionPromptBody({
   // Asking for the Japanese reading: show only the kanji. Everything that could
   // give the reading away (images, meanings, examples) hides behind an expander.
   if (m === "vocab_type_reading" && card.kind === "vocabulary") {
-    // A phrase word (e.g. 結論に至る) has no whole-word `reading`; its per-kanji
-    // segments (結論/至る) live in the same phrase map instead, and are exactly
-    // this mode's answer — so, like the whole-word fallback below, they must
-    // not leak through the "hidden" example-sentence furigana before reveal.
     const wordSegments = card.content.reading?.trim()
       ? []
       : (phraseReadingSegments(card.content) ?? [])
@@ -151,10 +147,15 @@ export function ReviewSessionPromptBody({
     if (column === "question") {
       const definitions = card.content.definitionsEn.filter((s) => s.trim())
       const examples = card.content.exampleSentences.filter((s) => s.trim())
-      const quizzedKeys = new Set(kanjiSegments.map((s) => s.text))
+      // The furigana map is seeded from the tested reading (whole-word or
+      // per-segment), so it normally contains an entry for the word itself —
+      // that's exactly this mode's answer, and must not leak through the
+      // "hidden" example-sentence furigana before reveal. Excluding any key
+      // that's a substring of wordJa covers both the whole-word and
+      // per-segment (possibly kanji-only-stripped, e.g. 至る → 至) cases.
       const exampleReadings = Object.fromEntries(
         Object.entries(card.content.readings ?? {}).filter(
-          ([k]) => !quizzedKeys.has(k),
+          ([k]) => !card.content.wordJa.includes(k),
         ),
       )
       const hasHidden =

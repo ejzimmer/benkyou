@@ -236,6 +236,7 @@ describe("card type conversions", () => {
         sentenceWithGap: "私は___です",
         gapMarker: "___",
         construction: "学生",
+        constructionReading: "がくせい",
         translationEn: "student",
         readings: { 学生: "がくせい" },
         images: ["image-1"],
@@ -244,6 +245,7 @@ describe("card type conversions", () => {
     ).toEqual({
       wordJa: "学生",
       reading: "がくせい",
+      readingParts: {},
       readings: { 学生: "がくせい" },
       definitionsEn: ["student"],
       images: ["image-1"],
@@ -266,8 +268,10 @@ describe("card type conversions", () => {
       sentenceWithGap: "___がいます",
       gapMarker: "___",
       construction: "猫",
+      constructionReading: "ねこ",
+      constructionReadingParts: {},
       translationEn: "cat; feline",
-      readings: { 猫: "ねこ" },
+      readings: {},
       images: ["image-1"],
       synonymsJa: ["ネコ"],
     })
@@ -324,6 +328,7 @@ describe("mergeCardContent", () => {
     expect(merged.content).toEqual({
       wordJa: "猫",
       reading: "ねこ",
+      readingParts: {},
       readings: {},
       definitionsEn: ["cat", "feline"],
       images: ["img-a", "img-b"],

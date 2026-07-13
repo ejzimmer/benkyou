@@ -31,74 +31,74 @@ describe("vocabularyContent helpers", () => {
     expect(hasVocabularyPronunciation({ ...base, wordJa: "ねこ" })).toBe(false)
   })
 
-  it("detects pronunciation for a phrase word covered by the readings map", () => {
+  it("detects pronunciation for a phrase word with 2+ reading parts", () => {
     expect(
       hasVocabularyPronunciation({
         ...base,
         wordJa: "結論に至る",
-        readings: { 結論: "けつろん", 至る: "いたる" },
+        readingParts: { 結論: "けつろん", 至る: "いたる" },
       }),
     ).toBe(true)
   })
 
-  it("does not detect pronunciation when the readings map only partially covers a phrase word", () => {
+  it("does not detect pronunciation from a single reading part — that's what the reading field is for", () => {
     expect(
       hasVocabularyPronunciation({
         ...base,
-        wordJa: "結論に至る",
-        readings: { 結論: "けつろん" },
+        wordJa: "陣",
+        readingParts: { 陣: "じん" },
       }),
-    ).toBe(false)
-  })
-
-  it("does not treat a lone self-keyed readings-map entry as pronunciation — that's what the reading field is for", () => {
-    // A pre-existing card might have `陣: "じん"` in its readings map only so
-    // the word gets furigana inside its own example sentences, without ever
-    // intending to opt into the reading-quiz mode via the dedicated field.
-    expect(
-      hasVocabularyPronunciation({ ...base, wordJa: "陣", readings: { 陣: "じん" } }),
     ).toBe(false)
   })
 })
 
 describe("phraseReadingSegments", () => {
-  it("splits a phrase word into ordered kanji-cluster segments", () => {
+  it("returns ordered segments from readingParts", () => {
     expect(
       phraseReadingSegments({
         ...base,
         wordJa: "結論に至る",
-        readings: { 結論: "けつろん", 至る: "いたる" },
+        readingParts: { 結論: "けつろん", 至る: "いたる" },
       }),
     ).toEqual([
       { text: "結論", reading: "けつろん" },
-      { text: "に" },
       { text: "至る", reading: "いたる" },
     ])
   })
 
-  it("defers to the explicit reading field for a plain single-reading word", () => {
-    expect(
-      phraseReadingSegments({ ...base, wordJa: "陣", reading: "じん" }),
-    ).toBeUndefined()
-  })
-
-  it("is undefined for a kana-only word", () => {
-    expect(phraseReadingSegments({ ...base, wordJa: "ねこ" })).toBeUndefined()
-  })
-
-  it("is undefined when the map does not cover every kanji character", () => {
+  it("tests a dictionary-form reading independent of the literal word", () => {
+    // The label doesn't need to be a literal substring of wordJa — it's
+    // freely authored, so a conjugated word can test a different form.
     expect(
       phraseReadingSegments({
         ...base,
-        wordJa: "結論に至る",
-        readings: { 結論: "けつろん" },
+        wordJa: "芳しく",
+        readingParts: { 芳しい: "かんばしい", もう一つ: "もうひとつ" },
+      }),
+    ).toEqual([
+      { text: "芳しい", reading: "かんばしい" },
+      { text: "もう一つ", reading: "もうひとつ" },
+    ])
+  })
+
+  it("defers to the explicit reading field when set, even with readingParts present", () => {
+    expect(
+      phraseReadingSegments({
+        ...base,
+        wordJa: "陣",
+        reading: "じん",
+        readingParts: { 結論: "けつろん", 至る: "いたる" },
       }),
     ).toBeUndefined()
   })
 
-  it("is undefined for a single kanji cluster even when fully covered by the map", () => {
+  it("is undefined with no reading parts", () => {
+    expect(phraseReadingSegments(base)).toBeUndefined()
+  })
+
+  it("is undefined for a single reading part", () => {
     expect(
-      phraseReadingSegments({ ...base, wordJa: "陣", readings: { 陣: "じん" } }),
+      phraseReadingSegments({ ...base, readingParts: { 陣: "じん" } }),
     ).toBeUndefined()
   })
 })
@@ -113,12 +113,12 @@ describe("wordJaReading", () => {
       wordJaReading({
         ...base,
         wordJa: "結論に至る",
-        readings: { 結論: "けつろん", 至る: "いたる" },
+        readingParts: { 結論: "けつろん", 至る: "いたる" },
       }),
     ).toBe("けつろんにいたる")
   })
 
-  it("is undefined when neither a reading field nor a full phrase segmentation is available", () => {
-    expect(wordJaReading({ ...base, wordJa: "陣" })).toBeUndefined()
+  it("is undefined when neither a reading field nor 2+ reading parts are available", () => {
+    expect(wordJaReading(base)).toBeUndefined()
   })
 })

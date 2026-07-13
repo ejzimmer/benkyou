@@ -274,7 +274,7 @@ describe("ReviewSessionAnswerPanel", () => {
         updatedAt: 0,
         content: {
           wordJa: "結論に至る",
-          readings: { 結論: "けつろん", 至る: "いたる" },
+          readingParts: { 結論: "けつろん", 至る: "いたる" },
           definitionsEn: ["to reach a conclusion"],
           images: [],
           exampleSentences: [],
@@ -335,7 +335,8 @@ describe("ReviewSessionAnswerPanel — grammar reading quiz", () => {
           gapMarker: "___",
           construction: "結論に至る",
           translationEn: "he came to a conclusion",
-          readings: { 結論: "けつろん", 至る: "いたる" },
+          constructionReadingParts: { 結論: "けつろん", 至る: "いたる" },
+          readings: {},
           images: [],
           synonymsJa: [],
         },

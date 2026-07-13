@@ -46,6 +46,58 @@ export function fullyCoveredSegments(
   return hasUncoveredKanji ? undefined : segments
 }
 
+export type LabeledReading = { label: string; reading: string }
+
+/**
+ * Strip a label's trailing non-kanji suffix (okurigana) from both the label
+ * and its reading — e.g. 至る/いたる → 至/いた — since furigana
+ * conventionally annotates only the kanji, leaving okurigana as plain text.
+ * Returns the pair unchanged when the label has no kanji, or no such
+ * suffix (e.g. 結論/けつろん, a pure kanji run).
+ */
+export function kanjiOnlyEntry(label: string, reading: string): LabeledReading {
+  let end = label.length
+  while (end > 0 && !containsKanji(label[end - 1]!)) end--
+  if (end === 0 || end === label.length) return { label, reading }
+  const suffixLen = label.length - end
+  const strippedReading = reading.slice(0, reading.length - suffixLen)
+  return { label: label.slice(0, end), reading: strippedReading || reading }
+}
+
+/** Derive a kanji-only furigana map from a list of tested word/reading pairs. */
+export function deriveFurigana(
+  parts: LabeledReading[],
+): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const { label, reading } of parts) {
+    if (!label.trim() || !reading.trim()) continue
+    const entry = kanjiOnlyEntry(label, reading)
+    result[entry.label] = entry.reading
+  }
+  return result
+}
+
+/**
+ * Re-seed a furigana map with freshly-derived auto-seed entries, without
+ * touching entries the author has manually changed since the last seed —
+ * or entries that were never part of any seed at all, e.g. furigana added
+ * by hand for an unrelated word in an example sentence.
+ */
+export function reseedFurigana(
+  current: Record<string, string>,
+  previousSeed: Record<string, string>,
+  nextSeed: Record<string, string>,
+): Record<string, string> {
+  const next = { ...current }
+  for (const [key, value] of Object.entries(previousSeed)) {
+    if (next[key] === value) delete next[key]
+  }
+  for (const [key, value] of Object.entries(nextSeed)) {
+    if (!(key in next)) next[key] = value
+  }
+  return next
+}
+
 /** Serialize a phrase→reading map for a card editor (one `key=value` per line). */
 export function readingsMapToText(readings: Record<string, string>): string {
   return Object.entries(readings)
