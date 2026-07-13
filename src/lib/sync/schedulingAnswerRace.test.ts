@@ -124,14 +124,21 @@ describe("race: sync reverts a scheduling row answered mid-sync", () => {
       updatedAt: Date.now() + 1000,
     }
 
-    const originalGet = db.tombstones.get.bind(db.tombstones)
+    // collectEntityConflicts snapshots db.scheduling.toArray() once up
+    // front, then decides each row's fate from that snapshot. Intercepting
+    // it simulates a review answer landing right after the snapshot was
+    // taken but before sync acts on it — the last moment such a race could
+    // land undetected. (This is called exactly once in the whole sync
+    // pipeline, unlike db.tombstones.toArray()/.get(), which the tombstone
+    // merge step earlier in the pipeline also calls.)
+    const originalToArray = db.scheduling.toArray.bind(db.scheduling)
     let answered = false
     const spy = vi
-      .spyOn(db.tombstones, "get")
+      .spyOn(db.scheduling, "toArray")
       // @ts-expect-error -- overload signatures don't unify with a single mock impl
-      .mockImplementation(async (key: string) => {
-        const result = await originalGet(key)
-        if (key === `scheduling:${SCHED_ID}` && !answered) {
+      .mockImplementation(async () => {
+        const result = await originalToArray()
+        if (!answered) {
           answered = true
           await db.scheduling.put(answeredRow)
         }
@@ -169,14 +176,14 @@ describe("race: sync reverts a scheduling row answered mid-sync", () => {
       updatedAt: snapshotUpdatedAt,
     }
 
-    const originalGet = db.tombstones.get.bind(db.tombstones)
+    const originalToArray = db.scheduling.toArray.bind(db.scheduling)
     let answered = false
     const spy = vi
-      .spyOn(db.tombstones, "get")
+      .spyOn(db.scheduling, "toArray")
       // @ts-expect-error -- overload signatures don't unify with a single mock impl
-      .mockImplementation(async (key: string) => {
-        const result = await originalGet(key)
-        if (key === `scheduling:${SCHED_ID}` && !answered) {
+      .mockImplementation(async () => {
+        const result = await originalToArray()
+        if (!answered) {
           answered = true
           await db.scheduling.put(answeredRow)
         }

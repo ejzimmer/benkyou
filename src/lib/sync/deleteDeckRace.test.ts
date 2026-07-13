@@ -1,17 +1,19 @@
 /**
  * @vitest-environment node
  *
- * Targeted reproduction of the TOCTOU race in `collectEntityConflicts`:
- * it checks `db.tombstones.get(...)` for an entity, and — only if absent —
- * later calls `db.decks.put(...)` for it. Those two calls are not atomic.
- * If a concurrent `deleteDeck()` records the tombstone and deletes the deck
- * locally in the gap between the check and the put, the put still fires
- * unconditionally and resurrects the deck that was just deleted.
+ * Targeted reproduction of the TOCTOU race in `collectEntityConflicts`: it
+ * snapshots the local decks up front, decides a winner from that snapshot,
+ * and only then writes it back via `putIfNotStale`/`putIfNotTombstoned`. If
+ * a concurrent `deleteDeck()` records the tombstone and deletes the deck
+ * locally in the gap between the snapshot and the write, the write must not
+ * blindly resurrect the deck that was just deleted — `putIfNotStale`'s own
+ * re-check (tombstone + staleness, right before the write) is what's
+ * supposed to catch this.
  *
- * This simulates exactly that gap by intercepting the tombstone check for
- * our target deck: it returns the (real, pre-delete) answer, but as a side
- * effect first runs the concurrent delete — mirroring a full sync that
- * raced ahead of an in-flight deleteDeck() on a slower device.
+ * This simulates exactly that gap by intercepting the local decks snapshot:
+ * it returns the (real, pre-delete) answer, but as a side effect first runs
+ * the concurrent delete — mirroring a full sync that raced ahead of an
+ * in-flight deleteDeck() on a slower device.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
@@ -112,14 +114,21 @@ describe("race: sync resurrects a deck mid-delete", () => {
     writeLastSyncedAt(Date.now())
     await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
 
-    const originalGet = db.tombstones.get.bind(db.tombstones)
+    // collectEntityConflicts snapshots db.decks.toArray() once up front,
+    // then decides each deck's fate from that snapshot. Intercepting it
+    // simulates deleteDeck() landing right after the snapshot was taken but
+    // before sync acts on it — the last moment such a race could land
+    // undetected. (db.decks.toArray() is also called later by
+    // pushLocalToRemote, but that's after collectEntityConflicts runs, so
+    // this still targets the first — and only relevant — invocation.)
+    const originalToArray = db.decks.toArray.bind(db.decks)
     let deleteTriggered = false
     const spy = vi
-      .spyOn(db.tombstones, "get")
+      .spyOn(db.decks, "toArray")
       // @ts-expect-error -- overload signatures don't unify with a single mock impl
-      .mockImplementation(async (key: string) => {
-        const result = await originalGet(key)
-        if (key === "deck:deck-X" && !deleteTriggered) {
+      .mockImplementation(async () => {
+        const result = await originalToArray()
+        if (!deleteTriggered) {
           deleteTriggered = true
           await deleteDeck("deck-X", FAKE_USER)
         }
