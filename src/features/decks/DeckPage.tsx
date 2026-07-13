@@ -6,7 +6,7 @@ import { useAuth } from "../../lib/auth/AuthContext"
 import { useMemo, useState } from "react"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
-import { fsrsStateLabel } from "../../lib/sync/syncCompare"
+import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 
 export function DeckPage() {
   const { deckId = "" } = useParams()
@@ -72,7 +72,6 @@ export function DeckPage() {
       <header className="header deck-header">
         <Link to="/" className="back-link" aria-label="Back to decks">
           <ChevronLeftIcon className="back-chevron" />
-          Decks
         </Link>
         <h1>{deck.name}</h1>
       </header>
@@ -113,10 +112,17 @@ export function DeckPage() {
                     ? c.content.wordJa
                     : c.content.sentenceWithGap}
                 </Link>
-                <span className="muted small">
-                  {schedule
-                    ? `${fsrsStateLabel(schedule.fsrs.state)} · next review ${new Date(schedule.due).toLocaleDateString()}`
-                    : "—"}
+                <span className="card-schedule">
+                  {schedule ? (
+                    <>
+                      <SrsStageDiagram state={schedule.fsrs.state} />
+                      <span className="muted small">
+                        {new Date(schedule.due).toLocaleDateString()}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="muted small">—</span>
+                  )}
                 </span>
               </li>
             )
