@@ -495,6 +495,18 @@ label {
   opacity: 1;
 }
 
+.next-review-bar {
+  display: inline-flex;
+}
+
+.next-review-bar-track {
+  fill: #33334a;
+}
+
+.next-review-bar-fill {
+  fill: var(--blue);
+}
+
 .btn.icon {
   width: 1.6rem;
   height: 1.6rem;
