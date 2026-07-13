@@ -81,6 +81,7 @@ export type ReviewSessionPromptBodyProps = {
   onTypedChange: (value: string) => void
   readingWarn: boolean
   synonymWarn: boolean
+  kanjiWarn: boolean
   /** Called when user presses Enter in a typing field */
   onTypedSubmit: () => void
   /** Answer is visible — show the prompt only, not typing inputs or warnings */
@@ -101,6 +102,7 @@ export function ReviewSessionPromptBody({
   onTypedChange,
   readingWarn,
   synonymWarn,
+  kanjiWarn,
   onTypedSubmit,
   revealed = false,
   column,
@@ -304,6 +306,11 @@ export function ReviewSessionPromptBody({
             focusKey={focusKey}
           />
         </label>
+        {kanjiWarn && (
+          <p className="error">
+            The answer uses kanji — typing the reading isn't enough here.
+          </p>
+        )}
         {synonymWarn && (
           <p className="warn">
             That matches a synonym — try the main form on the card.

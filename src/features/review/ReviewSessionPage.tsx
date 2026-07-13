@@ -22,6 +22,7 @@ import {
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import {
+  answerMissingKanji,
   expectedAnswer,
   hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
@@ -87,6 +88,7 @@ export function ReviewSessionPage() {
   const [typed, setTyped] = useState("")
   const [synonymWarn, setSynonymWarn] = useState(false)
   const [readingWarn, setReadingWarn] = useState(false)
+  const [kanjiWarn, setKanjiWarn] = useState(false)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [snapshot, setSnapshot] = useState<JudgementSnapshot | null>(null)
   /** Prompt shown → “Show answer” (FSRS latency heuristic); cleared after grading */
@@ -140,6 +142,7 @@ export function ReviewSessionPage() {
     setTyped(restoredTyped)
     setSynonymWarn(false)
     setReadingWarn(false)
+    setKanjiWarn(false)
     setStartedAt(null)
     setPromptToRevealMs(null)
     setPendingIncorrectDelay(false)
@@ -236,12 +239,13 @@ export function ReviewSessionPage() {
     setTyped("")
     setSynonymWarn(false)
     setReadingWarn(false)
+    setKanjiWarn(false)
     setStartedAt(null)
     setSnapshot(null)
     setPromptToRevealMs(null)
   }
 
-  async function prepareAndShowAnswer(typedValue: string = typed) {
+  async function prepareAndShowAnswer() {
     if (!current) return
     const elapsed =
       startedAt != null ? Math.round(performance.now() - startedAt) : null
@@ -249,13 +253,6 @@ export function ReviewSessionPage() {
     setPromptToRevealMs(elapsed)
     setSnapshot(snap)
     setPhase("answer")
-    if (
-      isReadingTypingMode(current.modeId) &&
-      typedValue &&
-      hasNonHiraganaReadingAnswer(typedValue)
-    ) {
-      setReadingWarn(true)
-    }
   }
 
   function checkSubmitTyped(typedValue: string = typed): boolean {
@@ -274,8 +271,15 @@ export function ReviewSessionPage() {
         return false
       }
     }
+    if (m === "vocab_type_word_from_clue" && typedValue.trim()) {
+      if (answerMissingKanji(typedValue, expectedAnswer(c, m))) {
+        setKanjiWarn(true)
+        return false
+      }
+    }
     if (isReadingTypingMode(m) && typedValue && hasNonHiraganaReadingAnswer(typedValue)) {
       setReadingWarn(true)
+      return false
     }
     return true
   }
@@ -288,7 +292,7 @@ export function ReviewSessionPage() {
       if (finalTyped !== typed) setTyped(finalTyped)
     }
     if (!checkSubmitTyped(finalTyped)) return
-    void prepareAndShowAnswer(finalTyped)
+    void prepareAndShowAnswer()
   }
 
   /** Enter on oral / non-input views (inputs handle Enter separately) */
@@ -391,6 +395,7 @@ export function ReviewSessionPage() {
     setTyped(restoredTyped)
     setSynonymWarn(false)
     setReadingWarn(false)
+    setKanjiWarn(false)
     if (!snap) {
       setSnapshot(null)
       setPhase("prompt")
@@ -500,6 +505,7 @@ export function ReviewSessionPage() {
                 onTypedChange={handleTypedChange}
                 readingWarn={readingWarn}
                 synonymWarn={synonymWarn}
+                kanjiWarn={kanjiWarn}
                 onTypedSubmit={() => tryShowAnswerRef.current()}
                 revealed={phase === "answer"}
                 column="question"
@@ -514,6 +520,7 @@ export function ReviewSessionPage() {
                     onTypedChange={handleTypedChange}
                     readingWarn={readingWarn}
                     synonymWarn={synonymWarn}
+                    kanjiWarn={kanjiWarn}
                     onTypedSubmit={() => tryShowAnswerRef.current()}
                     column="answer"
                   />

@@ -161,6 +161,7 @@ function renderRevealedReview(item: DueItem) {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         revealed
         column="question"

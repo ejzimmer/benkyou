@@ -81,6 +81,7 @@ function renderBoth(item: DueItem) {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />

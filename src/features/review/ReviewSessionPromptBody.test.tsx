@@ -89,6 +89,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="answer"
       />,
@@ -108,6 +109,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="answer"
       />,
@@ -127,6 +129,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />,
@@ -178,6 +181,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />,
@@ -219,6 +223,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />,
@@ -265,6 +270,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />,
@@ -311,6 +317,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />,
@@ -356,6 +363,7 @@ describe("ReviewSessionPromptBody", () => {
       onTypedChange: vi.fn(),
       readingWarn: false,
       synonymWarn: false,
+      kanjiWarn: false,
       onTypedSubmit: vi.fn(),
     })
 
@@ -431,6 +439,7 @@ describe("ReviewSessionPromptBody", () => {
       onTypedChange: vi.fn(),
       readingWarn: false,
       synonymWarn: false,
+      kanjiWarn: false,
       onTypedSubmit: vi.fn(),
     })
 
@@ -474,6 +483,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />,
@@ -514,6 +524,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />,
@@ -533,6 +544,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />,
@@ -550,6 +562,7 @@ describe("ReviewSessionPromptBody", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="answer"
       />,
@@ -558,6 +571,23 @@ describe("ReviewSessionPromptBody", () => {
     expect(
       screen.getByText(/that matches a synonym/i),
     ).toBeInTheDocument()
+  })
+
+  it("shows the kanji validation error for a type-the-word answer missing kanji", () => {
+    render(
+      <ReviewSessionPromptBody
+        item={{ ...vocabItem, modeId: "vocab_type_word_from_clue" }}
+        typed="ねこ"
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        kanjiWarn
+        onTypedSubmit={vi.fn()}
+        column="answer"
+      />,
+    )
+
+    expect(screen.getByText(/answer uses kanji/i)).toBeInTheDocument()
   })
 })
 
@@ -596,6 +626,7 @@ function StatefulPromptBody({
       onTypedChange={setTyped}
       readingWarn={false}
       synonymWarn={false}
+      kanjiWarn={false}
       onTypedSubmit={vi.fn()}
       column={column}
     />
@@ -613,6 +644,7 @@ describe("ReviewSessionPromptBody — multiple gaps", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
       />,
@@ -647,6 +679,7 @@ describe("ReviewSessionPromptBody — multiple gaps", () => {
         onTypedChange={vi.fn()}
         readingWarn={false}
         synonymWarn={false}
+        kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         revealed
         column="question"
