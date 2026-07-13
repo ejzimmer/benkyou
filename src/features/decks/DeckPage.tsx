@@ -2,22 +2,14 @@ import { useLiveQuery } from "dexie-react-hooks"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { db, type SchedulingRow } from "../../lib/db/schema"
 import { deleteDeck } from "../../services/decks"
+import { unsuspendCard } from "../../services/cards"
+import { isSuspendedDue } from "../../lib/srs/schedule"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useMemo, useState } from "react"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { NextReviewBar } from "../../ui/NextReviewBar"
-
-const DAY_MS = 86_400_000
-
-/** Anki import pushes suspended/leech cards' due date ~100 years out so they
- * never surface as due (see ankiSrs.ts). Detect that placeholder rather than
- * showing a nonsense "next review" date — no real FSRS schedule reaches this
- * far out from normal reviewing. */
-function isSuspendedDue(due: number): boolean {
-  return due - Date.now() > 10 * 365 * DAY_MS
-}
 
 export function DeckPage() {
   const { deckId = "" } = useParams()
@@ -131,7 +123,15 @@ export function DeckPage() {
                     <>
                       <SrsStageDiagram state={schedule.fsrs.state} />
                       {isSuspendedDue(schedule.due) ? (
-                        <span className="muted small">Suspended</span>
+                        <button
+                          type="button"
+                          className="btn secondary unsuspend-btn"
+                          title="Resume reviewing this card"
+                          aria-label="Resume reviewing this card"
+                          onClick={() => unsuspendCard(c.id, user).catch(console.error)}
+                        >
+                          再開
+                        </button>
                       ) : (
                         <NextReviewBar due={schedule.due} />
                       )}

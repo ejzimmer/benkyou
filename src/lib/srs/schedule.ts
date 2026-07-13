@@ -38,4 +38,14 @@ export function applyGrade(
   return next
 }
 
+const DAY_MS = 86_400_000
+
+/** Anki import pushes suspended/leech cards' due date ~100 years out (see
+ * ankiSrs.ts) so they never surface as due, mirroring Anki's own behaviour.
+ * No real FSRS schedule reaches this far out from normal reviewing, so
+ * treat it as that placeholder rather than a real due date. */
+export function isSuspendedDue(due: number, now = Date.now()): boolean {
+  return due - now > 10 * 365 * DAY_MS
+}
+
 export { Rating, fsrs, scheduler }
