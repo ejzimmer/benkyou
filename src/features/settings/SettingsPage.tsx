@@ -192,6 +192,16 @@ export function SettingsPage() {
         </div>
       </header>
 
+      <section className="panel">
+        <h2>App build</h2>
+        <p
+          className="muted small"
+          title="If this time is older than the latest GitHub deploy, hard-refresh or clear site data."
+        >
+          {BUILD_LABEL_LOCAL}
+        </p>
+      </section>
+
       {(offlineOnly || !user) && (
         <section className="panel">
           <h2>Account</h2>
@@ -225,7 +235,7 @@ export function SettingsPage() {
         </p>
         <button
           type="button"
-          className="btn primary"
+          className="btn primary blue"
           disabled={offlineOnly || !user || syncing || conflictActive}
           onClick={() => void syncNow()}
         >
@@ -317,10 +327,6 @@ export function SettingsPage() {
         {importMsg && <p className="muted">{importMsg}</p>}
         {importErr && <p className="error">{importErr}</p>}
       </section>
-
-      <p className="muted small" title="If this time is older than the latest GitHub deploy, hard-refresh or clear site data.">
-        App build: {BUILD_LABEL_LOCAL}
-      </p>
     </div>
   )
 }
