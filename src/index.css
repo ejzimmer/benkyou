@@ -368,6 +368,14 @@ label {
 
 .btn.secondary.add-card-btn {
   border-color: transparent;
+  background: transparent;
+}
+
+.btn.secondary.add-card-btn:hover {
+  box-shadow: none;
+  text-shadow:
+    0 0 6px var(--blue),
+    0 0 16px var(--blue);
 }
 
 .btn.secondary.green {
