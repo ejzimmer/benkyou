@@ -14,6 +14,9 @@
   --blue: hsl(200 100% 50%);
   --green: hsl(140 87% 42%);
   --pink: hsl(320 84% 57%);
+  /* oklch keeps this as punchy as the hsl accents above — an hsl orange at
+     matching lightness/saturation reads muddy rather than fluoro. */
+  --orange: oklch(78% 0.19 55);
   --on-fluoro: #12121a;
 }
 
@@ -213,7 +216,9 @@ a:hover {
 
 .user-menu-item:hover,
 .user-menu-item:focus-visible {
-  background: #252538;
+  text-shadow:
+    0 0 6px #fff,
+    0 0 16px #fff;
 }
 
 .muted {
@@ -329,7 +334,8 @@ label {
     0 0 20px var(--green);
 }
 
-/* Standard secondary CTA: coloured border/text on a dark fill. */
+/* Standard secondary CTA: coloured border/text on a dark fill, glowing on
+   hover — same soft double-blur used on the deck page's back-link hover. */
 .btn.secondary {
   background: var(--on-fluoro);
   border-color: var(--blue);
@@ -337,9 +343,10 @@ label {
 }
 
 .btn.secondary:hover {
-  background: var(--blue);
-  color: var(--on-fluoro);
   text-decoration: none;
+  box-shadow:
+    0 0 8px var(--blue),
+    0 0 20px var(--blue);
 }
 
 .btn.secondary:focus-visible {
@@ -351,21 +358,12 @@ label {
   border-color: transparent;
 }
 
-.btn.secondary.user-menu-trigger:hover {
-  background: none;
-  color: #e8e8f0;
-}
-
 .btn.secondary.green {
   border-color: var(--green);
   color: var(--green);
 }
 
-/* CTA hover glows instead of inverting — same soft double-blur used on the
-   deck page's back-link hover. */
 .btn.secondary.green:hover {
-  background: var(--on-fluoro);
-  color: var(--green);
   box-shadow:
     0 0 8px var(--green),
     0 0 20px var(--green);
@@ -377,8 +375,6 @@ label {
 }
 
 .btn.secondary.pink:hover {
-  background: var(--on-fluoro);
-  color: var(--pink);
   box-shadow:
     0 0 8px var(--pink),
     0 0 20px var(--pink);
@@ -485,12 +481,11 @@ label {
 }
 
 .srs-stage-diagram-dot {
-  fill: #33334a;
+  opacity: 0.4;
 }
 
 .srs-stage-diagram-dot-current {
-  fill: var(--green);
-  filter: drop-shadow(0 0 3px var(--green));
+  opacity: 1;
 }
 
 .btn.icon {
