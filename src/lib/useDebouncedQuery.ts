@@ -30,10 +30,15 @@ export function useDebouncedQuery<T>(
         return
       }
       running = true
-      const result = await queryRef.current()
-      running = false
+      try {
+        const result = await queryRef.current()
+        if (!cancelled) setValue(result)
+      } catch (e) {
+        console.error(e)
+      } finally {
+        running = false
+      }
       if (cancelled) return
-      setValue(result)
       if (rerunRequested) {
         rerunRequested = false
         schedule()

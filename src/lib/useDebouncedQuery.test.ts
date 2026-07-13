@@ -47,4 +47,24 @@ describe("useDebouncedQuery", () => {
 
     await waitFor(() => expect(result.current).toHaveLength(10))
   })
+
+  it("recovers after a query rejection instead of getting stuck forever", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    let shouldThrow = true
+    const querier = vi.fn(async () => {
+      if (shouldThrow) throw new Error("transient failure")
+      return db.decks.toArray()
+    })
+
+    renderHook(() => useDebouncedQuery(querier, [], 20))
+    await waitFor(() => expect(querier).toHaveBeenCalledTimes(1))
+
+    shouldThrow = false
+    await db.decks.put({ id: "d1", name: "Deck one", updatedAt: Date.now() })
+
+    // Before the fix, a rejected query left `running` stuck `true` forever,
+    // so this second write would never trigger another query call.
+    await waitFor(() => expect(querier).toHaveBeenCalledTimes(2))
+    errorSpy.mockRestore()
+  })
 })
