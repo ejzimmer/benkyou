@@ -7,6 +7,7 @@ import { useMemo, useState } from "react"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
+import { NextReviewBar } from "../../ui/NextReviewBar"
 
 export function DeckPage() {
   const { deckId = "" } = useParams()
@@ -116,9 +117,10 @@ export function DeckPage() {
                   {schedule ? (
                     <>
                       <SrsStageDiagram state={schedule.fsrs.state} />
-                      <span className="muted small">
-                        {new Date(schedule.due).toLocaleDateString()}
-                      </span>
+                      <NextReviewBar
+                        due={schedule.due}
+                        lastReview={schedule.fsrs.last_review}
+                      />
                     </>
                   ) : (
                     <span className="muted small">—</span>
