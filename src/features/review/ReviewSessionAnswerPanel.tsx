@@ -117,13 +117,11 @@ export function ReviewSessionAnswerPanel({
     <div className="answer-block stack">
       {m === "vocab_oral_en" && card.kind === "vocabulary" && (
         <>
-          <ul>
-            {card.content.definitionsEn
-              .filter((s) => s.trim())
-              .map((d, i) => (
-                <li key={i}>{d}</li>
-              ))}
-          </ul>
+          {card.content.definitionsEn
+            .filter((s) => s.trim())
+            .map((d, i) => (
+              <p key={i}>{d}</p>
+            ))}
           <CardImageRow images={card.content.images} />
         </>
       )}

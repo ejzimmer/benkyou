@@ -137,7 +137,11 @@ export function requiresTyping(mode: ReviewModeId): boolean {
  * screen-reader heading navigation, just visually hidden.
  */
 export function modeHeadingVisible(mode: ReviewModeId): boolean {
-  return mode !== "vocab_type_word_from_clue"
+  return (
+    mode !== "vocab_type_word_from_clue" &&
+    mode !== "vocab_oral_en" &&
+    mode !== "vocab_type_reading"
+  )
 }
 
 export function expectedAnswer(card: Card, mode: ReviewModeId): string {
