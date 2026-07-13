@@ -8,14 +8,15 @@ import {
   hasVocabularyImage,
   hasVocabularyPronunciation,
   isKanaOnly,
+  phraseReadingSegments,
 } from "../domain/vocabularyContent"
+import { constructionReadingSegments } from "../domain/grammarContent"
 import { containsKanji, reviewModesForCard } from "../domain/types"
 import {
   countGaps,
   normalizeGapAnswers,
   splitGapAnswers,
 } from "../domain/grammarGaps"
-import { withWordReadingFallback } from "../domain/readingsMap"
 import { db, type SchedulingRow } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
 import {
@@ -170,6 +171,10 @@ function mergeVocabularyContent(
   return {
     wordJa: concatText(target.wordJa, source.wordJa),
     reading: reading || undefined,
+    readingParts: mergeReadings(
+      target.readingParts ?? {},
+      source.readingParts ?? {},
+    ),
     readings: mergeReadings(target.readings ?? {}, source.readings ?? {}),
     definitionsEn: [...target.definitionsEn, ...source.definitionsEn],
     images: mergeImages(target.images, source.images),
@@ -182,10 +187,19 @@ function mergeGrammarContent(
   target: GrammarCardContent,
   source: GrammarCardContent,
 ): GrammarCardContent {
+  const constructionReading = concatText(
+    target.constructionReading ?? "",
+    source.constructionReading ?? "",
+  )
   return {
     sentenceWithGap: concatText(target.sentenceWithGap, source.sentenceWithGap),
     gapMarker: target.gapMarker,
     construction: concatText(target.construction, source.construction),
+    constructionReading: constructionReading || undefined,
+    constructionReadingParts: mergeReadings(
+      target.constructionReadingParts ?? {},
+      source.constructionReadingParts ?? {},
+    ),
     translationEn: concatText(target.translationEn, source.translationEn),
     readings: mergeReadings(target.readings, source.readings),
     images: mergeImages(target.images, source.images),
@@ -283,6 +297,7 @@ export function defaultVocabulary(): VocabularyCardContent {
   return {
     wordJa: "",
     reading: "",
+    readingParts: {},
     readings: {},
     definitionsEn: [""],
     images: [],
@@ -296,6 +311,8 @@ export function defaultGrammar(): GrammarCardContent {
     sentenceWithGap: "",
     gapMarker: "___",
     construction: "",
+    constructionReading: "",
+    constructionReadingParts: {},
     translationEn: "",
     readings: {},
     images: [],
@@ -303,17 +320,38 @@ export function defaultGrammar(): GrammarCardContent {
   }
 }
 
+/** {结论: けつろん, 至る: いたる} segments -> a readingParts-shaped map. */
+function segmentsToReadingParts(
+  segments: ReturnType<typeof constructionReadingSegments>,
+): Record<string, string> {
+  if (!segments) return {}
+  return Object.fromEntries(segments.map((s) => [s.text, s.reading ?? ""]))
+}
+
 export function vocabularyFromGrammarContent(
   content: GrammarCardContent,
 ): VocabularyCardContent {
-  const wordJa = content.construction
-  const reading = containsKanji(wordJa)
-    ? content.readings[wordJa]?.trim()
+  // constructionReadingSegments falls back to the legacy `readings` map when
+  // constructionReading/constructionReadingParts were never authored (e.g. a
+  // pre-existing or Anki-imported card) — reuse it here too, so converting
+  // kind doesn't silently drop a reading that still only lives in `readings`.
+  const segments = constructionReadingSegments(content)
+  const singleLegacyReading =
+    !content.constructionReading?.trim() && segments?.length === 1
+      ? segments[0]?.reading
+      : undefined
+  // A reading only makes sense for a construction with kanji — matches
+  // validateVocabulary's rule for the resulting card's `reading` field.
+  const reading = containsKanji(content.construction)
+    ? content.constructionReading || singleLegacyReading
     : undefined
-
   return {
-    wordJa,
+    wordJa: content.construction,
     reading,
+    readingParts:
+      segments && segments.length > 1
+        ? segmentsToReadingParts(segments)
+        : { ...(content.constructionReadingParts ?? {}) },
     readings: { ...content.readings },
     definitionsEn: [content.translationEn],
     images: [...content.images],
@@ -332,16 +370,21 @@ export function grammarFromVocabularyContent(
       ? exampleSentence.replace(content.wordJa, gapMarker)
       : exampleSentence
 
-  const readings = containsKanji(content.wordJa)
-    ? withWordReadingFallback(content.readings ?? {}, content.wordJa, content.reading)
-    : { ...(content.readings ?? {}) }
+  // phraseReadingSegments falls back to the legacy `readings` map when
+  // readingParts was never authored — see vocabularyFromGrammarContent.
+  const segments = phraseReadingSegments(content)
 
   return {
     sentenceWithGap,
     gapMarker,
     construction: content.wordJa,
+    constructionReading: content.reading,
+    constructionReadingParts:
+      segments && segments.length > 1
+        ? segmentsToReadingParts(segments)
+        : { ...(content.readingParts ?? {}) },
     translationEn: content.definitionsEn.filter((s) => s.trim()).join("; "),
-    readings,
+    readings: { ...(content.readings ?? {}) },
     images: [...content.images],
     synonymsJa: [...content.synonymsJa],
   }

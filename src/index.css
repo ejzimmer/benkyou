@@ -855,26 +855,34 @@ label {
   box-decoration-break: clone;
 }
 
+/* The browser's native ruby layout reserves horizontal space for the
+   annotation even while it's invisible (opacity 0), so a reading wider than
+   its kanji pushes the surrounding sentence apart. Taking `rt` out of flow
+   with absolute positioning stops it from affecting layout at all — the
+   annotation floats above its own kanji instead of widening the line. */
 .ruby-hover ruby {
-  ruby-align: start;
-  ruby-position: over;
+  position: relative;
 }
 
 .ruby-hover ruby rt {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  margin-bottom: 0.15em;
+  white-space: nowrap;
+  pointer-events: none;
   opacity: 0;
   transition: opacity 0.12s ease;
   font-size: 0.65em;
   color: #a5b4fc;
 }
 
-/* The diff cells in AnswerComparison give the base text a tightly-fitted
-   colored background, leaving too little room for the browser's automatic
-   ruby-annotation spacing. Reserve extra clearance here specifically —
-   applying it to every .ruby-hover would push wrapped example-sentence
-   furigana into the line above. */
-.answer-ruby ruby rt {
-  line-height: 1.4;
-  padding-bottom: 0.2em;
+/* AnswerComparison stacks a "Correct answer" label directly above this ruby
+   with very little gap — reserve room so the floating annotation doesn't
+   overlap the label when revealed. */
+.answer-ruby {
+  margin-top: 1.1em;
 }
 
 .ruby-hover:hover rt,

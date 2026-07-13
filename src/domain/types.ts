@@ -11,7 +11,7 @@ import {
   hasVocabularyImage,
   hasVocabularyPronunciation,
 } from "./vocabularyContent"
-import { constructionReadingSegments } from "./grammarContent"
+import { hasConstructionReading } from "./grammarContent"
 
 export { containsKanji }
 
@@ -25,7 +25,19 @@ export type VocabularyCardContent = {
   wordJa: string
   /** Hiragana reading — only for words with kanji (pronunciation study). */
   reading?: string
-  /** Kanji phrases within example sentences → hiragana readings, shown on hover/focus. */
+  /**
+   * Ordered word/cluster → reading pairs for a phrase word made of several
+   * kanji clusters (e.g. 結論に至る = 結論/けつろん + 至る/いたる), each
+   * tested separately. Used instead of `reading` when set with 2+ entries.
+   */
+  readingParts?: Record<string, string>
+  /**
+   * Kanji phrases → hiragana readings shown as furigana (the headline word
+   * and example sentences). Independent of what's tested by `reading` /
+   * `readingParts` — the card editor seeds it from them, but it can be
+   * edited separately (e.g. narrowed to just the kanji, leaving okurigana
+   * un-annotated: 至る/いたる seeds 至/いた).
+   */
   readings?: Record<string, string>
   definitionsEn: string[]
   images: string[]
@@ -39,8 +51,21 @@ export type GrammarCardContent = {
   /** Marker substring that indicates the gap (default "___") */
   gapMarker: string
   construction: string
+  /**
+   * Reading tested for the construction — independent of its literal text,
+   * so a conjugated construction (e.g. 芳しく) can test its dictionary
+   * form's reading (芳しい＝かんばしい) instead of the conjugated one.
+   */
+  constructionReading?: string
+  /**
+   * Ordered word/cluster → reading pairs when the construction is several
+   * words/clusters tested separately (e.g. two gap-fillers, or a
+   * multi-cluster phrase). Used instead of `constructionReading` when set
+   * with 2+ entries.
+   */
+  constructionReadingParts?: Record<string, string>
   translationEn: string
-  /** Kanji phrases / segments → hiragana readings */
+  /** Kanji phrases → hiragana readings shown as furigana in the sentence. */
   readings: Record<string, string>
   images: string[]
   synonymsJa: string[]
@@ -95,7 +120,7 @@ export function reviewModesForCard(card: Card): ReviewModeId[] {
     return modes
   }
   const modes: ReviewModeId[] = ["grammar_type_construction"]
-  if (constructionReadingSegments(card.content)) {
+  if (hasConstructionReading(card.content)) {
     modes.push("grammar_type_reading")
   }
   if (card.content.translationEn.trim()) modes.push("grammar_oral_meaning")
