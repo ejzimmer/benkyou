@@ -118,8 +118,14 @@ export const endOfLocalDay = (timestamp: number) => {
 
 async function loadDueItems(now: number): Promise<DueItem[]> {
   const rows = await db.scheduling.where("due").belowOrEqual(now).toArray()
-  const cards = await db.cards.toArray()
-  const byId = new Map(cards.map((c) => [c.id, c]))
+  // Fetch only the cards the due rows actually reference — a collection can
+  // have thousands of cards while only a handful are due, and this used to
+  // load every card regardless, making each recompute cost scale with total
+  // collection size instead of due-item count.
+  const cardIds = [...new Set(rows.map((r) => r.cardId))]
+  const cards = await db.cards.bulkGet(cardIds)
+  const byId = new Map<string, Card>()
+  for (const card of cards) if (card) byId.set(card.id, card)
   const list: DueItem[] = []
   for (const r of rows) {
     const card = byId.get(r.cardId)
