@@ -117,7 +117,7 @@ export const endOfLocalDay = (timestamp: number) => {
 }
 
 async function loadDueItems(now: number): Promise<DueItem[]> {
-  const rows = await db.scheduling.filter((r) => r.due <= now).toArray()
+  const rows = await db.scheduling.where("due").belowOrEqual(now).toArray()
   const cards = await db.cards.toArray()
   const byId = new Map(cards.map((c) => [c.id, c]))
   const list: DueItem[] = []

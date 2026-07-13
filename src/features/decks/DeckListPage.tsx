@@ -1,18 +1,21 @@
-import { useLiveQuery } from "dexie-react-hooks"
 import { Link, useNavigate } from "react-router-dom"
 import { db } from "../../lib/db/schema"
 import { createDeck } from "../../services/decks"
 import { getDueCountsByDeck } from "../../services/review"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useState } from "react"
+import { useDebouncedQuery } from "../../lib/useDebouncedQuery"
 import { AppIcon } from "../../ui/AppIcon"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncIndicator } from "../../ui/SyncIndicator"
 
 export function DeckListPage() {
   const navigate = useNavigate()
-  const decks = useLiveQuery(() => db.decks.orderBy("updatedAt").reverse().toArray(), [])
-  const dueCounts = useLiveQuery(() => getDueCountsByDeck(), [])
+  const decks = useDebouncedQuery(
+    () => db.decks.orderBy("updatedAt").reverse().toArray(),
+    [],
+  )
+  const dueCounts = useDebouncedQuery(() => getDueCountsByDeck(), [])
   const totalDue = dueCounts ? [...dueCounts.values()].reduce((sum, n) => sum + n, 0) : 0
   const { user } = useAuth()
   const [name, setName] = useState("")
