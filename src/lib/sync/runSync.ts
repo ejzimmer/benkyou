@@ -40,6 +40,7 @@ import {
   type Tombstone,
 } from "./syncTypes"
 import { syncLog, syncLogTimed } from "./syncLog"
+import { yieldPeriodically } from "../yieldToMain"
 
 async function resolveConflictChoice(
   conflict: SyncConflict,
@@ -255,7 +256,9 @@ async function collectEntityConflicts(
   const localCardIds = new Set(localCards.map((c) => c.id))
   const localSchedIds = new Set(localSched.map((s) => s.id))
 
-  for (const local of localDecks) {
+  for (let i = 0; i < localDecks.length; i++) {
+    await yieldPeriodically(i)
+    const local = localDecks[i]
     if (tombstoneIds.has(tombstoneId("deck", local.id))) continue
     const remoteDeck = remote.decks.get(local.id)
     if (!remoteDeck) {
@@ -309,7 +312,10 @@ async function collectEntityConflicts(
     )
   }
 
-  for (const remoteDeck of remote.decks.values()) {
+  const remoteDecksArr = [...remote.decks.values()]
+  for (let i = 0; i < remoteDecksArr.length; i++) {
+    await yieldPeriodically(i)
+    const remoteDeck = remoteDecksArr[i]
     if (tombstoneIds.has(tombstoneId("deck", remoteDeck.id))) continue
     if (localDeckIds.has(remoteDeck.id)) continue
     await putIfNotTombstoned(tombstoneId("deck", remoteDeck.id), async () => {
@@ -318,7 +324,9 @@ async function collectEntityConflicts(
     })
   }
 
-  for (const local of localCards) {
+  for (let i = 0; i < localCards.length; i++) {
+    await yieldPeriodically(i)
+    const local = localCards[i]
     if (tombstoneIds.has(tombstoneId("card", local.id))) continue
     const remoteCard = remote.cards.get(local.id)
     if (!remoteCard) {
@@ -370,7 +378,10 @@ async function collectEntityConflicts(
     )
   }
 
-  for (const remoteCard of remote.cards.values()) {
+  const remoteCardsArr = [...remote.cards.values()]
+  for (let i = 0; i < remoteCardsArr.length; i++) {
+    await yieldPeriodically(i)
+    const remoteCard = remoteCardsArr[i]
     if (tombstoneIds.has(tombstoneId("card", remoteCard.id))) continue
     if (localCardIds.has(remoteCard.id)) continue
     await putIfNotTombstoned(tombstoneId("card", remoteCard.id), async () => {
@@ -379,7 +390,9 @@ async function collectEntityConflicts(
     })
   }
 
-  for (const local of localSched) {
+  for (let i = 0; i < localSched.length; i++) {
+    await yieldPeriodically(i)
+    const local = localSched[i]
     if (tombstoneIds.has(tombstoneId("scheduling", local.id))) continue
     const remoteRow = remote.scheduling.get(local.id)
     if (!remoteRow) {
@@ -438,7 +451,10 @@ async function collectEntityConflicts(
     )
   }
 
-  for (const remoteRow of remote.scheduling.values()) {
+  const remoteSchedArr = [...remote.scheduling.values()]
+  for (let i = 0; i < remoteSchedArr.length; i++) {
+    await yieldPeriodically(i)
+    const remoteRow = remoteSchedArr[i]
     if (tombstoneIds.has(tombstoneId("scheduling", remoteRow.id))) continue
     if (localSchedIds.has(remoteRow.id)) continue
     await putIfNotTombstoned(
