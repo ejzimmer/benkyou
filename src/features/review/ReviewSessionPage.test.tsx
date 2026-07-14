@@ -573,4 +573,56 @@ describe("ReviewSessionPage", () => {
     ).not.toBeInTheDocument()
     expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
   })
+
+  it("clears a validation warning once the answer is corrected, including after undoing the reveal", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T", null)
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: [""],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const input = await screen.findByLabelText("読み方")
+    await user.type(input, "猫{Enter}")
+    expect(
+      await screen.findByText(/use hiragana only for readings/i),
+    ).toBeInTheDocument()
+
+    await user.clear(input)
+    await user.type(input, "ねこ{Enter}")
+
+    const correctButton = await screen.findByRole("button", { name: /^correct$/i })
+    expect(
+      screen.queryByText(/use hiragana only for readings/i),
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /undo answer/i }))
+
+    expect(await screen.findByLabelText("読み方")).toHaveValue("ねこ")
+    expect(
+      screen.queryByText(/use hiragana only for readings/i),
+    ).not.toBeInTheDocument()
+    expect(correctButton).not.toBeInTheDocument()
+  })
 })

@@ -259,6 +259,9 @@ export function ReviewSessionPage() {
     if (!current) return true
     const c = current.card
     const m = current.modeId
+    setSynonymWarn(false)
+    setReadingWarn(false)
+    setKanjiWarn(false)
     if (
       m === "vocab_type_word_from_clue" ||
       m === "grammar_type_construction"
@@ -360,6 +363,9 @@ export function ReviewSessionPage() {
     setPhase("prompt")
     setSnapshot(null)
     setPromptToRevealMs(null)
+    setSynonymWarn(false)
+    setReadingWarn(false)
+    setKanjiWarn(false)
   }
 
   async function onUndoJudgementFromHeader() {
