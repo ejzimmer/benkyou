@@ -139,6 +139,27 @@ describe("reviewModesForCard", () => {
     ])
   })
 
+  it("grammar with a grammarPoint set only gets the construction mode, even with a reading and translation", () => {
+    const card: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "grammar",
+      updatedAt: 1,
+      content: {
+        sentenceWithGap: "プレゼンテーションを見___が、つまらなかったから、出ました。",
+        gapMarker: "___",
+        construction: "ました",
+        constructionReading: "ました",
+        translationEn: "I watched the presentation, but it was boring so I left.",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+        grammarPoint: "conjugation",
+      },
+    }
+    expect(reviewModesForCard(card)).toEqual(["grammar_type_construction"])
+  })
+
   it("vocabulary phrase word gets a reading mode from readingParts", () => {
     const card: Card = {
       id: "1",

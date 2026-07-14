@@ -14,7 +14,10 @@ import {
   withWordReadingFallback,
 } from "../../domain/readingsMap"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
-import { constructionReadingSegments } from "../../domain/grammarContent"
+import {
+  constructionReadingSegments,
+  grammarPointFor,
+} from "../../domain/grammarContent"
 import { hasNonHiraganaKana } from "../../lib/japanese/normalize"
 
 /** Marker used to blank out the target word in an example sentence. */
@@ -70,6 +73,20 @@ export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {
   grammar_type_construction: "Type the construction",
   grammar_type_reading: "Type the reading of the construction (hiragana)",
   grammar_oral_meaning: "Say the meaning of the construction",
+}
+
+/**
+ * The heading shown above the review prompt. A grammar card with a
+ * `grammarPoint` set (e.g. "conjugation", "particle") is testing that
+ * specific grammatical form rather than word choice, so it gets a tailored
+ * heading instead of the generic construction-typing label.
+ */
+export function reviewModeLabel(card: Card, mode: ReviewModeId): string {
+  if (mode === "grammar_type_construction" && card.kind === "grammar") {
+    const grammarPoint = grammarPointFor(card.content)
+    if (grammarPoint) return `What's the correct ${grammarPoint}?`
+  }
+  return REVIEW_MODE_LABELS[mode]
 }
 
 /** Modes that test a hiragana reading — the IME conversion, non-hiragana

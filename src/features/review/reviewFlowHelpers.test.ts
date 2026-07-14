@@ -6,6 +6,7 @@ import {
   hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
   requiresTyping,
+  reviewModeLabel,
   vocabExampleReadings,
 } from "./reviewFlowHelpers"
 import type { Card } from "../../domain/types"
@@ -120,6 +121,49 @@ describe("reviewFlowHelpers", () => {
       },
     }
     expect(expectedAnswer(c, "grammar_type_reading")).toBe("かんばしい")
+  })
+
+  it("reviewModeLabel uses the generic construction label when no grammarPoint is set", () => {
+    const c: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "grammar",
+      updatedAt: 1,
+      content: {
+        sentenceWithGap: "私は___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      },
+    }
+    expect(reviewModeLabel(c, "grammar_type_construction")).toBe(
+      "Type the construction",
+    )
+  })
+
+  it("reviewModeLabel asks about the grammar point when one is set", () => {
+    const c: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "grammar",
+      updatedAt: 1,
+      content: {
+        sentenceWithGap: "プレゼンテーションを見___が、つまらなかったから、出ました。",
+        gapMarker: "___",
+        construction: "ました",
+        translationEn: "",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+        grammarPoint: "conjugation",
+      },
+    }
+    expect(reviewModeLabel(c, "grammar_type_construction")).toBe(
+      "What's the correct conjugation?",
+    )
   })
 
   it("answersMatch is lenient about the separator between phrase-reading segments", () => {

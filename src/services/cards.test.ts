@@ -521,4 +521,80 @@ describe("mergeCardContent", () => {
       学生: "がくせい; がくせいさん",
     })
   })
+
+  it("keeps the target's grammarPoint when merging grammar cards", () => {
+    const target: Card = {
+      id: "a",
+      deckId: "deck-1",
+      kind: "grammar",
+      content: {
+        sentenceWithGap: "___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "student",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+        grammarPoint: "conjugation",
+      },
+      updatedAt: 0,
+    }
+    const source: Card = {
+      id: "b",
+      deckId: "deck-2",
+      kind: "grammar",
+      content: {
+        sentenceWithGap: "",
+        gapMarker: "___",
+        construction: "",
+        translationEn: "",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      },
+      updatedAt: 0,
+    }
+
+    const merged = mergeCardContent(target, source)
+    if (merged.kind !== "grammar") throw new Error("expected grammar")
+    expect(merged.content.grammarPoint).toBe("conjugation")
+  })
+
+  it("falls back to the source's grammarPoint when the target has none", () => {
+    const target: Card = {
+      id: "a",
+      deckId: "deck-1",
+      kind: "grammar",
+      content: {
+        sentenceWithGap: "___です",
+        gapMarker: "___",
+        construction: "学生",
+        translationEn: "student",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+      },
+      updatedAt: 0,
+    }
+    const source: Card = {
+      id: "b",
+      deckId: "deck-2",
+      kind: "grammar",
+      content: {
+        sentenceWithGap: "",
+        gapMarker: "___",
+        construction: "",
+        translationEn: "",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+        grammarPoint: "particle",
+      },
+      updatedAt: 0,
+    }
+
+    const merged = mergeCardContent(target, source)
+    if (merged.kind !== "grammar") throw new Error("expected grammar")
+    expect(merged.content.grammarPoint).toBe("particle")
+  })
 })
