@@ -11,7 +11,7 @@ import {
   hasVocabularyImage,
   hasVocabularyPronunciation,
 } from "./vocabularyContent"
-import { hasConstructionReading } from "./grammarContent"
+import { grammarPointFor, hasConstructionReading } from "./grammarContent"
 
 export { containsKanji }
 
@@ -130,7 +130,7 @@ export function reviewModesForCard(card: Card): ReviewModeId[] {
     return modes
   }
   const modes: ReviewModeId[] = ["grammar_type_construction"]
-  if (card.content.grammarPoint?.trim()) return modes
+  if (grammarPointFor(card.content)) return modes
   if (hasConstructionReading(card.content)) {
     modes.push("grammar_type_reading")
   }

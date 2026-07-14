@@ -14,7 +14,10 @@ import {
   withWordReadingFallback,
 } from "../../domain/readingsMap"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
-import { constructionReadingSegments } from "../../domain/grammarContent"
+import {
+  constructionReadingSegments,
+  grammarPointFor,
+} from "../../domain/grammarContent"
 import { hasNonHiraganaKana } from "../../lib/japanese/normalize"
 
 /** Marker used to blank out the target word in an example sentence. */
@@ -80,7 +83,7 @@ export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {
  */
 export function reviewModeLabel(card: Card, mode: ReviewModeId): string {
   if (mode === "grammar_type_construction" && card.kind === "grammar") {
-    const grammarPoint = card.content.grammarPoint?.trim()
+    const grammarPoint = grammarPointFor(card.content)
     if (grammarPoint) return `What's the correct ${grammarPoint}?`
   }
   return REVIEW_MODE_LABELS[mode]
