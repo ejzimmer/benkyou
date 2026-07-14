@@ -90,9 +90,7 @@ export function ReviewSessionPage() {
    * retrigger the mount effect into calling `load` a second time.
    */
   const setSearchParamsRef = useRef(setSearchParams)
-  useEffect(() => {
-    setSearchParamsRef.current = setSearchParams
-  }, [setSearchParams])
+  setSearchParamsRef.current = setSearchParams
   const { user } = useAuth()
   const {
     initialSyncComplete,
@@ -122,13 +120,6 @@ export function ReviewSessionPage() {
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
   const phaseRef = useRef<Phase>(phase)
   const conflictReloadPendingRef = useRef(false)
-  /**
-   * `load` can rerun within the same mount — e.g. a mid-session sync conflict
-   * bumping conflictResolutionVersion — and must not replay resumeParamsRef
-   * again once it's been applied. (Across mounts, `load` also strips the
-   * resume params from the URL, so a fresh mount reads none to begin with.)
-   */
-  const resumeAppliedRef = useRef(false)
 
   useEffect(() => {
     phaseRef.current = phase
@@ -153,11 +144,13 @@ export function ReviewSessionPage() {
     // removed the mode that was being reviewed).
     const resumedItem = q[0]
     const canResume =
-      !resumeAppliedRef.current &&
       resumeCardId != null &&
       resumedItem?.card.id === resumeCardId &&
       (resumeModeId == null || resumedItem.modeId === resumeModeId)
-    resumeAppliedRef.current = true
+    // Consumed (or deemed inapplicable) — clear so a later `load()` within
+    // this same mount (e.g. a mid-session sync-conflict reload) doesn't
+    // replay it, and doesn't redundantly re-strip the URL below.
+    resumeParamsRef.current = { cardId: null, modeId: null, phase: null, typed: null }
 
     const restoredTyped = canResume ? (resumeTyped ?? "") : ""
     setTyped(restoredTyped)
@@ -189,10 +182,10 @@ export function ReviewSessionPage() {
 
     setLoading(false)
 
-    // Consumed (or deemed inapplicable) — strip from the URL so a later
-    // browser refresh (a fresh mount, which resets resumeAppliedRef) doesn't
-    // replay this now-stale resume state onto whatever card happens to be
-    // due at that point.
+    // Strip from the URL too — a later browser refresh is a fresh mount
+    // (a new resumeParamsRef), so without this it would read the same
+    // params straight out of the address bar and replay this now-stale
+    // resume state onto whatever card happens to be due at that point.
     if (resumeCardId != null) {
       setSearchParamsRef.current(
         (prev) => {
