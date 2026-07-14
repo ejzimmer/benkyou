@@ -89,6 +89,15 @@ export function hasNonHiraganaReadingAnswer(typed: string): boolean {
 }
 
 /**
+ * True when a "type the Japanese word" answer is missing kanji the correct
+ * answer requires — almost always means the reading was typed instead of
+ * the word itself, so it's flagged as a validation error rather than graded.
+ */
+export function answerMissingKanji(typed: string, expected: string): boolean {
+  return containsKanji(expected) && !containsKanji(typed)
+}
+
+/**
  * Ordered per-segment reading answers for a typed reading-quiz mode, joined
  * the same way multi-gap construction answers are (comma-separated) so the
  * existing lenient comma-vs-、 grading applies uniformly. A word/construction

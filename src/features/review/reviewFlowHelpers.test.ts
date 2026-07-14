@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  answerMissingKanji,
   answersMatch,
   expectedAnswer,
   hasNonHiraganaReadingAnswer,
@@ -139,6 +140,15 @@ describe("reviewFlowHelpers", () => {
   it("hasNonHiraganaReadingAnswer still catches kanji/katakana within a segment", () => {
     expect(hasNonHiraganaReadingAnswer("結論, いたる")).toBe(true)
     expect(hasNonHiraganaReadingAnswer("ケツロン")).toBe(true)
+  })
+
+  it("answerMissingKanji flags a kana-only answer when the expected word has kanji", () => {
+    expect(answerMissingKanji("ねこ", "猫")).toBe(true)
+    expect(answerMissingKanji("猫", "猫")).toBe(false)
+  })
+
+  it("answerMissingKanji does not flag kana-only words", () => {
+    expect(answerMissingKanji("ねこ", "ねこ")).toBe(false)
   })
 
   it("requiresTyping and isReadingTypingMode cover grammar_type_reading", () => {
