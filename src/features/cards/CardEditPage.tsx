@@ -755,6 +755,19 @@ export function CardEditPage() {
               </p>
             )}
             <label>
+              Grammar point (e.g. "conjugation", "particle") — leave blank
+              for a semantic gap that tests word choice, meaning, and
+              reading. When set, review only asks you to fill in the gap in
+              Japanese, phrased as “What's the correct {"{value}"}?”.
+              <input
+                className="input"
+                value={grammar.grammarPoint ?? ""}
+                onChange={(e) =>
+                  setGrammar({ ...grammar, grammarPoint: e.target.value })
+                }
+              />
+            </label>
+            <label>
               Translation
               <input
                 className="input"

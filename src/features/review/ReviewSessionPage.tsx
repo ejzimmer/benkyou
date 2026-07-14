@@ -27,7 +27,7 @@ import {
   isReadingTypingMode,
   modeHeadingVisible,
   requiresTyping,
-  REVIEW_MODE_LABELS,
+  reviewModeLabel,
 } from "./reviewFlowHelpers"
 import { PageHeading } from "../../ui/PageHeading"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
@@ -218,7 +218,7 @@ export function ReviewSessionPage() {
 
   const modeLabel = useMemo(() => {
     if (!current) return ""
-    return REVIEW_MODE_LABELS[current.modeId]
+    return reviewModeLabel(current.card, current.modeId)
   }, [current])
 
   useEffect(() => {

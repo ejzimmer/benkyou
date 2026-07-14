@@ -69,6 +69,16 @@ export type GrammarCardContent = {
   readings: Record<string, string>
   images: string[]
   synonymsJa: string[]
+  /**
+   * What grammar point the gap tests, e.g. "conjugation" or "particle" —
+   * set when the gap is really about correct grammatical form rather than
+   * word choice (contrast 霧が消えた, where the interesting thing is that
+   * Japanese uses "disappear" rather than "lift" for fog clearing). When
+   * set, only the fill-in-the-gap mode is reviewed (no separate reading or
+   * meaning drill — those aren't the point of a conjugation/particle card),
+   * and the prompt asks "What's the correct {grammarPoint}?".
+   */
+  grammarPoint?: string
 }
 
 export type Card =
@@ -120,6 +130,7 @@ export function reviewModesForCard(card: Card): ReviewModeId[] {
     return modes
   }
   const modes: ReviewModeId[] = ["grammar_type_construction"]
+  if (card.content.grammarPoint?.trim()) return modes
   if (hasConstructionReading(card.content)) {
     modes.push("grammar_type_reading")
   }

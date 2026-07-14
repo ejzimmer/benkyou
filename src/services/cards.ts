@@ -318,6 +318,7 @@ export function defaultGrammar(): GrammarCardContent {
     readings: {},
     images: [],
     synonymsJa: [],
+    grammarPoint: "",
   }
 }
 
