@@ -742,11 +742,32 @@ label {
   gap: 1rem;
 }
 
+/* Bound the whole review page to the viewport so the card below never
+   needs the page itself to scroll — anything that doesn't fit scrolls
+   inside .review-columns instead, keeping the header and action buttons
+   always on screen. --vvh (set from visualViewport in App) shrinks this
+   with an on-screen keyboard the same way the rest of the app does. */
+.page.review {
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--vvh, 100dvh) - 4rem);
+}
+
+/* The card's max height is "whatever's left after the header" — shrinking
+   below its natural size only once there's no room to render it in full. */
+.page.review .panel.prompt {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .review-header {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .review-header-count {
@@ -763,6 +784,8 @@ label {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 @media (min-width: 760px) {
@@ -785,10 +808,16 @@ label {
 }
 
 /* Keep "Show answer" / Correct / Incorrect / Undo pinned to the bottom of
-   the card regardless of how much prompt/answer content sits above them,
-   so they don't shift position as the content above them changes size. */
+   the card regardless of how much prompt/answer content sits above them, so
+   they don't shift position as the content above them changes size — and
+   sticky so they stay in view even once .review-columns has to scroll
+   because the card hit the max-height cap below. */
 .review-answer .toolbar {
   margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  background: #1a1a28;
+  padding-top: 0.5rem;
 }
 
 .compare-diff {

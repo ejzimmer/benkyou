@@ -114,64 +114,66 @@ export function ReviewSessionAnswerPanel({
   )
 
   return (
-    <div className="answer-block stack">
-      {m === "vocab_oral_en" && card.kind === "vocabulary" && (
-        <>
-          {card.content.definitionsEn
-            .filter((s) => s.trim())
-            .map((d, i) => (
-              <p key={i}>{d}</p>
-            ))}
-          <CardImageRow images={card.content.images} />
-        </>
-      )}
+    <>
+      <div className="answer-block stack">
+        {m === "vocab_oral_en" && card.kind === "vocabulary" && (
+          <>
+            {card.content.definitionsEn
+              .filter((s) => s.trim())
+              .map((d, i) => (
+                <p key={i}>{d}</p>
+              ))}
+            <CardImageRow images={card.content.images} />
+          </>
+        )}
 
-      {m === "vocab_type_reading" && card.kind === "vocabulary" && (
-        <AnswerComparison
-          typed={typed}
-          expected={expected}
-          answeredCorrectly={answeredCorrectly}
-        />
-      )}
+        {m === "vocab_type_reading" && card.kind === "vocabulary" && (
+          <AnswerComparison
+            typed={typed}
+            expected={expected}
+            answeredCorrectly={answeredCorrectly}
+          />
+        )}
 
-      {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
-        <AnswerComparison
-          typed={typed}
-          expected={expected}
-          reading={wordJaReading(card.content)}
-        />
-      )}
+        {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
+          <AnswerComparison
+            typed={typed}
+            expected={expected}
+            reading={wordJaReading(card.content)}
+          />
+        )}
 
-      {m === "grammar_type_construction" && card.kind === "grammar" && (
-        <AnswerComparison
-          typed={typed}
-          expected={expected}
-          reading={readingForConstruction(
-            card.content.construction,
-            card.content.readings,
-          )}
-          answeredCorrectly={answeredCorrectly}
-        />
-      )}
+        {m === "grammar_type_construction" && card.kind === "grammar" && (
+          <AnswerComparison
+            typed={typed}
+            expected={expected}
+            reading={readingForConstruction(
+              card.content.construction,
+              card.content.readings,
+            )}
+            answeredCorrectly={answeredCorrectly}
+          />
+        )}
 
-      {m === "grammar_type_reading" && card.kind === "grammar" && (
-        <AnswerComparison
-          typed={typed}
-          expected={expected}
-          answeredCorrectly={answeredCorrectly}
-        />
-      )}
+        {m === "grammar_type_reading" && card.kind === "grammar" && (
+          <AnswerComparison
+            typed={typed}
+            expected={expected}
+            answeredCorrectly={answeredCorrectly}
+          />
+        )}
 
-      {m === "grammar_oral_meaning" && card.kind === "grammar" && (
-        <>
-          {card.content.translationEn.trim() && (
-            <p>{card.content.translationEn}</p>
-          )}
-          <CardImageRow images={card.content.images} />
-        </>
-      )}
+        {m === "grammar_oral_meaning" && card.kind === "grammar" && (
+          <>
+            {card.content.translationEn.trim() && (
+              <p>{card.content.translationEn}</p>
+            )}
+            <CardImageRow images={card.content.images} />
+          </>
+        )}
+      </div>
 
       {answerControls}
-    </div>
+    </>
   )
 }
