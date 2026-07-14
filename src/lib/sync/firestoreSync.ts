@@ -14,6 +14,7 @@ import type { RemoteMediaMeta, Tombstone } from "./syncTypes"
 import { stableCompareJson, stripUndefinedDeep } from "./firestoreData"
 import { syncLog, syncLogTimed } from "./syncLog"
 import { cardChanged, deckChanged, mediaChanged, schedulingChanged } from "./syncCompare"
+import { yieldPeriodically } from "../yieldToMain"
 
 const BATCH_SIZE = 400
 
@@ -65,24 +66,39 @@ export async function fetchRemoteSnapshot(
     ])
 
   const decks = new Map<string, Deck>()
-  for (const d of snapDecks.docs)
+  for (let i = 0; i < snapDecks.docs.length; i++) {
+    await yieldPeriodically(i)
+    const d = snapDecks.docs[i]
     decks.set(d.id, withDocId(d.id, d.data() as Deck))
+  }
 
   const cards = new Map<string, Card>()
-  for (const d of snapCards.docs)
+  for (let i = 0; i < snapCards.docs.length; i++) {
+    await yieldPeriodically(i)
+    const d = snapCards.docs[i]
     cards.set(d.id, withDocId(d.id, d.data() as Card))
+  }
 
   const scheduling = new Map<string, SchedulingRow>()
-  for (const d of snapSched.docs)
+  for (let i = 0; i < snapSched.docs.length; i++) {
+    await yieldPeriodically(i)
+    const d = snapSched.docs[i]
     scheduling.set(d.id, withDocId(d.id, d.data() as SchedulingRow))
+  }
 
   const tombstones = new Map<string, Tombstone>()
-  for (const d of snapTombs.docs)
+  for (let i = 0; i < snapTombs.docs.length; i++) {
+    await yieldPeriodically(i)
+    const d = snapTombs.docs[i]
     tombstones.set(d.id, withDocId(d.id, d.data() as Tombstone))
+  }
 
   const mediaMeta = new Map<string, RemoteMediaMeta>()
-  for (const d of snapMedia.docs)
+  for (let i = 0; i < snapMedia.docs.length; i++) {
+    await yieldPeriodically(i)
+    const d = snapMedia.docs[i]
     mediaMeta.set(d.id, withDocId(d.id, d.data() as RemoteMediaMeta))
+  }
 
   const summary = {
     decks: decks.size,
@@ -210,7 +226,9 @@ export async function pushLocalToRemote(
   const sets: Array<{ ref: ReturnType<typeof doc>; data: object }> = []
   let skipped = 0
 
-  for (const d of localDecks) {
+  for (let i = 0; i < localDecks.length; i++) {
+    await yieldPeriodically(i)
+    const d = localDecks[i]
     const remoteDeck = remoteSnapshot.decks.get(d.id)
     if (remoteDeck && !deckChanged(d, remoteDeck)) {
       skipped++
@@ -218,7 +236,9 @@ export async function pushLocalToRemote(
     }
     sets.push({ ref: doc(decksCol(fs, uid), d.id), data: d })
   }
-  for (const c of localCards) {
+  for (let i = 0; i < localCards.length; i++) {
+    await yieldPeriodically(i)
+    const c = localCards[i]
     const remoteCard = remoteSnapshot.cards.get(c.id)
     if (remoteCard && !cardChanged(c, remoteCard)) {
       skipped++
@@ -229,7 +249,9 @@ export async function pushLocalToRemote(
       data: c as Record<string, unknown>,
     })
   }
-  for (const s of localSched) {
+  for (let i = 0; i < localSched.length; i++) {
+    await yieldPeriodically(i)
+    const s = localSched[i]
     const remoteRow = remoteSnapshot.scheduling.get(s.id)
     if (remoteRow && !schedulingChanged(s, remoteRow)) {
       skipped++
@@ -237,14 +259,18 @@ export async function pushLocalToRemote(
     }
     sets.push({ ref: doc(schedCol(fs, uid), s.id), data: s })
   }
-  for (const t of localTombs) {
+  for (let i = 0; i < localTombs.length; i++) {
+    await yieldPeriodically(i)
+    const t = localTombs[i]
     if (unchanged(t, remoteSnapshot.tombstones.get(t.id))) {
       skipped++
       continue
     }
     sets.push({ ref: doc(tombstonesCol(fs, uid), t.id), data: t })
   }
-  for (const m of localMedia) {
+  for (let i = 0; i < localMedia.length; i++) {
+    await yieldPeriodically(i)
+    const m = localMedia[i]
     const remoteMeta = remoteSnapshot.mediaMeta.get(m.id)
     if (
       remoteMeta?.digest &&
