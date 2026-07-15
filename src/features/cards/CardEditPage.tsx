@@ -203,34 +203,30 @@ export function CardEditPage() {
    * the last seed put there and the author hasn't since edited by hand.
    */
   function updateVocab(partial: Partial<VocabularyCardContent>) {
-    setVocab((v) => {
-      const next = { ...v, ...partial }
-      const nextSeed = deriveFurigana(vocabTestedParts(next))
-      const readings = reseedFurigana(
-        next.readings ?? {},
-        vocabFuriganaSeedRef.current,
-        nextSeed,
-      )
-      vocabFuriganaSeedRef.current = nextSeed
-      setReadingsMapDraft(readingsMapToText(readings))
-      return { ...next, readings }
-    })
+    const next = { ...vocab, ...partial }
+    const nextSeed = deriveFurigana(vocabTestedParts(next))
+    const readings = reseedFurigana(
+      next.readings ?? {},
+      vocabFuriganaSeedRef.current,
+      nextSeed,
+    )
+    vocabFuriganaSeedRef.current = nextSeed
+    setReadingsMapDraft(readingsMapToText(readings))
+    setVocab({ ...next, readings })
   }
 
   /** Same as `updateVocab`, for the grammar draft's construction reading. */
   function updateGrammar(partial: Partial<GrammarCardContent>) {
-    setGrammar((g) => {
-      const next = { ...g, ...partial }
-      const nextSeed = deriveFurigana(grammarTestedParts(next))
-      const readings = reseedFurigana(
-        next.readings,
-        grammarFuriganaSeedRef.current,
-        nextSeed,
-      )
-      grammarFuriganaSeedRef.current = nextSeed
-      setReadingsMapDraft(readingsMapToText(readings))
-      return { ...next, readings }
-    })
+    const next = { ...grammar, ...partial }
+    const nextSeed = deriveFurigana(grammarTestedParts(next))
+    const readings = reseedFurigana(
+      next.readings,
+      grammarFuriganaSeedRef.current,
+      nextSeed,
+    )
+    grammarFuriganaSeedRef.current = nextSeed
+    setReadingsMapDraft(readingsMapToText(readings))
+    setGrammar({ ...next, readings })
   }
 
   // Tracks which cardId the form has already been hydrated from, so that
