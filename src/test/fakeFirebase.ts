@@ -95,14 +95,76 @@ export function fakeDoc(parent: FsRef, docId?: string): FsRef {
   return { __path: `${parent.__path}/${docId}` }
 }
 
-export async function fakeGetDocs(collRef: FsRef) {
+type FakeQueryConstraint =
+  | { kind: "where"; field: string; op: string; value: unknown }
+  | { kind: "limit"; n: number }
+
+type FakeQueryRef = FsRef & { __constraints?: FakeQueryConstraint[] }
+
+export function fakeQuery(
+  collRef: FsRef,
+  ...constraints: FakeQueryConstraint[]
+): FakeQueryRef {
+  return { ...collRef, __constraints: constraints }
+}
+
+export function fakeWhere(
+  field: string,
+  op: string,
+  value: unknown,
+): FakeQueryConstraint {
+  return { kind: "where", field, op, value }
+}
+
+export function fakeLimit(n: number): FakeQueryConstraint {
+  return { kind: "limit", n }
+}
+
+function matchesWhere(
+  data: unknown,
+  field: string,
+  op: string,
+  value: unknown,
+): boolean {
+  const actual = (data as Record<string, unknown>)?.[field]
+  switch (op) {
+    case ">":
+      return typeof actual === "number" && typeof value === "number" && actual > value
+    case ">=":
+      return typeof actual === "number" && typeof value === "number" && actual >= value
+    case "<":
+      return typeof actual === "number" && typeof value === "number" && actual < value
+    case "<=":
+      return typeof actual === "number" && typeof value === "number" && actual <= value
+    case "==":
+      return actual === value
+    default:
+      throw new Error(`fakeWhere: unsupported operator ${op}`)
+  }
+}
+
+export async function fakeGetDocs(collRef: FsRef | FakeQueryRef) {
   const docs = backend.firestore.docs.get(collRef.__path) ?? new Map()
+  let entries = [...docs.entries()]
+  const constraints = (collRef as FakeQueryRef).__constraints ?? []
+  for (const c of constraints) {
+    if (c.kind === "where") {
+      entries = entries.filter(([, data]) => matchesWhere(data, c.field, c.op, c.value))
+    } else if (c.kind === "limit") {
+      entries = entries.slice(0, c.n)
+    }
+  }
   return {
-    docs: [...docs.entries()].map(([id, data]) => ({
+    docs: entries.map(([id, data]) => ({
       id: id as string,
       data: () => structuredCloneSafe(data),
     })),
   }
+}
+
+export async function fakeGetCountFromServer(collRef: FsRef | FakeQueryRef) {
+  const { docs } = await fakeGetDocs(collRef)
+  return { data: () => ({ count: docs.length }) }
 }
 
 export async function fakeSetDoc(docRef: FsRef, data: unknown) {

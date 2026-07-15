@@ -2,8 +2,12 @@ import {
   collection,
   deleteDoc,
   doc,
+  getCountFromServer,
   getDocs,
+  limit,
+  query,
   setDoc,
+  where,
   writeBatch,
   type Firestore,
 } from "firebase/firestore"
@@ -109,6 +113,85 @@ export async function fetchRemoteSnapshot(
   }
   syncLog("fetchRemoteSnapshot complete", summary)
   return { decks, cards, scheduling, tombstones, mediaMeta }
+}
+
+/**
+ * Cheap "did anything change remotely since my last sync" check: one
+ * `limit(1)` existence query per collection instead of downloading every
+ * document. Lets `runFullSync` skip the full 5-collection fetch entirely on
+ * a steady-state resync (nothing changed anywhere), which is the common
+ * case and was otherwise paying a multi-second network round trip for data
+ * that turns out to be identical to what's already local.
+ *
+ * Tombstones are checked by `deletedAt` (their own timestamp field) — a
+ * deletion never updates the deleted entity's own collection, only creates
+ * or refreshes a tombstone doc, so this is the only way remote deletions
+ * show up here.
+ */
+export async function hasAnyRemoteChangesSince(
+  fs: Firestore,
+  uid: string,
+  sinceMs: number,
+): Promise<boolean> {
+  const checks: Array<[string, ReturnType<typeof collection>, string]> = [
+    ["decks", decksCol(fs, uid), "updatedAt"],
+    ["cards", cardsCol(fs, uid), "updatedAt"],
+    ["scheduling", schedCol(fs, uid), "updatedAt"],
+    ["tombstones", tombstonesCol(fs, uid), "deletedAt"],
+    ["media meta", mediaMetaCol(fs, uid), "updatedAt"],
+  ]
+  const results = await Promise.all(
+    checks.map(([label, col, field]) =>
+      syncLogTimed(`Firestore changed-since check ${label}`, async () => {
+        const snap = await getDocs(query(col, where(field, ">", sinceMs), limit(1)))
+        return snap.docs.length > 0
+      }),
+    ),
+  )
+  return results.some(Boolean)
+}
+
+/**
+ * `hasAnyRemoteChangesSince` can only see a *new or updated* timestamp — it
+ * can't see a document that's simply gone. Deleting a deck removes its
+ * remote decks/cards/scheduling documents immediately, but the tombstone
+ * that would otherwise explain the disappearance only reaches Firestore
+ * later, via the debounced safety-net push (`schedulePushAfterMutation`,
+ * up to 30s) — so there's a real window where an entity has vanished from
+ * remote with no trace of why. A plain document count (via Firestore's
+ * count aggregation, not a full fetch) catches that: if remote now has
+ * fewer decks/cards/scheduling than this device believes exist, something
+ * disappeared without a tombstone, and the full sync must run to find out
+ * what (and not resurrect it via `pushLocalToRemote`).
+ *
+ * Only meaningful once the timestamp check has already come back clean —
+ * if local has unsynced changes, or remote has newer timestamps, the full
+ * sync already runs regardless of counts.
+ */
+export async function hasEntityCountMismatch(
+  fs: Firestore,
+  uid: string,
+): Promise<boolean> {
+  const checks: Array<
+    [string, ReturnType<typeof collection>, () => Promise<number>]
+  > = [
+    ["decks", decksCol(fs, uid), () => db.decks.count()],
+    ["cards", cardsCol(fs, uid), () => db.cards.count()],
+    ["scheduling", schedCol(fs, uid), () => db.scheduling.count()],
+    ["media meta", mediaMetaCol(fs, uid), () => db.media.count()],
+  ]
+  const results = await Promise.all(
+    checks.map(([label, col, localCount]) =>
+      syncLogTimed(`Firestore count check ${label}`, async () => {
+        const [remoteSnap, local] = await Promise.all([
+          getCountFromServer(col),
+          localCount(),
+        ])
+        return remoteSnap.data().count !== local
+      }),
+    ),
+  )
+  return results.some(Boolean)
 }
 
 async function commitBatch(

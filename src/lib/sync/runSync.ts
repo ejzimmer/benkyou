@@ -18,6 +18,8 @@ import {
 } from "./syncCompare"
 import {
   fetchRemoteSnapshot,
+  hasAnyRemoteChangesSince,
+  hasEntityCountMismatch,
   pushLocalToRemote,
   type RemoteSnapshot,
 } from "./firestoreSync"
@@ -622,6 +624,22 @@ async function syncMedia(
   })
 }
 
+/**
+ * Cheap local-side counterpart to `hasAnyRemoteChangesSince`: indexed
+ * range checks instead of a full-table scan, so this stays fast regardless
+ * of collection size.
+ */
+async function hasAnyLocalChangesSince(sinceMs: number): Promise<boolean> {
+  const rows = await Promise.all([
+    db.decks.where("updatedAt").above(sinceMs).first(),
+    db.cards.where("updatedAt").above(sinceMs).first(),
+    db.scheduling.where("updatedAt").above(sinceMs).first(),
+    db.tombstones.where("deletedAt").above(sinceMs).first(),
+    db.media.where("updatedAt").above(sinceMs).first(),
+  ])
+  return rows.some((row) => row != null)
+}
+
 export function readLastSyncedAt(): number | null {
   const raw = localStorage.getItem(LAST_SYNCED_AT_KEY)
   if (!raw) return null
@@ -640,6 +658,54 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
   const lastSyncedAt = readLastSyncedAt()
 
   report({ phase: "Checking for changes…" })
+
+  // On every sync after the first, a cheap existence check ("does anything
+  // have a newer timestamp than my last sync, on either side") can rule out
+  // the common case — nothing changed anywhere — without paying for the
+  // full 5-collection download that dominates a no-op resync's cost. Any
+  // doubt (first-ever sync, or either side reports a change) falls through
+  // to the full, already-correct pipeline below.
+  //
+  // `lastSyncedAt` lives in localStorage, separate from the actual data in
+  // IndexedDB — if the local database is ever wiped or corrupted without
+  // that marker also being cleared (e.g. storage eviction clearing one but
+  // not the other), a completely empty local database would otherwise look
+  // exactly like "nothing changed" and permanently skip re-pulling
+  // everything. Requiring at least one local deck/card rules that out: a
+  // device that has genuinely synced before has *something* locally (unless
+  // the account itself is empty, in which case a full sync is cheap anyway).
+  const hasAnyLocalEntities =
+    lastSyncedAt != null &&
+    ((await db.decks.count()) > 0 || (await db.cards.count()) > 0)
+
+  if (lastSyncedAt != null && hasAnyLocalEntities) {
+    const [remoteChanged, localChanged] = await Promise.all([
+      syncLogTimed("check remote changed since last sync", () =>
+        hasAnyRemoteChangesSince(fs, uid, lastSyncedAt),
+      ),
+      syncLogTimed("check local changed since last sync", () =>
+        hasAnyLocalChangesSince(lastSyncedAt),
+      ),
+    ])
+    if (!remoteChanged && !localChanged) {
+      // Neither side has a newer timestamp, but that alone can't rule out a
+      // silent remote deletion (removed doc, tombstone not pushed yet) — a
+      // document-count check closes that gap before trusting the skip.
+      const countMismatch = await syncLogTimed(
+        "check entity count mismatch",
+        () => hasEntityCountMismatch(fs, uid),
+      )
+      if (!countMismatch) {
+        syncLog("nothing changed on either side — skipping full sync")
+        writeLastSyncedAt(Date.now())
+        report({ phase: "Finishing up…" })
+        syncLog("runFullSync complete (no-op)")
+        return
+      }
+      syncLog("entity count mismatch — falling back to full sync")
+    }
+  }
+
   const remote = await syncLogTimed("pull remote snapshot", () =>
     fetchRemoteSnapshot(fs, uid, "sync"),
   )
