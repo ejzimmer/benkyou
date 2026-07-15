@@ -44,3 +44,13 @@ export function hasNonHiraganaKana(s: string): boolean {
   }
   return false
 }
+
+/**
+ * True if the answer contains any Latin-script letter (plain ASCII or
+ * accented). Typing English/romaji into a "type the Japanese word/
+ * construction" field is a validation error, not a wrong-answer mistake —
+ * it should block the reveal rather than get graded.
+ */
+export function hasLatinScript(s: string): boolean {
+  return /\p{Script=Latin}/u.test(s)
+}

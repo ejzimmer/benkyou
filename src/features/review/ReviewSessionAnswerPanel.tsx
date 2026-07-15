@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { AnswerComparison } from "../../ui/AnswerComparison"
 import { CardImageRow } from "../../ui/CardImageRow"
+import { ReviewFooter } from "./ReviewFooter"
 import {
   answersMatch,
   differsOnlyByPunctuation,
@@ -22,6 +23,16 @@ export type ReviewSessionAnswerPanelProps = {
   pendingIncorrectDelay: boolean
   onJudge: (correct: boolean) => void
   onUndoAnswer: () => void
+  /**
+   * Whether the answer is actually revealed right now. The panel stays
+   * mounted (opacity-hidden + inert) even while still on the prompt side, so
+   * this must gate the focus effect below — otherwise it'd steal focus onto
+   * the (hidden) Correct/Incorrect buttons on every keystroke in the typing
+   * input, since `typed` changes on each one. Defaults to true so a panel
+   * rendered on its own (as in tests) keeps its original focus-on-mount
+   * behaviour.
+   */
+  active?: boolean
 }
 
 export function ReviewSessionAnswerPanel({
@@ -31,6 +42,7 @@ export function ReviewSessionAnswerPanel({
   pendingIncorrectDelay,
   onJudge,
   onUndoAnswer,
+  active = true,
 }: ReviewSessionAnswerPanelProps) {
   const { card, modeId: m } = item
   const typingMode = requiresTyping(m)
@@ -59,7 +71,7 @@ export function ReviewSessionAnswerPanel({
       ).length ?? 0) > 1)
 
   useEffect(() => {
-    if (pendingIncorrectDelay) return
+    if (!active || pendingIncorrectDelay) return
     // Typed answers default focus to Correct when right (or only punctuation is
     // off); otherwise Incorrect. Oral answers always default to Correct.
     const focusCorrect =
@@ -72,6 +84,7 @@ export function ReviewSessionAnswerPanel({
       incorrectBtnRef.current?.focus({ preventScroll: true })
     }
   }, [
+    active,
     typingMode,
     answeredCorrectly,
     isMultiPartAnswer,
@@ -81,7 +94,7 @@ export function ReviewSessionAnswerPanel({
   ])
 
   const answerControls = (
-    <div className="toolbar">
+    <ReviewFooter>
       <button
         ref={correctBtnRef}
         type="button"
@@ -110,7 +123,7 @@ export function ReviewSessionAnswerPanel({
           Undo answer
         </button>
       )}
-    </div>
+    </ReviewFooter>
   )
 
   return (

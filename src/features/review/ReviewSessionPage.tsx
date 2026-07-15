@@ -14,13 +14,14 @@ import {
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
 import { ReviewSyncGate } from "./ReviewSyncGate"
-import { finalizeReadingAnswer } from "../../lib/japanese/normalize"
+import { finalizeReadingAnswer, hasLatinScript } from "../../lib/japanese/normalize"
 import {
   isSynonymAnswer,
   matchesPrimaryJapanese,
 } from "../../lib/japanese/synonyms"
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
+import { ReviewFooter } from "./ReviewFooter"
 import {
   answerMissingKanji,
   expectedAnswer,
@@ -34,6 +35,16 @@ import { PageHeading } from "../../ui/PageHeading"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
+
+/**
+ * `inert` disables focus/interaction for a hidden overlay layer (see the
+ * always-rendered prompt/answer stack below). Not yet in this React/TS
+ * version's JSX typings even though every supported browser implements it,
+ * so it's spread in as a plain attribute rather than passed as a normal prop.
+ */
+function inertWhen(condition: boolean) {
+  return (condition ? { inert: "" } : {}) as { inert?: string }
+}
 
 type Phase = "prompt" | "answer"
 
@@ -105,6 +116,7 @@ export function ReviewSessionPage() {
   const [synonymWarn, setSynonymWarn] = useState(false)
   const [readingWarn, setReadingWarn] = useState(false)
   const [kanjiWarn, setKanjiWarn] = useState(false)
+  const [latinWarn, setLatinWarn] = useState(false)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [snapshot, setSnapshot] = useState<JudgementSnapshot | null>(null)
   /** Prompt shown → “Show answer” (FSRS latency heuristic); cleared after grading */
@@ -122,9 +134,22 @@ export function ReviewSessionPage() {
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
   const phaseRef = useRef<Phase>(phase)
   const conflictReloadPendingRef = useRef(false)
+  /**
+   * Bumped every time the prompt (re-)becomes the active side. The
+   * prompt/answer layers stay permanently mounted (so revealing the answer
+   * never resizes the card) — so returning to "prompt" for the *same*
+   * card/mode (Undo answer, Undo last judgement) doesn't change the typing
+   * input's focusKey the way a fresh mount used to, and its autofocus effect
+   * wouldn't otherwise re-run. Folded into that focusKey below to force it to.
+   */
+  const [promptFocusToken, setPromptFocusToken] = useState(0)
 
   useEffect(() => {
     phaseRef.current = phase
+  }, [phase])
+
+  useEffect(() => {
+    if (phase === "prompt") setPromptFocusToken((n) => n + 1)
   }, [phase])
 
   const load = useCallback(async () => {
@@ -159,6 +184,7 @@ export function ReviewSessionPage() {
     setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
+    setLatinWarn(false)
     setStartedAt(null)
     setPromptToRevealMs(null)
     setPendingIncorrectDelay(false)
@@ -238,6 +264,14 @@ export function ReviewSessionPage() {
 
   const handleTypedChange = useCallback(
     (value: string) => {
+      // Validation messages (Latin script, kanji-missing, synonym, non-hiragana
+      // reading) are about what was typed at submit time — once the user edits
+      // the answer, clear them immediately rather than leaving a stale warning
+      // up until the next submit attempt re-validates.
+      setSynonymWarn(false)
+      setReadingWarn(false)
+      setKanjiWarn(false)
+      setLatinWarn(false)
       if (current && isReadingTypingMode(current.modeId)) {
         setTyped(toHiragana(value, { IMEMode: true }))
       } else {
@@ -274,6 +308,7 @@ export function ReviewSessionPage() {
     setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
+    setLatinWarn(false)
     setStartedAt(null)
     setSnapshot(null)
     setPromptToRevealMs(null)
@@ -296,6 +331,15 @@ export function ReviewSessionPage() {
     setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
+    setLatinWarn(false)
+    if (
+      (m === "vocab_type_word_from_clue" || m === "grammar_type_construction") &&
+      hasLatinScript(typedValue) &&
+      !hasLatinScript(expectedAnswer(c, m))
+    ) {
+      setLatinWarn(true)
+      return false
+    }
     if (
       m === "vocab_type_word_from_clue" ||
       m === "grammar_type_construction"
@@ -400,6 +444,7 @@ export function ReviewSessionPage() {
     setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
+    setLatinWarn(false)
   }
 
   async function onUndoJudgementFromHeader() {
@@ -436,6 +481,7 @@ export function ReviewSessionPage() {
     setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
+    setLatinWarn(false)
     if (!snap) {
       setSnapshot(null)
       setPhase("prompt")
@@ -506,7 +552,7 @@ export function ReviewSessionPage() {
           <ChevronLeftIcon className="back-chevron" />
         </Link>
         <p className="muted small review-header-count">
-          {sessionQueue.length} left
+          {sessionQueue.length} remaining
         </p>
         <div className="review-header-actions">
           <Link
@@ -546,14 +592,23 @@ export function ReviewSessionPage() {
                 readingWarn={readingWarn}
                 synonymWarn={synonymWarn}
                 kanjiWarn={kanjiWarn}
+                latinWarn={latinWarn}
                 onTypedSubmit={() => tryShowAnswerRef.current()}
                 revealed={phase === "answer"}
                 column="question"
+                promptFocusToken={promptFocusToken}
               />
             </div>
             <div className="review-answer">
-              {phase === "prompt" && (
-                <>
+              {/* Both layers stay mounted throughout — revealing the answer
+                  fades the answer layer in over the prompt layer rather than
+                  swapping them, so the card never has to resize. */}
+              <div className="review-answer-stack">
+                <div
+                  className={`review-answer-prompt${phase === "answer" ? " is-hidden" : ""}`}
+                  aria-hidden={phase === "answer"}
+                  {...inertWhen(phase === "answer")}
+                >
                   <ReviewSessionPromptBody
                     item={item}
                     typed={typed}
@@ -561,10 +616,12 @@ export function ReviewSessionPage() {
                     readingWarn={readingWarn}
                     synonymWarn={synonymWarn}
                     kanjiWarn={kanjiWarn}
+                    latinWarn={latinWarn}
                     onTypedSubmit={() => tryShowAnswerRef.current()}
                     column="answer"
+                    promptFocusToken={promptFocusToken}
                   />
-                  <div className="toolbar">
+                  <ReviewFooter>
                     <button
                       ref={showAnswerBtnRef}
                       type="button"
@@ -573,20 +630,25 @@ export function ReviewSessionPage() {
                     >
                       Show answer
                     </button>
-                  </div>
-                </>
-              )}
+                  </ReviewFooter>
+                </div>
 
-              {phase === "answer" && (
-                <ReviewSessionAnswerPanel
-                  item={item}
-                  typed={typed}
-                  expected={exp}
-                  pendingIncorrectDelay={pendingIncorrectDelay}
-                  onJudge={(correct) => void onJudge(correct)}
-                  onUndoAnswer={() => void onUndoAnswer()}
-                />
-              )}
+                <div
+                  className={`review-answer-revealed${phase === "answer" ? " is-visible" : ""}`}
+                  aria-hidden={phase !== "answer"}
+                  {...inertWhen(phase !== "answer")}
+                >
+                  <ReviewSessionAnswerPanel
+                    item={item}
+                    typed={typed}
+                    expected={exp}
+                    pendingIncorrectDelay={pendingIncorrectDelay}
+                    onJudge={(correct) => void onJudge(correct)}
+                    onUndoAnswer={() => void onUndoAnswer()}
+                    active={phase === "answer"}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}

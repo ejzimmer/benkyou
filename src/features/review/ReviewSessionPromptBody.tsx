@@ -21,7 +21,7 @@ type TypingAnswerInputProps = {
   value: string
   onChange: (value: string) => void
   onSubmit: () => void
-  placeholder: string
+  placeholder?: string
   focusKey: string
   autoComplete?: string
   className?: string
@@ -82,6 +82,9 @@ export type ReviewSessionPromptBodyProps = {
   readingWarn: boolean
   synonymWarn: boolean
   kanjiWarn: boolean
+  /** Typed answer contains Latin/English characters — a validation error,
+   * not a graded mistake, for modes expecting a Japanese answer. */
+  latinWarn?: boolean
   /** Called when user presses Enter in a typing field */
   onTypedSubmit: () => void
   /** Answer is visible — show the prompt only, not typing inputs or warnings */
@@ -94,6 +97,16 @@ export type ReviewSessionPromptBodyProps = {
    * itself) — those return null for that column.
    */
   column: "question" | "answer"
+  /**
+   * Bumped by the parent each time the prompt (re-)becomes the active side —
+   * including returning to the same card/mode via "Undo answer" or "Undo last
+   * judgement". The prompt/answer layers stay permanently mounted (so
+   * revealing the answer never resizes the card), so `focusKey` alone
+   * (card id + mode, unchanged across an undo) can't retrigger
+   * TypingAnswerInput's autofocus-on-mount effect the way a fresh mount used
+   * to. Folding this into `focusKey` does.
+   */
+  promptFocusToken?: number
 }
 
 export function ReviewSessionPromptBody({
@@ -103,12 +116,14 @@ export function ReviewSessionPromptBody({
   readingWarn,
   synonymWarn,
   kanjiWarn,
+  latinWarn = false,
   onTypedSubmit,
   revealed = false,
   column,
+  promptFocusToken = 0,
 }: ReviewSessionPromptBodyProps) {
   const { card, modeId: m } = item
-  const focusKey = `${card.id}:${m}`
+  const focusKey = `${card.id}:${m}:${promptFocusToken}`
 
   // Asking for the English meaning: show the Japanese word + example sentences.
   // Kanji readings stay available on hover/focus via <RubyWord>. No typing
@@ -227,12 +242,11 @@ export function ReviewSessionPromptBody({
           <div className="phrase-reading-inputs">
             {kanjiSegments.map((seg, i) => (
               <label key={i} className="phrase-reading-input">
-                {seg.text}
+                {seg.text}（ひらがなで）
                 <TypingAnswerInput
                   value={segInputValue(i)}
                   onChange={(value) => onSegInputChange(i, value)}
                   onSubmit={onTypedSubmit}
-                  placeholder="ひらがなで"
                   focusKey={focusKey}
                   autoComplete="off"
                   autoFocus={i === 0}
@@ -243,12 +257,11 @@ export function ReviewSessionPromptBody({
           </div>
         ) : (
           <label>
-            読み方
+            読み方（ひらがなで）
             <TypingAnswerInput
               value={typed}
               onChange={onTypedChange}
               onSubmit={onTypedSubmit}
-              placeholder=""
               focusKey={focusKey}
               autoComplete="off"
             />
@@ -302,10 +315,12 @@ export function ReviewSessionPromptBody({
             value={typed}
             onChange={onTypedChange}
             onSubmit={onTypedSubmit}
-            placeholder="Japanese word"
             focusKey={focusKey}
           />
         </label>
+        {latinWarn && (
+          <p className="error">Type the answer in Japanese, not English.</p>
+        )}
         {kanjiWarn && (
           <p className="error">
             The answer uses kanji — typing the reading isn't enough here.
@@ -367,11 +382,6 @@ export function ReviewSessionPromptBody({
                         value={gapInputValue(gapIndex)}
                         onChange={(value) => onGapInputChange(gapIndex, value)}
                         onSubmit={onTypedSubmit}
-                        placeholder={
-                          usesPerGapInputs
-                            ? `Answer ${gapIndex + 1}`
-                            : "Construction"
-                        }
                         focusKey={focusKey}
                         className="inline-gap-input"
                         ariaLabel={`Construction gap ${gapIndex + 1}`}
@@ -404,13 +414,18 @@ export function ReviewSessionPromptBody({
     return (
       <div className="stack">
         {!hasInlineGap && (
-          <TypingAnswerInput
-            value={typed}
-            onChange={onTypedChange}
-            onSubmit={onTypedSubmit}
-            placeholder="Construction"
-            focusKey={focusKey}
-          />
+          <label>
+            Construction
+            <TypingAnswerInput
+              value={typed}
+              onChange={onTypedChange}
+              onSubmit={onTypedSubmit}
+              focusKey={focusKey}
+            />
+          </label>
+        )}
+        {latinWarn && (
+          <p className="error">Type the answer in Japanese, not English.</p>
         )}
         {synonymWarn && (
           <p className="warn">
@@ -500,12 +515,11 @@ export function ReviewSessionPromptBody({
           <div className="phrase-reading-inputs">
             {kanjiSegments.map((seg, i) => (
               <label key={i} className="phrase-reading-input">
-                {seg.text}
+                {seg.text}（ひらがなで）
                 <TypingAnswerInput
                   value={segInputValue(i)}
                   onChange={(value) => onSegInputChange(i, value)}
                   onSubmit={onTypedSubmit}
-                  placeholder="ひらがなで"
                   focusKey={focusKey}
                   autoComplete="off"
                   autoFocus={i === 0}
@@ -515,14 +529,16 @@ export function ReviewSessionPromptBody({
             ))}
           </div>
         ) : (
-          <TypingAnswerInput
-            value={typed}
-            onChange={onTypedChange}
-            onSubmit={onTypedSubmit}
-            placeholder="ひらがなで"
-            focusKey={focusKey}
-            autoComplete="off"
-          />
+          <label>
+            読み方（ひらがなで）
+            <TypingAnswerInput
+              value={typed}
+              onChange={onTypedChange}
+              onSubmit={onTypedSubmit}
+              focusKey={focusKey}
+              autoComplete="off"
+            />
+          </label>
         )}
         {readingWarn && (
           <p className="error">
