@@ -71,8 +71,7 @@ const FAKE_USER = { uid: "shortcircuit-uid" } as unknown as import(
   "firebase/auth"
 ).User
 
-function tinyDeckPayload(): BulkImportPayload {
-  const now = Date.now()
+function tinyDeckPayload(now = Date.now()): BulkImportPayload {
   const fsrsCard = emptyFsrs()
   return {
     deck: { id: "deck-X", name: "Test deck", updatedAt: now },
@@ -219,5 +218,49 @@ describe("runFullSync's no-op short-circuit", () => {
     expect(skippedAsNoOp()).toBe(false)
     expect(ranFullPipeline()).toBe(true)
     expect(await db.decks.get("deck-X")).toBeDefined()
+  })
+
+  it("forces a full pipeline once lastSyncedAt is old, even though nothing looks changed", async () => {
+    const fs = getFirestoreDb()!
+    const storage = getFirebaseStorage()!
+
+    // All entity timestamps predate lastSyncedAt (25 min ago vs. 20 min
+    // ago), so the plain ">" timestamp/count checks alone would correctly
+    // report "nothing changed" here — this isolates the periodic ceiling
+    // as the only thing standing between this call and a wrongly-skipped
+    // sync, distinct from a scenario the timestamp checks can already see.
+    const staleNow = Date.now() - 25 * 60 * 1000
+    await applyBulkImport(tinyDeckPayload(staleNow), FAKE_USER)
+    // Older than MAX_SHORT_CIRCUIT_INTERVAL_MS (15 minutes) relative to the
+    // real current time — bounds how long a gap the cheap checks can't see
+    // (e.g. a clock-skewed remote write) could go undetected.
+    writeLastSyncedAt(Date.now() - 20 * 60 * 1000)
+
+    clearSyncLog()
+    await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
+
+    expect(skippedAsNoOp()).toBe(false)
+    expect(ranFullPipeline()).toBe(true)
+  })
+
+  it("falls back to the full pipeline if the no-op pre-check throws", async () => {
+    const fs = getFirestoreDb()!
+    const storage = getFirebaseStorage()!
+
+    await applyBulkImport(tinyDeckPayload(), FAKE_USER)
+    writeLastSyncedAt(Date.now())
+    await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
+
+    const spy = vi
+      .spyOn(db.decks, "count")
+      .mockRejectedValueOnce(new Error("boom"))
+
+    clearSyncLog()
+    await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
+
+    spy.mockRestore()
+
+    expect(skippedAsNoOp()).toBe(false)
+    expect(ranFullPipeline()).toBe(true)
   })
 })

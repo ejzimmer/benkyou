@@ -625,6 +625,25 @@ async function syncMedia(
 }
 
 /**
+ * Upper bound on how long the no-op short-circuit is allowed to keep
+ * skipping the full pipeline before one runs anyway, regardless of what the
+ * cheap checks report. `updatedAt`/`deletedAt` are client-set via
+ * `Date.now()`, not Firestore's server timestamp, so a remote write from a
+ * device whose clock runs sufficiently behind ours could carry a timestamp
+ * at or before our own `lastSyncedAt` and be permanently invisible to the
+ * ">" check — worse, since `lastSyncedAt` only advances forward on this
+ * device, that gap never closes on its own. Widening the query's lower
+ * bound to compensate was tried and rejected: because `lastSyncedAt` itself
+ * keeps sliding forward, a fixed-size widen re-flags any row touched within
+ * that window of *now* as "changed" on every subsequent sync, defeating the
+ * short-circuit for several minutes after every write. A periodic ceiling
+ * bounds the same worst case (silently missing a skewed write) without that
+ * cost: any gap a timestamp check misses gets caught by the next forced
+ * full pipeline regardless.
+ */
+const MAX_SHORT_CIRCUIT_INTERVAL_MS = 15 * 60 * 1000
+
+/**
  * Cheap local-side counterpart to `hasAnyRemoteChangesSince`: indexed
  * range checks instead of a full-table scan, so this stays fast regardless
  * of collection size.
@@ -651,59 +670,102 @@ export function writeLastSyncedAt(ts: number): void {
   localStorage.setItem(LAST_SYNCED_AT_KEY, ts.toString())
 }
 
+/**
+ * `lastSyncedAt` isn't scoped per-account — clear it on sign-out so a
+ * different user signing in on the same device/browser can't inherit a
+ * marker from the previous account and have the no-op short-circuit skip
+ * pulling their data because it looks like "nothing changed since".
+ */
+export function clearLastSyncedAt(): void {
+  localStorage.removeItem(LAST_SYNCED_AT_KEY)
+}
+
 export async function runFullSync(options: RunSyncOptions): Promise<void> {
   const { fs, storage, uid, onConflict, onProgress } = options
   const report = onProgress ?? (() => {})
   syncLog("runFullSync start", { uid, lastSyncedAt: readLastSyncedAt() })
   const lastSyncedAt = readLastSyncedAt()
+  // Captured before any checks/fetches run, so the marker we persist can
+  // never be newer than the instant we started looking — otherwise a write
+  // that lands on either side while the checks themselves are in flight
+  // could fall between "the snapshot we checked" and "the timestamp we
+  // recorded," and never get picked up by a later sync.
+  const syncStartedAt = Date.now()
 
   report({ phase: "Checking for changes…" })
 
-  // On every sync after the first, a cheap existence check ("does anything
-  // have a newer timestamp than my last sync, on either side") can rule out
-  // the common case — nothing changed anywhere — without paying for the
-  // full 5-collection download that dominates a no-op resync's cost. Any
-  // doubt (first-ever sync, or either side reports a change) falls through
-  // to the full, already-correct pipeline below.
-  //
-  // `lastSyncedAt` lives in localStorage, separate from the actual data in
-  // IndexedDB — if the local database is ever wiped or corrupted without
-  // that marker also being cleared (e.g. storage eviction clearing one but
-  // not the other), a completely empty local database would otherwise look
-  // exactly like "nothing changed" and permanently skip re-pulling
-  // everything. Requiring at least one local deck/card rules that out: a
-  // device that has genuinely synced before has *something* locally (unless
-  // the account itself is empty, in which case a full sync is cheap anyway).
-  const hasAnyLocalEntities =
-    lastSyncedAt != null &&
-    ((await db.decks.count()) > 0 || (await db.cards.count()) > 0)
+  try {
+    // On every sync after the first, a cheap existence check ("does anything
+    // have a newer timestamp than my last sync, on either side") can rule out
+    // the common case — nothing changed anywhere — without paying for the
+    // full 5-collection download that dominates a no-op resync's cost. Any
+    // doubt (first-ever sync, or either side reports a change) falls through
+    // to the full, already-correct pipeline below.
+    //
+    // `lastSyncedAt` lives in localStorage, separate from the actual data in
+    // IndexedDB — if the local database is ever wiped or corrupted without
+    // that marker also being cleared (e.g. storage eviction clearing one but
+    // not the other), a completely empty local database would otherwise look
+    // exactly like "nothing changed" and permanently skip re-pulling
+    // everything. Requiring at least one local row rules that out: a device
+    // that has genuinely synced before has *something* locally (unless the
+    // account itself is empty, in which case a full sync is cheap anyway).
+    const hasAnyLocalEntities =
+      lastSyncedAt != null &&
+      ((await db.decks.count()) > 0 ||
+        (await db.cards.count()) > 0 ||
+        (await db.scheduling.count()) > 0)
 
-  if (lastSyncedAt != null && hasAnyLocalEntities) {
-    const [remoteChanged, localChanged] = await Promise.all([
-      syncLogTimed("check remote changed since last sync", () =>
-        hasAnyRemoteChangesSince(fs, uid, lastSyncedAt),
-      ),
-      syncLogTimed("check local changed since last sync", () =>
-        hasAnyLocalChangesSince(lastSyncedAt),
-      ),
-    ])
-    if (!remoteChanged && !localChanged) {
-      // Neither side has a newer timestamp, but that alone can't rule out a
-      // silent remote deletion (removed doc, tombstone not pushed yet) — a
-      // document-count check closes that gap before trusting the skip.
-      const countMismatch = await syncLogTimed(
-        "check entity count mismatch",
-        () => hasEntityCountMismatch(fs, uid),
-      )
-      if (!countMismatch) {
-        syncLog("nothing changed on either side — skipping full sync")
-        writeLastSyncedAt(Date.now())
-        report({ phase: "Finishing up…" })
-        syncLog("runFullSync complete (no-op)")
-        return
+    // See `MAX_SHORT_CIRCUIT_INTERVAL_MS` for why this ceiling exists: it
+    // bounds how long a clock-skewed remote write (or any other gap a
+    // timestamp/count check might miss) could stay silently undetected.
+    const withinShortCircuitCeiling =
+      lastSyncedAt != null &&
+      Date.now() - lastSyncedAt < MAX_SHORT_CIRCUIT_INTERVAL_MS
+
+    if (lastSyncedAt != null && hasAnyLocalEntities && withinShortCircuitCeiling) {
+      const [remoteChanged, localChanged] = await Promise.all([
+        syncLogTimed("check remote changed since last sync", () =>
+          hasAnyRemoteChangesSince(fs, uid, lastSyncedAt),
+        ),
+        syncLogTimed("check local changed since last sync", () =>
+          hasAnyLocalChangesSince(lastSyncedAt),
+        ),
+      ])
+      if (!remoteChanged && !localChanged) {
+        // Neither side has a newer timestamp, but that alone can't rule out a
+        // silent remote deletion (removed doc, tombstone not pushed yet) — a
+        // document-count check closes that gap before trusting the skip.
+        const countMismatch = await syncLogTimed(
+          "check entity count mismatch",
+          () => hasEntityCountMismatch(fs, uid),
+        )
+        if (!countMismatch) {
+          syncLog("nothing changed on either side — skipping full sync")
+          // Media downloads can fail or get interrupted independently of
+          // whether any entity metadata changed — still worth a cheap retry
+          // pass so a stuck image isn't stranded forever once the
+          // short-circuit starts engaging on every subsequent load.
+          const hydrate = await syncLogTimed(
+            "hydrate card images for review (no-op path)",
+            () =>
+              hydrateReferencedMedia(uid, (current, total) =>
+                report({ phase: "Downloading images…", current, total }),
+              ),
+          )
+          syncLog("hydrate card images complete (no-op path)", hydrate)
+          writeLastSyncedAt(syncStartedAt)
+          report({ phase: "Finishing up…" })
+          syncLog("runFullSync complete (no-op)")
+          return
+        }
+        syncLog("entity count mismatch — falling back to full sync")
       }
-      syncLog("entity count mismatch — falling back to full sync")
     }
+  } catch (err) {
+    syncLog("no-op pre-check failed — falling back to full sync", {
+      error: err instanceof Error ? err.message : String(err),
+    })
   }
 
   const remote = await syncLogTimed("pull remote snapshot", () =>
@@ -747,7 +809,7 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
   )
   syncLog("hydrate card images complete", hydrate)
 
-  writeLastSyncedAt(Date.now())
+  writeLastSyncedAt(syncStartedAt)
   report({ phase: "Finishing up…" })
   syncLog("runFullSync complete")
 }
