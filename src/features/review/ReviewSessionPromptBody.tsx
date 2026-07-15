@@ -15,7 +15,11 @@ import {
 } from "../../domain/grammarGaps"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
 import { constructionReadingSegments } from "../../domain/grammarContent"
-import { deriveFurigana, type LabeledReading } from "../../domain/readingsMap"
+import {
+  deriveFurigana,
+  fullyCoveredSegments,
+  type LabeledReading,
+} from "../../domain/readingsMap"
 
 type TypingAnswerInputProps = {
   value: string
@@ -135,13 +139,16 @@ export function ReviewSessionPromptBody({
     return (
       <div className="stack">
         <p className="prompt-main">
-          {card.content.reading?.trim() ? (
-            // The `reading` field is authoritative for the headline word —
-            // don't let a same-keyed map entry (e.g. authored only to
-            // stylize furigana inside an example sentence) override it.
-            <RubyWord surface={card.content.wordJa} reading={card.content.reading} />
-          ) : (
+          {fullyCoveredSegments(card.content.wordJa, card.content.readings ?? {}) ? (
+            // The furigana map fully accounts for every kanji in the word —
+            // honor the author's own per-kanji breakdown (e.g. narrowed to
+            // leave okurigana un-annotated) instead of one flat ruby.
             <RubySegment segment={card.content.wordJa} readings={card.content.readings ?? {}} />
+          ) : (
+            // The map doesn't (yet) cover the whole word — e.g. a card whose
+            // furigana was never authored — so fall back to the authoritative
+            // whole-word reading rather than showing partial/no furigana.
+            <RubyWord surface={card.content.wordJa} reading={card.content.reading} />
           )}
         </p>
         {examples.map((s, i) => (
