@@ -97,6 +97,16 @@ export type ReviewSessionPromptBodyProps = {
    * itself) — those return null for that column.
    */
   column: "question" | "answer"
+  /**
+   * Bumped by the parent each time the prompt (re-)becomes the active side —
+   * including returning to the same card/mode via "Undo answer" or "Undo last
+   * judgement". The prompt/answer layers stay permanently mounted (so
+   * revealing the answer never resizes the card), so `focusKey` alone
+   * (card id + mode, unchanged across an undo) can't retrigger
+   * TypingAnswerInput's autofocus-on-mount effect the way a fresh mount used
+   * to. Folding this into `focusKey` does.
+   */
+  promptFocusToken?: number
 }
 
 export function ReviewSessionPromptBody({
@@ -110,9 +120,10 @@ export function ReviewSessionPromptBody({
   onTypedSubmit,
   revealed = false,
   column,
+  promptFocusToken = 0,
 }: ReviewSessionPromptBodyProps) {
   const { card, modeId: m } = item
-  const focusKey = `${card.id}:${m}`
+  const focusKey = `${card.id}:${m}:${promptFocusToken}`
 
   // Asking for the English meaning: show the Japanese word + example sentences.
   // Kanji readings stay available on hover/focus via <RubyWord>. No typing
@@ -246,7 +257,7 @@ export function ReviewSessionPromptBody({
           </div>
         ) : (
           <label>
-            読み方
+            読み方（ひらがなで）
             <TypingAnswerInput
               value={typed}
               onChange={onTypedChange}
@@ -519,7 +530,7 @@ export function ReviewSessionPromptBody({
           </div>
         ) : (
           <label>
-            読み方
+            読み方（ひらがなで）
             <TypingAnswerInput
               value={typed}
               onChange={onTypedChange}

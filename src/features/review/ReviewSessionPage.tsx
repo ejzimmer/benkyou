@@ -134,9 +134,22 @@ export function ReviewSessionPage() {
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
   const phaseRef = useRef<Phase>(phase)
   const conflictReloadPendingRef = useRef(false)
+  /**
+   * Bumped every time the prompt (re-)becomes the active side. The
+   * prompt/answer layers stay permanently mounted (so revealing the answer
+   * never resizes the card) — so returning to "prompt" for the *same*
+   * card/mode (Undo answer, Undo last judgement) doesn't change the typing
+   * input's focusKey the way a fresh mount used to, and its autofocus effect
+   * wouldn't otherwise re-run. Folded into that focusKey below to force it to.
+   */
+  const [promptFocusToken, setPromptFocusToken] = useState(0)
 
   useEffect(() => {
     phaseRef.current = phase
+  }, [phase])
+
+  useEffect(() => {
+    if (phase === "prompt") setPromptFocusToken((n) => n + 1)
   }, [phase])
 
   const load = useCallback(async () => {
@@ -321,7 +334,8 @@ export function ReviewSessionPage() {
     setLatinWarn(false)
     if (
       (m === "vocab_type_word_from_clue" || m === "grammar_type_construction") &&
-      hasLatinScript(typedValue)
+      hasLatinScript(typedValue) &&
+      !hasLatinScript(expectedAnswer(c, m))
     ) {
       setLatinWarn(true)
       return false
@@ -582,6 +596,7 @@ export function ReviewSessionPage() {
                 onTypedSubmit={() => tryShowAnswerRef.current()}
                 revealed={phase === "answer"}
                 column="question"
+                promptFocusToken={promptFocusToken}
               />
             </div>
             <div className="review-answer">
@@ -604,6 +619,7 @@ export function ReviewSessionPage() {
                     latinWarn={latinWarn}
                     onTypedSubmit={() => tryShowAnswerRef.current()}
                     column="answer"
+                    promptFocusToken={promptFocusToken}
                   />
                   <ReviewFooter>
                     <button

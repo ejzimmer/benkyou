@@ -230,13 +230,13 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText("読み方")
+    const input = await screen.findByLabelText(/読み方/)
     await user.type(input, "ほけ")
 
     await user.click(screen.getByRole("link", { name: /edit card/i }))
     await user.click(await screen.findByRole("link", { name: /back/i }))
 
-    const restoredInput = await screen.findByLabelText("読み方")
+    const restoredInput = await screen.findByLabelText(/読み方/)
     expect(restoredInput).toHaveValue("ほけ")
     expect(
       screen.queryByRole("button", { name: /^correct$/i }),
@@ -276,7 +276,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText("読み方")
+    const input = await screen.findByLabelText(/読み方/)
     await user.type(input, "ほけ{Enter}")
     expect(
       await screen.findByRole("button", { name: /^correct$/i }),
@@ -471,7 +471,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText("読み方")
+    const input = await screen.findByLabelText(/読み方/)
     await user.type(input, "しゅかん{Enter}")
 
     const comparison = await screen.findByRole("group", {
@@ -517,7 +517,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText("読み方")
+    const input = await screen.findByLabelText(/読み方/)
     await user.type(input, "猫{Enter}")
 
     expect(
@@ -619,6 +619,50 @@ describe("ReviewSessionPage", () => {
     expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
   })
 
+  it("allows a correct answer that legitimately contains Latin script, e.g. a loanword", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T", null)
+    const card = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "Tシャツ",
+        reading: "",
+        definitionsEn: ["T-shirt"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          `/review?resumeCardId=${card.id}&resumeModeId=vocab_type_word_from_clue`,
+        ]}
+      >
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const input = await screen.findByLabelText("日本語で")
+    await user.type(input, "Tシャツ{Enter}")
+
+    expect(
+      screen.queryByText(/type the answer in japanese/i),
+    ).not.toBeInTheDocument()
+    expect(
+      await screen.findByRole("button", { name: /^correct$/i }),
+    ).toBeInTheDocument()
+  })
+
   it("clears a validation warning once the answer is corrected, including after undoing the reveal", async () => {
     await resetDatabase()
     const user = userEvent.setup()
@@ -648,7 +692,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText("読み方")
+    const input = await screen.findByLabelText(/読み方/)
     await user.type(input, "猫{Enter}")
     expect(
       await screen.findByText(/use hiragana only for readings/i),
@@ -664,7 +708,9 @@ describe("ReviewSessionPage", () => {
 
     await user.click(screen.getByRole("button", { name: /undo answer/i }))
 
-    expect(await screen.findByLabelText("読み方")).toHaveValue("ねこ")
+    const reopenedInput = await screen.findByLabelText(/読み方/)
+    expect(reopenedInput).toHaveValue("ねこ")
+    expect(reopenedInput).toHaveFocus()
     expect(
       screen.queryByText(/use hiragana only for readings/i),
     ).not.toBeInTheDocument()

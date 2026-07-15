@@ -814,11 +814,7 @@ label {
   transition: opacity 0.2s ease;
 }
 
-.review-answer-prompt.is-hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
+.review-answer-prompt.is-hidden,
 .review-answer-revealed {
   opacity: 0;
   pointer-events: none;
