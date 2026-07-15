@@ -643,16 +643,17 @@ label {
 }
 
 /* Once the review columns sit side-by-side, each column is too narrow for
-   images to usefully scroll across — stack them instead. */
+   images to usefully scroll across — stack them instead. `align-items:
+   center` (rather than `stretch`) matters here: with `object-fit: contain`
+   and a height cap, a width-stretched image letterboxes inside a box wider
+   than its scaled content — the visible photo doesn't reach the box edges,
+   so `border-radius` rounds empty corners instead of the image itself.
+   Centering keeps the box sized to the actual rendered image. */
 @media (min-width: 760px) {
   .card-image-row {
     flex-direction: column;
-    align-items: stretch;
+    align-items: center;
     overflow-x: visible;
-  }
-
-  .card-image-row .card-image {
-    width: 100%;
   }
 }
 
