@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
-import { RubySegment, RubySentence, RubyWord } from "../../ui/KanjiRuby"
+import { RubySentence, RubyWord } from "../../ui/KanjiRuby"
 import { CardImageRow } from "../../ui/CardImageRow"
 import {
   clueExampleSentences,
@@ -136,14 +136,24 @@ export function ReviewSessionPromptBody({
     if (column === "answer") return null
     const examples = card.content.exampleSentences.filter((s) => s.trim())
     const exampleReadings = vocabExampleReadings(card.content)
+    const wordSegments = fullyCoveredSegments(
+      card.content.wordJa,
+      card.content.readings ?? {},
+    )
     return (
       <div className="stack">
         <p className="prompt-main">
-          {fullyCoveredSegments(card.content.wordJa, card.content.readings ?? {}) ? (
+          {wordSegments ? (
             // The furigana map fully accounts for every kanji in the word —
             // honor the author's own per-kanji breakdown (e.g. narrowed to
             // leave okurigana un-annotated) instead of one flat ruby.
-            <RubySegment segment={card.content.wordJa} readings={card.content.readings ?? {}} />
+            wordSegments.map((s, i) =>
+              s.reading?.trim() ? (
+                <RubyWord key={i} surface={s.text} reading={s.reading} />
+              ) : (
+                <span key={i}>{s.text}</span>
+              ),
+            )
           ) : (
             // The map doesn't (yet) cover the whole word — e.g. a card whose
             // furigana was never authored — so fall back to the authoritative
