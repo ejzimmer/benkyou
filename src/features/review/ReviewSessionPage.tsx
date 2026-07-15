@@ -603,7 +603,10 @@ export function ReviewSessionPage() {
               {/* Both layers stay mounted throughout — revealing the answer
                   fades the answer layer in over the prompt layer rather than
                   swapping them, so the card never has to resize. */}
-              <div className="review-answer-stack">
+              <div
+                className="review-answer-stack"
+                key={`${item.card.id}:${item.modeId}`}
+              >
                 <div
                   className={`review-answer-prompt${phase === "answer" ? " is-hidden" : ""}`}
                   aria-hidden={phase === "answer"}
