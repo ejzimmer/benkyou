@@ -496,7 +496,7 @@ describe("ReviewSessionPromptBody", () => {
     )
   })
 
-  it("prefers the explicit reading field over a conflicting readings-map entry for the same word", () => {
+  it("honors a furigana map entry that fully covers the headline word's kanji, over the tested reading", () => {
     const item: DueItem = {
       card: {
         id: "card-12",
@@ -531,7 +531,83 @@ describe("ReviewSessionPromptBody", () => {
     )
 
     const rt = container.querySelector(".prompt-main rt")
+    expect(rt?.textContent).toBe("ネコ")
+  })
+
+  it("falls back to the tested reading when the furigana map doesn't cover the word's kanji", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-13",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "猫",
+          reading: "ねこ",
+          readings: {},
+          definitionsEn: ["cat"],
+          images: [],
+          exampleSentences: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_oral_en",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        kanjiWarn={false}
+        onTypedSubmit={vi.fn()}
+        column="question"
+      />,
+    )
+
+    const rt = container.querySelector(".prompt-main rt")
     expect(rt?.textContent).toBe("ねこ")
+  })
+
+  it("shows a per-kanji furigana split for a phrase word tested as one whole reading", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-14",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "結論に至る",
+          reading: "けつろんにいたる",
+          readings: { 結論: "けつろん", 至: "いた" },
+          definitionsEn: ["reach a conclusion"],
+          images: [],
+          exampleSentences: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_oral_en",
+      due: 0,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        kanjiWarn={false}
+        onTypedSubmit={vi.fn()}
+        column="question"
+      />,
+    )
+
+    const rubies = Array.from(container.querySelectorAll(".prompt-main ruby"))
+    expect(rubies.map((r) => r.textContent)).toEqual(["結論けつろん", "至いた"])
   })
 
   it("does not auto-focus inline grammar input on touch-primary devices", () => {
