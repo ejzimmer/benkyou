@@ -881,13 +881,19 @@ label {
    it annotates, so the reading floats immediately above those characters
    even when gap cells (from extra typed characters) push other parts of
    the word further along the row. Absolutely positioned so it doesn't
-   reserve row height while hidden. */
+   reserve row height while hidden.
+
+   `<ruby>` reserves a full line-height for its (empty) base even with no
+   base text, stacked below the annotation — without `line-height: 0` here
+   that phantom base line pushes the whole element ~2x taller than the `rt`
+   text itself, floating it well above the row it's meant to sit on. */
 .reading-answer-diff-furigana {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 100%;
   margin-bottom: 0.15em;
+  line-height: 0;
   text-align: center;
   pointer-events: none;
 }
@@ -1004,6 +1010,7 @@ label {
   opacity: 0;
   transition: opacity 0.12s ease;
   font-size: 0.65em;
+  line-height: normal;
   color: #a5b4fc;
 }
 
