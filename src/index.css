@@ -788,13 +788,18 @@ label {
   flex-direction: column;
   background: #1a1a28;
   border-radius: 12px;
-  padding: 1.75rem 1.25rem 1rem;
   min-height: 50vh;
 }
 
 .review-question {
   align-items: center;
+  justify-content: center;
   text-align: center;
+  padding: 1.75rem 1.25rem 1rem;
+}
+
+.review-answer {
+  padding: 40px 30px 1rem;
 }
 
 /* The prompt controls and the revealed answer occupy the same grid cell, so
@@ -840,7 +845,8 @@ label {
   padding-top: 2.5rem;
 }
 
-.review-answer-prompt .review-footer {
+.review-answer-prompt .review-footer,
+.review-answer-revealed .review-footer {
   justify-content: center;
 }
 
@@ -849,6 +855,15 @@ label {
 .review-answer-prompt .error,
 .review-answer-prompt .warn {
   margin-top: -0.4rem;
+}
+
+.review-answer-prompt label {
+  color: #9898b0;
+}
+
+.review-answer-prompt .input {
+  color: #e8e8f0;
+  max-width: 75%;
 }
 
 .compare-diff {
