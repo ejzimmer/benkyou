@@ -72,3 +72,12 @@ export type RemoteMediaMeta = {
 }
 
 export const LAST_SYNCED_AT_KEY = "benkyou:lastSyncedAt"
+
+/**
+ * Separate from `LAST_SYNCED_AT_KEY`: that marker advances on every
+ * successful sync pass, including short-circuited ones, so it can't be used
+ * to bound "how long has it actually been since the full pipeline last
+ * ran" — a device that's foregrounded every few minutes would never let it
+ * accumulate. This one only advances when the full pipeline actually runs.
+ */
+export const LAST_FULL_SYNC_AT_KEY = "benkyou:lastFullSyncAt"

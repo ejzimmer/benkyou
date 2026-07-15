@@ -36,6 +36,7 @@ import { mergeTombstone } from "./tombstoneMerge"
 import { pruneOrphanMediaTombstones, recordTombstone } from "./tombstones"
 import { tombstoneId } from "./syncCompare"
 import {
+  LAST_FULL_SYNC_AT_KEY,
   LAST_SYNCED_AT_KEY,
   type SyncConflict,
   type SyncConflictChoice,
@@ -670,14 +671,27 @@ export function writeLastSyncedAt(ts: number): void {
   localStorage.setItem(LAST_SYNCED_AT_KEY, ts.toString())
 }
 
+function readLastFullSyncAt(): number | null {
+  const raw = localStorage.getItem(LAST_FULL_SYNC_AT_KEY)
+  if (!raw) return null
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : null
+}
+
+function writeLastFullSyncAt(ts: number): void {
+  localStorage.setItem(LAST_FULL_SYNC_AT_KEY, ts.toString())
+}
+
 /**
- * `lastSyncedAt` isn't scoped per-account — clear it on sign-out so a
- * different user signing in on the same device/browser can't inherit a
- * marker from the previous account and have the no-op short-circuit skip
- * pulling their data because it looks like "nothing changed since".
+ * `lastSyncedAt`/`lastFullSyncAt` aren't scoped per-account — clear them on
+ * sign-out so a different user signing in on the same device/browser can't
+ * inherit a marker from the previous account and have the no-op
+ * short-circuit skip pulling their data because it looks like "nothing
+ * changed since".
  */
 export function clearLastSyncedAt(): void {
   localStorage.removeItem(LAST_SYNCED_AT_KEY)
+  localStorage.removeItem(LAST_FULL_SYNC_AT_KEY)
 }
 
 export async function runFullSync(options: RunSyncOptions): Promise<void> {
@@ -694,6 +708,8 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
 
   report({ phase: "Checking for changes…" })
 
+  let tookShortCircuit = false
+
   try {
     // On every sync after the first, a cheap existence check ("does anything
     // have a newer timestamp than my last sync, on either side") can rule out
@@ -704,24 +720,35 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
     //
     // `lastSyncedAt` lives in localStorage, separate from the actual data in
     // IndexedDB — if the local database is ever wiped or corrupted without
-    // that marker also being cleared (e.g. storage eviction clearing one but
-    // not the other), a completely empty local database would otherwise look
+    // that marker also being cleared (e.g. storage eviction, or a bug that
+    // clears one table but not the others), that could otherwise look
     // exactly like "nothing changed" and permanently skip re-pulling
-    // everything. Requiring at least one local row rules that out: a device
-    // that has genuinely synced before has *something* locally (unless the
-    // account itself is empty, in which case a full sync is cheap anyway).
+    // everything. Requiring decks/cards/scheduling to *all* be non-empty
+    // (not just any one of them) catches a partial wipe of any single
+    // table, not only a total one — a device that has genuinely synced real
+    // content before has all three populated together. A sparse account
+    // (e.g. a freshly created empty deck with no cards yet) falls through
+    // to the full pipeline on every sync, but that's cheap: there's nothing
+    // to download.
+    const [deckCount, cardCount, schedulingCount] = await Promise.all([
+      db.decks.count(),
+      db.cards.count(),
+      db.scheduling.count(),
+    ])
     const hasAnyLocalEntities =
-      lastSyncedAt != null &&
-      ((await db.decks.count()) > 0 ||
-        (await db.cards.count()) > 0 ||
-        (await db.scheduling.count()) > 0)
+      lastSyncedAt != null && deckCount > 0 && cardCount > 0 && schedulingCount > 0
 
-    // See `MAX_SHORT_CIRCUIT_INTERVAL_MS` for why this ceiling exists: it
-    // bounds how long a clock-skewed remote write (or any other gap a
+    // Bounds how long a clock-skewed remote write (or any other gap a
     // timestamp/count check might miss) could stay silently undetected.
+    // Deliberately measured from the last time the *full* pipeline actually
+    // ran, not from `lastSyncedAt` — that marker advances on every
+    // successful pass including short-circuited ones, so measuring from it
+    // would let an actively-used device (foregrounded every few minutes)
+    // keep resetting the clock and never reach the ceiling at all.
+    const lastFullSyncAt = readLastFullSyncAt()
     const withinShortCircuitCeiling =
-      lastSyncedAt != null &&
-      Date.now() - lastSyncedAt < MAX_SHORT_CIRCUIT_INTERVAL_MS
+      lastFullSyncAt != null &&
+      Date.now() - lastFullSyncAt < MAX_SHORT_CIRCUIT_INTERVAL_MS
 
     if (lastSyncedAt != null && hasAnyLocalEntities && withinShortCircuitCeiling) {
       const [remoteChanged, localChanged] = await Promise.all([
@@ -742,30 +769,39 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
         )
         if (!countMismatch) {
           syncLog("nothing changed on either side — skipping full sync")
-          // Media downloads can fail or get interrupted independently of
-          // whether any entity metadata changed — still worth a cheap retry
-          // pass so a stuck image isn't stranded forever once the
-          // short-circuit starts engaging on every subsequent load.
-          const hydrate = await syncLogTimed(
-            "hydrate card images for review (no-op path)",
-            () =>
-              hydrateReferencedMedia(uid, (current, total) =>
-                report({ phase: "Downloading images…", current, total }),
-              ),
-          )
-          syncLog("hydrate card images complete (no-op path)", hydrate)
           writeLastSyncedAt(syncStartedAt)
-          report({ phase: "Finishing up…" })
-          syncLog("runFullSync complete (no-op)")
-          return
+          tookShortCircuit = true
+        } else {
+          syncLog("entity count mismatch — falling back to full sync")
         }
-        syncLog("entity count mismatch — falling back to full sync")
       }
     }
   } catch (err) {
     syncLog("no-op pre-check failed — falling back to full sync", {
       error: err instanceof Error ? err.message : String(err),
     })
+  }
+
+  if (tookShortCircuit) {
+    // Media downloads can fail or get interrupted independently of whether
+    // any entity metadata changed — still worth a cheap retry pass so a
+    // stuck image isn't stranded forever once the short-circuit starts
+    // engaging on every subsequent load. Deliberately outside the try/catch
+    // above: a hydration failure here isn't a reason to distrust "nothing
+    // changed" and fall back to a redundant full pipeline — it's an
+    // unrelated, already best-effort concern (the full pipeline's own
+    // hydrate call below isn't guarded either).
+    const hydrate = await syncLogTimed(
+      "hydrate card images for review (no-op path)",
+      () =>
+        hydrateReferencedMedia(uid, (current, total) =>
+          report({ phase: "Downloading images…", current, total }),
+        ),
+    )
+    syncLog("hydrate card images complete (no-op path)", hydrate)
+    report({ phase: "Finishing up…" })
+    syncLog("runFullSync complete (no-op)")
+    return
   }
 
   const remote = await syncLogTimed("pull remote snapshot", () =>
@@ -810,6 +846,7 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
   syncLog("hydrate card images complete", hydrate)
 
   writeLastSyncedAt(syncStartedAt)
+  writeLastFullSyncAt(syncStartedAt)
   report({ phase: "Finishing up…" })
   syncLog("runFullSync complete")
 }

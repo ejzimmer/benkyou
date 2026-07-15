@@ -64,6 +64,7 @@ import { applyBulkImport } from "../../services/bulkImport"
 import { deleteDeckRemote } from "./firestoreSync"
 import { runFullSync, writeLastSyncedAt } from "./runSync"
 import { clearSyncLog, getSyncLogEntries } from "./syncLog"
+import { LAST_FULL_SYNC_AT_KEY } from "./syncTypes"
 import { emptyFsrs, serializeFsrs } from "../srs/schedule"
 import type { BulkImportPayload } from "../import/types"
 
@@ -255,12 +256,68 @@ describe("runFullSync's no-op short-circuit", () => {
       .spyOn(db.decks, "count")
       .mockRejectedValueOnce(new Error("boom"))
 
+    try {
+      clearSyncLog()
+      await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
+
+      expect(skippedAsNoOp()).toBe(false)
+      expect(ranFullPipeline()).toBe(true)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it("does not let repeated short-circuited syncs reset the periodic ceiling", async () => {
+    // The ceiling exists to bound how long a gap the cheap checks can't see
+    // could go undetected — but only if it's measured from when the full
+    // pipeline last *actually* ran, not from `lastSyncedAt` (which advances
+    // on every successful pass, including short-circuited ones). This
+    // simulates a device that's been foregrounded a few times since its last
+    // full sync — `lastSyncedAt` looks fresh, as a short-circuit would leave
+    // it — but the full pipeline itself hasn't run in over 15 minutes.
+    const fs = getFirestoreDb()!
+    const storage = getFirebaseStorage()!
+
+    await applyBulkImport(tinyDeckPayload(), FAKE_USER)
+    writeLastSyncedAt(Date.now())
+    localStorage.setItem(
+      LAST_FULL_SYNC_AT_KEY,
+      String(Date.now() - 20 * 60 * 1000),
+    )
+
     clearSyncLog()
     await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
 
-    spy.mockRestore()
-
     expect(skippedAsNoOp()).toBe(false)
     expect(ranFullPipeline()).toBe(true)
+  })
+
+  it("does not fall back to a redundant full pipeline when only the no-op path's media hydration fails", async () => {
+    const fs = getFirestoreDb()!
+    const storage = getFirebaseStorage()!
+
+    await applyBulkImport(tinyDeckPayload(), FAKE_USER)
+    writeLastSyncedAt(Date.now())
+    await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
+
+    const spy = vi
+      .spyOn(db.cards, "toArray")
+      .mockRejectedValueOnce(new Error("boom"))
+
+    try {
+      clearSyncLog()
+      await expect(
+        runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" }),
+      ).rejects.toThrow("boom")
+
+      // The "nothing changed" conclusion itself was reached and persisted
+      // before hydration ran — only the unrelated media retry failed, so
+      // this must not be misclassified as a pre-check failure that pays for
+      // a full pipeline on top of it.
+      expect(skippedAsNoOp()).toBe(true)
+      expect(ranFullPipeline()).toBe(false)
+    } finally {
+      spy.mockRestore()
+    }
   })
 })
