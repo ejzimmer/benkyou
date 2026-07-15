@@ -63,7 +63,7 @@ describe("ReviewSessionPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
     })
-    expect(screen.getByText(/2 left/i)).toBeInTheDocument()
+    expect(screen.getByText(/2 remaining/i)).toBeInTheDocument()
   })
 
   it("after incorrect, does not flash next card answer during queue rotation gap", async () => {
@@ -574,6 +574,51 @@ describe("ReviewSessionPage", () => {
     expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
   })
 
+  it("blocks submitting an English answer for a type-the-word question, instead of grading it", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T", null)
+    const card = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          `/review?resumeCardId=${card.id}&resumeModeId=vocab_type_word_from_clue`,
+        ]}
+      >
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const input = await screen.findByLabelText("日本語で")
+    await user.type(input, "cat{Enter}")
+
+    expect(
+      await screen.findByText(/type the answer in japanese/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /^correct$/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+  })
+
   it("clears a validation warning once the answer is corrected, including after undoing the reveal", async () => {
     await resetDatabase()
     const user = userEvent.setup()
@@ -623,6 +668,9 @@ describe("ReviewSessionPage", () => {
     expect(
       screen.queryByText(/use hiragana only for readings/i),
     ).not.toBeInTheDocument()
-    expect(correctButton).not.toBeInTheDocument()
+    // The answer panel stays mounted (so revealing never resizes the card)
+    // but must go back to being non-interactive once the reveal is undone.
+    expect(correctButton.closest('[aria-hidden="true"]')).not.toBeNull()
+    expect(correctButton.closest("[inert]")).not.toBeNull()
   })
 })

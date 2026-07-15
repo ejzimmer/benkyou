@@ -623,7 +623,9 @@ label {
   gap: 0.5rem;
   align-items: flex-start;
   max-width: 100%;
+  max-height: 40vh;
   overflow-x: auto;
+  overflow-y: auto;
 }
 
 .card-image-row .card-image {
@@ -774,21 +776,82 @@ label {
   }
 }
 
+.panel.prompt {
+  background: none;
+  padding: 0;
+}
+
 .review-question,
 .review-answer {
   display: flex;
   flex-direction: column;
+  background: #1a1a28;
+  border-radius: 12px;
+  padding: 1.75rem 1.25rem 1rem;
+  min-height: 50vh;
+}
+
+.review-question {
+  align-items: center;
+  text-align: center;
+}
+
+/* The prompt controls and the revealed answer occupy the same grid cell, so
+   the card's height is always the taller of the two — revealing the answer
+   only fades the answer layer in, it never resizes the card. */
+.review-answer-stack {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+}
+
+.review-answer-stack > * {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  transition: opacity 0.2s ease;
+}
+
+.review-answer-prompt.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.review-answer-revealed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.review-answer-revealed.is-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .review-answer .answer-block {
   flex: 1;
+  min-height: 0;
 }
 
-/* Keep "Show answer" / Correct / Incorrect / Undo pinned to the bottom of
-   the card regardless of how much prompt/answer content sits above them,
-   so they don't shift position as the content above them changes size. */
-.review-answer .toolbar {
+/* Pinned to the bottom of the card — the auto margin absorbs any slack —
+   with a guaranteed-minimum gap above it (via padding, so it holds even
+   with no slack to absorb) so the answer input/images never end up
+   touching the buttons. Shared by the "Show answer" button and the
+   Correct/Incorrect/Undo controls. */
+.review-footer {
   margin-top: auto;
+  padding-top: 2.5rem;
+}
+
+.review-answer-prompt .review-footer {
+  justify-content: center;
+}
+
+/* Match the label→input gap (.35rem) rather than the wider gap .stack
+   otherwise uses between all its children. */
+.review-answer-prompt .error,
+.review-answer-prompt .warn {
+  margin-top: -0.4rem;
 }
 
 .compare-diff {
