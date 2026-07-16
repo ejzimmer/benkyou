@@ -230,13 +230,13 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText(/読み方/)
+    const input = await screen.findByLabelText(/ひらがなで/)
     await user.type(input, "ほけ")
 
     await user.click(screen.getByRole("link", { name: /edit card/i }))
     await user.click(await screen.findByRole("link", { name: /back/i }))
 
-    const restoredInput = await screen.findByLabelText(/読み方/)
+    const restoredInput = await screen.findByLabelText(/ひらがなで/)
     expect(restoredInput).toHaveValue("ほけ")
     expect(
       screen.queryByRole("button", { name: /^correct$/i }),
@@ -276,7 +276,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText(/読み方/)
+    const input = await screen.findByLabelText(/ひらがなで/)
     await user.type(input, "ほけ{Enter}")
     expect(
       await screen.findByRole("button", { name: /^correct$/i }),
@@ -471,7 +471,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText(/読み方/)
+    const input = await screen.findByLabelText(/ひらがなで/)
     await user.type(input, "しゅかん{Enter}")
 
     const comparison = await screen.findByRole("group", {
@@ -517,7 +517,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText(/読み方/)
+    const input = await screen.findByLabelText(/ひらがなで/)
     await user.type(input, "猫{Enter}")
 
     expect(
@@ -692,7 +692,7 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText(/読み方/)
+    const input = await screen.findByLabelText(/ひらがなで/)
     await user.type(input, "猫{Enter}")
     expect(
       await screen.findByText(/use hiragana only for readings/i),
@@ -708,7 +708,7 @@ describe("ReviewSessionPage", () => {
 
     await user.click(screen.getByRole("button", { name: /undo answer/i }))
 
-    const reopenedInput = await screen.findByLabelText(/読み方/)
+    const reopenedInput = await screen.findByLabelText(/ひらがなで/)
     expect(reopenedInput).toHaveValue("ねこ")
     expect(reopenedInput).toHaveFocus()
     expect(

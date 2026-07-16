@@ -274,7 +274,7 @@ export function ReviewSessionPromptBody({
           </div>
         ) : (
           <label>
-            読み方（ひらがなで）
+            ひらがなで
             <TypingAnswerInput
               value={typed}
               onChange={onTypedChange}
@@ -325,7 +325,7 @@ export function ReviewSessionPromptBody({
 
     if (revealed) return null
     return (
-      <div className="stack">
+      <div className="stack word-from-clue-input">
         <label>
           日本語で
           <TypingAnswerInput
@@ -547,7 +547,7 @@ export function ReviewSessionPromptBody({
           </div>
         ) : (
           <label>
-            読み方（ひらがなで）
+            ひらがなで
             <TypingAnswerInput
               value={typed}
               onChange={onTypedChange}

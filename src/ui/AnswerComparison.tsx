@@ -186,7 +186,10 @@ export function AnswerComparison({
       aria-label={isCorrect ? "Answer" : "Answer comparison"}
     >
       <div className="reading-answer-row">
-        <span id={correctId} className="answer-grid-label">
+        <span
+          id={correctId}
+          className={`answer-grid-label${isCorrect ? " sr-only" : ""}`}
+        >
           Correct answer
         </span>
         {showRuby && !diff ? (

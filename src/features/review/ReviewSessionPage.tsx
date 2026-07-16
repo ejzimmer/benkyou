@@ -575,7 +575,7 @@ export function ReviewSessionPage() {
 
       <section className="panel prompt">
         {modeLabel && (
-          <h2 className={current && modeHeadingVisible(current.modeId) ? undefined : "sr-only"}>
+          <h2 className={current && modeHeadingVisible(current.card, current.modeId) ? undefined : "sr-only"}>
             {modeLabel}
           </h2>
         )}

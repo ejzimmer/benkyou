@@ -6,11 +6,13 @@ import { ReviewFooter } from "./ReviewFooter"
 import {
   answersMatch,
   differsOnlyByPunctuation,
+  displayedCorrectAnswer,
   readingForConstruction,
   requiresTyping,
 } from "./reviewFlowHelpers"
 import { countGaps } from "../../domain/grammarGaps"
 import {
+  containsKanji,
   phraseReadingSegments,
   wordJaReading,
 } from "../../domain/vocabularyContent"
@@ -49,6 +51,17 @@ export function ReviewSessionAnswerPanel({
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
   const answeredCorrectly = answersMatch(m, typed, expected)
+  // When `expected` lists "/"-separated alternates, show just the one the
+  // learner actually matched — the raw "A/B" isn't itself an answer anyone
+  // typed, and a reading/furigana meant for one alternate would otherwise be
+  // shown stacked over both.
+  const displayExpected = displayedCorrectAnswer(m, typed, expected)
+  const wordFromClueReading =
+    m === "vocab_type_word_from_clue" && card.kind === "vocabulary"
+      ? wordJaReading(card.content)
+      : undefined
+  const wordFromClueShowRuby =
+    Boolean(wordFromClueReading?.trim()) && containsKanji(displayExpected)
   // When the card structurally has multiple answer parts (a multi-gap
   // construction, or a phrase word/construction reading quizzed segment by
   // segment), the comma between them is meaningful content (a part
@@ -129,36 +142,66 @@ export function ReviewSessionAnswerPanel({
   return (
     <div className="answer-block stack">
       {m === "vocab_oral_en" && card.kind === "vocabulary" && (
-        <>
+        <div className="oral-answer">
           {card.content.definitionsEn
             .filter((s) => s.trim())
             .map((d, i) => (
               <p key={i}>{d}</p>
             ))}
           <CardImageRow images={card.content.images} />
-        </>
+        </div>
       )}
 
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
         <AnswerComparison
           typed={typed}
-          expected={expected}
+          expected={displayExpected}
           answeredCorrectly={answeredCorrectly}
         />
       )}
 
       {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
-        <AnswerComparison
-          typed={typed}
-          expected={expected}
-          reading={wordJaReading(card.content)}
-        />
+        <div className="word-from-clue-result">
+          {answeredCorrectly ? (
+            <div
+              className="word-from-clue-correct"
+              role="group"
+              aria-label="Answer"
+            >
+              {wordFromClueShowRuby ? (
+                <span
+                  className="ruby-hover answer-ruby word-from-clue-word"
+                  lang="ja"
+                  tabIndex={0}
+                >
+                  <ruby>
+                    {displayExpected}
+                    <rt>{wordFromClueReading}</rt>
+                  </ruby>
+                </span>
+              ) : (
+                <span className="word-from-clue-word" lang="ja">
+                  {displayExpected}
+                </span>
+              )}
+              <span className="maru-mark" aria-hidden="true" />
+              <span className="sr-only">Correct</span>
+            </div>
+          ) : (
+            <AnswerComparison
+              typed={typed}
+              expected={displayExpected}
+              reading={wordFromClueReading}
+              answeredCorrectly={answeredCorrectly}
+            />
+          )}
+        </div>
       )}
 
       {m === "grammar_type_construction" && card.kind === "grammar" && (
         <AnswerComparison
           typed={typed}
-          expected={expected}
+          expected={displayExpected}
           reading={readingForConstruction(
             card.content.construction,
             card.content.readings,
@@ -170,7 +213,7 @@ export function ReviewSessionAnswerPanel({
       {m === "grammar_type_reading" && card.kind === "grammar" && (
         <AnswerComparison
           typed={typed}
-          expected={expected}
+          expected={displayExpected}
           answeredCorrectly={answeredCorrectly}
         />
       )}

@@ -588,11 +588,24 @@ label {
   font-weight: 600;
 }
 
+/* Looks like a blank you'd fill in on paper: no box, just a line to write
+   on. Overrides the boxy .input look (background/border/radius) it also
+   carries as its base class. */
 .inline-gap-input {
   display: inline-block;
   width: min(12rem, 55vw);
   margin: 0 0.2rem;
   vertical-align: baseline;
+  background: none;
+  border: none;
+  border-radius: 0;
+  border-bottom: 2px solid #33334a;
+  padding: 0.1rem 0.2rem;
+}
+
+.inline-gap-input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--blue);
 }
 
 /* One labeled input per kanji segment of a phrase word/construction being
@@ -864,6 +877,72 @@ label {
 .review-answer-prompt .input {
   color: #e8e8f0;
   max-width: 75%;
+}
+
+/* "Type the Japanese word": the input (before reveal) and its eventual
+   answer (after reveal) both sit centered in the same spot on the card, so
+   revealing the answer reads as the input itself resolving in place rather
+   than a new block of content appearing elsewhere. */
+.word-from-clue-input {
+  flex: 1;
+  min-height: 0;
+  justify-content: center;
+  text-align: center;
+}
+
+/* A fixed, centered width rather than `align-items: center` on the stack —
+   centering the flex item directly would let the label shrink-wrap to its
+   text content, and the input's `width: 100%` would then resolve against
+   that (much narrower) shrunk width instead of a sensible input size. */
+.word-from-clue-input label {
+  width: min(22rem, 100%);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.word-from-clue-result {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.word-from-clue-correct {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Mirrors .input's own box model (padding, border width, radius) with the
+   border/background made invisible, so the revealed word lands in exactly
+   the same box the input occupied — just no longer editable. */
+.word-from-clue-word {
+  display: inline-block;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 1.1rem;
+}
+
+/* A red maru (◯) is how a Japanese teacher marks a correct answer on paper;
+   this uses the site's green (review-related actions) instead of red. */
+.maru-mark {
+  width: 1.4em;
+  height: 1.4em;
+  flex: 0 0 auto;
+  border: 0.15em solid var(--green);
+  border-radius: 50%;
+}
+
+.oral-answer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
 }
 
 .compare-diff {

@@ -162,11 +162,19 @@ export function requiresTyping(mode: ReviewModeId): boolean {
  * to make the generic mode heading redundant. Every other mode hides it (the
  * heading stays in the DOM for screen-reader heading navigation, just
  * visually hidden) — so a new mode defaults to hidden unless added here.
+ *
+ * `grammar_type_construction` is a special case: the generic "Type the
+ * construction" heading is redundant with the gapped sentence itself, but
+ * when the card has a `grammarPoint` set, `reviewModeLabel` swaps in a
+ * tailored question ("What's the correct conjugation?") that isn't shown
+ * anywhere else on the prompt — that one still needs to stay visible.
  */
-export function modeHeadingVisible(mode: ReviewModeId): boolean {
-  return (
-    mode === "grammar_type_construction" || mode === "grammar_type_reading"
-  )
+export function modeHeadingVisible(card: Card, mode: ReviewModeId): boolean {
+  if (mode === "grammar_type_reading") return true
+  if (mode === "grammar_type_construction" && card.kind === "grammar") {
+    return Boolean(grammarPointFor(card.content))
+  }
+  return false
 }
 
 export function expectedAnswer(card: Card, mode: ReviewModeId): string {
@@ -189,22 +197,67 @@ export function expectedAnswer(card: Card, mode: ReviewModeId): string {
 }
 
 /**
- * Whether `typed` matches `expected` for grading purposes. Fill-in-the-gap
- * cards with multiple gaps compare each comma-separated answer positionally,
- * so "," vs "、" and incidental spacing around the separator don't cause a
- * correct answer to be treated as wrong.
+ * A card author can write two acceptable answers separated by "/" (e.g.
+ * "たべる/たべます") to accept either. Empty when there's one or fewer
+ * non-empty parts — a lone "/" with nothing on one side is left as literal
+ * text rather than treated as a broken alternate list.
  */
-export function answersMatch(
+function splitAlternates(expected: string): string[] {
+  const parts = expected
+    .split("/")
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return parts.length > 1 ? parts : []
+}
+
+function candidateMatches(
   mode: ReviewModeId,
   typed: string,
-  expected: string,
+  candidate: string,
 ): boolean {
   if (
     mode === "grammar_type_construction" ||
     mode === "vocab_type_reading" ||
     mode === "grammar_type_reading"
   ) {
-    return normalizeGapAnswers(typed) === normalizeGapAnswers(expected)
+    return normalizeGapAnswers(typed) === normalizeGapAnswers(candidate)
   }
-  return typed === expected
+  return typed === candidate
+}
+
+/**
+ * Whether `typed` matches `expected` for grading purposes. Fill-in-the-gap
+ * cards with multiple gaps compare each comma-separated answer positionally,
+ * so "," vs "、" and incidental spacing around the separator don't cause a
+ * correct answer to be treated as wrong. When `expected` lists multiple
+ * "/"-separated alternates, matching any one of them counts as correct — the
+ * literal, un-split `expected` is always tried too, so a field whose "/" is
+ * ordinary text (not an alternate list, e.g. a literal "1/2") still matches
+ * itself exactly.
+ */
+export function answersMatch(
+  mode: ReviewModeId,
+  typed: string,
+  expected: string,
+): boolean {
+  const candidates = [expected, ...splitAlternates(expected)]
+  return candidates.some((candidate) => candidateMatches(mode, typed, candidate))
+}
+
+/**
+ * The answer to display once judged correct: when `expected` lists "/"
+ * alternates and `typed` matches one of them specifically, show just that
+ * alternate rather than the raw "A/B" — otherwise a reading/furigana meant
+ * for one alternate would be shown stacked over both. Falls back to the full
+ * `expected` text when nothing was typed yet (nothing revealed as "correct")
+ * or the literal un-split field is what actually matched.
+ */
+export function displayedCorrectAnswer(
+  mode: ReviewModeId,
+  typed: string,
+  expected: string,
+): string {
+  const alternates = splitAlternates(expected)
+  if (alternates.length === 0) return expected
+  return alternates.find((alt) => candidateMatches(mode, typed, alt)) ?? expected
 }
