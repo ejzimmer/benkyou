@@ -164,9 +164,7 @@ export function requiresTyping(mode: ReviewModeId): boolean {
  * visually hidden) — so a new mode defaults to hidden unless added here.
  */
 export function modeHeadingVisible(mode: ReviewModeId): boolean {
-  return (
-    mode === "grammar_type_construction" || mode === "grammar_type_reading"
-  )
+  return mode === "grammar_type_reading"
 }
 
 export function expectedAnswer(card: Card, mode: ReviewModeId): string {
@@ -189,22 +187,39 @@ export function expectedAnswer(card: Card, mode: ReviewModeId): string {
 }
 
 /**
+ * A card author can write two acceptable answers separated by "/" (e.g.
+ * "たべる/たべます") to accept either. Splits only when there's more than one
+ * non-empty alternate — a lone "/" with nothing on one side is left as
+ * literal text rather than treated as a broken alternate list.
+ */
+function alternateAnswers(expected: string): string[] {
+  const parts = expected
+    .split("/")
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return parts.length > 1 ? parts : [expected]
+}
+
+/**
  * Whether `typed` matches `expected` for grading purposes. Fill-in-the-gap
  * cards with multiple gaps compare each comma-separated answer positionally,
  * so "," vs "、" and incidental spacing around the separator don't cause a
- * correct answer to be treated as wrong.
+ * correct answer to be treated as wrong. When `expected` lists multiple
+ * "/"-separated alternates, matching any one of them counts as correct.
  */
 export function answersMatch(
   mode: ReviewModeId,
   typed: string,
   expected: string,
 ): boolean {
-  if (
-    mode === "grammar_type_construction" ||
-    mode === "vocab_type_reading" ||
-    mode === "grammar_type_reading"
-  ) {
-    return normalizeGapAnswers(typed) === normalizeGapAnswers(expected)
-  }
-  return typed === expected
+  return alternateAnswers(expected).some((candidate) => {
+    if (
+      mode === "grammar_type_construction" ||
+      mode === "vocab_type_reading" ||
+      mode === "grammar_type_reading"
+    ) {
+      return normalizeGapAnswers(typed) === normalizeGapAnswers(candidate)
+    }
+    return typed === candidate
+  })
 }

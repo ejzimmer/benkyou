@@ -11,6 +11,7 @@ import {
 } from "./reviewFlowHelpers"
 import { countGaps } from "../../domain/grammarGaps"
 import {
+  containsKanji,
   phraseReadingSegments,
   wordJaReading,
 } from "../../domain/vocabularyContent"
@@ -129,14 +130,14 @@ export function ReviewSessionAnswerPanel({
   return (
     <div className="answer-block stack">
       {m === "vocab_oral_en" && card.kind === "vocabulary" && (
-        <>
+        <div className="oral-answer">
           {card.content.definitionsEn
             .filter((s) => s.trim())
             .map((d, i) => (
               <p key={i}>{d}</p>
             ))}
           <CardImageRow images={card.content.images} />
-        </>
+        </div>
       )}
 
       {m === "vocab_type_reading" && card.kind === "vocabulary" && (
@@ -148,11 +149,41 @@ export function ReviewSessionAnswerPanel({
       )}
 
       {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
-        <AnswerComparison
-          typed={typed}
-          expected={expected}
-          reading={wordJaReading(card.content)}
-        />
+        <div className="word-from-clue-result">
+          {answeredCorrectly ? (
+            <div className="word-from-clue-correct">
+              {(() => {
+                const reading = wordJaReading(card.content)
+                const showRuby =
+                  Boolean(reading?.trim()) && containsKanji(expected)
+                return showRuby ? (
+                  <span
+                    className="ruby-hover answer-ruby word-from-clue-word"
+                    tabIndex={0}
+                  >
+                    <ruby>
+                      {expected}
+                      <rt>{reading}</rt>
+                    </ruby>
+                  </span>
+                ) : (
+                  <span className="word-from-clue-word" lang="ja">
+                    {expected}
+                  </span>
+                )
+              })()}
+              <span className="maru-mark" aria-hidden="true" />
+              <span className="sr-only">Correct</span>
+            </div>
+          ) : (
+            <AnswerComparison
+              typed={typed}
+              expected={expected}
+              reading={wordJaReading(card.content)}
+              answeredCorrectly={answeredCorrectly}
+            />
+          )}
+        </div>
       )}
 
       {m === "grammar_type_construction" && card.kind === "grammar" && (
