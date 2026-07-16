@@ -577,17 +577,19 @@ async function syncMedia(
   remote: RemoteSnapshot,
   lastSyncedAt: number | null,
   onConflict: (c: SyncConflict) => Promise<SyncConflictChoice>,
+  onProgress?: (current: number, total: number) => void,
 ): Promise<void> {
   const cards = await db.cards.toArray()
+  const localMedia = await db.media.toArray()
+
   const mediaIds = new Set<string>()
   for (const c of cards) {
     for (const id of c.content.images) mediaIds.add(id)
   }
-  for (const m of await db.media.toArray()) {
+  for (const m of localMedia) {
     mediaIds.add(m.id)
   }
 
-  const localMedia = await db.media.toArray()
   const localById = new Map(localMedia.map((m) => [m.id, m]))
   const tombstonedMedia = new Set(
     (await db.tombstones.where("entityType").equals("media").toArray()).map(
@@ -605,23 +607,37 @@ async function syncMedia(
 
   if (ids.length === 0) return
 
+  let completed = 0
+  onProgress?.(0, ids.length)
+
   const concurrency = 4
   await runWithConcurrency(ids, concurrency, async (mediaId, index) => {
-    await syncLogTimed(
-      `sync media ${index + 1}/${ids.length}`,
-      () =>
-        syncOneMediaItem(
-          storage,
-          uid,
-          mediaId,
-          remote,
-          lastSyncedAt,
-          localById,
-          tombstonedMedia,
-          onConflict,
-        ),
-      { mediaId: mediaId.slice(0, 40) },
-    )
+    try {
+      await syncLogTimed(
+        `sync media ${index + 1}/${ids.length}`,
+        () =>
+          syncOneMediaItem(
+            storage,
+            uid,
+            mediaId,
+            remote,
+            lastSyncedAt,
+            localById,
+            tombstonedMedia,
+            onConflict,
+          ),
+        { mediaId: mediaId.slice(0, 40) },
+      )
+    } finally {
+      completed += 1
+      // Throttled: a large media library can complete hundreds of items
+      // within a single tick, and `onProgress` drives a React state update
+      // upstream — reporting every single completion would trade an
+      // invisible-progress freeze for a re-render-storm one.
+      if (completed % 10 === 0 || completed === ids.length) {
+        onProgress?.(completed, ids.length)
+      }
+    }
   })
 }
 
@@ -825,7 +841,9 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
 
   report({ phase: "Downloading images…" })
   await syncLogTimed("sync media blobs", () =>
-    syncMedia(storage, uid, remote, lastSyncedAt, onConflict),
+    syncMedia(storage, uid, remote, lastSyncedAt, onConflict, (current, total) =>
+      report({ phase: "Downloading images…", current, total }),
+    ),
   )
 
   const remoteMediaIds = new Set(remote.mediaMeta.keys())
