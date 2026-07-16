@@ -781,15 +781,6 @@ label {
   gap: 1.25rem;
 }
 
-@media (min-width: 760px) {
-  .review-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    align-items: stretch;
-  }
-}
-
 .panel.prompt {
   background: none;
   padding: 0;
@@ -813,6 +804,79 @@ label {
 
 .review-answer {
   padding: 40px 30px 1rem;
+}
+
+@media (min-width: 760px) {
+  /* Bound the whole review page to the viewport so the two cards below have
+     a definite height to stretch/cap against instead of growing forever.
+     Sizing `.app-shell` itself (rather than `.page.review`) means its own
+     top/bottom padding is included in that height (box-sizing: border-box),
+     instead of pushing the page past the viewport by that padding amount. */
+  .app-shell:has(.page.review) {
+    display: flex;
+    flex-direction: column;
+    height: var(--vvh, 100dvh);
+  }
+
+  .page.review {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* `flex: 1; min-height: 0` gives this a definite height (the space left
+     under the header) regardless of its own content — that's what lets the
+     percentage max-heights below act as a real viewport-relative ceiling
+     rather than growing to whatever the cards need. */
+  .page.review .panel.prompt {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Deliberately NOT a flex/stretch item of `.panel.prompt` — this sizes to
+     its own content (cards' min-height floor, or taller if they need more),
+     not to the full space available, so short cards stay at their minimum
+     size instead of stretching to fill the viewport. `max-height` still
+     caps it at the space available, per `.panel.prompt` above. */
+  .review-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: stretch;
+    max-height: 100%;
+  }
+
+  .review-question,
+  .review-answer {
+    /* Content-sized between the 50vh floor and this viewport-relative
+       ceiling (`.review-columns`'s own max-height, above) — beyond it the
+       card scrolls its own overflow instead of growing past the viewport. */
+    max-height: 100%;
+  }
+
+  .review-question {
+    overflow-y: auto;
+    /* Centering + overflow can otherwise hide the start of content that's
+       taller than the card — "safe" falls back to top-aligned once it
+       doesn't fit, so the scrollable area always starts from the top. */
+    justify-content: safe center;
+  }
+
+  .review-answer {
+    overflow: hidden;
+  }
+
+  /* Only the answer's own content scrolls — the Show answer / Correct /
+     Incorrect buttons stay pinned to the bottom of the card. */
+  .review-answer-prompt > .stack,
+  .answer-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
 }
 
 /* The prompt controls and the revealed answer occupy the same grid cell, so
