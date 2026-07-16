@@ -188,7 +188,7 @@ export function AnswerComparison({
       <div className="reading-answer-row">
         <span
           id={correctId}
-          className={isCorrect ? "answer-grid-label sr-only" : "answer-grid-label"}
+          className={`answer-grid-label${isCorrect ? " sr-only" : ""}`}
         >
           Correct answer
         </span>
