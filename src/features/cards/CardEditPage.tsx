@@ -41,8 +41,10 @@ import { PageHeading } from "../../ui/PageHeading"
 import {
   deriveFurigana,
   parseReadingsMapText,
+  parseWordReadingText,
   readingsMapToText,
   reseedFurigana,
+  wordReadingToText,
   type LabeledReading,
 } from "../../domain/readingsMap"
 
@@ -139,9 +141,8 @@ export function CardEditPage() {
   const [grammar, setGrammar] = useState<GrammarCardContent>(defaultGrammar)
   /** Controlled drafts so incomplete `kanji=` lines are not dropped on each keystroke */
   const [readingsMapDraft, setReadingsMapDraft] = useState("")
-  const [readingPartsDraft, setReadingPartsDraft] = useState("")
-  const [constructionReadingPartsDraft, setConstructionReadingPartsDraft] =
-    useState("")
+  const [vocabReadingDraft, setVocabReadingDraft] = useState("")
+  const [grammarReadingDraft, setGrammarReadingDraft] = useState("")
   /**
    * The furigana map (`readings`) is auto-seeded from whatever's actually
    * tested (`reading`/`readingParts` or `constructionReading`/
@@ -239,8 +240,8 @@ export function CardEditPage() {
       setLoading(false)
       setErr(null)
       setReadingsMapDraft("")
-      setReadingPartsDraft("")
-      setConstructionReadingPartsDraft("")
+      setVocabReadingDraft("")
+      setGrammarReadingDraft("")
       vocabFuriganaSeedRef.current = {}
       grammarFuriganaSeedRef.current = {}
       hydratedCardIdRef.current = null
@@ -262,8 +263,11 @@ export function CardEditPage() {
     if (loadedCard.kind === "vocabulary") {
       setVocab(loadedCard.content)
       setReadingsMapDraft(readingsMapToText(loadedCard.content.readings ?? {}))
-      setReadingPartsDraft(
-        readingsMapToText(loadedCard.content.readingParts ?? {}),
+      setVocabReadingDraft(
+        wordReadingToText(
+          loadedCard.content.reading,
+          loadedCard.content.readingParts,
+        ),
       )
       vocabFuriganaSeedRef.current = deriveFurigana(
         vocabTestedParts(loadedCard.content),
@@ -271,8 +275,11 @@ export function CardEditPage() {
     } else {
       setGrammar(loadedCard.content)
       setReadingsMapDraft(readingsMapToText(loadedCard.content.readings))
-      setConstructionReadingPartsDraft(
-        readingsMapToText(loadedCard.content.constructionReadingParts ?? {}),
+      setGrammarReadingDraft(
+        wordReadingToText(
+          loadedCard.content.constructionReading,
+          loadedCard.content.constructionReadingParts,
+        ),
       )
       grammarFuriganaSeedRef.current = deriveFurigana(
         grammarTestedParts(loadedCard.content),
@@ -284,8 +291,8 @@ export function CardEditPage() {
     setVocab(defaultVocabulary())
     setGrammar(defaultGrammar())
     setReadingsMapDraft("")
-    setReadingPartsDraft("")
-    setConstructionReadingPartsDraft("")
+    setVocabReadingDraft("")
+    setGrammarReadingDraft("")
     vocabFuriganaSeedRef.current = {}
     grammarFuriganaSeedRef.current = {}
     formRef.current?.reset()
@@ -304,7 +311,9 @@ export function CardEditPage() {
       const nextVocab = vocabularyFromGrammarContent(grammar)
       setVocab(nextVocab)
       setReadingsMapDraft(readingsMapToText(nextVocab.readings ?? {}))
-      setReadingPartsDraft(readingsMapToText(nextVocab.readingParts ?? {}))
+      setVocabReadingDraft(
+        wordReadingToText(nextVocab.reading, nextVocab.readingParts),
+      )
       vocabFuriganaSeedRef.current = deriveFurigana(vocabTestedParts(nextVocab))
       setKind("vocabulary")
       return
@@ -313,8 +322,11 @@ export function CardEditPage() {
     const nextGrammar = grammarFromVocabularyContent(vocab)
     setGrammar(nextGrammar)
     setReadingsMapDraft(readingsMapToText(nextGrammar.readings))
-    setConstructionReadingPartsDraft(
-      readingsMapToText(nextGrammar.constructionReadingParts ?? {}),
+    setGrammarReadingDraft(
+      wordReadingToText(
+        nextGrammar.constructionReading,
+        nextGrammar.constructionReadingParts,
+      ),
     )
     grammarFuriganaSeedRef.current = deriveFurigana(
       grammarTestedParts(nextGrammar),
@@ -388,15 +400,20 @@ export function CardEditPage() {
       if (merged.kind === "vocabulary") {
         setVocab(merged.content)
         setReadingsMapDraft(readingsMapToText(merged.content.readings ?? {}))
-        setReadingPartsDraft(readingsMapToText(merged.content.readingParts ?? {}))
+        setVocabReadingDraft(
+          wordReadingToText(merged.content.reading, merged.content.readingParts),
+        )
         vocabFuriganaSeedRef.current = deriveFurigana(
           vocabTestedParts(merged.content),
         )
       } else {
         setGrammar(merged.content)
         setReadingsMapDraft(readingsMapToText(merged.content.readings))
-        setConstructionReadingPartsDraft(
-          readingsMapToText(merged.content.constructionReadingParts ?? {}),
+        setGrammarReadingDraft(
+          wordReadingToText(
+            merged.content.constructionReading,
+            merged.content.constructionReadingParts,
+          ),
         )
         grammarFuriganaSeedRef.current = deriveFurigana(
           grammarTestedParts(merged.content),
@@ -568,42 +585,35 @@ export function CardEditPage() {
                     reading: kanaOnly ? undefined : vocab.reading,
                     readingParts: kanaOnly ? {} : vocab.readingParts,
                   })
-                  if (kanaOnly) setReadingPartsDraft("")
+                  if (kanaOnly) setVocabReadingDraft("")
                 }}
                 required
               />
             </label>
             <label>
-              Reading / pronunciation (hiragana — kanji words only)
-              <input
+              Reading (hiragana — kanji words only). For a phrase tested
+              cluster by cluster instead of as one whole reading, use
+              kanjiPhrase=reading pairs instead, one per line (e.g.
+              結論=けつろん, 至る=いたる).
+              <textarea
                 className="input"
-                value={vocab.reading ?? ""}
+                rows={3}
+                aria-label="Reading"
+                value={vocabReadingDraft}
                 disabled={isKanaOnly(vocab.wordJa)}
-                onChange={(e) => updateVocab({ reading: e.target.value })}
+                onChange={(e) => {
+                  const text = e.target.value
+                  setVocabReadingDraft(text)
+                  const { reading, readingParts } = parseWordReadingText(text)
+                  updateVocab({ reading, readingParts })
+                }}
               />
             </label>
             {!containsKanji(vocab.wordJa) && (
               <p className="muted small">
-                Kana-only words do not use a separate pronunciation field.
+                Kana-only words do not need a reading.
               </p>
             )}
-            <label>
-              Reading, per cluster (for a phrase word tested cluster by
-              cluster instead of as one whole reading — e.g. 結論=けつろん,
-              至る=いたる, one per line). Used instead of the pronunciation
-              field above once you give 2 or more.
-              <textarea
-                className="input"
-                rows={3}
-                aria-label="Reading segments"
-                value={readingPartsDraft}
-                onChange={(e) => {
-                  const text = e.target.value
-                  setReadingPartsDraft(text)
-                  updateVocab({ readingParts: parseReadingsMapText(text) })
-                }}
-              />
-            </label>
             <p className="muted small">
               Include at least one of: pronunciation (for kanji words),
               meaning, or an image.
@@ -733,7 +743,7 @@ export function CardEditPage() {
                       ? {}
                       : grammar.constructionReadingParts,
                   })
-                  if (kanaOnly) setConstructionReadingPartsDraft("")
+                  if (kanaOnly) setGrammarReadingDraft("")
                 }}
               />
             </label>
@@ -777,30 +787,22 @@ export function CardEditPage() {
               Reading of the construction (hiragana) — independent of the
               construction's literal text above, so a conjugated form (e.g.
               芳しく) can test its dictionary form's reading (かんばしい)
-              instead of the conjugated one.
-              <input
-                className="input"
-                value={grammar.constructionReading ?? ""}
-                onChange={(e) =>
-                  updateGrammar({ constructionReading: e.target.value })
-                }
-              />
-            </label>
-            <label>
-              Reading, per cluster (for a construction that's several
-              words/clusters tested separately — e.g. two gap-fillers
-              流し=ながし, 呼ぶ=よぶ, one per line). Used instead of the
-              field above once you give 2 or more.
+              instead of the conjugated one. For a construction that's
+              several words/clusters tested separately, use
+              kanjiPhrase=reading pairs instead, one per line (e.g.
+              流し=ながし, 呼ぶ=よぶ).
               <textarea
                 className="input"
                 rows={3}
-                aria-label="Construction reading segments"
-                value={constructionReadingPartsDraft}
+                aria-label="Construction reading"
+                value={grammarReadingDraft}
                 onChange={(e) => {
                   const text = e.target.value
-                  setConstructionReadingPartsDraft(text)
+                  setGrammarReadingDraft(text)
+                  const { reading, readingParts } = parseWordReadingText(text)
                   updateGrammar({
-                    constructionReadingParts: parseReadingsMapText(text),
+                    constructionReading: reading,
+                    constructionReadingParts: readingParts,
                   })
                 }}
               />

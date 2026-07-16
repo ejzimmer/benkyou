@@ -4,10 +4,12 @@ import {
   fullyCoveredSegments,
   kanjiOnlyEntry,
   parseReadingsMapText,
+  parseWordReadingText,
   readingsMapToText,
   reseedFurigana,
   segmentText,
   withWordReadingFallback,
+  wordReadingToText,
 } from "./readingsMap"
 
 describe("readingsMapToText / parseReadingsMapText", () => {
@@ -18,6 +20,50 @@ describe("readingsMapToText / parseReadingsMapText", () => {
 
   it("parse ignores incomplete lines without equals", () => {
     expect(parseReadingsMapText("私\n私=")).toEqual({ 私: "" })
+  })
+
+  it("also splits on a fullwidth ＝", () => {
+    expect(parseReadingsMapText("私＝わたし")).toEqual({ 私: "わたし" })
+  })
+})
+
+describe("parseWordReadingText / wordReadingToText", () => {
+  it("treats text with no separator as a single whole-word reading", () => {
+    expect(parseWordReadingText("ねこ")).toEqual({
+      reading: "ねこ",
+      readingParts: {},
+    })
+  })
+
+  it("treats blank text as no reading at all", () => {
+    expect(parseWordReadingText("  ")).toEqual({
+      reading: undefined,
+      readingParts: {},
+    })
+  })
+
+  it("splits into per-cluster readings once = appears anywhere", () => {
+    expect(parseWordReadingText("結論=けつろん\n至る=いたる")).toEqual({
+      reading: undefined,
+      readingParts: { 結論: "けつろん", 至る: "いたる" },
+    })
+  })
+
+  it("also treats a fullwidth ＝ as splitting into per-cluster readings", () => {
+    expect(parseWordReadingText("結論＝けつろん")).toEqual({
+      reading: undefined,
+      readingParts: { 結論: "けつろん" },
+    })
+  })
+
+  it("round-trips a whole-word reading back to text", () => {
+    expect(wordReadingToText("ねこ", {})).toBe("ねこ")
+  })
+
+  it("round-trips per-cluster readings back to text, preferring them over a stale whole-word reading", () => {
+    expect(
+      wordReadingToText(undefined, { 結論: "けつろん", 至る: "いたる" }),
+    ).toBe("結論=けつろん\n至る=いたる")
   })
 })
 

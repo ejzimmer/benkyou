@@ -52,7 +52,7 @@ describe("CardEditPage vocab furigana auto-seed", () => {
     render(wrapVocab())
 
     await user.type(screen.getByLabelText(/japanese word/i), "猫")
-    await user.type(screen.getByLabelText(/reading \/ pronunciation/i), "ねこ")
+    await user.type(screen.getByRole("textbox", { name: /^reading$/i }), "ねこ")
 
     expect(
       screen.getByRole("textbox", { name: /kanji to reading map/i }),
@@ -64,7 +64,7 @@ describe("CardEditPage vocab furigana auto-seed", () => {
     render(wrapVocab())
 
     await user.type(screen.getByLabelText(/japanese word/i), "猫")
-    await user.type(screen.getByLabelText(/reading \/ pronunciation/i), "ねこ")
+    await user.type(screen.getByRole("textbox", { name: /^reading$/i }), "ねこ")
 
     const furiganaTa = screen.getByRole("textbox", {
       name: /kanji to reading map/i,
@@ -73,7 +73,7 @@ describe("CardEditPage vocab furigana auto-seed", () => {
     await user.type(furiganaTa, "猫=ネコ")
 
     expect(furiganaTa).toHaveValue("猫=ネコ")
-    expect(screen.getByLabelText(/reading \/ pronunciation/i)).toHaveValue(
+    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue(
       "ねこ",
     )
   })
@@ -83,7 +83,7 @@ describe("CardEditPage vocab furigana auto-seed", () => {
     render(wrapVocab())
 
     await user.type(screen.getByLabelText(/japanese word/i), "猫")
-    const readingInput = screen.getByLabelText(/reading \/ pronunciation/i)
+    const readingInput = screen.getByRole("textbox", { name: /^reading$/i })
     await user.type(readingInput, "ねこ")
 
     const furiganaTa = screen.getByRole("textbox", {
@@ -98,13 +98,13 @@ describe("CardEditPage vocab furigana auto-seed", () => {
     expect(furiganaTa).toHaveValue("猫=ネコ")
   })
 
-  it("seeds kanji-only furigana per cluster from the reading-segments field", async () => {
+  it("seeds kanji-only furigana per cluster once the reading field has multiple = entries", async () => {
     const user = userEvent.setup()
     render(wrapVocab())
 
     await user.type(screen.getByLabelText(/japanese word/i), "結論に至る")
     await user.type(
-      screen.getByLabelText(/reading, per cluster/i),
+      screen.getByRole("textbox", { name: /^reading$/i }),
       "結論=けつろん\n至る=いたる",
     )
 
@@ -124,7 +124,7 @@ describe("CardEditPage grammar furigana auto-seed", () => {
       "芳しく",
     )
     await user.type(
-      screen.getByLabelText(/reading of the construction/i),
+      screen.getByRole("textbox", { name: /^construction reading$/i }),
       "かんばしい",
     )
 
@@ -136,7 +136,7 @@ describe("CardEditPage grammar furigana auto-seed", () => {
     ).toHaveValue("芳=かんば")
   })
 
-  it("seeds per-cluster furigana from construction reading segments", async () => {
+  it("seeds per-cluster furigana once the construction reading field has multiple = entries", async () => {
     const user = userEvent.setup()
     render(wrapGrammar())
 
@@ -145,7 +145,7 @@ describe("CardEditPage grammar furigana auto-seed", () => {
       "結論に至る",
     )
     await user.type(
-      screen.getByLabelText(/reading, per cluster/i),
+      screen.getByRole("textbox", { name: /^construction reading$/i }),
       "結論=けつろん\n至る=いたる",
     )
 

@@ -111,6 +111,9 @@ export function reseedFurigana(
   return next
 }
 
+/** Separator between a phrase key and its reading: ASCII "=" or fullwidth "＝". */
+const KEY_VALUE_SEPARATOR = /[=＝]/
+
 /** Serialize a phrase→reading map for a card editor (one `key=value` per line). */
 export function readingsMapToText(readings: Record<string, string>): string {
   return Object.entries(readings)
@@ -119,17 +122,44 @@ export function readingsMapToText(readings: Record<string, string>): string {
     .join("\n")
 }
 
-/** Parse completed `phrase=reading` lines; lines without `=` are ignored (draft lines live only in textarea state). */
+/** Parse completed `phrase=reading` (or `phrase＝reading`) lines; lines without a separator are ignored (draft lines live only in textarea state). */
 export function parseReadingsMapText(text: string): Record<string, string> {
   const readings: Record<string, string> = {}
   for (const line of text.split("\n")) {
-    const idx = line.indexOf("=")
-    if (idx === -1) continue
-    const k = line.slice(0, idx).trim()
+    const match = KEY_VALUE_SEPARATOR.exec(line)
+    if (!match) continue
+    const k = line.slice(0, match.index).trim()
     if (!k) continue
-    readings[k] = line.slice(idx + 1).trim()
+    readings[k] = line.slice(match.index + 1).trim()
   }
   return readings
+}
+
+export type WordReading = {
+  reading: string | undefined
+  readingParts: Record<string, string>
+}
+
+/**
+ * Parse the single combined reading field used by the card editor: no
+ * `=`/`＝` anywhere means the whole text is one whole-word reading;
+ * otherwise it's `phrase=reading` lines, one per tested cluster.
+ */
+export function parseWordReadingText(text: string): WordReading {
+  if (!KEY_VALUE_SEPARATOR.test(text)) {
+    const reading = text.trim()
+    return { reading: reading || undefined, readingParts: {} }
+  }
+  return { reading: undefined, readingParts: parseReadingsMapText(text) }
+}
+
+/** Inverse of `parseWordReadingText`, for hydrating the combined field from saved content. */
+export function wordReadingToText(
+  reading: string | undefined,
+  readingParts: Record<string, string> | undefined,
+): string {
+  if (reading?.trim()) return reading
+  return readingsMapToText(readingParts ?? {})
 }
 
 /**

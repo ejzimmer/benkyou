@@ -116,7 +116,7 @@ describe("CardEditPage load existing", () => {
     await user.selectOptions(screen.getByLabelText(/type/i), "vocabulary")
 
     expect(screen.getByLabelText(/japanese word/i)).toHaveValue("学生")
-    expect(screen.getByLabelText(/reading \/ pronunciation/i)).toHaveValue(
+    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue(
       "がくせい",
     )
     expect(screen.getByLabelText(/meaning \(one per line\)/i)).toHaveValue("student")
