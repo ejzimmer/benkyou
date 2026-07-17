@@ -116,7 +116,7 @@ describe("CardEditPage load existing", () => {
     await user.selectOptions(screen.getByLabelText(/type/i), "vocabulary")
 
     expect(screen.getByLabelText(/japanese word/i)).toHaveValue("学生")
-    expect(screen.getByLabelText(/reading \/ pronunciation/i)).toHaveValue(
+    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue(
       "がくせい",
     )
     expect(screen.getByLabelText(/meaning \(one per line\)/i)).toHaveValue("student")
@@ -138,6 +138,52 @@ describe("CardEditPage load existing", () => {
       expect(card.content.images).toEqual(["image-1"])
       expect(card.content.synonymsJa).toEqual(["生徒"])
     })
+  })
+
+  it("keeps the reading field editable after converting a kana-only construction with per-cluster readings to vocabulary", async () => {
+    const user = userEvent.setup()
+    await db.cards.put({
+      id: "card-1",
+      deckId: "deck-1",
+      kind: "grammar",
+      content: {
+        ...defaultGrammar(),
+        sentenceWithGap: "___です",
+        construction: "でも",
+        constructionReadingParts: { で: "で" },
+        translationEn: "but",
+      },
+      updatedAt: Date.now(),
+    })
+
+    render(
+      <MemoryRouter initialEntries={["/decks/deck-1/cards/card-1"]}>
+        <AuthProvider>
+          <Routes>
+            <Route path="/decks/:deckId" element={<div>Deck page</div>} />
+            <Route
+              path="/decks/:deckId/cards/:cardId"
+              element={<CardEditPage />}
+            />
+          </Routes>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("___です")).toBeInTheDocument()
+    })
+    await user.selectOptions(screen.getByLabelText(/type/i), "vocabulary")
+
+    // The kana-only construction's per-cluster reading carries over into the
+    // vocab reading field (readingParts isn't gated by containsKanji the way
+    // reading is) — that stray content must stay editable/clearable rather
+    // than getting stuck behind a disabled field.
+    const readingField = screen.getByRole("textbox", { name: /^reading$/i })
+    expect(readingField).toHaveValue("で=で")
+    expect(readingField).toBeEnabled()
+    await user.clear(readingField)
+    expect(readingField).toHaveValue("")
   })
 
   it("keeps an in-progress type change when the card row is rewritten in the background (e.g. by sync)", async () => {
