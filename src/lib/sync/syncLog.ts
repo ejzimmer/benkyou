@@ -5,8 +5,29 @@ export type SyncLogEntry = {
 }
 
 const MAX_ENTRIES = 80
-const entries: SyncLogEntry[] = []
+let entries: SyncLogEntry[] = []
 const listeners = new Set<() => void>()
+
+// A media-heavy sync can push thousands of entries in a tight loop (two per
+// item — "start"/"done" — across hundreds of concurrent items). Notifying
+// listeners synchronously on every push turns that into a same-tick React
+// re-render per entry, which can itself stall the UI thread for the
+// duration — the exact "frozen" symptom a live progress log is meant to
+// prevent. Coalescing into at most one notification per short window keeps
+// the log visibly live without re-rendering thousands of times a second.
+// `setTimeout` (not `requestAnimationFrame`) deliberately: rAF callbacks can
+// be deferred indefinitely on a backgrounded/hidden tab, which would leave
+// `notifyScheduled` stuck `true` and silently stop all future notifications
+// for the rest of the session — the exact failure mode this exists to avoid.
+let notifyScheduled = false
+function scheduleNotify() {
+  if (notifyScheduled) return
+  notifyScheduled = true
+  setTimeout(() => {
+    notifyScheduled = false
+    listeners.forEach((fn) => fn())
+  }, 16)
+}
 
 function formatDetail(detail?: Record<string, unknown>): string | undefined {
   if (!detail || Object.keys(detail).length === 0) return undefined
@@ -23,13 +44,19 @@ function push(step: string, detail?: Record<string, unknown>) {
     step,
     detail: formatDetail(detail),
   }
-  entries.push(entry)
-  if (entries.length > MAX_ENTRIES) entries.splice(0, entries.length - MAX_ENTRIES)
+  // Rebind to a new array (rather than mutating in place) so subscribers
+  // that store `entries` in state (e.g. React's `setState`) see a changed
+  // reference and actually re-render — a live sync can push thousands of
+  // entries, and consumers that never see a new reference never update.
+  const next = entries.length >= MAX_ENTRIES
+    ? [...entries.slice(entries.length - MAX_ENTRIES + 1), entry]
+    : [...entries, entry]
+  entries = next
   console.log(
     `[benkyou sync] ${step}`,
     detail ?? "",
   )
-  listeners.forEach((fn) => fn())
+  scheduleNotify()
 }
 
 export function syncLog(step: string, detail?: Record<string, unknown>) {
@@ -65,8 +92,8 @@ export function getSyncLogEntries(): readonly SyncLogEntry[] {
 }
 
 export function clearSyncLog() {
-  entries.length = 0
-  listeners.forEach((fn) => fn())
+  entries = []
+  scheduleNotify()
 }
 
 export function subscribeSyncLog(listener: () => void): () => void {
