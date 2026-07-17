@@ -839,22 +839,21 @@ label {
   /* Deliberately NOT a flex/stretch item of `.panel.prompt` — this sizes to
      its own content (cards' min-height floor, or taller if they need more),
      not to the full space available, so short cards stay at their minimum
-     size instead of stretching to fill the viewport. `max-height` still
-     caps it at the space available, per `.panel.prompt` above. */
+     size instead of stretching to fill the viewport. Each `max-height: 100%`
+     below (here and on the cards) caps that growth at the space available,
+     per `.panel.prompt` above — beyond it, a card scrolls its own overflow
+     instead of growing past the viewport. */
+  .review-columns,
+  .review-question,
+  .review-answer {
+    max-height: 100%;
+  }
+
   .review-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2rem;
     align-items: stretch;
-    max-height: 100%;
-  }
-
-  .review-question,
-  .review-answer {
-    /* Content-sized between the 50vh floor and this viewport-relative
-       ceiling (`.review-columns`'s own max-height, above) — beyond it the
-       card scrolls its own overflow instead of growing past the viewport. */
-    max-height: 100%;
   }
 
   .review-question {
