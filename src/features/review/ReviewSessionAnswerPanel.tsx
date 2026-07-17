@@ -141,91 +141,93 @@ export function ReviewSessionAnswerPanel({
 
   return (
     <div className="answer-block stack">
-      {m === "vocab_oral_en" && card.kind === "vocabulary" && (
-        <div className="oral-answer">
-          {card.content.definitionsEn
-            .filter((s) => s.trim())
-            .map((d, i) => (
-              <p key={i}>{d}</p>
-            ))}
-          <CardImageRow images={card.content.images} />
-        </div>
-      )}
+      <div className="answer-content stack">
+        {m === "vocab_oral_en" && card.kind === "vocabulary" && (
+          <div className="oral-answer">
+            {card.content.definitionsEn
+              .filter((s) => s.trim())
+              .map((d, i) => (
+                <p key={i}>{d}</p>
+              ))}
+            <CardImageRow images={card.content.images} />
+          </div>
+        )}
 
-      {m === "vocab_type_reading" && card.kind === "vocabulary" && (
-        <AnswerComparison
-          typed={typed}
-          expected={displayExpected}
-          answeredCorrectly={answeredCorrectly}
-        />
-      )}
+        {m === "vocab_type_reading" && card.kind === "vocabulary" && (
+          <AnswerComparison
+            typed={typed}
+            expected={displayExpected}
+            answeredCorrectly={answeredCorrectly}
+          />
+        )}
 
-      {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
-        <div className="word-from-clue-result">
-          {answeredCorrectly ? (
-            <div
-              className="word-from-clue-correct"
-              role="group"
-              aria-label="Answer"
-            >
-              {wordFromClueShowRuby ? (
-                <span
-                  className="ruby-hover answer-ruby word-from-clue-word"
-                  lang="ja"
-                  tabIndex={0}
-                >
-                  <ruby>
+        {m === "vocab_type_word_from_clue" && card.kind === "vocabulary" && (
+          <div className="word-from-clue-result">
+            {answeredCorrectly ? (
+              <div
+                className="word-from-clue-correct"
+                role="group"
+                aria-label="Answer"
+              >
+                {wordFromClueShowRuby ? (
+                  <span
+                    className="ruby-hover answer-ruby word-from-clue-word"
+                    lang="ja"
+                    tabIndex={0}
+                  >
+                    <ruby>
+                      {displayExpected}
+                      <rt>{wordFromClueReading}</rt>
+                    </ruby>
+                  </span>
+                ) : (
+                  <span className="word-from-clue-word" lang="ja">
                     {displayExpected}
-                    <rt>{wordFromClueReading}</rt>
-                  </ruby>
-                </span>
-              ) : (
-                <span className="word-from-clue-word" lang="ja">
-                  {displayExpected}
-                </span>
-              )}
-              <span className="maru-mark" aria-hidden="true" />
-              <span className="sr-only">Correct</span>
-            </div>
-          ) : (
-            <AnswerComparison
-              typed={typed}
-              expected={displayExpected}
-              reading={wordFromClueReading}
-              answeredCorrectly={answeredCorrectly}
-            />
-          )}
-        </div>
-      )}
+                  </span>
+                )}
+                <span className="maru-mark" aria-hidden="true" />
+                <span className="sr-only">Correct</span>
+              </div>
+            ) : (
+              <AnswerComparison
+                typed={typed}
+                expected={displayExpected}
+                reading={wordFromClueReading}
+                answeredCorrectly={answeredCorrectly}
+              />
+            )}
+          </div>
+        )}
 
-      {m === "grammar_type_construction" && card.kind === "grammar" && (
-        <AnswerComparison
-          typed={typed}
-          expected={displayExpected}
-          reading={readingForConstruction(
-            card.content.construction,
-            card.content.readings,
-          )}
-          answeredCorrectly={answeredCorrectly}
-        />
-      )}
+        {m === "grammar_type_construction" && card.kind === "grammar" && (
+          <AnswerComparison
+            typed={typed}
+            expected={displayExpected}
+            reading={readingForConstruction(
+              card.content.construction,
+              card.content.readings,
+            )}
+            answeredCorrectly={answeredCorrectly}
+          />
+        )}
 
-      {m === "grammar_type_reading" && card.kind === "grammar" && (
-        <AnswerComparison
-          typed={typed}
-          expected={displayExpected}
-          answeredCorrectly={answeredCorrectly}
-        />
-      )}
+        {m === "grammar_type_reading" && card.kind === "grammar" && (
+          <AnswerComparison
+            typed={typed}
+            expected={displayExpected}
+            answeredCorrectly={answeredCorrectly}
+          />
+        )}
 
-      {m === "grammar_oral_meaning" && card.kind === "grammar" && (
-        <>
-          {card.content.translationEn.trim() && (
-            <p>{card.content.translationEn}</p>
-          )}
-          <CardImageRow images={card.content.images} />
-        </>
-      )}
+        {m === "grammar_oral_meaning" && card.kind === "grammar" && (
+          <>
+            {card.content.translationEn.trim() && (
+              <p>{card.content.translationEn}</p>
+            )}
+            <CardImageRow images={card.content.images} />
+          </>
+        )}
+      </div>
 
       {answerControls}
     </div>
