@@ -267,6 +267,7 @@ export function CardEditPage() {
         wordReadingToText(
           loadedCard.content.reading,
           loadedCard.content.readingParts,
+          loadedCard.content.wordJa,
         ),
       )
       vocabFuriganaSeedRef.current = deriveFurigana(
@@ -279,6 +280,7 @@ export function CardEditPage() {
         wordReadingToText(
           loadedCard.content.constructionReading,
           loadedCard.content.constructionReadingParts,
+          loadedCard.content.construction,
         ),
       )
       grammarFuriganaSeedRef.current = deriveFurigana(
@@ -312,7 +314,7 @@ export function CardEditPage() {
       setVocab(nextVocab)
       setReadingsMapDraft(readingsMapToText(nextVocab.readings ?? {}))
       setVocabReadingDraft(
-        wordReadingToText(nextVocab.reading, nextVocab.readingParts),
+        wordReadingToText(nextVocab.reading, nextVocab.readingParts, nextVocab.wordJa),
       )
       vocabFuriganaSeedRef.current = deriveFurigana(vocabTestedParts(nextVocab))
       setKind("vocabulary")
@@ -326,6 +328,7 @@ export function CardEditPage() {
       wordReadingToText(
         nextGrammar.constructionReading,
         nextGrammar.constructionReadingParts,
+        nextGrammar.construction,
       ),
     )
     grammarFuriganaSeedRef.current = deriveFurigana(
@@ -401,7 +404,11 @@ export function CardEditPage() {
         setVocab(merged.content)
         setReadingsMapDraft(readingsMapToText(merged.content.readings ?? {}))
         setVocabReadingDraft(
-          wordReadingToText(merged.content.reading, merged.content.readingParts),
+          wordReadingToText(
+            merged.content.reading,
+            merged.content.readingParts,
+            merged.content.wordJa,
+          ),
         )
         vocabFuriganaSeedRef.current = deriveFurigana(
           vocabTestedParts(merged.content),
@@ -413,6 +420,7 @@ export function CardEditPage() {
           wordReadingToText(
             merged.content.constructionReading,
             merged.content.constructionReadingParts,
+            merged.content.construction,
           ),
         )
         grammarFuriganaSeedRef.current = deriveFurigana(
@@ -594,13 +602,14 @@ export function CardEditPage() {
               Reading (hiragana — kanji words only). For a phrase tested
               cluster by cluster instead of as one whole reading, use
               kanjiPhrase=reading pairs instead, one per line (e.g.
-              結論=けつろん, 至る=いたる).
+              結論=けつろん, 至る=いたる) — needs 2 or more lines to count as
+              a cluster-by-cluster reading; a single kanjiPhrase=reading line
+              isn't tested as a pronunciation on its own.
               <textarea
                 className="input"
                 rows={3}
                 aria-label="Reading"
                 value={vocabReadingDraft}
-                disabled={isKanaOnly(vocab.wordJa)}
                 onChange={(e) => {
                   const text = e.target.value
                   setVocabReadingDraft(text)
@@ -790,7 +799,9 @@ export function CardEditPage() {
               instead of the conjugated one. For a construction that's
               several words/clusters tested separately, use
               kanjiPhrase=reading pairs instead, one per line (e.g.
-              流し=ながし, 呼ぶ=よぶ).
+              流し=ながし, 呼ぶ=よぶ) — needs 2 or more lines to count as a
+              cluster-by-cluster reading; a single kanjiPhrase=reading line
+              isn't tested as a reading on its own.
               <textarea
                 className="input"
                 rows={3}

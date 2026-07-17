@@ -56,14 +56,27 @@ describe("parseWordReadingText / wordReadingToText", () => {
     })
   })
 
-  it("round-trips a whole-word reading back to text", () => {
-    expect(wordReadingToText("ねこ", {})).toBe("ねこ")
+  it("strips an embedded newline from a whole-word reading rather than corrupting it", () => {
+    expect(parseWordReadingText("ねこ\nちゃん")).toEqual({
+      reading: "ねこちゃん",
+      readingParts: {},
+    })
   })
 
-  it("round-trips per-cluster readings back to text, preferring them over a stale whole-word reading", () => {
+  it("round-trips a whole-word reading back to text", () => {
+    expect(wordReadingToText("ねこ", {}, "猫")).toBe("ねこ")
+  })
+
+  it("round-trips per-cluster readings back to text", () => {
     expect(
-      wordReadingToText(undefined, { 結論: "けつろん", 至る: "いたる" }),
+      wordReadingToText(undefined, { 結論: "けつろん", 至る: "いたる" }, "結論に至る"),
     ).toBe("結論=けつろん\n至る=いたる")
+  })
+
+  it("folds a stale whole-word reading in as its own labeled entry rather than hiding it, when both are set at once (e.g. from a card merge)", () => {
+    expect(
+      wordReadingToText("けつろんにいたる", { 至る: "いたる" }, "結論に至る"),
+    ).toBe("至る=いたる\n結論に至る=けつろんにいたる")
   })
 })
 

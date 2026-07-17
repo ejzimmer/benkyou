@@ -147,19 +147,34 @@ export type WordReading = {
  */
 export function parseWordReadingText(text: string): WordReading {
   if (!KEY_VALUE_SEPARATOR.test(text)) {
-    const reading = text.trim()
+    // A stray newline (e.g. an accidental Enter in what's now a textarea,
+    // where the old whole-word reading field was a single-line input) must
+    // not end up embedded in the reading — that would make it unmatchable
+    // against any real typed answer.
+    const reading = text.replace(/\n/g, "").trim()
     return { reading: reading || undefined, readingParts: {} }
   }
   return { reading: undefined, readingParts: parseReadingsMapText(text) }
 }
 
-/** Inverse of `parseWordReadingText`, for hydrating the combined field from saved content. */
+/**
+ * Inverse of `parseWordReadingText`, for hydrating the combined field from
+ * saved content. `reading` and `readingParts` are normally mutually
+ * exclusive, but a card merge (`mergeCardContent`) can leave both set at
+ * once — when that happens, fold `reading` in as its own `label=reading`
+ * entry rather than silently hiding it (and losing it on the next edit).
+ */
 export function wordReadingToText(
   reading: string | undefined,
   readingParts: Record<string, string> | undefined,
+  label: string,
 ): string {
-  if (reading?.trim()) return reading
-  return readingsMapToText(readingParts ?? {})
+  const parts = readingParts ?? {}
+  const hasParts = Object.keys(parts).length > 0
+  if (reading?.trim()) {
+    return hasParts ? readingsMapToText({ ...parts, [label]: reading }) : reading
+  }
+  return readingsMapToText(parts)
 }
 
 /**
