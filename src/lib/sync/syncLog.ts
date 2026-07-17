@@ -13,21 +13,20 @@ const listeners = new Set<() => void>()
 // listeners synchronously on every push turns that into a same-tick React
 // re-render per entry, which can itself stall the UI thread for the
 // duration — the exact "frozen" symptom a live progress log is meant to
-// prevent. Coalescing into at most one notification per frame keeps the log
-// visibly live without re-rendering thousands of times a second.
+// prevent. Coalescing into at most one notification per short window keeps
+// the log visibly live without re-rendering thousands of times a second.
+// `setTimeout` (not `requestAnimationFrame`) deliberately: rAF callbacks can
+// be deferred indefinitely on a backgrounded/hidden tab, which would leave
+// `notifyScheduled` stuck `true` and silently stop all future notifications
+// for the rest of the session — the exact failure mode this exists to avoid.
 let notifyScheduled = false
 function scheduleNotify() {
   if (notifyScheduled) return
   notifyScheduled = true
-  const flush = () => {
+  setTimeout(() => {
     notifyScheduled = false
     listeners.forEach((fn) => fn())
-  }
-  if (typeof requestAnimationFrame === "function") {
-    requestAnimationFrame(flush)
-  } else {
-    setTimeout(flush, 16)
-  }
+  }, 16)
 }
 
 function formatDetail(detail?: Record<string, unknown>): string | undefined {
