@@ -784,11 +784,12 @@ fieldset.plain legend {
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid var(--pink);
+  border: 2px solid var(--pink);
   border-radius: 50%;
   background: transparent;
   color: var(--pink);
   font-size: 0.75rem;
+  font-weight: 900;
   line-height: 1;
   cursor: pointer;
   transition: box-shadow 0.15s ease;
