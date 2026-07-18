@@ -1033,8 +1033,9 @@ fieldset.plain legend {
     overflow-y: auto;
   }
 
-  /* Center shorter answers (a single word, a short translation) in the
-     available space instead of leaving them stuck to the top of the card. */
+  /* Center shorter content (a single input, a short translation) in the
+     available space instead of leaving it stuck to the top of the card. */
+  .review-answer-prompt > .stack,
   .answer-content {
     justify-content: safe center;
   }
