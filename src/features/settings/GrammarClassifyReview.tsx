@@ -5,7 +5,7 @@ import type {
   GrammarDecisionMap,
 } from "../../lib/import/types"
 import { CARD_KIND_LABELS } from "../../domain/types"
-import { RadioGroup } from "../../ui/RadioGroup"
+import { Switch } from "../../ui/Switch"
 
 export type GrammarClassifyReviewProps = {
   candidates: GrammarCandidate[]
@@ -73,7 +73,7 @@ export function GrammarClassifyReview({
                 {candidate.imageCount === 1 ? "" : "s"}
               </p>
             )}
-            <RadioGroup
+            <Switch
               legend="Card type"
               name={`grammar-decision-${candidate.key}`}
               value={decision}

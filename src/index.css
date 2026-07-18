@@ -329,6 +329,62 @@ fieldset.plain legend {
   float: none;
 }
 
+.switch {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid #33334a;
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.switch:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.switch-thumb {
+  position: absolute;
+  inset: 2px 50% 2px 2px;
+  border-radius: 999px;
+  background: var(--blue);
+  transition: transform 0.15s ease;
+}
+
+.switch-end .switch-thumb {
+  transform: translateX(100%);
+}
+
+.switch-option {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.switch-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch-option:has(input:focus-visible) {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.switch-start .switch-option:first-of-type span,
+.switch-end .switch-option:last-of-type span {
+  color: var(--on-fluoro);
+}
+
 .btn {
   font: inherit;
   border: 1px solid #33334a;

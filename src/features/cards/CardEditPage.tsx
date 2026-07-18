@@ -39,7 +39,7 @@ import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
-import { RadioGroup } from "../../ui/RadioGroup"
+import { Switch } from "../../ui/Switch"
 import {
   deriveFurigana,
   grammarReadingsToText,
@@ -513,7 +513,7 @@ export function CardEditPage() {
         className="panel stack"
         aria-label="Card editor"
       >
-        <RadioGroup
+        <Switch
           legend="Type"
           name="card-kind"
           value={kind}
@@ -704,7 +704,7 @@ export function CardEditPage() {
                 {duplicateJapaneseWarning}
               </p>
             )}
-            <RadioGroup
+            <Switch
               legend="Testing"
               name="grammar-sides"
               value={grammar.singleSided ? "one" : "both"}
