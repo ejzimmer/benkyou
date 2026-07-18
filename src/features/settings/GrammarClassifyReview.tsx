@@ -5,6 +5,7 @@ import type {
   GrammarDecisionMap,
 } from "../../lib/import/types"
 import { CARD_KIND_LABELS } from "../../domain/types"
+import { RadioGroup } from "../../ui/RadioGroup"
 
 export type GrammarClassifyReviewProps = {
   candidates: GrammarCandidate[]
@@ -72,28 +73,17 @@ export function GrammarClassifyReview({
                 {candidate.imageCount === 1 ? "" : "s"}
               </p>
             )}
-            <div className="row" style={{ gap: "1rem" }}>
-              <label className="row">
-                <input
-                  type="radio"
-                  name={`grammar-decision-${candidate.key}`}
-                  checked={decision === "grammar"}
-                  disabled={importing}
-                  onChange={() => setDecision(candidate.key, "grammar")}
-                />
-                <span>{CARD_KIND_LABELS.grammar}</span>
-              </label>
-              <label className="row">
-                <input
-                  type="radio"
-                  name={`grammar-decision-${candidate.key}`}
-                  checked={decision === "vocab"}
-                  disabled={importing}
-                  onChange={() => setDecision(candidate.key, "vocab")}
-                />
-                <span>{CARD_KIND_LABELS.vocabulary}</span>
-              </label>
-            </div>
+            <RadioGroup
+              legend="Card type"
+              name={`grammar-decision-${candidate.key}`}
+              value={decision}
+              onChange={(next) => setDecision(candidate.key, next)}
+              disabled={importing}
+              options={[
+                { value: "grammar", label: CARD_KIND_LABELS.grammar },
+                { value: "vocab", label: CARD_KIND_LABELS.vocabulary },
+              ]}
+            />
           </div>
         )
       })}
