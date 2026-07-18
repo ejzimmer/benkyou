@@ -116,8 +116,8 @@ describe("CardEditPage load existing", () => {
     await user.click(screen.getByRole("radio", { name: /^vocabulary$/i }))
 
     expect(screen.getByLabelText(/japanese word/i)).toHaveValue("学生")
-    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue(
-      "がくせい",
+    expect(screen.getByRole("textbox", { name: /^readings$/i })).toHaveValue(
+      "がくせい\n学生=がくせい",
     )
     expect(screen.getByLabelText(/meaning \(one per line\)/i)).toHaveValue("student")
     expect(
@@ -140,7 +140,7 @@ describe("CardEditPage load existing", () => {
     })
   })
 
-  it("keeps the reading field editable after converting a kana-only construction with per-cluster readings to vocabulary", async () => {
+  it("keeps the Readings field editable after converting a kana-only construction with per-cluster readings to vocabulary", async () => {
     const user = userEvent.setup()
     await db.cards.put({
       id: "card-1",
@@ -176,14 +176,14 @@ describe("CardEditPage load existing", () => {
     await user.click(screen.getByRole("radio", { name: /^vocabulary$/i }))
 
     // The kana-only construction's per-cluster reading carries over into the
-    // vocab reading field (readingParts isn't gated by containsKanji the way
-    // reading is) — that stray content must stay editable/clearable rather
-    // than getting stuck behind a disabled field.
-    const readingField = screen.getByRole("textbox", { name: /^reading$/i })
-    expect(readingField).toHaveValue("で=で")
-    expect(readingField).toBeEnabled()
-    await user.clear(readingField)
-    expect(readingField).toHaveValue("")
+    // vocab Readings field as a furigana line (readingParts isn't gated by
+    // containsKanji the way reading is) — that stray content must stay
+    // editable/clearable rather than getting stuck behind a disabled field.
+    const readingsField = screen.getByRole("textbox", { name: /^readings$/i })
+    expect(readingsField).toHaveValue("で=で")
+    expect(readingsField).toBeEnabled()
+    await user.clear(readingsField)
+    expect(readingsField).toHaveValue("")
   })
 
   it("keeps an in-progress type change when the card row is rewritten in the background (e.g. by sync)", async () => {

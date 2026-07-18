@@ -33,10 +33,10 @@ export type VocabularyCardContent = {
   readingParts?: Record<string, string>
   /**
    * Kanji phrases → hiragana readings shown as furigana (the headline word
-   * and example sentences). Independent of what's tested by `reading` /
-   * `readingParts` — the card editor seeds it from them, but it can be
-   * edited separately (e.g. narrowed to just the kanji, leaving okurigana
-   * un-annotated: 至る/いたる seeds 至/いた).
+   * and example sentences). Authored in the same combined "Readings" field
+   * as `reading`/`readingParts` (narrowed to just the kanji, leaving
+   * okurigana un-annotated, e.g. 至る=いたる → 至=いた) but stored
+   * independently of them.
    */
   readings?: Record<string, string>
   definitionsEn: string[]

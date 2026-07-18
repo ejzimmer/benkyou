@@ -80,37 +80,6 @@ export function deriveFurigana(
   return result
 }
 
-/**
- * Re-seed a furigana map with freshly-derived auto-seed entries, without
- * touching entries the author has manually changed since the last seed —
- * or entries that were never part of any seed at all, e.g. furigana added
- * by hand for an unrelated word in an example sentence.
- */
-export function reseedFurigana(
-  current: Record<string, string>,
-  previousSeed: Record<string, string>,
-  nextSeed: Record<string, string>,
-): Record<string, string> {
-  const next = { ...current }
-  // A key whose current value no longer matches what was last seeded there
-  // has been diverged by the author — whether edited to a new value, or
-  // deleted outright (current[key] is then undefined, which also doesn't
-  // match). Either way, never auto-manage that key again, even if a later
-  // seed would produce the exact same key.
-  const diverged = new Set<string>()
-  for (const [key, value] of Object.entries(previousSeed)) {
-    if (next[key] === value) {
-      delete next[key]
-    } else {
-      diverged.add(key)
-    }
-  }
-  for (const [key, value] of Object.entries(nextSeed)) {
-    if (!(key in next) && !diverged.has(key)) next[key] = value
-  }
-  return next
-}
-
 /** Separator between a phrase key and its reading: ASCII "=" or fullwidth "＝". */
 const KEY_VALUE_SEPARATOR = /[=＝]/
 
@@ -135,63 +104,22 @@ export function parseReadingsMapText(text: string): Record<string, string> {
   return readings
 }
 
-export type WordReading = {
+export type CombinedReading = {
+  /** The word/construction's own tested reading — not shown as furigana. */
   reading: string | undefined
-  readingParts: Record<string, string>
-}
-
-/**
- * Parse the single combined reading field used by the card editor: no
- * `=`/`＝` anywhere means the whole text is one whole-word reading;
- * otherwise it's `phrase=reading` lines, one per tested cluster.
- */
-export function parseWordReadingText(text: string): WordReading {
-  if (!KEY_VALUE_SEPARATOR.test(text)) {
-    // A stray newline (e.g. an accidental Enter in what's now a textarea,
-    // where the old whole-word reading field was a single-line input) must
-    // not end up embedded in the reading — that would make it unmatchable
-    // against any real typed answer.
-    const reading = text.replace(/\n/g, "").trim()
-    return { reading: reading || undefined, readingParts: {} }
-  }
-  return { reading: undefined, readingParts: parseReadingsMapText(text) }
-}
-
-/**
- * Inverse of `parseWordReadingText`, for hydrating the combined field from
- * saved content. `reading` and `readingParts` are normally mutually
- * exclusive, but a card merge (`mergeCardContent`) can leave both set at
- * once — when that happens, fold `reading` in as its own `label=reading`
- * entry rather than silently hiding it (and losing it on the next edit).
- */
-export function wordReadingToText(
-  reading: string | undefined,
-  readingParts: Record<string, string> | undefined,
-  label: string,
-): string {
-  const parts = readingParts ?? {}
-  const hasParts = Object.keys(parts).length > 0
-  if (reading?.trim()) {
-    return hasParts ? readingsMapToText({ ...parts, [label]: reading }) : reading
-  }
-  return readingsMapToText(parts)
-}
-
-export type GrammarReadings = {
-  /** The construction's own tested reading — not shown as furigana. */
-  reading: string | undefined
-  /** Kanji phrases → readings shown as furigana in the sentence. */
+  /** Kanji phrases → readings shown as furigana. */
   readings: Record<string, string>
 }
 
 /**
- * Parse a grammar card's combined "Readings" field: `phrase=reading` (or
- * `phrase＝reading`) lines are furigana shown over the sentence; a line with
- * no separator is the construction's own tested reading, kept separate from
- * furigana since it may deliberately differ from the construction's literal
- * text (e.g. testing a conjugated form's dictionary-form reading).
+ * Parse a card's combined "Readings" field (shared by vocab words and
+ * grammar constructions): `phrase=reading` (or `phrase＝reading`) lines are
+ * furigana shown over the word/sentence; a line with no separator is the
+ * word/construction's own tested reading, kept separate from furigana since
+ * it may deliberately differ from the literal text (e.g. testing a
+ * conjugated form's dictionary-form reading).
  */
-export function parseGrammarReadingsText(text: string): GrammarReadings {
+export function parseCombinedReadingsText(text: string): CombinedReading {
   const furiganaLines: string[] = []
   const readingLines: string[] = []
   for (const line of text.split("\n")) {
@@ -208,28 +136,27 @@ export function parseGrammarReadingsText(text: string): GrammarReadings {
 }
 
 /**
- * Inverse of `parseGrammarReadingsText`, for hydrating the combined field
- * from saved content. Folds any `constructionReadingParts` the card still
- * carries (e.g. from before the two fields were combined, or from an Anki
- * import) in as furigana lines too, so that data isn't silently dropped now
- * that this field is the only place either kind of reading is authored.
+ * Inverse of `parseCombinedReadingsText`, for hydrating the combined field
+ * from saved content. Folds any legacy per-cluster `readingParts` the card
+ * still carries (e.g. from before the reading/furigana fields were
+ * combined, or from an Anki import) in as furigana lines too, so that data
+ * isn't silently dropped now that this field is the only place either kind
+ * of reading is authored.
  */
-export function grammarReadingsToText(content: {
-  constructionReading?: string
-  constructionReadingParts?: Record<string, string>
+export function combinedReadingsToText(content: {
+  reading?: string
+  readingParts?: Record<string, string>
   readings: Record<string, string>
 }): string {
   const readings = { ...content.readings }
-  for (const [label, reading] of Object.entries(
-    content.constructionReadingParts ?? {},
-  )) {
+  for (const [label, reading] of Object.entries(content.readingParts ?? {})) {
     if (label.trim() && reading.trim() && !(label in readings)) {
       readings[label] = reading
     }
   }
   const lines: string[] = []
-  if (content.constructionReading?.trim()) {
-    lines.push(content.constructionReading.trim())
+  if (content.reading?.trim()) {
+    lines.push(content.reading.trim())
   }
   const furiganaText = readingsMapToText(readings)
   if (furiganaText) lines.push(furiganaText)

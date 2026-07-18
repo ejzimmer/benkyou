@@ -1,17 +1,14 @@
 import { describe, expect, it } from "vitest"
 import {
+  combinedReadingsToText,
   deriveFurigana,
   fullyCoveredSegments,
-  grammarReadingsToText,
   kanjiOnlyEntry,
-  parseGrammarReadingsText,
+  parseCombinedReadingsText,
   parseReadingsMapText,
-  parseWordReadingText,
   readingsMapToText,
-  reseedFurigana,
   segmentText,
   withWordReadingFallback,
-  wordReadingToText,
 } from "./readingsMap"
 
 describe("readingsMapToText / parseReadingsMapText", () => {
@@ -29,90 +26,37 @@ describe("readingsMapToText / parseReadingsMapText", () => {
   })
 })
 
-describe("parseWordReadingText / wordReadingToText", () => {
-  it("treats text with no separator as a single whole-word reading", () => {
-    expect(parseWordReadingText("ねこ")).toEqual({
-      reading: "ねこ",
-      readingParts: {},
-    })
-  })
-
-  it("treats blank text as no reading at all", () => {
-    expect(parseWordReadingText("  ")).toEqual({
-      reading: undefined,
-      readingParts: {},
-    })
-  })
-
-  it("splits into per-cluster readings once = appears anywhere", () => {
-    expect(parseWordReadingText("結論=けつろん\n至る=いたる")).toEqual({
-      reading: undefined,
-      readingParts: { 結論: "けつろん", 至る: "いたる" },
-    })
-  })
-
-  it("also treats a fullwidth ＝ as splitting into per-cluster readings", () => {
-    expect(parseWordReadingText("結論＝けつろん")).toEqual({
-      reading: undefined,
-      readingParts: { 結論: "けつろん" },
-    })
-  })
-
-  it("strips an embedded newline from a whole-word reading rather than corrupting it", () => {
-    expect(parseWordReadingText("ねこ\nちゃん")).toEqual({
-      reading: "ねこちゃん",
-      readingParts: {},
-    })
-  })
-
-  it("round-trips a whole-word reading back to text", () => {
-    expect(wordReadingToText("ねこ", {}, "猫")).toBe("ねこ")
-  })
-
-  it("round-trips per-cluster readings back to text", () => {
-    expect(
-      wordReadingToText(undefined, { 結論: "けつろん", 至る: "いたる" }, "結論に至る"),
-    ).toBe("結論=けつろん\n至る=いたる")
-  })
-
-  it("folds a stale whole-word reading in as its own labeled entry rather than hiding it, when both are set at once (e.g. from a card merge)", () => {
-    expect(
-      wordReadingToText("けつろんにいたる", { 至る: "いたる" }, "結論に至る"),
-    ).toBe("至る=いたる\n結論に至る=けつろんにいたる")
-  })
-})
-
-describe("parseGrammarReadingsText / grammarReadingsToText", () => {
+describe("parseCombinedReadingsText / combinedReadingsToText", () => {
   it("treats a line with = as furigana, not a tested reading", () => {
-    expect(parseGrammarReadingsText("返=かえ")).toEqual({
+    expect(parseCombinedReadingsText("返=かえ")).toEqual({
       reading: undefined,
       readings: { 返: "かえ" },
     })
   })
 
-  it("treats a line with no = as the construction's tested reading", () => {
-    expect(parseGrammarReadingsText("かんばしい")).toEqual({
+  it("treats a line with no = as the word/construction's tested reading", () => {
+    expect(parseCombinedReadingsText("かんばしい")).toEqual({
       reading: "かんばしい",
       readings: {},
     })
   })
 
   it("splits mixed lines into furigana entries and a tested reading", () => {
-    expect(parseGrammarReadingsText("かんばしい\n芳=かんば")).toEqual({
+    expect(parseCombinedReadingsText("かんばしい\n芳=かんば")).toEqual({
       reading: "かんばしい",
       readings: { 芳: "かんば" },
     })
   })
 
   it("also splits furigana lines on a fullwidth ＝", () => {
-    expect(parseGrammarReadingsText("返＝かえ")).toEqual({
+    expect(parseCombinedReadingsText("返＝かえ")).toEqual({
       reading: undefined,
       readings: { 返: "かえ" },
     })
   })
 
   it("treats blank text as neither a reading nor any furigana", () => {
-    expect(parseGrammarReadingsText("  \n")).toEqual({
+    expect(parseCombinedReadingsText("  \n")).toEqual({
       reading: undefined,
       readings: {},
     })
@@ -120,26 +64,26 @@ describe("parseGrammarReadingsText / grammarReadingsToText", () => {
 
   it("round-trips a tested reading plus furigana back to text", () => {
     expect(
-      grammarReadingsToText({
-        constructionReading: "かんばしい",
+      combinedReadingsToText({
+        reading: "かんばしい",
         readings: { 芳: "かんば" },
       }),
     ).toBe("かんばしい\n芳=かんば")
   })
 
-  it("folds legacy constructionReadingParts in as furigana lines", () => {
+  it("folds legacy readingParts in as furigana lines", () => {
     expect(
-      grammarReadingsToText({
-        constructionReadingParts: { 結論: "けつろん", 至る: "いたる" },
+      combinedReadingsToText({
+        readingParts: { 結論: "けつろん", 至る: "いたる" },
         readings: {},
       }),
     ).toBe("結論=けつろん\n至る=いたる")
   })
 
-  it("does not let a legacy constructionReadingParts entry override an explicit readings entry", () => {
+  it("does not let a legacy readingParts entry override an explicit readings entry", () => {
     expect(
-      grammarReadingsToText({
-        constructionReadingParts: { 結論: "stale" },
+      combinedReadingsToText({
+        readingParts: { 結論: "stale" },
         readings: { 結論: "けつろん" },
       }),
     ).toBe("結論=けつろん")
@@ -264,29 +208,5 @@ describe("deriveFurigana", () => {
   it("skips blank labels or readings", () => {
     expect(deriveFurigana([{ label: "", reading: "けつろん" }])).toEqual({})
     expect(deriveFurigana([{ label: "結論", reading: "" }])).toEqual({})
-  })
-})
-
-describe("reseedFurigana", () => {
-  it("replaces a stale (untouched) auto-seeded entry with the new one", () => {
-    expect(
-      reseedFurigana({ 至: "いた" }, { 至: "いた" }, { 至: "いたr" }),
-    ).toEqual({ 至: "いたr" })
-  })
-
-  it("leaves an entry the author manually edited since the last seed untouched", () => {
-    expect(
-      reseedFurigana({ 至: "いた!" }, { 至: "いた" }, { 至: "いたる" }),
-    ).toEqual({ 至: "いた!" })
-  })
-
-  it("adds new seed entries without touching unrelated manual entries", () => {
-    expect(
-      reseedFurigana({ 大好き: "だいすき" }, {}, { 結論: "けつろん" }),
-    ).toEqual({ 大好き: "だいすき", 結論: "けつろん" })
-  })
-
-  it("removes an old seed entry that's no longer produced by the new seed", () => {
-    expect(reseedFurigana({ 至: "いた" }, { 至: "いた" }, {})).toEqual({})
   })
 })

@@ -15,7 +15,7 @@ vi.mock("../../lib/firebase", () => ({
 }))
 
 describe("CardEditPage under StrictMode", () => {
-  it("saves the auto-seeded furigana reading for a new vocab word", async () => {
+  it("saves the reading and furigana typed into the combined Readings field for a new vocab word", async () => {
     await resetDatabase()
     const user = userEvent.setup()
     render(
@@ -33,12 +33,11 @@ describe("CardEditPage under StrictMode", () => {
     const wordInput = await screen.findByLabelText(/japanese word/i)
     await user.type(wordInput, "猫")
 
-    const readingInput = screen.getByRole("textbox", { name: /^reading$/i })
-    await user.type(readingInput, "ねこ")
+    const readingsTa = screen.getByRole("textbox", { name: /^readings$/i })
+    await user.type(readingsTa, "ねこ\n猫=ねこ")
 
-    const furiganaTa = screen.getByRole("textbox", { name: /kanji to reading map/i })
     await waitFor(() => {
-      expect(furiganaTa).toHaveValue("猫=ねこ")
+      expect(readingsTa).toHaveValue("ねこ\n猫=ねこ")
     })
 
     const meaningTa = screen.getByLabelText(/meaning/i)
@@ -50,7 +49,12 @@ describe("CardEditPage under StrictMode", () => {
     await waitFor(async () => {
       const cards = await db.cards.toArray()
       expect(cards.length).toBe(1)
-      expect(cards[0].content.readings).toEqual({ 猫: "ねこ" })
+      const [card] = cards
+      if (card?.kind !== "vocabulary") {
+        throw new Error("Expected a saved vocabulary card")
+      }
+      expect(card.content.reading).toBe("ねこ")
+      expect(card.content.readings).toEqual({ 猫: "ねこ" })
     })
   })
 })

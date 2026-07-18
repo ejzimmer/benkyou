@@ -62,7 +62,7 @@ describe("CardEditPage vocabulary readings draft", () => {
       </MemoryRouter>,
     )
 
-    const ta = screen.getByRole("textbox", { name: /kanji to reading map/i })
+    const ta = screen.getByRole("textbox", { name: /^readings$/i })
     await user.type(ta, "大好き")
     expect(ta).toHaveValue("大好き")
     await user.type(ta, "=")
