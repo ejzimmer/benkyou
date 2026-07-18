@@ -244,6 +244,38 @@ describe("runFullSync's no-op short-circuit", () => {
     expect(ranFullPipeline()).toBe(true)
   })
 
+  it("still skips the full pipeline when remote has an orphaned media doc no local card references", async () => {
+    // `syncMedia` only ever downloads media referenced by a local card (or
+    // already local) — a media doc that's no longer referenced by any card
+    // (e.g. after removing an image from a card elsewhere) legitimately
+    // stays on remote, unfetched, until the next push sweeps it up. Remote
+    // having *more* media docs than local believes exist is therefore a
+    // normal, benign state, not a sign anything vanished — it must not
+    // defeat the short-circuit and force a full resync on every load.
+    const fs = getFirestoreDb()!
+    const storage = getFirebaseStorage()!
+
+    await applyBulkImport(tinyDeckPayload(), FAKE_USER)
+    writeLastSyncedAt(Date.now())
+    await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
+
+    const mediaColl = getFakeBackend().firestore.docs.get(
+      `users/${FAKE_USER.uid}/media`,
+    )
+    mediaColl?.set("orphan-media-id", {
+      id: "orphan-media-id",
+      mimeType: "image/png",
+      updatedAt: Date.now() - 1000,
+      digest: "deadbeef",
+    })
+
+    clearSyncLog()
+    await runFullSync({ fs, storage, uid: FAKE_USER.uid, onConflict: async () => "local" })
+
+    expect(skippedAsNoOp()).toBe(true)
+    expect(ranFullPipeline()).toBe(false)
+  })
+
   it("falls back to the full pipeline if the no-op pre-check throws", async () => {
     const fs = getFirestoreDb()!
     const storage = getFirebaseStorage()!
