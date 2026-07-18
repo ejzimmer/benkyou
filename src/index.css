@@ -1138,24 +1138,6 @@ label {
   color: #fef2f2;
 }
 
-.meaning-details {
-  margin-top: 0.25rem;
-}
-
-.meaning-details summary {
-  cursor: pointer;
-  list-style: none;
-  width: fit-content;
-}
-
-.meaning-details summary::-webkit-details-marker {
-  display: none;
-}
-
-.meaning-details-content {
-  margin-top: 0.75rem;
-}
-
 .prompt-extras-row {
   display: flex;
   align-items: center;
