@@ -67,4 +67,25 @@ describe("CardEditPage vocab combined Readings field", () => {
 
     expect(readingsTa).toHaveValue("けつろんにいたる\n至=いた")
   })
+
+  it("drops the tested reading line from the Readings field when the word becomes kana-only, keeping furigana entries", async () => {
+    const user = userEvent.setup()
+    render(wrapVocab())
+
+    const wordInput = screen.getByLabelText(/japanese word/i)
+    await user.type(wordInput, "猫")
+    const readingsTa = screen.getByRole("textbox", { name: /^readings$/i })
+    await user.type(readingsTa, "ねこ\n猫=ねこ")
+    expect(readingsTa).toHaveValue("ねこ\n猫=ねこ")
+
+    await user.clear(wordInput)
+    await user.type(wordInput, "ねこちゃん")
+
+    // The word is now kana-only, so the tested "ねこ" reading line no longer
+    // applies and must not linger in the field the author can still see —
+    // the furigana entry for 猫 is stale too (猫 isn't in the word anymore)
+    // but that's left to the author to clean up, same as any unrelated hand
+    // authored furigana entry.
+    expect(readingsTa).toHaveValue("猫=ねこ")
+  })
 })

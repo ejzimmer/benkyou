@@ -496,12 +496,18 @@ export function CardEditPage() {
                 onChange={(e) => {
                   const wordJa = e.target.value
                   const kanaOnly = isKanaOnly(wordJa)
-                  setVocab((v) => ({
-                    ...v,
-                    wordJa,
-                    reading: kanaOnly ? undefined : v.reading,
-                    readingParts: kanaOnly ? {} : v.readingParts,
-                  }))
+                  const reading = kanaOnly ? undefined : vocab.reading
+                  const readingParts = kanaOnly ? {} : vocab.readingParts
+                  setVocab((v) => ({ ...v, wordJa, reading, readingParts }))
+                  // Becoming kana-only clears the tested reading above, so the
+                  // visible Readings textarea must drop it too — otherwise it
+                  // keeps showing a reading line that no longer matches what
+                  // would actually be saved.
+                  if (kanaOnly) {
+                    setReadingsMapDraft(
+                      combinedReadingsToText({ readings: vocab.readings ?? {} }),
+                    )
+                  }
                 }}
                 required
               />
@@ -554,9 +560,12 @@ export function CardEditPage() {
               lines (one per line, e.g. 結論=けつろん, 至る=いたる) are shown
               as furigana over the word above and in the example sentences —
               two or more such lines are also tested cluster by cluster
-              instead of as one whole reading. Narrow a furigana entry to
-              just the kanji (e.g. 至る=いたる → 至=いた) to leave okurigana
-              un-annotated, the usual furigana convention.
+              instead of as one whole reading (a single kanjiPhrase=reading
+              line isn't tested as a pronunciation on its own). Narrow a
+              furigana entry to just the kanji (e.g. 至る=いたる → 至=いた)
+              to leave okurigana un-annotated, the usual furigana
+              convention — note this also narrows what's tested when it's
+              the only reading for that cluster.
               <textarea
                 className="input"
                 rows={4}
