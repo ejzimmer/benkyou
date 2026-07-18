@@ -1229,14 +1229,14 @@ fieldset.plain legend {
 .reading-answer-comparison {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.55rem;
 }
 
 .reading-answer-row {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.1rem;
 }
 
