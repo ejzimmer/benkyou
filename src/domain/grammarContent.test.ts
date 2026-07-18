@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { constructionReadingSegments, hasConstructionReading } from "./grammarContent"
+import {
+  constructionReadingSegments,
+  hasConstructionReading,
+  isSingleSided,
+} from "./grammarContent"
 import type { GrammarCardContent } from "./types"
 
 const base: GrammarCardContent = {
@@ -136,5 +140,33 @@ describe("hasConstructionReading", () => {
     expect(
       hasConstructionReading({ ...base, readings: { 学生: "がくせい" } }),
     ).toBe(true)
+  })
+})
+
+describe("isSingleSided", () => {
+  it("is false when singleSided is unset and there's no legacy grammarPoint", () => {
+    expect(isSingleSided(base)).toBe(false)
+  })
+
+  it("reflects the singleSided flag directly once set", () => {
+    expect(isSingleSided({ ...base, singleSided: true })).toBe(true)
+    expect(isSingleSided({ ...base, singleSided: false })).toBe(false)
+  })
+
+  it("falls back to a still-unmigrated grammarPoint on an old card", () => {
+    // Cards saved before grammarPoint was renamed to singleSided keep
+    // whatever shape they were written with — Dexie/Firestore don't strip
+    // fields that fell out of the type.
+    const legacyCard = { ...base, grammarPoint: "conjugation" } as GrammarCardContent
+    expect(isSingleSided(legacyCard)).toBe(true)
+  })
+
+  it("prefers the new field over a stale legacy grammarPoint once both are present", () => {
+    const card = {
+      ...base,
+      singleSided: false,
+      grammarPoint: "conjugation",
+    } as GrammarCardContent
+    expect(isSingleSided(card)).toBe(false)
   })
 })

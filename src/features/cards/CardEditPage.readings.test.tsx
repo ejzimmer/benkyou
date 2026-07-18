@@ -37,7 +37,7 @@ describe("CardEditPage grammar readings draft", () => {
     const user = userEvent.setup()
     render(wrap(<CardEditPage />))
 
-    const ta = screen.getByRole("textbox", { name: /kanji to reading map/i })
+    const ta = screen.getByRole("textbox", { name: /^readings$/i })
     await user.type(ta, "私")
     expect(ta).toHaveValue("私")
     await user.type(ta, "=")

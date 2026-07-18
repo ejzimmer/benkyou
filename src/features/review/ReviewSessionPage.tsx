@@ -28,8 +28,8 @@ import {
   hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
   modeHeadingVisible,
+  REVIEW_MODE_LABELS,
   requiresTyping,
-  reviewModeLabel,
 } from "./reviewFlowHelpers"
 import { PageHeading } from "../../ui/PageHeading"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
@@ -289,7 +289,7 @@ export function ReviewSessionPage() {
 
   const modeLabel = useMemo(() => {
     if (!current) return ""
-    return reviewModeLabel(current.card, current.modeId)
+    return REVIEW_MODE_LABELS[current.modeId]
   }, [current])
 
   useEffect(() => {
@@ -575,7 +575,7 @@ export function ReviewSessionPage() {
 
       <section className="panel prompt">
         {modeLabel && (
-          <h2 className={current && modeHeadingVisible(current.card, current.modeId) ? undefined : "sr-only"}>
+          <h2 className={current && modeHeadingVisible(current.modeId) ? undefined : "sr-only"}>
             {modeLabel}
           </h2>
         )}

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest"
 import {
   deriveFurigana,
   fullyCoveredSegments,
+  grammarReadingsToText,
   kanjiOnlyEntry,
+  parseGrammarReadingsText,
   parseReadingsMapText,
   parseWordReadingText,
   readingsMapToText,
@@ -77,6 +79,70 @@ describe("parseWordReadingText / wordReadingToText", () => {
     expect(
       wordReadingToText("けつろんにいたる", { 至る: "いたる" }, "結論に至る"),
     ).toBe("至る=いたる\n結論に至る=けつろんにいたる")
+  })
+})
+
+describe("parseGrammarReadingsText / grammarReadingsToText", () => {
+  it("treats a line with = as furigana, not a tested reading", () => {
+    expect(parseGrammarReadingsText("返=かえ")).toEqual({
+      reading: undefined,
+      readings: { 返: "かえ" },
+    })
+  })
+
+  it("treats a line with no = as the construction's tested reading", () => {
+    expect(parseGrammarReadingsText("かんばしい")).toEqual({
+      reading: "かんばしい",
+      readings: {},
+    })
+  })
+
+  it("splits mixed lines into furigana entries and a tested reading", () => {
+    expect(parseGrammarReadingsText("かんばしい\n芳=かんば")).toEqual({
+      reading: "かんばしい",
+      readings: { 芳: "かんば" },
+    })
+  })
+
+  it("also splits furigana lines on a fullwidth ＝", () => {
+    expect(parseGrammarReadingsText("返＝かえ")).toEqual({
+      reading: undefined,
+      readings: { 返: "かえ" },
+    })
+  })
+
+  it("treats blank text as neither a reading nor any furigana", () => {
+    expect(parseGrammarReadingsText("  \n")).toEqual({
+      reading: undefined,
+      readings: {},
+    })
+  })
+
+  it("round-trips a tested reading plus furigana back to text", () => {
+    expect(
+      grammarReadingsToText({
+        constructionReading: "かんばしい",
+        readings: { 芳: "かんば" },
+      }),
+    ).toBe("かんばしい\n芳=かんば")
+  })
+
+  it("folds legacy constructionReadingParts in as furigana lines", () => {
+    expect(
+      grammarReadingsToText({
+        constructionReadingParts: { 結論: "けつろん", 至る: "いたる" },
+        readings: {},
+      }),
+    ).toBe("結論=けつろん\n至る=いたる")
+  })
+
+  it("does not let a legacy constructionReadingParts entry override an explicit readings entry", () => {
+    expect(
+      grammarReadingsToText({
+        constructionReadingParts: { 結論: "stale" },
+        readings: { 結論: "けつろん" },
+      }),
+    ).toBe("結論=けつろん")
   })
 })
 

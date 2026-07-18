@@ -177,6 +177,65 @@ export function wordReadingToText(
   return readingsMapToText(parts)
 }
 
+export type GrammarReadings = {
+  /** The construction's own tested reading — not shown as furigana. */
+  reading: string | undefined
+  /** Kanji phrases → readings shown as furigana in the sentence. */
+  readings: Record<string, string>
+}
+
+/**
+ * Parse a grammar card's combined "Readings" field: `phrase=reading` (or
+ * `phrase＝reading`) lines are furigana shown over the sentence; a line with
+ * no separator is the construction's own tested reading, kept separate from
+ * furigana since it may deliberately differ from the construction's literal
+ * text (e.g. testing a conjugated form's dictionary-form reading).
+ */
+export function parseGrammarReadingsText(text: string): GrammarReadings {
+  const furiganaLines: string[] = []
+  const readingLines: string[] = []
+  for (const line of text.split("\n")) {
+    if (KEY_VALUE_SEPARATOR.test(line)) {
+      furiganaLines.push(line)
+    } else if (line.trim()) {
+      readingLines.push(line.trim())
+    }
+  }
+  return {
+    reading: readingLines.join("") || undefined,
+    readings: parseReadingsMapText(furiganaLines.join("\n")),
+  }
+}
+
+/**
+ * Inverse of `parseGrammarReadingsText`, for hydrating the combined field
+ * from saved content. Folds any `constructionReadingParts` the card still
+ * carries (e.g. from before the two fields were combined, or from an Anki
+ * import) in as furigana lines too, so that data isn't silently dropped now
+ * that this field is the only place either kind of reading is authored.
+ */
+export function grammarReadingsToText(content: {
+  constructionReading?: string
+  constructionReadingParts?: Record<string, string>
+  readings: Record<string, string>
+}): string {
+  const readings = { ...content.readings }
+  for (const [label, reading] of Object.entries(
+    content.constructionReadingParts ?? {},
+  )) {
+    if (label.trim() && reading.trim() && !(label in readings)) {
+      readings[label] = reading
+    }
+  }
+  const lines: string[] = []
+  if (content.constructionReading?.trim()) {
+    lines.push(content.constructionReading.trim())
+  }
+  const furiganaText = readingsMapToText(readings)
+  if (furiganaText) lines.push(furiganaText)
+  return lines.join("\n")
+}
+
 /**
  * Add `word => reading` to a phrase map as a fallback, without overwriting
  * an explicit entry the map already has for that word.

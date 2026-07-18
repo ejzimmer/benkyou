@@ -40,9 +40,15 @@ export function hasConstructionReading(content: GrammarCardContent): boolean {
 }
 
 /**
- * Trimmed grammar point (e.g. "conjugation", "particle") this card tests, or
- * undefined for a semantic gap (word choice/meaning) that doesn't have one.
+ * True when the card is reviewed one-sided (fill-in-the-gap only). Falls
+ * back to a still-unmigrated `grammarPoint` string for cards saved before
+ * that field was renamed to the `singleSided` boolean — Dexie/Firestore rows
+ * keep whatever shape they were written with, so an old row's `grammarPoint`
+ * doesn't disappear on its own, and reading only the new field would
+ * silently turn every pre-existing single-sided card into a both-sides one.
  */
-export function grammarPointFor(content: GrammarCardContent): string | undefined {
-  return content.grammarPoint?.trim() || undefined
+export function isSingleSided(content: GrammarCardContent): boolean {
+  if (content.singleSided !== undefined) return content.singleSided
+  const legacyGrammarPoint = (content as { grammarPoint?: string }).grammarPoint
+  return Boolean(legacyGrammarPoint?.trim())
 }

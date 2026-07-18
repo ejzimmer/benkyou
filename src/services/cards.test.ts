@@ -522,7 +522,7 @@ describe("mergeCardContent", () => {
     })
   })
 
-  it("keeps the target's grammarPoint when merging grammar cards", () => {
+  it("keeps the target's singleSided when merging grammar cards", () => {
     const target: Card = {
       id: "a",
       deckId: "deck-1",
@@ -535,7 +535,7 @@ describe("mergeCardContent", () => {
         readings: {},
         images: [],
         synonymsJa: [],
-        grammarPoint: "conjugation",
+        singleSided: true,
       },
       updatedAt: 0,
     }
@@ -557,10 +557,10 @@ describe("mergeCardContent", () => {
 
     const merged = mergeCardContent(target, source)
     if (merged.kind !== "grammar") throw new Error("expected grammar")
-    expect(merged.content.grammarPoint).toBe("conjugation")
+    expect(merged.content.singleSided).toBe(true)
   })
 
-  it("falls back to the source's grammarPoint when the target has none", () => {
+  it("falls back to the source's singleSided when the target is explicitly false (e.g. a normally-created card, which always has singleSided: false rather than unset)", () => {
     const target: Card = {
       id: "a",
       deckId: "deck-1",
@@ -573,6 +573,7 @@ describe("mergeCardContent", () => {
         readings: {},
         images: [],
         synonymsJa: [],
+        singleSided: false,
       },
       updatedAt: 0,
     }
@@ -588,13 +589,13 @@ describe("mergeCardContent", () => {
         readings: {},
         images: [],
         synonymsJa: [],
-        grammarPoint: "particle",
+        singleSided: true,
       },
       updatedAt: 0,
     }
 
     const merged = mergeCardContent(target, source)
     if (merged.kind !== "grammar") throw new Error("expected grammar")
-    expect(merged.content.grammarPoint).toBe("particle")
+    expect(merged.content.singleSided).toBe(true)
   })
 })

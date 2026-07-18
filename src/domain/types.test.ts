@@ -3,6 +3,7 @@ import {
   containsKanji,
   reviewModesForCard,
   type Card,
+  type GrammarCardContent,
 } from "./types"
 
 describe("containsKanji", () => {
@@ -139,7 +140,32 @@ describe("reviewModesForCard", () => {
     ])
   })
 
-  it("grammar with a grammarPoint set only gets the construction mode, even with a reading and translation", () => {
+  it("grammar with singleSided set only gets the construction mode, even with a reading and translation", () => {
+    const card: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "grammar",
+      updatedAt: 1,
+      content: {
+        sentenceWithGap: "プレゼンテーションを見___が、つまらなかったから、出ました。",
+        gapMarker: "___",
+        construction: "ました",
+        constructionReading: "ました",
+        translationEn: "I watched the presentation, but it was boring so I left.",
+        readings: {},
+        images: [],
+        synonymsJa: [],
+        singleSided: true,
+      },
+    }
+    expect(reviewModesForCard(card)).toEqual(["grammar_type_construction"])
+  })
+
+  it("grammar with a still-unmigrated legacy grammarPoint stays single-sided", () => {
+    // Cards saved before grammarPoint was renamed to singleSided keep
+    // whatever shape they were written with — this must keep working
+    // without a manual migration, or every pre-existing single-sided card
+    // would silently start testing both sides again.
     const card: Card = {
       id: "1",
       deckId: "d",
@@ -155,7 +181,7 @@ describe("reviewModesForCard", () => {
         images: [],
         synonymsJa: [],
         grammarPoint: "conjugation",
-      },
+      } as GrammarCardContent,
     }
     expect(reviewModesForCard(card)).toEqual(["grammar_type_construction"])
   })

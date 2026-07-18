@@ -14,6 +14,7 @@ import type {
 import { CARD_KIND_LABELS, containsKanji } from "../../domain/types"
 import { countGaps } from "../../domain/grammarGaps"
 import { isKanaOnly } from "../../domain/vocabularyContent"
+import { isSingleSided } from "../../domain/grammarContent"
 import {
   createGrammarCard,
   createVocabularyCard,
@@ -40,6 +41,8 @@ import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import {
   deriveFurigana,
+  grammarReadingsToText,
+  parseGrammarReadingsText,
   parseReadingsMapText,
   parseWordReadingText,
   readingsMapToText,
@@ -55,16 +58,6 @@ function vocabTestedParts(content: VocabularyCardContent): LabeledReading[] {
     return [{ label: content.wordJa, reading: content.reading }]
   }
   return Object.entries(content.readingParts ?? {})
-    .filter(([label, reading]) => label.trim() && reading.trim())
-    .map(([label, reading]) => ({ label, reading }))
-}
-
-/** Same as `vocabTestedParts`, for a grammar card's construction. */
-function grammarTestedParts(content: GrammarCardContent): LabeledReading[] {
-  if (content.constructionReading?.trim()) {
-    return [{ label: content.construction, reading: content.constructionReading }]
-  }
-  return Object.entries(content.constructionReadingParts ?? {})
     .filter(([label, reading]) => label.trim() && reading.trim())
     .map(([label, reading]) => ({ label, reading }))
 }
@@ -142,17 +135,16 @@ export function CardEditPage() {
   /** Controlled drafts so incomplete `kanji=` lines are not dropped on each keystroke */
   const [readingsMapDraft, setReadingsMapDraft] = useState("")
   const [vocabReadingDraft, setVocabReadingDraft] = useState("")
-  const [grammarReadingDraft, setGrammarReadingDraft] = useState("")
   /**
-   * The furigana map (`readings`) is auto-seeded from whatever's actually
-   * tested (`reading`/`readingParts` or `constructionReading`/
-   * `constructionReadingParts`) so authors don't have to duplicate it by
-   * hand — but it stays independently editable afterwards (e.g. narrowed to
-   * just the kanji). These track the last seed applied, so a later re-seed
-   * only touches entries the author hasn't since changed by hand.
+   * The vocab furigana map (`readings`) is auto-seeded from whatever's
+   * actually tested (`reading`/`readingParts`) so authors don't have to
+   * duplicate it by hand — but it stays independently editable afterwards
+   * (e.g. narrowed to just the kanji). This tracks the last seed applied, so
+   * a later re-seed only touches entries the author hasn't since changed by
+   * hand. Grammar's combined "Readings" field has no such auto-seeding — the
+   * author types both the tested reading and the furigana directly.
    */
   const vocabFuriganaSeedRef = useRef<Record<string, string>>({})
-  const grammarFuriganaSeedRef = useRef<Record<string, string>>({})
   const formRef = useRef<HTMLFormElement | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [imageUploadCount, setImageUploadCount] = useState(0)
@@ -216,20 +208,6 @@ export function CardEditPage() {
     setVocab({ ...next, readings })
   }
 
-  /** Same as `updateVocab`, for the grammar draft's construction reading. */
-  function updateGrammar(partial: Partial<GrammarCardContent>) {
-    const next = { ...grammar, ...partial }
-    const nextSeed = deriveFurigana(grammarTestedParts(next))
-    const readings = reseedFurigana(
-      next.readings,
-      grammarFuriganaSeedRef.current,
-      nextSeed,
-    )
-    grammarFuriganaSeedRef.current = nextSeed
-    setReadingsMapDraft(readingsMapToText(readings))
-    setGrammar({ ...next, readings })
-  }
-
   // Tracks which cardId the form has already been hydrated from, so that
   // live-query emissions caused by unrelated writes to this row (e.g. a
   // background sync pass rewriting the card) don't clobber in-progress edits.
@@ -241,9 +219,7 @@ export function CardEditPage() {
       setErr(null)
       setReadingsMapDraft("")
       setVocabReadingDraft("")
-      setGrammarReadingDraft("")
       vocabFuriganaSeedRef.current = {}
-      grammarFuriganaSeedRef.current = {}
       hydratedCardIdRef.current = null
       return
     }
@@ -274,18 +250,11 @@ export function CardEditPage() {
         vocabTestedParts(loadedCard.content),
       )
     } else {
-      setGrammar(loadedCard.content)
-      setReadingsMapDraft(readingsMapToText(loadedCard.content.readings))
-      setGrammarReadingDraft(
-        wordReadingToText(
-          loadedCard.content.constructionReading,
-          loadedCard.content.constructionReadingParts,
-          loadedCard.content.construction,
-        ),
-      )
-      grammarFuriganaSeedRef.current = deriveFurigana(
-        grammarTestedParts(loadedCard.content),
-      )
+      setGrammar({
+        ...loadedCard.content,
+        singleSided: isSingleSided(loadedCard.content),
+      })
+      setReadingsMapDraft(grammarReadingsToText(loadedCard.content))
     }
   }, [cardId, deckId, isNew, loadedCard])
 
@@ -294,9 +263,7 @@ export function CardEditPage() {
     setGrammar(defaultGrammar())
     setReadingsMapDraft("")
     setVocabReadingDraft("")
-    setGrammarReadingDraft("")
     vocabFuriganaSeedRef.current = {}
-    grammarFuriganaSeedRef.current = {}
     formRef.current?.reset()
   }
 
@@ -323,17 +290,7 @@ export function CardEditPage() {
 
     const nextGrammar = grammarFromVocabularyContent(vocab)
     setGrammar(nextGrammar)
-    setReadingsMapDraft(readingsMapToText(nextGrammar.readings))
-    setGrammarReadingDraft(
-      wordReadingToText(
-        nextGrammar.constructionReading,
-        nextGrammar.constructionReadingParts,
-        nextGrammar.construction,
-      ),
-    )
-    grammarFuriganaSeedRef.current = deriveFurigana(
-      grammarTestedParts(nextGrammar),
-    )
+    setReadingsMapDraft(grammarReadingsToText(nextGrammar))
     setKind("grammar")
   }
 
@@ -415,17 +372,7 @@ export function CardEditPage() {
         )
       } else {
         setGrammar(merged.content)
-        setReadingsMapDraft(readingsMapToText(merged.content.readings))
-        setGrammarReadingDraft(
-          wordReadingToText(
-            merged.content.constructionReading,
-            merged.content.constructionReadingParts,
-            merged.content.construction,
-          ),
-        )
-        grammarFuriganaSeedRef.current = deriveFurigana(
-          grammarTestedParts(merged.content),
-        )
+        setReadingsMapDraft(grammarReadingsToText(merged.content))
       }
       setDuplicateMatches((matches) => matches.filter((c) => c.id !== match.id))
     } catch (x) {
@@ -565,18 +512,29 @@ export function CardEditPage() {
         className="panel stack"
         aria-label="Card editor"
       >
-        <label className="row">
-          Type{" "}
-          <select
-            value={kind}
-            onChange={(e) =>
-              onKindChange(e.target.value as "vocabulary" | "grammar")
-            }
-          >
-            <option value="vocabulary">{CARD_KIND_LABELS.vocabulary}</option>
-            <option value="grammar">{CARD_KIND_LABELS.grammar}</option>
-          </select>
-        </label>
+        <fieldset className="plain">
+          <legend>Type</legend>
+          <div className="row" style={{ gap: "1rem" }}>
+            <label className="row">
+              <input
+                type="radio"
+                name="card-kind"
+                checked={kind === "vocabulary"}
+                onChange={() => onKindChange("vocabulary")}
+              />
+              <span>{CARD_KIND_LABELS.vocabulary}</span>
+            </label>
+            <label className="row">
+              <input
+                type="radio"
+                name="card-kind"
+                checked={kind === "grammar"}
+                onChange={() => onKindChange("grammar")}
+              />
+              <span>{CARD_KIND_LABELS.grammar}</span>
+            </label>
+          </div>
+        </fieldset>
 
         {kind === "vocabulary" ? (
           <>
@@ -736,24 +694,13 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Construction (fills gap)
+              Answer
               <input
                 className="input"
                 value={grammar.construction}
-                onChange={(e) => {
-                  const construction = e.target.value
-                  const kanaOnly = isKanaOnly(construction)
-                  updateGrammar({
-                    construction,
-                    constructionReading: kanaOnly
-                      ? undefined
-                      : grammar.constructionReading,
-                    constructionReadingParts: kanaOnly
-                      ? {}
-                      : grammar.constructionReadingParts,
-                  })
-                  if (kanaOnly) setGrammarReadingDraft("")
-                }}
+                onChange={(e) =>
+                  setGrammar({ ...grammar, construction: e.target.value })
+                }
               />
             </label>
             {countGaps(grammar.sentenceWithGap, grammar.gapMarker) > 1 && (
@@ -769,19 +716,33 @@ export function CardEditPage() {
                 {duplicateJapaneseWarning}
               </p>
             )}
-            <label>
-              Grammar point (e.g. "conjugation", "particle") — leave blank
-              for a semantic gap that tests word choice, meaning, and
-              reading. When set, review only asks you to fill in the gap in
-              Japanese, phrased as “What's the correct {"{value}"}?”.
-              <input
-                className="input"
-                value={grammar.grammarPoint ?? ""}
-                onChange={(e) =>
-                  setGrammar({ ...grammar, grammarPoint: e.target.value })
-                }
-              />
-            </label>
+            <fieldset className="plain">
+              <legend>Testing</legend>
+              <div className="row" style={{ gap: "1rem" }}>
+                <label className="row">
+                  <input
+                    type="radio"
+                    name="grammar-sides"
+                    checked={!grammar.singleSided}
+                    onChange={() =>
+                      setGrammar({ ...grammar, singleSided: false })
+                    }
+                  />
+                  <span>Test both sides</span>
+                </label>
+                <label className="row">
+                  <input
+                    type="radio"
+                    name="grammar-sides"
+                    checked={Boolean(grammar.singleSided)}
+                    onChange={() =>
+                      setGrammar({ ...grammar, singleSided: true })
+                    }
+                  />
+                  <span>Test 1 side</span>
+                </label>
+              </div>
+            </fieldset>
             <label>
               Translation
               <input
@@ -793,49 +754,21 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Reading of the construction (hiragana) — independent of the
-              construction's literal text above, so a conjugated form (e.g.
-              芳しく) can test its dictionary form's reading (かんばしい)
-              instead of the conjugated one. For a construction that's
-              several words/clusters tested separately, use
-              kanjiPhrase=reading pairs instead, one per line (e.g.
-              流し=ながし, 呼ぶ=よぶ) — needs 2 or more lines to count as a
-              cluster-by-cluster reading; a single kanjiPhrase=reading line
-              isn't tested as a reading on its own.
-              <textarea
-                className="input"
-                rows={3}
-                aria-label="Construction reading"
-                value={grammarReadingDraft}
-                onChange={(e) => {
-                  const text = e.target.value
-                  setGrammarReadingDraft(text)
-                  const { reading, readingParts } = parseWordReadingText(text)
-                  updateGrammar({
-                    constructionReading: reading,
-                    constructionReadingParts: readingParts,
-                  })
-                }}
-              />
-            </label>
-            <label>
-              Furigana shown in the sentence above (format:
-              kanjiPhrase=reading, one per line) — separate from what's
-              tested, and auto-filled from the reading(s) above, but
-              editable on its own. Narrow an entry to just the kanji (e.g.
-              芳しく=かんばしい → 芳=かんば) to leave okurigana
-              un-annotated, the usual furigana convention.
+              Readings
               <textarea
                 className="input"
                 rows={4}
-                aria-label="Kanji to reading map"
+                aria-label="Readings"
                 value={readingsMapDraft}
                 onChange={(e) => {
                   const text = e.target.value
                   setReadingsMapDraft(text)
+                  const { reading, readings } = parseGrammarReadingsText(text)
                   setGrammar((g) => ({
                     ...g,
-                    readings: parseReadingsMapText(text),
+                    constructionReading: reading,
+                    constructionReadingParts: {},
+                    readings,
                   }))
                 }}
               />
@@ -881,7 +814,11 @@ export function CardEditPage() {
           </p>
         )}
         {err && <p className="error">{err}</p>}
-        <button type="submit" className="btn primary" disabled={isUploadingImages}>
+        <button
+          type="submit"
+          className="btn primary align-end"
+          disabled={isUploadingImages}
+        >
           Save
         </button>
       </form>

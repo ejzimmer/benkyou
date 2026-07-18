@@ -10,7 +10,7 @@ import {
   isKanaOnly,
   phraseReadingSegments,
 } from "../domain/vocabularyContent"
-import { constructionReadingSegments } from "../domain/grammarContent"
+import { constructionReadingSegments, isSingleSided } from "../domain/grammarContent"
 import { containsKanji, reviewModesForCard } from "../domain/types"
 import {
   countGaps,
@@ -205,7 +205,7 @@ function mergeGrammarContent(
     readings: mergeReadings(target.readings, source.readings),
     images: mergeImages(target.images, source.images),
     synonymsJa: [...target.synonymsJa, ...source.synonymsJa],
-    grammarPoint: target.grammarPoint || source.grammarPoint,
+    singleSided: isSingleSided(target) || isSingleSided(source),
   }
 }
 
@@ -319,7 +319,7 @@ export function defaultGrammar(): GrammarCardContent {
     readings: {},
     images: [],
     synonymsJa: [],
-    grammarPoint: "",
+    singleSided: false,
   }
 }
 

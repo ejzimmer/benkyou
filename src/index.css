@@ -261,6 +261,10 @@ a:hover {
   gap: 0.75rem;
 }
 
+.align-end {
+  align-self: flex-end;
+}
+
 .row {
   display: flex;
   gap: 0.5rem;
@@ -306,11 +310,23 @@ textarea::selection {
   color: #0f0f18;
 }
 
-label {
+label,
+fieldset.plain {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   font-size: 0.9rem;
+}
+
+fieldset.plain {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+fieldset.plain legend {
+  padding: 0;
+  float: none;
 }
 
 .btn {
