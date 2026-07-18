@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import type { DueItem } from "../../services/review"
 import { RubySentence, RubyWord } from "../../ui/KanjiRuby"
 import { CardImageRow } from "../../ui/CardImageRow"
+import { ChevronDownIcon } from "../../ui/ChevronDownIcon"
 import {
   clueExampleSentences,
   readingForConstruction,
@@ -129,6 +130,43 @@ export function ReviewSessionPromptBody({
   const { card, modeId: m } = item
   const focusKey = `${card.id}:${m}:${promptFocusToken}`
 
+  // Shared open/closed state for the "show meaning/examples/images" disclosure
+  // used by both reading-quiz modes below. Reset whenever the prompt changes
+  // (new card, mode, or a return via undo) since this component instance can
+  // be reused across cards rather than remounted.
+  const [extrasOpen, setExtrasOpen] = useState(false)
+  const extrasContentId = useId()
+  useEffect(() => setExtrasOpen(false), [focusKey])
+
+  function renderExtrasToggle(label: string) {
+    return (
+      <button
+        type="button"
+        className="prompt-extras-toggle"
+        aria-expanded={extrasOpen}
+        aria-controls={extrasContentId}
+        onClick={() => setExtrasOpen((open) => !open)}
+      >
+        <ChevronDownIcon
+          className={`prompt-extras-chevron${extrasOpen ? " is-open" : ""}`}
+        />
+        <span className="sr-only">{label}</span>
+      </button>
+    )
+  }
+
+  function renderExtrasContent(content: React.ReactNode) {
+    return (
+      <div
+        id={extrasContentId}
+        className={`prompt-extras${extrasOpen ? " is-open" : ""}`}
+        aria-hidden={!extrasOpen}
+      >
+        <div className="prompt-extras-content stack">{content}</div>
+      </div>
+    )
+  }
+
   // Asking for the English meaning: show the Japanese word + example sentences.
   // Kanji readings stay available on hover/focus via <RubyWord>. No typing
   // input for this mode — it's answered aloud.
@@ -211,13 +249,15 @@ export function ReviewSessionPromptBody({
         card.content.images.length > 0
       return (
         <div className="stack">
-          <p className="prompt-main">{card.content.wordJa}</p>
-          {hasHidden && (
-            <details className="prompt-extras">
-              <summary className="btn">Show meaning, examples & images</summary>
-              <div className="prompt-extras-content stack">
+          <div className="prompt-extras-row">
+            <p className="prompt-main">{card.content.wordJa}</p>
+            {hasHidden && renderExtrasToggle("Show meaning, examples & images")}
+          </div>
+          {hasHidden &&
+            renderExtrasContent(
+              <>
                 {definitions.length > 0 && (
-                  <ul>
+                  <ul className="meanings-list">
                     {definitions.map((d, i) => (
                       <li key={i}>{d}</li>
                     ))}
@@ -229,9 +269,8 @@ export function ReviewSessionPromptBody({
                   </p>
                 ))}
                 <CardImageRow images={card.content.images} />
-              </div>
-            </details>
-          )}
+              </>,
+            )}
         </div>
       )
     }
@@ -480,31 +519,32 @@ export function ReviewSessionPromptBody({
         card.content.images.length > 0
       return (
         <div className="stack">
-          <p className="prompt-main grammar-gap-sentence">
-            {hasInlineGap ? (
-              <RubySentence
-                sentence={sentence}
-                gapMarker={card.content.gapMarker}
-                readings={card.content.readings}
-                renderGap={(gapIndex) => (
-                  <span className="construction-fill">{fillFor(gapIndex)}</span>
-                )}
-              />
-            ) : (
-              construction
-            )}
-          </p>
-          {hasHidden && (
-            <details className="prompt-extras">
-              <summary className="btn">Show meaning & images</summary>
-              <div className="prompt-extras-content stack">
+          <div className="prompt-extras-row">
+            <p className="prompt-main grammar-gap-sentence">
+              {hasInlineGap ? (
+                <RubySentence
+                  sentence={sentence}
+                  gapMarker={card.content.gapMarker}
+                  readings={card.content.readings}
+                  renderGap={(gapIndex) => (
+                    <span className="construction-fill">{fillFor(gapIndex)}</span>
+                  )}
+                />
+              ) : (
+                construction
+              )}
+            </p>
+            {hasHidden && renderExtrasToggle("Show meaning & images")}
+          </div>
+          {hasHidden &&
+            renderExtrasContent(
+              <>
                 {card.content.translationEn.trim() && (
                   <p>{card.content.translationEn}</p>
                 )}
                 <CardImageRow images={card.content.images} />
-              </div>
-            </details>
-          )}
+              </>,
+            )}
         </div>
       )
     }

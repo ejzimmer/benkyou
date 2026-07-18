@@ -290,6 +290,66 @@ describe("ReviewSessionPromptBody", () => {
     ).not.toContain("ねこ")
   })
 
+  it("toggles the meaning/examples/images disclosure open and closed on click", async () => {
+    const user = userEvent.setup()
+    const item: DueItem = {
+      card: {
+        id: "card-6b",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "猫",
+          reading: "ねこ",
+          definitionsEn: ["cat"],
+          images: [],
+          exampleSentences: [],
+          synonymsJa: [],
+        },
+      },
+      modeId: "vocab_type_reading",
+      due: 0,
+    }
+
+    render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        kanjiWarn={false}
+        onTypedSubmit={vi.fn()}
+        column="question"
+      />,
+    )
+
+    const toggle = screen.getByRole("button", {
+      name: /show meaning, examples/i,
+    })
+    const content = document.getElementById(
+      toggle.getAttribute("aria-controls") ?? "",
+    )
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    expect(content).toHaveAttribute("aria-hidden", "true")
+    expect(toggle.querySelector(".prompt-extras-chevron")).not.toHaveClass(
+      "is-open",
+    )
+
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+    expect(content).toHaveAttribute("aria-hidden", "false")
+    expect(toggle.querySelector(".prompt-extras-chevron")).toHaveClass(
+      "is-open",
+    )
+
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    expect(content).toHaveAttribute("aria-hidden", "true")
+  })
+
   it("shows per-segment furigana for a phrase word in the oral-meaning prompt", () => {
     const item: DueItem = {
       card: {
@@ -371,10 +431,13 @@ describe("ReviewSessionPromptBody", () => {
     expect(screen.getByLabelText("Reading for 至る")).toBeInTheDocument()
     expect(screen.getAllByRole("textbox")).toHaveLength(2)
 
-    const extras = screen.getByText(/show meaning, examples/i)
-    expect(extras.closest(".prompt-extras")?.querySelectorAll("ruby")).toHaveLength(
-      0,
+    const toggle = screen.getByRole("button", {
+      name: /show meaning, examples/i,
+    })
+    const content = document.getElementById(
+      toggle.getAttribute("aria-controls") ?? "",
     )
+    expect(content?.querySelectorAll("ruby")).toHaveLength(0)
   })
 
   it("combines each phrase-word segment's answer into a single comma-separated typed value", async () => {
@@ -449,9 +512,13 @@ describe("ReviewSessionPromptBody", () => {
     expect(screen.getByLabelText("Reading for 結論")).toBeInTheDocument()
     expect(screen.getByLabelText("Reading for 至る")).toBeInTheDocument()
     // The meaning sits behind the collapsed expander, not shown up front.
-    const details = screen.getByText(/show meaning/i).closest("details")
-    expect(details).not.toHaveAttribute("open")
-    expect(details).toHaveTextContent("he came to a conclusion")
+    const toggle = screen.getByRole("button", { name: /show meaning/i })
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    const content = document.getElementById(
+      toggle.getAttribute("aria-controls") ?? "",
+    )
+    expect(content).toHaveAttribute("aria-hidden", "true")
+    expect(content).toHaveTextContent("he came to a conclusion")
   })
 
   it("fills each gap of a multi-gap grammar reading quiz with its own answer, not the whole construction", () => {
