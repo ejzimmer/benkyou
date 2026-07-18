@@ -11,7 +11,7 @@ import {
   hasVocabularyImage,
   hasVocabularyPronunciation,
 } from "./vocabularyContent"
-import { grammarPointFor, hasConstructionReading } from "./grammarContent"
+import { hasConstructionReading } from "./grammarContent"
 
 export { containsKanji }
 
@@ -70,15 +70,13 @@ export type GrammarCardContent = {
   images: string[]
   synonymsJa: string[]
   /**
-   * What grammar point the gap tests, e.g. "conjugation" or "particle" —
-   * set when the gap is really about correct grammatical form rather than
-   * word choice (contrast 霧が消えた, where the interesting thing is that
-   * Japanese uses "disappear" rather than "lift" for fog clearing). When
-   * set, only the fill-in-the-gap mode is reviewed (no separate reading or
-   * meaning drill — those aren't the point of a conjugation/particle card),
-   * and the prompt asks "What's the correct {grammarPoint}?".
+   * True when the gap tests correct grammatical form (conjugation,
+   * particle, etc.) rather than word choice (contrast 霧が消えた, where the
+   * interesting thing is that Japanese uses "disappear" rather than "lift"
+   * for fog clearing) — reviewed one-sided, with only the fill-in-the-gap
+   * mode (no separate reading or meaning drill).
    */
-  grammarPoint?: string
+  singleSided?: boolean
 }
 
 export type Card =
@@ -130,7 +128,7 @@ export function reviewModesForCard(card: Card): ReviewModeId[] {
     return modes
   }
   const modes: ReviewModeId[] = ["grammar_type_construction"]
-  if (grammarPointFor(card.content)) return modes
+  if (card.content.singleSided) return modes
   if (hasConstructionReading(card.content)) {
     modes.push("grammar_type_reading")
   }

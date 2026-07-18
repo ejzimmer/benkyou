@@ -205,7 +205,7 @@ function mergeGrammarContent(
     readings: mergeReadings(target.readings, source.readings),
     images: mergeImages(target.images, source.images),
     synonymsJa: [...target.synonymsJa, ...source.synonymsJa],
-    grammarPoint: target.grammarPoint || source.grammarPoint,
+    singleSided: target.singleSided ?? source.singleSided,
   }
 }
 
@@ -319,7 +319,7 @@ export function defaultGrammar(): GrammarCardContent {
     readings: {},
     images: [],
     synonymsJa: [],
-    grammarPoint: "",
+    singleSided: false,
   }
 }
 

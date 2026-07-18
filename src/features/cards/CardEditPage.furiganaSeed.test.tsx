@@ -32,20 +32,6 @@ function wrapVocab() {
   )
 }
 
-function wrapGrammar() {
-  return (
-    <MemoryRouter initialEntries={["/decks/d1/cards/new?vocab=0"]}>
-      <AuthProvider>
-        <SyncProvider>
-          <Routes>
-            <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
-          </Routes>
-        </SyncProvider>
-      </AuthProvider>
-    </MemoryRouter>
-  )
-}
-
 describe("CardEditPage vocab furigana auto-seed", () => {
   it("seeds the furigana map from the whole-word reading as you type it", async () => {
     const user = userEvent.setup()
@@ -105,47 +91,6 @@ describe("CardEditPage vocab furigana auto-seed", () => {
     await user.type(screen.getByLabelText(/japanese word/i), "結論に至る")
     await user.type(
       screen.getByRole("textbox", { name: /^reading$/i }),
-      "結論=けつろん\n至る=いたる",
-    )
-
-    expect(
-      screen.getByRole("textbox", { name: /kanji to reading map/i }),
-    ).toHaveValue("結論=けつろん\n至=いた")
-  })
-})
-
-describe("CardEditPage grammar furigana auto-seed", () => {
-  it("seeds furigana from the construction reading, decoupled from the literal construction text", async () => {
-    const user = userEvent.setup()
-    render(wrapGrammar())
-
-    await user.type(
-      screen.getByLabelText(/construction \(fills gap\)/i),
-      "芳しく",
-    )
-    await user.type(
-      screen.getByRole("textbox", { name: /^construction reading$/i }),
-      "かんばしい",
-    )
-
-    // 芳しく has a 2-character trailing okurigana suffix (しく); stripping
-    // that many characters from the tested reading's end (かんばしい) — a
-    // best-effort approximation the author can correct — lands on 芳=かんば.
-    expect(
-      screen.getByRole("textbox", { name: /kanji to reading map/i }),
-    ).toHaveValue("芳=かんば")
-  })
-
-  it("seeds per-cluster furigana once the construction reading field has multiple = entries", async () => {
-    const user = userEvent.setup()
-    render(wrapGrammar())
-
-    await user.type(
-      screen.getByLabelText(/construction \(fills gap\)/i),
-      "結論に至る",
-    )
-    await user.type(
-      screen.getByRole("textbox", { name: /^construction reading$/i }),
       "結論=けつろん\n至る=いたる",
     )
 

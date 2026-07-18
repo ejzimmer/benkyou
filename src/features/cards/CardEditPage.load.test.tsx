@@ -113,7 +113,7 @@ describe("CardEditPage load existing", () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue("私は___です")).toBeInTheDocument()
     })
-    await user.selectOptions(screen.getByLabelText(/type/i), "vocabulary")
+    await user.click(screen.getByRole("radio", { name: /^vocabulary$/i }))
 
     expect(screen.getByLabelText(/japanese word/i)).toHaveValue("学生")
     expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue(
@@ -173,7 +173,7 @@ describe("CardEditPage load existing", () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue("___です")).toBeInTheDocument()
     })
-    await user.selectOptions(screen.getByLabelText(/type/i), "vocabulary")
+    await user.click(screen.getByRole("radio", { name: /^vocabulary$/i }))
 
     // The kana-only construction's per-cluster reading carries over into the
     // vocab reading field (readingParts isn't gated by containsKanji the way
@@ -220,8 +220,8 @@ describe("CardEditPage load existing", () => {
       expect(screen.getByDisplayValue("私は___です")).toBeInTheDocument()
     })
 
-    await user.selectOptions(screen.getByLabelText(/type/i), "vocabulary")
-    expect(screen.getByLabelText(/type/i)).toHaveValue("vocabulary")
+    await user.click(screen.getByRole("radio", { name: /^vocabulary$/i }))
+    expect(screen.getByRole("radio", { name: /^vocabulary$/i })).toBeChecked()
 
     // Simulate a background write to this exact row (e.g. a no-op sync pass)
     // happening while the user is still mid-edit.
@@ -230,6 +230,6 @@ describe("CardEditPage load existing", () => {
     // Give the live query time to re-emit and the hydration effect to run,
     // then confirm the in-progress type change wasn't reset back to "grammar".
     await new Promise((resolve) => setTimeout(resolve, 100))
-    expect(screen.getByLabelText(/type/i)).toHaveValue("vocabulary")
+    expect(screen.getByRole("radio", { name: /^vocabulary$/i })).toBeChecked()
   })
 })

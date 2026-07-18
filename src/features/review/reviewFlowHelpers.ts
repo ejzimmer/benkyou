@@ -14,10 +14,7 @@ import {
   withWordReadingFallback,
 } from "../../domain/readingsMap"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
-import {
-  constructionReadingSegments,
-  grammarPointFor,
-} from "../../domain/grammarContent"
+import { constructionReadingSegments } from "../../domain/grammarContent"
 import { hasNonHiraganaKana } from "../../lib/japanese/normalize"
 
 /** Marker used to blank out the target word in an example sentence. */
@@ -73,20 +70,6 @@ export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {
   grammar_type_construction: "Type the construction",
   grammar_type_reading: "Type the reading of the construction (hiragana)",
   grammar_oral_meaning: "Say the meaning of the construction",
-}
-
-/**
- * The heading shown above the review prompt. A grammar card with a
- * `grammarPoint` set (e.g. "conjugation", "particle") is testing that
- * specific grammatical form rather than word choice, so it gets a tailored
- * heading instead of the generic construction-typing label.
- */
-export function reviewModeLabel(card: Card, mode: ReviewModeId): string {
-  if (mode === "grammar_type_construction" && card.kind === "grammar") {
-    const grammarPoint = grammarPointFor(card.content)
-    if (grammarPoint) return `What's the correct ${grammarPoint}?`
-  }
-  return REVIEW_MODE_LABELS[mode]
 }
 
 /** Modes that test a hiragana reading — the IME conversion, non-hiragana
@@ -162,19 +145,9 @@ export function requiresTyping(mode: ReviewModeId): boolean {
  * to make the generic mode heading redundant. Every other mode hides it (the
  * heading stays in the DOM for screen-reader heading navigation, just
  * visually hidden) — so a new mode defaults to hidden unless added here.
- *
- * `grammar_type_construction` is a special case: the generic "Type the
- * construction" heading is redundant with the gapped sentence itself, but
- * when the card has a `grammarPoint` set, `reviewModeLabel` swaps in a
- * tailored question ("What's the correct conjugation?") that isn't shown
- * anywhere else on the prompt — that one still needs to stay visible.
  */
-export function modeHeadingVisible(card: Card, mode: ReviewModeId): boolean {
-  if (mode === "grammar_type_reading") return true
-  if (mode === "grammar_type_construction" && card.kind === "grammar") {
-    return Boolean(grammarPointFor(card.content))
-  }
-  return false
+export function modeHeadingVisible(mode: ReviewModeId): boolean {
+  return mode === "grammar_type_reading"
 }
 
 export function expectedAnswer(card: Card, mode: ReviewModeId): string {

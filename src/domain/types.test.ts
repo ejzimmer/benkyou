@@ -139,7 +139,7 @@ describe("reviewModesForCard", () => {
     ])
   })
 
-  it("grammar with a grammarPoint set only gets the construction mode, even with a reading and translation", () => {
+  it("grammar with singleSided set only gets the construction mode, even with a reading and translation", () => {
     const card: Card = {
       id: "1",
       deckId: "d",
@@ -154,7 +154,7 @@ describe("reviewModesForCard", () => {
         readings: {},
         images: [],
         synonymsJa: [],
-        grammarPoint: "conjugation",
+        singleSided: true,
       },
     }
     expect(reviewModesForCard(card)).toEqual(["grammar_type_construction"])
