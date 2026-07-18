@@ -26,15 +26,14 @@ export function Switch<T extends string>({
   options,
   disabled = false,
 }: Props<T>) {
-  const [start, end] = options
-  const selectedSide = value === end.value ? "end" : "start"
+  const selectedSide = value === options[1].value ? "end" : "start"
 
   return (
     <fieldset className="plain">
       <legend>{legend}</legend>
       <div className={`switch switch-${selectedSide}`}>
         <span className="switch-thumb" aria-hidden="true" />
-        {[start, end].map((option) => (
+        {options.map((option) => (
           <label className="switch-option" key={option.value}>
             <input
               type="radio"

@@ -59,6 +59,36 @@ describe("Switch", () => {
     expect(onChange).toHaveBeenCalledWith("grammar")
   })
 
+  it("flips the track's start/end class with the selected side", () => {
+    const { container, rerender } = render(
+      <Switch
+        legend="Type"
+        name="card-kind"
+        value="vocabulary"
+        onChange={() => {}}
+        options={[
+          { value: "vocabulary", label: "Vocabulary" },
+          { value: "grammar", label: "Grammar" },
+        ]}
+      />,
+    )
+    expect(container.querySelector(".switch")).toHaveClass("switch-start")
+
+    rerender(
+      <Switch
+        legend="Type"
+        name="card-kind"
+        value="grammar"
+        onChange={() => {}}
+        options={[
+          { value: "vocabulary", label: "Vocabulary" },
+          { value: "grammar", label: "Grammar" },
+        ]}
+      />,
+    )
+    expect(container.querySelector(".switch")).toHaveClass("switch-end")
+  })
+
   it("disables both options when disabled", () => {
     render(
       <Switch

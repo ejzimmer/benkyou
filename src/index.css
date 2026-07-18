@@ -380,8 +380,8 @@ fieldset.plain legend {
   outline-offset: 2px;
 }
 
-.switch-start .switch-option:first-child span,
-.switch-end .switch-option:last-child span {
+.switch-start .switch-option:first-of-type span,
+.switch-end .switch-option:last-of-type span {
   color: var(--on-fluoro);
 }
 
