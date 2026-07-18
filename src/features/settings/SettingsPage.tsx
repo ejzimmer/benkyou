@@ -22,7 +22,6 @@ import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 import { AnkiImportGapReview } from "./AnkiImportGapReview"
 import { GrammarClassifyReview } from "./GrammarClassifyReview"
 import { UserMenu } from "../../ui/UserMenu"
-import { SyncIndicator } from "../../ui/SyncIndicator"
 import { PageHeading } from "../../ui/PageHeading"
 
 function importProgressLabel(progress: ImportProgress): string {
@@ -186,7 +185,6 @@ export function SettingsPage() {
           Settings
         </PageHeading>
         <div className="header-actions">
-          <SyncIndicator />
           <UserMenu />
         </div>
       </header>

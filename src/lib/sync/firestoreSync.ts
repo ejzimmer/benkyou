@@ -167,6 +167,18 @@ export async function hasAnyRemoteChangesSince(
  * Only meaningful once the timestamp check has already come back clean —
  * if local has unsynced changes, or remote has newer timestamps, the full
  * sync already runs regardless of counts.
+ *
+ * Deliberately a strict "remote < local" check, not "remote !== local":
+ * remote having *more* docs than local believes exist is a normal, benign
+ * state for media specifically — `syncMedia` only ever downloads media
+ * referenced by a local card (or already local), so a media doc that's no
+ * longer referenced by any card (e.g. after removing an image from a card)
+ * stays on remote, unfetched, until the next push sweeps it up as an
+ * orphan. Flagging that as a "mismatch" would force the full, expensive
+ * snapshot pull on essentially every sync for any account that has ever
+ * edited a card's images, defeating the short-circuit permanently. A
+ * genuine silent deletion always shows up as remote having *fewer* docs
+ * than local, which this still catches.
  */
 export async function hasEntityCountMismatch(
   fs: Firestore,
@@ -187,7 +199,7 @@ export async function hasEntityCountMismatch(
           getCountFromServer(col),
           localCount(),
         ])
-        return remoteSnap.data().count !== local
+        return remoteSnap.data().count < local
       }),
     ),
   )

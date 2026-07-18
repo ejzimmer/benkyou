@@ -244,6 +244,64 @@ describe("review + scheduling (IndexedDB)", () => {
     expect(restored!.due).toBe(beforeDue)
     expect(await db.reviewEvents.get(eventId)).toBeUndefined()
   })
+
+  it("undoes the judgement that actually happened last, even when two judgements share the same millisecond timestamp", async () => {
+    // Two judgements landing in the same `Date.now()` millisecond is routine
+    // (e.g. a browser clamping timer precision for fingerprinting
+    // resistance), and row ids are random UUIDs rather than sequential, so
+    // picking "last by ts" used to be able to resolve a same-`ts` tie to
+    // either row. `reviewUndo` is meant to be a single-slot record of just
+    // the most recent judgement, so undo must always act on the second one
+    // here regardless of id ordering.
+    const deck = await createDeck("D", null)
+    const first = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "一",
+        reading: "いち",
+        definitionsEn: ["one"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+    const second = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "二",
+        reading: "に",
+        definitionsEn: ["two"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+      null,
+    )
+
+    const frozenNow = 1_000_000
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(frozenNow)
+    try {
+      const snapFirst = await prepareJudgement(first.id, "vocab_oral_en")
+      await commitJudgement(first.id, "vocab_oral_en", 800, true, snapFirst, null)
+
+      const secondBeforeDue = (
+        await loadSchedulingRow(second.id, "vocab_oral_en")
+      )!.due
+      const snapSecond = await prepareJudgement(second.id, "vocab_oral_en")
+      await commitJudgement(second.id, "vocab_oral_en", 800, true, snapSecond, null)
+
+      expect(await db.reviewUndo.count()).toBe(1)
+
+      const undone = await undoLastJudgement(null)
+      expect(undone?.card.id).toBe(second.id)
+      expect(
+        (await loadSchedulingRow(second.id, "vocab_oral_en"))!.due,
+      ).toBe(secondBeforeDue)
+    } finally {
+      nowSpy.mockRestore()
+    }
+  })
 })
 
 describe("endOfLocalDay", () => {

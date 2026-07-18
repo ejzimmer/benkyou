@@ -171,7 +171,7 @@ export function ReviewSessionAnswerPanel({
               >
                 {wordFromClueShowRuby ? (
                   <span
-                    className="ruby-hover answer-ruby word-from-clue-word"
+                    className="ruby-hover word-from-clue-word"
                     lang="ja"
                     tabIndex={0}
                   >
@@ -220,12 +220,12 @@ export function ReviewSessionAnswerPanel({
         )}
 
         {m === "grammar_oral_meaning" && card.kind === "grammar" && (
-          <>
+          <div className="oral-answer">
             {card.content.translationEn.trim() && (
               <p>{card.content.translationEn}</p>
             )}
             <CardImageRow images={card.content.images} />
-          </>
+          </div>
         )}
       </div>
 

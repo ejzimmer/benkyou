@@ -613,6 +613,7 @@ label {
 .phrase-reading-inputs {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem;
 }
 
@@ -622,23 +623,36 @@ label {
   gap: 0.25rem;
 }
 
+/* Each segment gets its own small input rather than the shared
+   centered-column treatment `.review-answer-prompt label` applies
+   elsewhere — `justify-content: center` on `.phrase-reading-inputs` above
+   already centers the group as a whole. The extra `.review-answer-prompt`
+   qualifier isn't just belt-and-suspenders: `.review-answer-prompt label`
+   (a class + type selector) outweighs a bare `.phrase-reading-input` class
+   selector in specificity, so without it this reset would silently lose to
+   that rule's width/margin. */
+.review-answer-prompt .phrase-reading-input {
+  width: auto;
+  margin: 0;
+}
+
 .card-image {
   max-width: 100%;
   border-radius: 8px;
   margin: 0.5rem 0;
 }
 
-/* Images sit side-by-side and stay small enough that the whole card (prompt,
-   answer input, buttons) fits in the viewport. When they don't fit across,
-   the row — not the card — scrolls horizontally. */
+/* Images sit side-by-side. When they don't fit across, the row — not the
+   card — scrolls horizontally; vertically the row grows with its images so
+   the enclosing card grows to fit (up to the card's own viewport-relative
+   cap, per .review-question/.review-answer above), rather than the images
+   scrolling inside a fixed-height row. */
 .card-image-row {
   display: flex;
   gap: 0.5rem;
   align-items: flex-start;
   max-width: 100%;
-  max-height: 40vh;
   overflow-x: auto;
-  overflow-y: auto;
 }
 
 .card-image-row .card-image {
@@ -876,6 +890,12 @@ label {
     min-height: 0;
     overflow-y: auto;
   }
+
+  /* Center shorter answers (a single word, a short translation) in the
+     available space instead of leaving them stuck to the top of the card. */
+  .answer-content {
+    justify-content: safe center;
+  }
 }
 
 /* The prompt controls and the revealed answer occupy the same grid cell, so
@@ -927,14 +947,26 @@ label {
 }
 
 /* Match the label→input gap (.35rem) rather than the wider gap .stack
-   otherwise uses between all its children. */
+   otherwise uses between all its children, and match the label+input's own
+   centered width/position (see `.review-answer-prompt label` below) so the
+   message lines up under the input instead of spanning the full card. */
 .review-answer-prompt .error,
 .review-answer-prompt .warn {
-  margin-top: -0.4rem;
+  width: min(22rem, 100%);
+  margin: -0.4rem auto 0;
 }
 
+/* Centers the label+input as a unit (a fixed width + auto margins, not
+   `align-items: center` on the stack — that would let the label shrink-wrap
+   to its text content, and the input's `width: 100%` would then resolve
+   against that much narrower shrunk width instead of a sensible input
+   size). The label's own text stays left-aligned so it lines up with the
+   input's left edge rather than floating centered above it. */
 .review-answer-prompt label {
   color: #9898b0;
+  width: min(22rem, 100%);
+  margin: 0 auto;
+  text-align: left;
 }
 
 .review-answer-prompt .input {
@@ -950,16 +982,6 @@ label {
   flex: 1;
   min-height: 0;
   justify-content: center;
-  text-align: center;
-}
-
-/* A fixed, centered width rather than `align-items: center` on the stack —
-   centering the flex item directly would let the label shrink-wrap to its
-   text content, and the input's `width: 100%` would then resolve against
-   that (much narrower) shrunk width instead of a sensible input size. */
-.word-from-clue-input label {
-  width: min(22rem, 100%);
-  margin: 0 auto;
   text-align: center;
 }
 
@@ -1448,6 +1470,26 @@ code {
   width: 1.6rem;
   height: 1.6rem;
   color: #9898b0;
+}
+
+/* Rendered once in App.tsx so it's visible on every page, regardless of
+   that page's own header layout — fixed to the viewport rather than the
+   in-flow header-actions slot it used to occupy on a couple of pages.
+   Anchored to the bottom-right corner rather than the top-right: only
+   DeckListPage/SettingsPage's `.app-header` reserves top-right space
+   (via its 40px margin-top) — DeckPage, CardEditPage, and especially
+   ReviewSessionPage's `.review-header` (whose "N remaining" counter and
+   Edit/Undo buttons are themselves right-aligned) all sit flush against
+   the top of the page, so a top-right badge would sit on top of them.
+   Nothing in the app is pinned to the bottom, so that corner is safe. */
+.sync-indicator-global {
+  position: fixed;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  z-index: 30;
+  background: #1a1a2b;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
 .sync-indicator .import-spinner {
