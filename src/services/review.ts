@@ -220,14 +220,24 @@ export async function commitJudgement(
       schedulingSnapshot: JSON.stringify(snapshot.schedulingRow),
       linkedEventId: eventId,
     }
-    await db.reviewUndo.put(undo)
+    // `reviewUndo` is a single-slot "undo the last judgement" record, not a
+    // log — clearing it before writing the new one guarantees there's ever
+    // only one row, so undo can't pick a stale judgement. (Selecting "last"
+    // by `ts` alone is unreliable: two judgements can land in the same
+    // millisecond — routine under a browser's clamped Date.now() — and since
+    // row ids are random UUIDs rather than sequential, an index tie-break
+    // between same-`ts` rows can order them either way.)
+    await db.transaction("rw", db.reviewUndo, async () => {
+      await db.reviewUndo.clear()
+      await db.reviewUndo.put(undo)
+    })
   }
 }
 
 export async function undoLastJudgement(
   user: User | null,
 ): Promise<DueItem | null> {
-  const last = await db.reviewUndo.orderBy("ts").last()
+  const last = await db.reviewUndo.toCollection().first()
   if (!last) return null
   let restored: SchedulingRow
   try {
