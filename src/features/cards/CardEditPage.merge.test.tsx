@@ -150,9 +150,9 @@ describe("CardEditPage duplicate finder / merge", () => {
     // Both the whole-word reading and the per-cluster readings survived the
     // merge in the underlying data — the combined field must show both
     // rather than silently hiding one.
-    const readingField = screen.getByRole("textbox", { name: /^reading$/i })
-    expect(readingField).toHaveValue(
-      "結論=けつろん\n至る=いたる\n結論に至る=けつろんにいたる",
+    const readingsField = screen.getByRole("textbox", { name: /^readings$/i })
+    expect(readingsField).toHaveValue(
+      "けつろんにいたる\n結論=けつろん\n至る=いたる",
     )
   })
 

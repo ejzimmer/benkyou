@@ -41,27 +41,9 @@ import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { RadioGroup } from "../../ui/RadioGroup"
 import {
-  deriveFurigana,
-  grammarReadingsToText,
-  parseGrammarReadingsText,
-  parseReadingsMapText,
-  parseWordReadingText,
-  readingsMapToText,
-  reseedFurigana,
-  wordReadingToText,
-  type LabeledReading,
+  combinedReadingsToText,
+  parseCombinedReadingsText,
 } from "../../domain/readingsMap"
-
-/** The word/reading pair(s) actually tested for a vocab card right now —
- * the phrase segments when set, else the single whole-word reading. */
-function vocabTestedParts(content: VocabularyCardContent): LabeledReading[] {
-  if (content.reading?.trim()) {
-    return [{ label: content.wordJa, reading: content.reading }]
-  }
-  return Object.entries(content.readingParts ?? {})
-    .filter(([label, reading]) => label.trim() && reading.trim())
-    .map(([label, reading]) => ({ label, reading }))
-}
 
 function safeReturnTo(raw: string | null): string | null {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return null
@@ -133,19 +115,9 @@ export function CardEditPage() {
   )
   const [vocab, setVocab] = useState<VocabularyCardContent>(defaultVocabulary)
   const [grammar, setGrammar] = useState<GrammarCardContent>(defaultGrammar)
-  /** Controlled drafts so incomplete `kanji=` lines are not dropped on each keystroke */
+  /** Controlled draft so incomplete `kanji=` lines are not dropped on each
+   * keystroke — shared by both card kinds' combined "Readings" field. */
   const [readingsMapDraft, setReadingsMapDraft] = useState("")
-  const [vocabReadingDraft, setVocabReadingDraft] = useState("")
-  /**
-   * The vocab furigana map (`readings`) is auto-seeded from whatever's
-   * actually tested (`reading`/`readingParts`) so authors don't have to
-   * duplicate it by hand — but it stays independently editable afterwards
-   * (e.g. narrowed to just the kanji). This tracks the last seed applied, so
-   * a later re-seed only touches entries the author hasn't since changed by
-   * hand. Grammar's combined "Readings" field has no such auto-seeding — the
-   * author types both the tested reading and the furigana directly.
-   */
-  const vocabFuriganaSeedRef = useRef<Record<string, string>>({})
   const formRef = useRef<HTMLFormElement | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [imageUploadCount, setImageUploadCount] = useState(0)
@@ -191,24 +163,6 @@ export function CardEditPage() {
         })()
       : null
 
-  /**
-   * Apply a partial update to the vocab draft, then re-seed the furigana map
-   * (`readings`) from whatever's now tested — replacing only the entries
-   * the last seed put there and the author hasn't since edited by hand.
-   */
-  function updateVocab(partial: Partial<VocabularyCardContent>) {
-    const next = { ...vocab, ...partial }
-    const nextSeed = deriveFurigana(vocabTestedParts(next))
-    const readings = reseedFurigana(
-      next.readings ?? {},
-      vocabFuriganaSeedRef.current,
-      nextSeed,
-    )
-    vocabFuriganaSeedRef.current = nextSeed
-    setReadingsMapDraft(readingsMapToText(readings))
-    setVocab({ ...next, readings })
-  }
-
   // Tracks which cardId the form has already been hydrated from, so that
   // live-query emissions caused by unrelated writes to this row (e.g. a
   // background sync pass rewriting the card) don't clobber in-progress edits.
@@ -219,8 +173,6 @@ export function CardEditPage() {
       setLoading(false)
       setErr(null)
       setReadingsMapDraft("")
-      setVocabReadingDraft("")
-      vocabFuriganaSeedRef.current = {}
       hydratedCardIdRef.current = null
       return
     }
@@ -239,23 +191,25 @@ export function CardEditPage() {
     setKind(loadedCard.kind)
     if (loadedCard.kind === "vocabulary") {
       setVocab(loadedCard.content)
-      setReadingsMapDraft(readingsMapToText(loadedCard.content.readings ?? {}))
-      setVocabReadingDraft(
-        wordReadingToText(
-          loadedCard.content.reading,
-          loadedCard.content.readingParts,
-          loadedCard.content.wordJa,
-        ),
-      )
-      vocabFuriganaSeedRef.current = deriveFurigana(
-        vocabTestedParts(loadedCard.content),
+      setReadingsMapDraft(
+        combinedReadingsToText({
+          reading: loadedCard.content.reading,
+          readingParts: loadedCard.content.readingParts,
+          readings: loadedCard.content.readings ?? {},
+        }),
       )
     } else {
       setGrammar({
         ...loadedCard.content,
         singleSided: isSingleSided(loadedCard.content),
       })
-      setReadingsMapDraft(grammarReadingsToText(loadedCard.content))
+      setReadingsMapDraft(
+        combinedReadingsToText({
+          reading: loadedCard.content.constructionReading,
+          readingParts: loadedCard.content.constructionReadingParts,
+          readings: loadedCard.content.readings,
+        }),
+      )
     }
   }, [cardId, deckId, isNew, loadedCard])
 
@@ -263,8 +217,6 @@ export function CardEditPage() {
     setVocab(defaultVocabulary())
     setGrammar(defaultGrammar())
     setReadingsMapDraft("")
-    setVocabReadingDraft("")
-    vocabFuriganaSeedRef.current = {}
     formRef.current?.reset()
   }
 
@@ -280,18 +232,26 @@ export function CardEditPage() {
     if (nextKind === "vocabulary") {
       const nextVocab = vocabularyFromGrammarContent(grammar)
       setVocab(nextVocab)
-      setReadingsMapDraft(readingsMapToText(nextVocab.readings ?? {}))
-      setVocabReadingDraft(
-        wordReadingToText(nextVocab.reading, nextVocab.readingParts, nextVocab.wordJa),
+      setReadingsMapDraft(
+        combinedReadingsToText({
+          reading: nextVocab.reading,
+          readingParts: nextVocab.readingParts,
+          readings: nextVocab.readings ?? {},
+        }),
       )
-      vocabFuriganaSeedRef.current = deriveFurigana(vocabTestedParts(nextVocab))
       setKind("vocabulary")
       return
     }
 
     const nextGrammar = grammarFromVocabularyContent(vocab)
     setGrammar(nextGrammar)
-    setReadingsMapDraft(grammarReadingsToText(nextGrammar))
+    setReadingsMapDraft(
+      combinedReadingsToText({
+        reading: nextGrammar.constructionReading,
+        readingParts: nextGrammar.constructionReadingParts,
+        readings: nextGrammar.readings,
+      }),
+    )
     setKind("grammar")
   }
 
@@ -360,20 +320,22 @@ export function CardEditPage() {
       const merged = await mergeCards(currentCardDraft(), match, user)
       if (merged.kind === "vocabulary") {
         setVocab(merged.content)
-        setReadingsMapDraft(readingsMapToText(merged.content.readings ?? {}))
-        setVocabReadingDraft(
-          wordReadingToText(
-            merged.content.reading,
-            merged.content.readingParts,
-            merged.content.wordJa,
-          ),
-        )
-        vocabFuriganaSeedRef.current = deriveFurigana(
-          vocabTestedParts(merged.content),
+        setReadingsMapDraft(
+          combinedReadingsToText({
+            reading: merged.content.reading,
+            readingParts: merged.content.readingParts,
+            readings: merged.content.readings ?? {},
+          }),
         )
       } else {
         setGrammar(merged.content)
-        setReadingsMapDraft(grammarReadingsToText(merged.content))
+        setReadingsMapDraft(
+          combinedReadingsToText({
+            reading: merged.content.constructionReading,
+            readingParts: merged.content.constructionReadingParts,
+            readings: merged.content.readings,
+          }),
+        )
       }
       setDuplicateMatches((matches) => matches.filter((c) => c.id !== match.id))
     } catch (x) {
@@ -534,34 +496,14 @@ export function CardEditPage() {
                 onChange={(e) => {
                   const wordJa = e.target.value
                   const kanaOnly = isKanaOnly(wordJa)
-                  updateVocab({
+                  setVocab((v) => ({
+                    ...v,
                     wordJa,
-                    reading: kanaOnly ? undefined : vocab.reading,
-                    readingParts: kanaOnly ? {} : vocab.readingParts,
-                  })
-                  if (kanaOnly) setVocabReadingDraft("")
+                    reading: kanaOnly ? undefined : v.reading,
+                    readingParts: kanaOnly ? {} : v.readingParts,
+                  }))
                 }}
                 required
-              />
-            </label>
-            <label>
-              Reading (hiragana — kanji words only). For a phrase tested
-              cluster by cluster instead of as one whole reading, use
-              kanjiPhrase=reading pairs instead, one per line (e.g.
-              結論=けつろん, 至る=いたる) — needs 2 or more lines to count as
-              a cluster-by-cluster reading; a single kanjiPhrase=reading line
-              isn't tested as a pronunciation on its own.
-              <textarea
-                className="input"
-                rows={3}
-                aria-label="Reading"
-                value={vocabReadingDraft}
-                onChange={(e) => {
-                  const text = e.target.value
-                  setVocabReadingDraft(text)
-                  const { reading, readingParts } = parseWordReadingText(text)
-                  updateVocab({ reading, readingParts })
-                }}
               />
             </label>
             {!containsKanji(vocab.wordJa) && (
@@ -607,24 +549,24 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Furigana shown for the word above and in the example sentences
-              (format: kanjiPhrase=reading, one per line) — separate from
-              what's tested, and auto-filled from the reading(s) above, but
-              editable on its own. Narrow an entry to just the kanji (e.g.
-              至る=いたる → 至=いた) to leave okurigana un-annotated, the
-              usual furigana convention.
+              Readings (hiragana — kanji words only). A line with no "="
+              is the word's own tested pronunciation. kanjiPhrase=reading
+              lines (one per line, e.g. 結論=けつろん, 至る=いたる) are shown
+              as furigana over the word above and in the example sentences —
+              two or more such lines are also tested cluster by cluster
+              instead of as one whole reading. Narrow a furigana entry to
+              just the kanji (e.g. 至る=いたる → 至=いた) to leave okurigana
+              un-annotated, the usual furigana convention.
               <textarea
                 className="input"
                 rows={4}
-                aria-label="Kanji to reading map"
+                aria-label="Readings"
                 value={readingsMapDraft}
                 onChange={(e) => {
                   const text = e.target.value
                   setReadingsMapDraft(text)
-                  setVocab((v) => ({
-                    ...v,
-                    readings: parseReadingsMapText(text),
-                  }))
+                  const { reading, readings } = parseCombinedReadingsText(text)
+                  setVocab((v) => ({ ...v, reading, readingParts: {}, readings }))
                 }}
               />
             </label>
@@ -736,7 +678,7 @@ export function CardEditPage() {
                 onChange={(e) => {
                   const text = e.target.value
                   setReadingsMapDraft(text)
-                  const { reading, readings } = parseGrammarReadingsText(text)
+                  const { reading, readings } = parseCombinedReadingsText(text)
                   setGrammar((g) => ({
                     ...g,
                     constructionReading: reading,
