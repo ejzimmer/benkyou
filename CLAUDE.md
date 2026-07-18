@@ -31,7 +31,9 @@ Tests use Vitest with `fake-indexeddb` standing in for Dexie under jsdom.
 
 ## Git / PR workflow
 
-Always create a PR, review it, and merge it when you finish a task — even if the user didn't explicitly ask for a PR. Develop on a feature branch (never commit directly to `main`), commit with a clear message, push, open a PR against `main` (check for a PR template first), review the diff (e.g. `/code-review`) and fix anything it surfaces, then merge.
+- Always create a PR, even if the user didn't explicitly ask for one. Develop on a feature branch (never commit directly to `main`), commit with a clear message, push, and open a PR against `main` (check for a PR template first).
+- Review the PR yourself — there will be no other reviews. Use `/code-review` on the diff and fix anything it surfaces.
+- Merge the PR yourself once you're happy with it. There's no need to keep the PR open waiting on outside activity (reviews, comments) that isn't coming.
 
 ## Architecture
 

@@ -728,17 +728,20 @@ fieldset.plain legend {
   display: grid;
   place-items: center;
   padding: 0;
-  border: none;
+  border: 1px solid var(--pink);
   border-radius: 50%;
-  background: #450a0a;
-  color: #e8e8f0;
+  background: transparent;
+  color: var(--pink);
   font-size: 0.75rem;
   line-height: 1;
   cursor: pointer;
+  transition: box-shadow 0.15s ease;
 }
 
 .image-preview-remove:hover {
-  background: #7f1d1d;
+  box-shadow:
+    0 0 8px var(--pink),
+    0 0 20px var(--pink);
 }
 
 .import-card-preview {
