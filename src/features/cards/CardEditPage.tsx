@@ -555,17 +555,7 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Readings (hiragana — kanji words only). A line with no "="
-              is the word's own tested pronunciation. kanjiPhrase=reading
-              lines (one per line, e.g. 結論=けつろん, 至る=いたる) are shown
-              as furigana over the word above and in the example sentences —
-              two or more such lines are also tested cluster by cluster
-              instead of as one whole reading (a single kanjiPhrase=reading
-              line isn't tested as a pronunciation on its own). Narrow a
-              furigana entry to just the kanji (e.g. 至る=いたる → 至=いた)
-              to leave okurigana un-annotated, the usual furigana
-              convention — note this also narrows what's tested when it's
-              the only reading for that cluster.
+              Readings
               <textarea
                 className="input"
                 rows={4}
