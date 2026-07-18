@@ -1138,26 +1138,102 @@ label {
   color: #fef2f2;
 }
 
-.meaning-details,
-.prompt-extras {
+.meaning-details {
   margin-top: 0.25rem;
 }
 
-.meaning-details summary,
-.prompt-extras summary {
+.meaning-details summary {
   cursor: pointer;
   list-style: none;
   width: fit-content;
 }
 
-.meaning-details summary::-webkit-details-marker,
-.prompt-extras summary::-webkit-details-marker {
+.meaning-details summary::-webkit-details-marker {
   display: none;
 }
 
-.meaning-details-content,
-.prompt-extras-content {
+.meaning-details-content {
   margin-top: 0.75rem;
+}
+
+.prompt-extras-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prompt-extras-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 0.25rem;
+  margin: 0;
+  border-radius: 6px;
+  color: #9898b0;
+  cursor: pointer;
+}
+
+.prompt-extras-toggle:hover,
+.prompt-extras-toggle:focus-visible {
+  color: #fff;
+}
+
+.prompt-extras-toggle:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.prompt-extras-chevron {
+  width: 1.1em;
+  height: 1.1em;
+  transition:
+    transform 0.2s ease,
+    filter 0.15s ease;
+}
+
+.prompt-extras-toggle:hover .prompt-extras-chevron,
+.prompt-extras-toggle:focus-visible .prompt-extras-chevron {
+  filter:
+    drop-shadow(0 0 4px #fff)
+    drop-shadow(0 0 8px #fff);
+}
+
+.prompt-extras-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+/* Animates open/closed via the grid-rows trick: a 0fr/1fr track transition
+   collapses/expands the (overflow-hidden) content row smoothly, which a
+   plain height or max-height transition can't do for content of unknown
+   height. */
+.prompt-extras {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.prompt-extras.is-open {
+  grid-template-rows: 1fr;
+}
+
+.prompt-extras-content {
+  overflow: hidden;
+  padding-top: 0.75rem;
+}
+
+.meanings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompt-extras,
+  .prompt-extras-chevron {
+    transition: none;
+  }
 }
 
 .reading-diff {
