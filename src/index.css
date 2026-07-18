@@ -329,10 +329,24 @@ fieldset.plain legend {
   float: none;
 }
 
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.switch-external-label {
+  font-style: italic;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
 .switch {
   position: relative;
   display: inline-flex;
-  width: fit-content;
+  width: 2.5rem;
+  height: 1.3rem;
+  flex-shrink: 0;
   border: 1px solid #33334a;
   border-radius: 999px;
   padding: 2px;
@@ -355,34 +369,26 @@ fieldset.plain legend {
   transform: translateX(100%);
 }
 
-.switch-option {
+.switch-hit {
   position: relative;
   z-index: 1;
-  display: flex;
   flex: 1;
-  align-items: center;
-  justify-content: center;
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
-  text-align: center;
-  font-size: 0.9rem;
   cursor: pointer;
 }
 
-.switch-option input {
+.switch-hit input {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   opacity: 0;
   pointer-events: none;
 }
 
-.switch-option:has(input:focus-visible) {
+.switch-hit:has(input:focus-visible) {
   outline: 2px solid var(--blue);
   outline-offset: 2px;
-}
-
-.switch-start .switch-option:first-of-type span,
-.switch-end .switch-option:last-of-type span {
-  color: var(--on-fluoro);
 }
 
 .btn {
