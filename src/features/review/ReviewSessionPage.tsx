@@ -135,6 +135,14 @@ export function ReviewSessionPage() {
   const phaseRef = useRef<Phase>(phase)
   const conflictReloadPendingRef = useRef(false)
   /**
+   * Set once `load()` finds at least one due item this mount. Distinguishes
+   * "queue emptied because the user finished reviewing" (show the
+   * congratulatory ReviewSessionComplete screen) from "there was never
+   * anything due to begin with" (a plain empty state) — both look like
+   * `!current` otherwise.
+   */
+  const hadDueItemsRef = useRef(false)
+  /**
    * Bumped every time the prompt (re-)becomes the active side. The
    * prompt/answer layers stay permanently mounted (so revealing the answer
    * never resizes the card) — so returning to "prompt" for the *same*
@@ -163,6 +171,7 @@ export function ReviewSessionPage() {
     const all = await getDueQueue()
     const deckQueue = deckId ? all.filter((x) => x.card.deckId === deckId) : all
     const q = prioritizeResumeItem(deckQueue, resumeCardId, resumeModeId)
+    if (q.length > 0) hadDueItemsRef.current = true
     setSessionQueue(q)
 
     // Resuming from the edit page: put back the phase/typed answer the user
@@ -507,11 +516,33 @@ export function ReviewSessionPage() {
   if (loading) return <div className="page review">Loading queue…</div>
 
   if (!current) {
+    const backTo = deckId ? `/decks/${deckId}` : "/"
+    if (hadDueItemsRef.current) {
+      return (
+        <ReviewSessionComplete
+          backTo={backTo}
+          onUndoLastJudgement={() => void onUndoJudgementFromHeader()}
+        />
+      )
+    }
     return (
-      <ReviewSessionComplete
-        backTo={deckId ? `/decks/${deckId}` : "/"}
-        onUndoLastJudgement={() => void onUndoJudgementFromHeader()}
-      />
+      <div className="page review">
+        <header className="header review-header">
+          <Link to={backTo} className="back-link" aria-label="Exit review">
+            <ChevronLeftIcon className="back-chevron" />
+          </Link>
+        </header>
+        <p className="muted">Nothing due right now.</p>
+        <div className="toolbar">
+          <button
+            type="button"
+            className="btn secondary"
+            onClick={() => void onUndoJudgementFromHeader()}
+          >
+            Undo last judgement
+          </button>
+        </div>
+      </div>
     )
   }
 

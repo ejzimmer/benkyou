@@ -23,6 +23,26 @@ vi.mock("../../lib/sync/firestoreSync", () => ({
 }))
 
 describe("ReviewSessionPage", () => {
+  it("shows a plain empty state, not the completion screen, when nothing was ever due", async () => {
+    await resetDatabase()
+    await createDeck("T", null)
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(/nothing due right now/i)).toBeInTheDocument()
+    expect(screen.queryByText("全カードやり終わった!")).not.toBeInTheDocument()
+  })
+
   it("shows a due card and advances after grading", async () => {
     await resetDatabase()
     const user = userEvent.setup()

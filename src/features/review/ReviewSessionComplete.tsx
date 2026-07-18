@@ -19,25 +19,20 @@ type ConfettiPiece = {
   duration: number
   rotate: number
   width: number
-  height: number
 }
 
-function useConfettiPieces(count: number): ConfettiPiece[] {
+function useConfettiPieces(): ConfettiPiece[] {
   return useMemo(
     () =>
-      Array.from({ length: count }, (): ConfettiPiece => {
-        const width = 6 + Math.random() * 6
-        return {
-          left: Math.random() * 100,
-          color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-          delay: Math.random() * 3,
-          duration: 3 + Math.random() * 2.5,
-          rotate: Math.random() * 360,
-          width,
-          height: width * 0.4,
-        }
-      }),
-    [count],
+      Array.from({ length: CONFETTI_PIECE_COUNT }, (): ConfettiPiece => ({
+        left: Math.random() * 100,
+        color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+        delay: Math.random() * 3,
+        duration: 3 + Math.random() * 2.5,
+        rotate: Math.random() * 360,
+        width: 6 + Math.random() * 6,
+      })),
+    [],
   )
 }
 
@@ -48,7 +43,7 @@ type Props = {
 }
 
 export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
-  const pieces = useConfettiPieces(CONFETTI_PIECE_COUNT)
+  const pieces = useConfettiPieces()
 
   return (
     <div className="page review review-complete">
@@ -67,7 +62,7 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
               style={{
                 left: `${piece.left}%`,
                 width: `${piece.width}px`,
-                height: `${piece.height}px`,
+                height: `${piece.width * 0.4}px`,
                 backgroundColor: piece.color,
                 animationDelay: `${piece.delay}s`,
                 animationDuration: `${piece.duration}s`,
@@ -77,7 +72,7 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
           ))}
         </div>
 
-        <p className="review-complete-message">全カードやり終わった!</p>
+        <h1 className="review-complete-message">全カードやり終わった!</h1>
 
         <div className="review-complete-actions">
           <Link to="/" className="btn primary">

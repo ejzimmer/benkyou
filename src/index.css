@@ -825,7 +825,6 @@ label {
 
 @media (prefers-reduced-motion: reduce) {
   .confetti-piece {
-    animation: none;
     display: none;
   }
 }
