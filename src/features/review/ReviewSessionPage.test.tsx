@@ -375,7 +375,7 @@ describe("ReviewSessionPage", () => {
     // Grading is async (it writes the undo record before the queue empties).
     // Wait for the queue to empty so the undo record is committed before we
     // undo — otherwise undo can race the grade and find no record.
-    await screen.findByText(/nothing due right now/i)
+    await screen.findByText("全カードやり終わった!")
 
     await user.click(screen.getByRole("button", { name: /undo last judgement/i }))
 

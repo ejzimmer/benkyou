@@ -182,7 +182,7 @@ describe("ReviewSessionPage conflict reload", () => {
 
     // Grade it: queue empties and phase returns to "prompt".
     await user.click(screen.getByRole("button", { name: /^correct$/i }))
-    await screen.findByText(/nothing due right now/i)
+    await screen.findByText("全カードやり終わった!")
 
     // A later mid-session conflict reload happens to find the same card+mode
     // due again (e.g. requeued elsewhere) — the stale resumePhase=answer /

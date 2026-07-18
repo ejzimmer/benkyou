@@ -20,6 +20,7 @@ import {
   matchesPrimaryJapanese,
 } from "../../lib/japanese/synonyms"
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
+import { ReviewSessionComplete } from "./ReviewSessionComplete"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import { ReviewFooter } from "./ReviewFooter"
 import {
@@ -31,7 +32,6 @@ import {
   requiresTyping,
   reviewModeLabel,
 } from "./reviewFlowHelpers"
-import { PageHeading } from "../../ui/PageHeading"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
@@ -508,26 +508,10 @@ export function ReviewSessionPage() {
 
   if (!current) {
     return (
-      <div className="page review">
-        <header className="header">
-          <PageHeading backTo={deckId ? `/decks/${deckId}` : "/"} backLabel="Back">
-            Done
-          </PageHeading>
-        </header>
-        <div className="toolbar">
-          <button
-            type="button"
-            className="btn secondary"
-            onClick={() => void onUndoJudgementFromHeader()}
-          >
-            Undo last judgement
-          </button>
-        </div>
-        <p className="muted">Nothing due right now.</p>
-        <button type="button" className="btn" onClick={load}>
-          Refresh
-        </button>
-      </div>
+      <ReviewSessionComplete
+        backTo={deckId ? `/decks/${deckId}` : "/"}
+        onUndoLastJudgement={() => void onUndoJudgementFromHeader()}
+      />
     )
   }
 
