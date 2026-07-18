@@ -7,7 +7,6 @@ import { useState } from "react"
 import { useDebouncedQuery } from "../../lib/useDebouncedQuery"
 import { AppIcon } from "../../ui/AppIcon"
 import { UserMenu } from "../../ui/UserMenu"
-import { SyncIndicator } from "../../ui/SyncIndicator"
 
 export function DeckListPage() {
   const navigate = useNavigate()
@@ -41,7 +40,6 @@ export function DeckListPage() {
           <span className="brand-name">Benkyou</span>
         </Link>
         <div className="header-actions">
-          <SyncIndicator />
           <UserMenu />
         </div>
       </header>
