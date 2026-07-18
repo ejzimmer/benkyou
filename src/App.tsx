@@ -8,6 +8,7 @@ import { useAuth } from "./lib/auth/AuthContext"
 import { useSync } from "./lib/sync/SyncContext"
 import { createVisibilitySyncTrigger } from "./lib/sync/syncTrigger"
 import { useEffect, useMemo, useRef } from "react"
+import { SyncIndicator } from "./ui/SyncIndicator"
 
 export function App() {
   const { user, offlineOnly, loading } = useAuth()
@@ -76,6 +77,7 @@ export function App() {
 
   return (
     <div className="app-shell">
+      <SyncIndicator className="sync-indicator-global" />
       <Routes>
         <Route path="/" element={<DeckListPage />} />
         <Route path="/decks/:deckId" element={<DeckPage />} />

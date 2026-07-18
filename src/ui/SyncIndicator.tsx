@@ -1,13 +1,13 @@
 import { useSync } from "../lib/sync/SyncContext"
 
-export function SyncIndicator() {
+export function SyncIndicator({ className }: { className?: string } = {}) {
   const { syncing, syncStatusLabel } = useSync()
 
   if (!syncing) return null
 
   return (
     <div
-      className="sync-indicator"
+      className={className ? `sync-indicator ${className}` : "sync-indicator"}
       role="status"
       aria-live="polite"
       title={syncStatusLabel || "Syncing…"}

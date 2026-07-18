@@ -1392,6 +1392,19 @@ code {
   color: #9898b0;
 }
 
+/* Rendered once in App.tsx so it's visible on every page, regardless of
+   that page's own header layout — fixed to the viewport rather than the
+   in-flow header-actions slot it used to occupy on a couple of pages. */
+.sync-indicator-global {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 30;
+  background: #1a1a2b;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
 .sync-indicator .import-spinner {
   margin-right: 0;
   width: 1em;
