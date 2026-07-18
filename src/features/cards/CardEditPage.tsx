@@ -39,6 +39,7 @@ import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
+import { RadioGroup } from "../../ui/RadioGroup"
 import {
   deriveFurigana,
   grammarReadingsToText,
@@ -512,29 +513,16 @@ export function CardEditPage() {
         className="panel stack"
         aria-label="Card editor"
       >
-        <fieldset className="plain">
-          <legend>Type</legend>
-          <div className="row" style={{ gap: "1rem" }}>
-            <label className="row">
-              <input
-                type="radio"
-                name="card-kind"
-                checked={kind === "vocabulary"}
-                onChange={() => onKindChange("vocabulary")}
-              />
-              <span>{CARD_KIND_LABELS.vocabulary}</span>
-            </label>
-            <label className="row">
-              <input
-                type="radio"
-                name="card-kind"
-                checked={kind === "grammar"}
-                onChange={() => onKindChange("grammar")}
-              />
-              <span>{CARD_KIND_LABELS.grammar}</span>
-            </label>
-          </div>
-        </fieldset>
+        <RadioGroup
+          legend="Type"
+          name="card-kind"
+          value={kind}
+          onChange={onKindChange}
+          options={[
+            { value: "vocabulary", label: CARD_KIND_LABELS.vocabulary },
+            { value: "grammar", label: CARD_KIND_LABELS.grammar },
+          ]}
+        />
 
         {kind === "vocabulary" ? (
           <>
@@ -716,33 +704,18 @@ export function CardEditPage() {
                 {duplicateJapaneseWarning}
               </p>
             )}
-            <fieldset className="plain">
-              <legend>Testing</legend>
-              <div className="row" style={{ gap: "1rem" }}>
-                <label className="row">
-                  <input
-                    type="radio"
-                    name="grammar-sides"
-                    checked={!grammar.singleSided}
-                    onChange={() =>
-                      setGrammar({ ...grammar, singleSided: false })
-                    }
-                  />
-                  <span>Test both sides</span>
-                </label>
-                <label className="row">
-                  <input
-                    type="radio"
-                    name="grammar-sides"
-                    checked={Boolean(grammar.singleSided)}
-                    onChange={() =>
-                      setGrammar({ ...grammar, singleSided: true })
-                    }
-                  />
-                  <span>Test 1 side</span>
-                </label>
-              </div>
-            </fieldset>
+            <RadioGroup
+              legend="Testing"
+              name="grammar-sides"
+              value={grammar.singleSided ? "one" : "both"}
+              onChange={(sides) =>
+                setGrammar({ ...grammar, singleSided: sides === "one" })
+              }
+              options={[
+                { value: "both", label: "Test both sides" },
+                { value: "one", label: "Test 1 side" },
+              ]}
+            />
             <label>
               Translation
               <input
