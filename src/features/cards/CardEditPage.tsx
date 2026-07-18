@@ -14,6 +14,7 @@ import type {
 import { CARD_KIND_LABELS, containsKanji } from "../../domain/types"
 import { countGaps } from "../../domain/grammarGaps"
 import { isKanaOnly } from "../../domain/vocabularyContent"
+import { isSingleSided } from "../../domain/grammarContent"
 import {
   createGrammarCard,
   createVocabularyCard,
@@ -249,7 +250,10 @@ export function CardEditPage() {
         vocabTestedParts(loadedCard.content),
       )
     } else {
-      setGrammar(loadedCard.content)
+      setGrammar({
+        ...loadedCard.content,
+        singleSided: isSingleSided(loadedCard.content),
+      })
       setReadingsMapDraft(grammarReadingsToText(loadedCard.content))
     }
   }, [cardId, deckId, isNew, loadedCard])

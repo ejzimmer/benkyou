@@ -560,7 +560,7 @@ describe("mergeCardContent", () => {
     expect(merged.content.singleSided).toBe(true)
   })
 
-  it("falls back to the source's singleSided when the target has none", () => {
+  it("falls back to the source's singleSided when the target is explicitly false (e.g. a normally-created card, which always has singleSided: false rather than unset)", () => {
     const target: Card = {
       id: "a",
       deckId: "deck-1",
@@ -573,6 +573,7 @@ describe("mergeCardContent", () => {
         readings: {},
         images: [],
         synonymsJa: [],
+        singleSided: false,
       },
       updatedAt: 0,
     }

@@ -192,18 +192,19 @@ export type GrammarReadings = {
  * text (e.g. testing a conjugated form's dictionary-form reading).
  */
 export function parseGrammarReadingsText(text: string): GrammarReadings {
-  const readings: Record<string, string> = {}
+  const furiganaLines: string[] = []
   const readingLines: string[] = []
   for (const line of text.split("\n")) {
-    const match = KEY_VALUE_SEPARATOR.exec(line)
-    if (match) {
-      const k = line.slice(0, match.index).trim()
-      if (k) readings[k] = line.slice(match.index + 1).trim()
+    if (KEY_VALUE_SEPARATOR.test(line)) {
+      furiganaLines.push(line)
     } else if (line.trim()) {
       readingLines.push(line.trim())
     }
   }
-  return { reading: readingLines.join("") || undefined, readings }
+  return {
+    reading: readingLines.join("") || undefined,
+    readings: parseReadingsMapText(furiganaLines.join("\n")),
+  }
 }
 
 /**

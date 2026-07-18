@@ -38,3 +38,17 @@ export function hasConstructionReading(content: GrammarCardContent): boolean {
   if (content.constructionReading?.trim()) return true
   return Boolean(constructionReadingSegments(content))
 }
+
+/**
+ * True when the card is reviewed one-sided (fill-in-the-gap only). Falls
+ * back to a still-unmigrated `grammarPoint` string for cards saved before
+ * that field was renamed to the `singleSided` boolean — Dexie/Firestore rows
+ * keep whatever shape they were written with, so an old row's `grammarPoint`
+ * doesn't disappear on its own, and reading only the new field would
+ * silently turn every pre-existing single-sided card into a both-sides one.
+ */
+export function isSingleSided(content: GrammarCardContent): boolean {
+  if (content.singleSided !== undefined) return content.singleSided
+  const legacyGrammarPoint = (content as { grammarPoint?: string }).grammarPoint
+  return Boolean(legacyGrammarPoint?.trim())
+}
