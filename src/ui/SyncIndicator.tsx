@@ -1,6 +1,6 @@
 import { useSync } from "../lib/sync/SyncContext"
 
-export function SyncIndicator({ className }: { className?: string } = {}) {
+export function SyncIndicator({ className }: { className?: string }) {
   const { syncing, syncStatusLabel } = useSync()
 
   if (!syncing) return null

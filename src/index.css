@@ -1394,10 +1394,17 @@ code {
 
 /* Rendered once in App.tsx so it's visible on every page, regardless of
    that page's own header layout — fixed to the viewport rather than the
-   in-flow header-actions slot it used to occupy on a couple of pages. */
+   in-flow header-actions slot it used to occupy on a couple of pages.
+   Anchored to the bottom-right corner rather than the top-right: only
+   DeckListPage/SettingsPage's `.app-header` reserves top-right space
+   (via its 40px margin-top) — DeckPage, CardEditPage, and especially
+   ReviewSessionPage's `.review-header` (whose "N remaining" counter and
+   Edit/Undo buttons are themselves right-aligned) all sit flush against
+   the top of the page, so a top-right badge would sit on top of them.
+   Nothing in the app is pinned to the bottom, so that corner is safe. */
 .sync-indicator-global {
   position: fixed;
-  top: 0.75rem;
+  bottom: 0.75rem;
   right: 0.75rem;
   z-index: 30;
   background: #1a1a2b;
