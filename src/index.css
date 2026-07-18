@@ -357,6 +357,14 @@ fieldset.plain legend {
   cursor: not-allowed;
 }
 
+.switch:has(input:disabled) .switch-hit {
+  cursor: not-allowed;
+}
+
+.switch-row:has(input:disabled) .switch-external-label {
+  cursor: not-allowed;
+}
+
 .switch-thumb {
   position: absolute;
   inset: 2px 50% 2px 2px;
