@@ -1375,11 +1375,13 @@ fieldset.plain legend {
   position: relative;
 }
 
+/* Left-aligned rather than centered: a reading much longer than its kanji
+   (e.g. じゅうぎょういん over 従業員) should hang off the right of the base
+   text it annotates, not spill out symmetrically past its left edge too. */
 .ruby-hover ruby rt {
   position: absolute;
-  left: 50%;
+  left: 0;
   bottom: 100%;
-  transform: translateX(-50%);
   margin-bottom: 0.15em;
 }
 
