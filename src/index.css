@@ -665,7 +665,7 @@ fieldset.plain legend {
    carries as its base class. */
 .inline-gap-input {
   display: inline-block;
-  width: min(12rem, 55vw);
+  width: 6ch;
   margin: 0 0.2rem;
   vertical-align: baseline;
   background: none;
@@ -673,6 +673,8 @@ fieldset.plain legend {
   border-radius: 0;
   border-bottom: 2px solid #33334a;
   padding: 0.1rem 0.2rem;
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .inline-gap-input:focus-visible {

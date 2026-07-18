@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react"
 import type { DueItem } from "../../services/review"
 import { RubySentence, RubyWord } from "../../ui/KanjiRuby"
 import { CardImageRow } from "../../ui/CardImageRow"
@@ -30,6 +30,7 @@ type TypingAnswerInputProps = {
   focusKey: string
   autoComplete?: string
   className?: string
+  style?: CSSProperties
   ariaLabel?: string
   autoFocus?: boolean
 }
@@ -37,6 +38,13 @@ type TypingAnswerInputProps = {
 function isTouchPrimaryDevice() {
   if (typeof window.matchMedia !== "function") return false
   return window.matchMedia("(hover: none) and (pointer: coarse)").matches
+}
+
+// Sizes an inline gap input to roughly fit its expected answer: 6 characters
+// wide normally, or answer length + 4 once the answer itself exceeds 6.
+function gapInputWidthStyle(answer: string): CSSProperties {
+  const length = Array.from(answer).length
+  return { width: length > 6 ? `${length + 4}ch` : "6ch" }
 }
 
 function TypingAnswerInput({
@@ -47,6 +55,7 @@ function TypingAnswerInput({
   focusKey,
   autoComplete,
   className,
+  style,
   ariaLabel,
   autoFocus = true,
 }: TypingAnswerInputProps) {
@@ -62,6 +71,7 @@ function TypingAnswerInput({
     <input
       ref={inputRef}
       className={className ? `input ${className}` : "input"}
+      style={style}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={(e) => {
@@ -404,9 +414,10 @@ export function ReviewSessionPromptBody({
       // matching number of comma-separated answers — otherwise fall back to a
       // single shared input at every gap (e.g. while the card is still being
       // authored, or for the common single-gap case).
+      const construction = card.content.construction
+      const constructionParts = splitGapAnswers(construction)
       const usesPerGapInputs =
-        gapCount > 1 &&
-        splitGapAnswers(card.content.construction).length === gapCount
+        gapCount > 1 && constructionParts.length === gapCount
 
       function gapInputValue(gapIndex: number): string {
         return usesPerGapInputs
@@ -422,6 +433,12 @@ export function ReviewSessionPromptBody({
         const parts = typedGapValues(typed, gapCount)
         parts[gapIndex] = value
         onTypedChange(parts.join(GAP_ANSWER_JOIN))
+      }
+
+      function gapAnswerText(gapIndex: number): string {
+        return usesPerGapInputs
+          ? (constructionParts[gapIndex] ?? construction)
+          : construction
       }
 
       return (
@@ -440,6 +457,7 @@ export function ReviewSessionPromptBody({
                         onSubmit={onTypedSubmit}
                         focusKey={focusKey}
                         className="inline-gap-input"
+                        style={gapInputWidthStyle(gapAnswerText(gapIndex))}
                         ariaLabel={`Construction gap ${gapIndex + 1}`}
                         autoFocus={gapIndex === 0}
                       />
