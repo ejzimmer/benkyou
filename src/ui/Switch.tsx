@@ -8,11 +8,17 @@ type Props<T extends string> = {
   name: string
   value: T
   onChange: (value: T) => void
-  options: Option<T>[]
+  options: readonly [Option<T>, Option<T>]
   disabled?: boolean
 }
 
-export function RadioGroup<T extends string>({
+/**
+ * A toggle between exactly two equally-weighted options — e.g. vocabulary vs
+ * grammar. Unlike an on/off switch, neither side reads as the "active" or
+ * "default" state; the sliding thumb just tracks which of the two labels is
+ * currently selected.
+ */
+export function Switch<T extends string>({
   legend,
   name,
   value,
@@ -20,12 +26,16 @@ export function RadioGroup<T extends string>({
   options,
   disabled = false,
 }: Props<T>) {
+  const [start, end] = options
+  const selectedSide = value === end.value ? "end" : "start"
+
   return (
     <fieldset className="plain">
       <legend>{legend}</legend>
-      <div className="row" style={{ gap: "1rem" }}>
-        {options.map((option) => (
-          <label className="row" key={option.value}>
+      <div className={`switch switch-${selectedSide}`}>
+        <span className="switch-thumb" aria-hidden="true" />
+        {[start, end].map((option) => (
+          <label className="switch-option" key={option.value}>
             <input
               type="radio"
               name={name}
