@@ -140,16 +140,6 @@ export function requiresTyping(mode: ReviewModeId): boolean {
   )
 }
 
-/**
- * Modes whose prompt body doesn't already show the clue prominently enough
- * to make the generic mode heading redundant. Every other mode hides it (the
- * heading stays in the DOM for screen-reader heading navigation, just
- * visually hidden) — so a new mode defaults to hidden unless added here.
- */
-export function modeHeadingVisible(mode: ReviewModeId): boolean {
-  return mode === "grammar_type_reading"
-}
-
 export function expectedAnswer(card: Card, mode: ReviewModeId): string {
   if (mode === "vocab_type_reading") {
     if (card.kind !== "vocabulary") return ""

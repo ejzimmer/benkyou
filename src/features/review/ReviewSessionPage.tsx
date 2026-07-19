@@ -26,7 +26,6 @@ import {
   expectedAnswer,
   hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
-  modeHeadingVisible,
   REVIEW_MODE_LABELS,
   requiresTyping,
 } from "./reviewFlowHelpers"
@@ -568,11 +567,7 @@ export function ReviewSessionPage() {
       </header>
 
       <section className="panel prompt">
-        {modeLabel && (
-          <h2 className={current && modeHeadingVisible(current.modeId) ? undefined : "sr-only"}>
-            {modeLabel}
-          </h2>
-        )}
+        {modeLabel && <h2 className="sr-only">{modeLabel}</h2>}
 
         {pendingIncorrectDelay ? (
           <p className="muted small">Next card…</p>
