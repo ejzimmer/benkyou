@@ -129,13 +129,12 @@ export function CardEditPage() {
   const [mergingId, setMergingId] = useState<string | null>(null)
   const [mergeErr, setMergeErr] = useState<string | null>(null)
 
+  const currentJapanese = kind === "vocabulary" ? vocab.wordJa : grammar.construction
+  const normalizedCurrentJapanese = normalizeJapanese(currentJapanese)
+
   const duplicateJapaneseCards = useLiveQuery(
     async () => {
-      if (!isNew) return []
-      const currentJapanese =
-        kind === "vocabulary" ? vocab.wordJa : grammar.construction
-      const normalizedCurrentJapanese = normalizeJapanese(currentJapanese)
-      if (!normalizedCurrentJapanese) return []
+      if (!isNew || !normalizedCurrentJapanese) return []
       const cards = await db.cards.toArray()
       return cards.filter(
         (card) =>
@@ -143,11 +142,16 @@ export function CardEditPage() {
           normalizedCurrentJapanese,
       )
     },
-    [isNew, kind, vocab.wordJa, grammar.construction],
+    [isNew, normalizedCurrentJapanese],
   )
 
+  // duplicateJapaneseCards is an async live-query result: it can still hold
+  // the previous (non-empty) word's matches for a render or two after the
+  // field itself has been cleared (e.g. by resetNewCardForm() on save), so
+  // this re-checks the *current* field value rather than trusting a result
+  // that may be stale.
   const duplicateJapaneseWarning =
-    isNew && duplicateJapaneseCards?.length
+    isNew && normalizedCurrentJapanese && duplicateJapaneseCards?.length
       ? (() => {
           const count = duplicateJapaneseCards.length
           const fieldName =
