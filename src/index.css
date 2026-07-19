@@ -666,6 +666,10 @@ fieldset.plain legend {
 .inline-gap-input {
   display: inline-block;
   width: 6ch;
+  /* Safety net for unusually long answers: an inline-block can't wrap
+     internally the way surrounding text does, so without a viewport-relative
+     cap a long enough answer could force the page to scroll horizontally. */
+  max-width: 80vw;
   margin: 0 0.2rem;
   vertical-align: baseline;
   background: none;
