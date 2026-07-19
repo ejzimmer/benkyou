@@ -132,24 +132,35 @@ export function CardEditPage() {
   const currentJapanese = kind === "vocabulary" ? vocab.wordJa : grammar.construction
   const normalizedCurrentJapanese = normalizeJapanese(currentJapanese)
 
-  const duplicateJapaneseCards = useLiveQuery(
+  // useLiveQuery resolves asynchronously, so its result can still reflect a
+  // previously-typed word for a render or two after the field itself has
+  // moved on (e.g. cleared by resetNewCardForm() on save, or replaced by a
+  // paste). Tagging each result with the word it was computed for lets the
+  // read below detect and ignore a stale result rather than trusting
+  // whatever the query last returned.
+  const duplicateJapaneseCheck = useLiveQuery(
     async () => {
-      if (!isNew || !normalizedCurrentJapanese) return []
+      if (!isNew || !normalizedCurrentJapanese) {
+        return { forWord: normalizedCurrentJapanese, cards: [] as Card[] }
+      }
       const cards = await db.cards.toArray()
-      return cards.filter(
-        (card) =>
-          normalizeJapanese(japaneseWordForCard(card)) ===
-          normalizedCurrentJapanese,
-      )
+      return {
+        forWord: normalizedCurrentJapanese,
+        cards: cards.filter(
+          (card) =>
+            normalizeJapanese(japaneseWordForCard(card)) ===
+            normalizedCurrentJapanese,
+        ),
+      }
     },
     [isNew, normalizedCurrentJapanese],
   )
 
-  // duplicateJapaneseCards is an async live-query result: it can still hold
-  // the previous (non-empty) word's matches for a render or two after the
-  // field itself has been cleared (e.g. by resetNewCardForm() on save), so
-  // this re-checks the *current* field value rather than trusting a result
-  // that may be stale.
+  const duplicateJapaneseCards =
+    duplicateJapaneseCheck?.forWord === normalizedCurrentJapanese
+      ? duplicateJapaneseCheck.cards
+      : undefined
+
   const duplicateJapaneseWarning =
     isNew && normalizedCurrentJapanese && duplicateJapaneseCards?.length
       ? (() => {
