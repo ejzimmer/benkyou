@@ -197,28 +197,25 @@ export function AnswerComparison({
       aria-label={isCorrect ? "Answer" : "Answer comparison"}
     >
       <div className="reading-answer-row">
-        <span
-          id={correctId}
-          className={`answer-grid-label${isCorrect ? " sr-only" : ""}`}
-        >
+        <span id={correctId} className="answer-grid-label sr-only">
           Correct answer
         </span>
-        {isCorrect ? (
-          <span className="answer-correct-row">
-            {correctAnswer}
-            <span className="maru-mark" aria-hidden="true" />
-            <span className="sr-only">Correct</span>
-          </span>
-        ) : (
-          correctAnswer
-        )}
+        <span className="answer-correct-row">
+          {correctAnswer}
+          <span className="maru-mark" aria-hidden="true" />
+          {isCorrect && <span className="sr-only">Correct</span>}
+        </span>
       </div>
       {diff && (
         <div className="reading-answer-row">
-          <span id={yoursId} className="answer-grid-label">
+          <span id={yoursId} className="answer-grid-label sr-only">
             Your answer
           </span>
-          <DiffLine cells={diff.yours} labelId={yoursId} line="yours" />
+          <span className="answer-incorrect-row">
+            <DiffLine cells={diff.yours} labelId={yoursId} line="yours" />
+            <span className="cross-mark" aria-hidden="true" />
+            <span className="sr-only">Incorrect</span>
+          </span>
         </div>
       )}
     </div>
