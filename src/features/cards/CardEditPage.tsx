@@ -50,23 +50,6 @@ function safeReturnTo(raw: string | null): string | null {
   return raw
 }
 
-function formatDuplicateNotice(
-  cards: Card[],
-  fieldName: string,
-  deckId: string,
-  variant: "warning" | "saved",
-): string {
-  const count = cards.length
-  const plural = count === 1 ? "" : "s"
-  const subject = count === 1 ? "has" : "have"
-  const deckScope = cards.some((card) => card.deckId !== deckId)
-    ? ", including in another deck"
-    : " in this deck"
-  return variant === "warning"
-    ? `Warning: ${count} existing card${plural} already ${subject} the same ${fieldName}${deckScope}. You can still save this duplicate card.`
-    : `Saved as a duplicate: ${count} existing card${plural} already ${subject} the same ${fieldName}${deckScope}.`
-}
-
 function imageFilesFromClipboard(data: DataTransfer): File[] {
   const itemFiles = Array.from(data.items)
     .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
@@ -145,13 +128,6 @@ export function CardEditPage() {
   const [duplicateMatches, setDuplicateMatches] = useState<Card[]>([])
   const [mergingId, setMergingId] = useState<string | null>(null)
   const [mergeErr, setMergeErr] = useState<string | null>(null)
-  /** Set right before a duplicate-flagged new card is saved, so the warning
-   * survives resetNewCardForm() clearing the field it was keyed on — without
-   * this it would vanish in the same tick the card saves, before it could be
-   * read. Cleared once the user starts typing the next card's word. */
-  const [savedDuplicateNotice, setSavedDuplicateNotice] = useState<
-    string | null
-  >(null)
 
   const duplicateJapaneseCards = useLiveQuery(
     async () => {
@@ -172,15 +148,20 @@ export function CardEditPage() {
 
   const duplicateJapaneseWarning =
     isNew && duplicateJapaneseCards?.length
-      ? formatDuplicateNotice(
-          duplicateJapaneseCards,
-          kind === "vocabulary" ? "Japanese word" : "construction",
-          deckId,
-          "warning",
-        )
+      ? (() => {
+          const count = duplicateJapaneseCards.length
+          const fieldName =
+            kind === "vocabulary" ? "Japanese word" : "construction"
+          const deckScope = duplicateJapaneseCards.some(
+            (card) => card.deckId !== deckId,
+          )
+            ? ", including in another deck"
+            : " in this deck"
+          return `Warning: ${count} existing card${
+            count === 1 ? "" : "s"
+          } already ${count === 1 ? "has" : "have"} the same ${fieldName}${deckScope}. You can still save this duplicate card.`
+        })()
       : null
-
-  const duplicateNotice = duplicateJapaneseWarning ?? savedDuplicateNotice
 
   // Tracks which cardId the form has already been hydrated from, so that
   // live-query emissions caused by unrelated writes to this row (e.g. a
@@ -192,7 +173,6 @@ export function CardEditPage() {
       setLoading(false)
       setErr(null)
       setReadingsMapDraft("")
-      setSavedDuplicateNotice(null)
       hydratedCardIdRef.current = null
       return
     }
@@ -248,7 +228,6 @@ export function CardEditPage() {
 
   function onKindChange(nextKind: "vocabulary" | "grammar") {
     if (nextKind === kind) return
-    setSavedDuplicateNotice(null)
 
     if (nextKind === "vocabulary") {
       const nextVocab = vocabularyFromGrammarContent(grammar)
@@ -284,16 +263,6 @@ export function CardEditPage() {
         const emsg = validateVocabulary(vocab)
         if (emsg) throw new Error(emsg)
         if (isNew) {
-          if (duplicateJapaneseCards?.length) {
-            setSavedDuplicateNotice(
-              formatDuplicateNotice(
-                duplicateJapaneseCards,
-                "Japanese word",
-                deckId,
-                "saved",
-              ),
-            )
-          }
           await createVocabularyCard(deckId, vocab, user)
           resetNewCardForm()
           return
@@ -305,16 +274,6 @@ export function CardEditPage() {
         const emsg = validateGrammar(normalizedGrammar)
         if (emsg) throw new Error(emsg)
         if (isNew) {
-          if (duplicateJapaneseCards?.length) {
-            setSavedDuplicateNotice(
-              formatDuplicateNotice(
-                duplicateJapaneseCards,
-                "construction",
-                deckId,
-                "saved",
-              ),
-            )
-          }
           await createGrammarCard(deckId, normalizedGrammar, user)
           resetNewCardForm()
           return
@@ -540,7 +499,6 @@ export function CardEditPage() {
                   const reading = kanaOnly ? undefined : vocab.reading
                   const readingParts = kanaOnly ? {} : vocab.readingParts
                   setVocab((v) => ({ ...v, wordJa, reading, readingParts }))
-                  setSavedDuplicateNotice(null)
                   // Becoming kana-only clears the tested reading above, so the
                   // visible Readings textarea must drop it too — otherwise it
                   // keeps showing a reading line that no longer matches what
@@ -558,9 +516,9 @@ export function CardEditPage() {
               Include at least one of: pronunciation (for kanji words),
               meaning, or an image.
             </p>
-            {duplicateNotice && (
+            {duplicateJapaneseWarning && (
               <p className="warn small" role="status">
-                {duplicateNotice}
+                {duplicateJapaneseWarning}
               </p>
             )}
             <label>
@@ -664,10 +622,9 @@ export function CardEditPage() {
               <input
                 className="input"
                 value={grammar.construction}
-                onChange={(e) => {
+                onChange={(e) =>
                   setGrammar({ ...grammar, construction: e.target.value })
-                  setSavedDuplicateNotice(null)
-                }}
+                }
               />
             </label>
             {countGaps(grammar.sentenceWithGap, grammar.gapMarker) > 1 && (
@@ -678,9 +635,9 @@ export function CardEditPage() {
                 “が, の”.
               </p>
             )}
-            {duplicateNotice && (
+            {duplicateJapaneseWarning && (
               <p className="warn small" role="status">
-                {duplicateNotice}
+                {duplicateJapaneseWarning}
               </p>
             )}
             <Switch
