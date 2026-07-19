@@ -277,7 +277,7 @@ describe("card type conversions", () => {
     })
   })
 
-  it("derives the reading from the legacy readings map when converting a pre-existing grammar card with no constructionReading", () => {
+  it("does not derive a reading from a readings furigana map with no constructionReading — those lines are furigana only", () => {
     expect(
       vocabularyFromGrammarContent({
         sentenceWithGap: "私は___です",
@@ -290,12 +290,12 @@ describe("card type conversions", () => {
       }),
     ).toMatchObject({
       wordJa: "学生",
-      reading: "がくせい",
+      reading: undefined,
       readingParts: {},
     })
   })
 
-  it("derives per-cluster readingParts from a legacy multi-cluster construction when converting to vocabulary", () => {
+  it("does not derive readingParts from a readings furigana map when converting to vocabulary", () => {
     expect(
       vocabularyFromGrammarContent({
         sentenceWithGap: "___",
@@ -309,7 +309,7 @@ describe("card type conversions", () => {
     ).toMatchObject({
       wordJa: "結論に至る",
       reading: undefined,
-      readingParts: { 結論: "けつろん", 至る: "いたる" },
+      readingParts: {},
     })
   })
 
@@ -328,7 +328,7 @@ describe("card type conversions", () => {
     ).toBeUndefined()
   })
 
-  it("derives per-cluster constructionReadingParts from a legacy multi-cluster vocab word when converting to grammar", () => {
+  it("does not derive constructionReadingParts from a readings furigana map when converting to grammar", () => {
     expect(
       grammarFromVocabularyContent({
         wordJa: "結論に至る",
@@ -341,7 +341,7 @@ describe("card type conversions", () => {
     ).toMatchObject({
       construction: "結論に至る",
       constructionReading: undefined,
-      constructionReadingParts: { 結論: "けつろん", 至る: "いたる" },
+      constructionReadingParts: {},
     })
   })
 
