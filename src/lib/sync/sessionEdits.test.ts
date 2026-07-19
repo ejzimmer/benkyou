@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { act, renderHook } from "@testing-library/react"
 import {
   clearSessionEdits,
@@ -8,9 +8,12 @@ import {
   useSessionEditedCardIds,
 } from "./sessionEdits"
 
+const STORAGE_KEY = "benkyou:sessionEditedCardIds"
+
 describe("sessionEdits", () => {
   beforeEach(() => {
     clearSessionEdits()
+    localStorage.removeItem(STORAGE_KEY)
   })
 
   it("tracks edited card ids, deduplicating repeats", () => {
@@ -49,5 +52,26 @@ describe("sessionEdits", () => {
 
     act(() => removeSessionEditedCardIds(["card-1"]))
     expect(result.current).toEqual([])
+  })
+
+  it("mirrors pending edits to localStorage so a reload doesn't forget them", async () => {
+    markCardEdited("card-1")
+    markCardEdited("card-2")
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]").sort()).toEqual([
+      "card-1",
+      "card-2",
+    ])
+
+    // Simulate a page reload: reset the module registry and re-import so the
+    // store re-reads whatever's in localStorage from scratch.
+    vi.resetModules()
+    const reloaded = await import("./sessionEdits")
+    expect(reloaded.getSessionEditedCardIds().sort()).toEqual(["card-1", "card-2"])
+  })
+
+  it("clears the localStorage entry once all pending edits are pushed", () => {
+    markCardEdited("card-1")
+    removeSessionEditedCardIds(["card-1"])
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 })
