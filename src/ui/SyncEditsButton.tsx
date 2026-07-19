@@ -41,7 +41,16 @@ export function SyncEditsButton() {
         onClick={() => void onClick()}
         disabled={syncing}
       >
-        {syncing ? "Syncing…" : hasEdits ? `Sync (${editedCardIds.length})` : "Sync"}
+        {syncing ? (
+          <>
+            <span className="import-spinner" aria-hidden="true" />
+            <span className="sr-only">Syncing…</span>
+          </>
+        ) : hasEdits ? (
+          `Sync (${editedCardIds.length})`
+        ) : (
+          "Sync"
+        )}
       </button>
       {error && <span className="error small">{error}</span>}
     </div>

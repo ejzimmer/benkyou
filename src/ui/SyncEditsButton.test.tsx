@@ -61,11 +61,14 @@ describe("SyncEditsButton", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument()
   })
 
-  it("is disabled while a sync/push/sync-edits operation is already in flight", () => {
+  it("is disabled while a sync/push/sync-edits operation is already in flight, showing a spinner instead of text", () => {
     mockSyncing = true
     markCardEdited("card-1")
     render(<SyncEditsButton />)
-    expect(screen.getByRole("button", { name: /syncing/i })).toBeDisabled()
+    const button = screen.getByRole("button", { name: /syncing/i })
+    expect(button).toBeDisabled()
+    expect(button.querySelector(".import-spinner")).toBeInTheDocument()
+    expect(button).not.toHaveTextContent(/sync \(1\)/i)
   })
 
   it("calls syncEditsNow (which shares SyncContext's in-flight guard) on click and reverts to the plain blue state once it clears the edits", async () => {
