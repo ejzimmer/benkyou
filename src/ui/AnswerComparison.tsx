@@ -179,6 +179,17 @@ export function AnswerComparison({
     </span>
   )
 
+  const correctAnswer = showRuby && isCorrect ? (
+    <span className="ruby-hover answer-ruby" tabIndex={0}>
+      <ruby>
+        {correctBody}
+        <rt>{reading}</rt>
+      </ruby>
+    </span>
+  ) : (
+    correctBody
+  )
+
   return (
     <div
       className="reading-answer-comparison"
@@ -192,15 +203,14 @@ export function AnswerComparison({
         >
           Correct answer
         </span>
-        {showRuby && !diff ? (
-          <span className="ruby-hover answer-ruby" tabIndex={0}>
-            <ruby>
-              {correctBody}
-              <rt>{reading}</rt>
-            </ruby>
+        {isCorrect ? (
+          <span className="answer-correct-row">
+            {correctAnswer}
+            <span className="maru-mark" aria-hidden="true" />
+            <span className="sr-only">Correct</span>
           </span>
         ) : (
-          correctBody
+          correctAnswer
         )}
       </div>
       {diff && (
