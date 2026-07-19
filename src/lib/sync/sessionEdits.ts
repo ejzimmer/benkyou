@@ -1,8 +1,9 @@
 /**
  * Tracks which cards have been created/edited this session, in memory only
  * (not persisted — a fresh page load starts with an empty set). Drives the
- * global "Sync edits" button: it only appears once there's something to push,
- * and disappears once those specific cards have been pushed.
+ * global "Sync" button: it shows a count and turns green once there's
+ * something to push, and reverts to its plain blue state once those specific
+ * cards have been pushed.
  */
 
 import { useSyncExternalStore } from "react"
