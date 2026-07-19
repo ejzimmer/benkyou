@@ -177,9 +177,11 @@ export function ReviewSessionPromptBody({
     )
   }
 
-  // Asking for the English meaning: show the Japanese word + example sentences.
-  // Kanji readings stay available on hover/focus via <RubyWord>. No typing
-  // input for this mode — it's answered aloud.
+  // Asking for the English meaning: show the Japanese word, with example
+  // sentences hidden behind an expander (like the reading-quiz modes below) so
+  // they don't hand you free vocab/context clues before you've had a go at
+  // the meaning yourself. Kanji readings stay available on hover/focus via
+  // <RubyWord>. No typing input for this mode — it's answered aloud.
   if (m === "vocab_oral_en" && card.kind === "vocabulary") {
     if (column === "answer") return null
     const examples = card.content.exampleSentences.filter((s) => s.trim())
@@ -188,32 +190,40 @@ export function ReviewSessionPromptBody({
       card.content.wordJa,
       card.content.readings ?? {},
     )
+    const hasHidden = examples.length > 0
     return (
       <div className="stack">
-        <p className="prompt-main">
-          {wordSegments ? (
-            // The furigana map fully accounts for every kanji in the word —
-            // honor the author's own per-kanji breakdown (e.g. narrowed to
-            // leave okurigana un-annotated) instead of one flat ruby.
-            wordSegments.map((s, i) =>
-              s.reading?.trim() ? (
-                <RubyWord key={i} surface={s.text} reading={s.reading} />
-              ) : (
-                <span key={i}>{s.text}</span>
-              ),
-            )
-          ) : (
-            // The map doesn't (yet) cover the whole word — e.g. a card whose
-            // furigana was never authored — so fall back to the authoritative
-            // whole-word reading rather than showing partial/no furigana.
-            <RubyWord surface={card.content.wordJa} reading={card.content.reading} />
-          )}
-        </p>
-        {examples.map((s, i) => (
-          <p key={i} className="muted">
-            <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
+        <div className="prompt-extras-row">
+          <p className="prompt-main">
+            {wordSegments ? (
+              // The furigana map fully accounts for every kanji in the word —
+              // honor the author's own per-kanji breakdown (e.g. narrowed to
+              // leave okurigana un-annotated) instead of one flat ruby.
+              wordSegments.map((s, i) =>
+                s.reading?.trim() ? (
+                  <RubyWord key={i} surface={s.text} reading={s.reading} />
+                ) : (
+                  <span key={i}>{s.text}</span>
+                ),
+              )
+            ) : (
+              // The map doesn't (yet) cover the whole word — e.g. a card
+              // whose furigana was never authored — so fall back to the
+              // authoritative whole-word reading rather than showing
+              // partial/no furigana.
+              <RubyWord surface={card.content.wordJa} reading={card.content.reading} />
+            )}
           </p>
-        ))}
+          {hasHidden && renderExtrasToggle("Show example sentences")}
+        </div>
+        {hasHidden &&
+          renderExtrasContent(
+            examples.map((s, i) => (
+              <p key={i} className="muted">
+                <RubySentence sentence={s} gapMarker="" readings={exampleReadings} />
+              </p>
+            )),
+          )}
       </div>
     )
   }
