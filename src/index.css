@@ -660,18 +660,27 @@ fieldset.plain legend {
   padding: 0 0.15rem;
 }
 
-.grammar-gap-sentence {
-  line-height: 2.6;
+/* Tight but not tighter than the hover furigana needs: 2 gives just enough
+   clearance above each wrapped line for a popped-up <rt> reading (~0.65em
+   tall + margin) to clear the line above without overlapping it. Set on the
+   inline wrapper (rather than each container that happens to hold a
+   RubySentence/RubyWord) so every Japanese sentence in the app gets the
+   same clearance regardless of what block-level element wraps it. */
+.ruby-sentence {
+  line-height: 2;
 }
 
 /* The construction filling the gap in a "say the meaning" prompt — highlighted
-   so it's clear which part of the sentence is the target. */
+   so it's clear which part of the sentence is the target. `nowrap` keeps the
+   highlight from splitting across a line break — balanced wrapping (below)
+   is otherwise happy to break in the middle of it to even out line lengths. */
 .construction-fill {
   background: #fde047;
   color: #1a1a2e;
   border-radius: 4px;
   padding: 0.05em 0.25em;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 /* Looks like a blank you'd fill in on paper: no box, just a line to write
@@ -981,6 +990,16 @@ fieldset.plain legend {
 
 .review-answer {
   padding: 40px 30px 1rem;
+}
+
+/* Long question/answer/example text balances across its wrapped lines
+   instead of leaving a short, ragged last line. */
+.review-question p,
+.review-question .grammar-gap-sentence,
+.review-answer p,
+.review-answer .grammar-gap-sentence,
+.review-answer .reading-answer-value {
+  text-wrap: balance;
 }
 
 @media (min-width: 760px) {
