@@ -305,27 +305,18 @@ function segmentsToReadingParts(
 export function vocabularyFromGrammarContent(
   content: GrammarCardContent,
 ): VocabularyCardContent {
-  // constructionReadingSegments falls back to the legacy `readings` map when
-  // constructionReading/constructionReadingParts were never authored (e.g. a
-  // pre-existing or Anki-imported card) — reuse it here too, so converting
-  // kind doesn't silently drop a reading that still only lives in `readings`.
   const segments = constructionReadingSegments(content)
-  const singleLegacyReading =
-    !content.constructionReading?.trim() && segments?.length === 1
-      ? segments[0]?.reading
-      : undefined
   // A reading only makes sense for a construction with kanji — matches
   // validateVocabulary's rule for the resulting card's `reading` field.
   const reading = containsKanji(content.construction)
-    ? content.constructionReading || singleLegacyReading
+    ? content.constructionReading
     : undefined
   return {
     wordJa: content.construction,
     reading,
-    readingParts:
-      segments && segments.length > 1
-        ? segmentsToReadingParts(segments)
-        : { ...(content.constructionReadingParts ?? {}) },
+    readingParts: segments
+      ? segmentsToReadingParts(segments)
+      : { ...(content.constructionReadingParts ?? {}) },
     readings: { ...content.readings },
     definitionsEn: [content.translationEn],
     images: [...content.images],
@@ -344,8 +335,6 @@ export function grammarFromVocabularyContent(
       ? exampleSentence.replace(content.wordJa, gapMarker)
       : exampleSentence
 
-  // phraseReadingSegments falls back to the legacy `readings` map when
-  // readingParts was never authored — see vocabularyFromGrammarContent.
   const segments = phraseReadingSegments(content)
 
   return {
@@ -353,10 +342,9 @@ export function grammarFromVocabularyContent(
     gapMarker,
     construction: content.wordJa,
     constructionReading: content.reading,
-    constructionReadingParts:
-      segments && segments.length > 1
-        ? segmentsToReadingParts(segments)
-        : { ...(content.readingParts ?? {}) },
+    constructionReadingParts: segments
+      ? segmentsToReadingParts(segments)
+      : { ...(content.readingParts ?? {}) },
     translationEn: content.definitionsEn.filter((s) => s.trim()).join("; "),
     readings: { ...(content.readings ?? {}) },
     images: [...content.images],

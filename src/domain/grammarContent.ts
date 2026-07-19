@@ -1,5 +1,5 @@
 import type { GrammarCardContent } from "./types"
-import { fullyCoveredSegments, type ReadingSegment } from "./readingsMap"
+import type { ReadingSegment } from "./readingsMap"
 
 /**
  * Ordered per-cluster readings for a grammar card's construction, from the
@@ -8,15 +8,11 @@ import { fullyCoveredSegments, type ReadingSegment } from "./readingsMap"
  * field wins for a single-reading construction) and there are at least two
  * parts — a single part is what `constructionReading` is for.
  *
- * Falls back to deriving segments from the legacy `readings` furigana map
- * (matched against the construction's literal text) when
- * `constructionReadingParts` was never authored at all — grammar cards
- * never had a dedicated single-reading field before `constructionReading`
- * existed, so `readings` covering the construction was the only mechanism;
- * unlike the vocab fallback, a single covered segment is enough here, since
- * that's exactly the old single-word-construction case. A construction that
- * has explicitly started using `constructionReadingParts` (even with just
- * one entry so far) does not fall back.
+ * Deliberately does not fall back to the `readings` furigana map: under the
+ * combined "Readings" field, a `phrase=reading` line is furigana only (shown
+ * over the sentence, never quizzed) — the tested reading has to be its own
+ * separator-less line, which lands in `constructionReading`/
+ * `constructionReadingParts` instead.
  */
 export function constructionReadingSegments(
   content: GrammarCardContent,
@@ -26,10 +22,6 @@ export function constructionReadingSegments(
     ([label, reading]) => label.trim() && reading.trim(),
   )
   if (entries.length > 1) return entries.map(([text, reading]) => ({ text, reading }))
-  if (entries.length === 0) {
-    const legacy = fullyCoveredSegments(content.construction, content.readings)
-    if (legacy?.some((s) => s.reading?.trim())) return legacy
-  }
   return undefined
 }
 

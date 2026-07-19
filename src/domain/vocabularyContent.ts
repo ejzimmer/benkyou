@@ -1,9 +1,5 @@
 import type { VocabularyCardContent } from "./types"
-import {
-  fullyCoveredSegments,
-  segmentText,
-  type ReadingSegment,
-} from "./readingsMap"
+import { segmentText, type ReadingSegment } from "./readingsMap"
 
 export const PLACEHOLDER_DEFINITION = "[translation pending]"
 
@@ -53,13 +49,10 @@ export function hasVocabularyImage(content: VocabularyCardContent): boolean {
  * for a plain single-reading word) and there are at least two parts — a
  * single part is what the `reading` field is for.
  *
- * Falls back to deriving segments from the legacy `readings` furigana map
- * (matched against wordJa's literal kanji clusters) when `readingParts` was
- * never authored at all — e.g. a card built before `readingParts` existed,
- * or imported from Anki, whose phrase segments still live only in the
- * furigana map. A card that has explicitly started using `readingParts`
- * (even with just one entry so far) does not fall back, so the two
- * mechanisms don't fight once an author has moved to the new field.
+ * Deliberately does not fall back to the `readings` furigana map: under the
+ * combined "Readings" field, a `phrase=reading` line is furigana only (shown
+ * over the text, never quizzed) — the tested reading has to be its own
+ * separator-less line, which lands in `reading`/`readingParts` instead.
  */
 export function phraseReadingSegments(
   content: VocabularyCardContent,
@@ -69,10 +62,6 @@ export function phraseReadingSegments(
     ([label, reading]) => label.trim() && reading.trim(),
   )
   if (entries.length > 1) return entries.map(([text, reading]) => ({ text, reading }))
-  if (entries.length === 0) {
-    const legacy = fullyCoveredSegments(content.wordJa, content.readings ?? {})
-    if (legacy && legacy.filter((s) => s.reading?.trim()).length > 1) return legacy
-  }
   return undefined
 }
 
