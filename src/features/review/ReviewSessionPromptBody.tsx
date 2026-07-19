@@ -453,7 +453,7 @@ export function ReviewSessionPromptBody({
 
       return (
         <div className="stack">
-          <div className="grammar-gap-sentence">
+          <div className="prompt-main grammar-gap-sentence">
             <RubySentence
               sentence={card.content.sentenceWithGap}
               gapMarker={card.content.gapMarker}

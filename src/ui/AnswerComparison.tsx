@@ -180,7 +180,7 @@ export function AnswerComparison({
   )
 
   const correctAnswer = showRuby && isCorrect ? (
-    <span className="ruby-hover answer-ruby" tabIndex={0}>
+    <span className="ruby-hover" tabIndex={0}>
       <ruby>
         {correctBody}
         <rt>{reading}</rt>

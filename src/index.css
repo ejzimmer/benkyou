@@ -1313,8 +1313,11 @@ fieldset.plain legend {
   gap: 0.08em;
 }
 
-/* Mirrors .answer-ruby's clearance below the "Correct answer" label, so
-   the furigana revealed above the diff row doesn't overlap it. */
+/* AnswerComparison stacks a visible "Correct answer" label directly above
+   this row with very little gap — reserve room so the floating furigana
+   annotation doesn't overlap it when revealed. Only needed here (the
+   incorrect-answer diff view): the correct-answer ruby's label is sr-only,
+   so it has no visible gap to protect and skips this margin. */
 .reading-answer-diff-line-has-furigana {
   margin-top: 1.1em;
 }
@@ -1515,13 +1518,6 @@ fieldset.plain legend {
   font-size: 0.65em;
   line-height: normal;
   color: #a5b4fc;
-}
-
-/* AnswerComparison stacks a "Correct answer" label directly above this ruby
-   with very little gap — reserve room so the floating annotation doesn't
-   overlap the label when revealed. */
-.answer-ruby {
-  margin-top: 1.1em;
 }
 
 .ruby-hover:hover rt,
