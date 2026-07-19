@@ -128,7 +128,7 @@ describe("sync: stale tombstones must not shadow a re-imported deck", () => {
 
     // Pretend a small amount of time elapsed before deletion / re-import.
     await new Promise((r) => setTimeout(r, 5))
-    await deleteDeck("deck-X", FAKE_USER)
+    await deleteDeck("deck-X")
 
     await new Promise((r) => setTimeout(r, 5))
     await applyBulkImport(tinyDeckPayload(), FAKE_USER)

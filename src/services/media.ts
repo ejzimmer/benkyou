@@ -1,20 +1,11 @@
 import { db, type MediaRow } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
-import { getFirestoreDb, getFirebaseStorage } from "../lib/firebase"
-import { upsertMediaMetaRemote } from "../lib/sync/firestoreSync"
-import {
-  downloadMediaFromRemote,
-  uploadMediaBlob,
-} from "../lib/sync/mediaSync"
+import { downloadMediaFromRemote } from "../lib/sync/mediaSync"
 import { mediaBlobDigest } from "../lib/sync/syncCompare"
-import { schedulePushAfterMutation } from "../lib/sync/schedulePush"
 import { recordTombstone } from "../lib/sync/tombstones"
 import type { User } from "firebase/auth"
 
-export async function saveImageBlob(
-  blob: Blob,
-  user: User | null = null,
-): Promise<string> {
+export async function saveImageBlob(blob: Blob): Promise<string> {
   const id = newId()
   const now = Date.now()
   const digest = await mediaBlobDigest(blob)
@@ -26,31 +17,13 @@ export async function saveImageBlob(
     digest,
   }
   await db.media.put(row)
-
-  const fs = getFirestoreDb()
-  const storage = getFirebaseStorage()
-  if (fs && storage && user) {
-    await upsertMediaMetaRemote(fs, user.uid, row)
-    try {
-      await uploadMediaBlob(storage, user.uid, row)
-    } catch {
-      schedulePushAfterMutation(user)
-    }
-  } else {
-    schedulePushAfterMutation(user)
-  }
-
   return id
 }
 
 /** Remove an image's blob locally and mark it for removal on the next sync. */
-export async function deleteImageBlob(
-  mediaId: string,
-  user: User | null = null,
-): Promise<void> {
+export async function deleteImageBlob(mediaId: string): Promise<void> {
   await recordTombstone("media", mediaId)
   await db.media.delete(mediaId)
-  schedulePushAfterMutation(user)
 }
 
 /** Ensure image bytes exist in IndexedDB; download from Storage when missing. */

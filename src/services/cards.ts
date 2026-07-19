@@ -25,22 +25,8 @@ import {
   isSuspendedDue,
   serializeFsrs,
 } from "../lib/srs/schedule"
-import {
-  pushAllSchedulingForCard,
-  pushCardRemote,
-  pushSchedulingRemote,
-} from "./decks"
-import {
-  pushDocInBackground,
-  schedulePushAfterMutation,
-} from "../lib/sync/schedulePush"
 import { recordTombstone } from "../lib/sync/tombstones"
-import {
-  deleteCardRemote,
-  deleteSchedulingRemote,
-} from "../lib/sync/firestoreSync"
-import { getFirestoreDb } from "../lib/firebase"
-import type { User } from "firebase/auth"
+import { markCardEdited, removeSessionEditedCardIds } from "../lib/sync/sessionEdits"
 
 export function validateVocabulary(content: VocabularyCardContent): string | null {
   if (!content.wordJa.trim()) return "Japanese word is required"
@@ -127,15 +113,10 @@ export async function ensureSchedulingForCard(card: Card): Promise<void> {
   }
 }
 
-export async function saveCard(card: Card, user: User | null): Promise<void> {
+export async function saveCard(card: Card): Promise<void> {
   await db.cards.put(card)
   await ensureSchedulingForCard(card)
-  // Awaited (unlike updateSchedulingRow's background push): callers like
-  // CardEditPage.onSubmit rely on a rejection here surfacing as a save error
-  // rather than navigating away as if the card had synced.
-  await pushCardRemote(user, card.id)
-  await pushAllSchedulingForCard(user, card.id)
-  schedulePushAfterMutation(user)
+  markCardEdited(card.id)
 }
 
 function concatText(a: string, b: string): string {
@@ -234,14 +215,10 @@ export function mergeCardContent(target: Card, source: Card): Card {
  * `source`'s images are always carried over into the merged card, so its
  * media blobs must not be deleted along with it.
  */
-export async function mergeCards(
-  target: Card,
-  source: Card,
-  user: User | null,
-): Promise<Card> {
+export async function mergeCards(target: Card, source: Card): Promise<Card> {
   const merged: Card = { ...mergeCardContent(target, source), updatedAt: Date.now() }
-  await saveCard(merged, user)
-  await deleteCard(source.id, user, { keepMedia: true })
+  await saveCard(merged)
+  await deleteCard(source.id, { keepMedia: true })
   return merged
 }
 
@@ -258,7 +235,6 @@ export async function isMediaReferencedByOtherCards(
 
 export async function deleteCard(
   cardId: string,
-  user: User | null,
   options?: { keepMedia?: boolean },
 ): Promise<void> {
   const keepMedia = options?.keepMedia ?? false
@@ -285,14 +261,9 @@ export async function deleteCard(
     await db.scheduling.where("cardId").equals(cardId).delete()
   })
 
-  const fs = getFirestoreDb()
-  if (fs && user) {
-    await deleteCardRemote(fs, user.uid, cardId)
-    for (const row of sched) {
-      await deleteSchedulingRemote(fs, user.uid, row.id)
-    }
-  }
-  schedulePushAfterMutation(user)
+  // A deleted card can't be pushed by "Sync edits" any more — drop it so the
+  // button doesn't keep counting it, or silently no-op a push for it later.
+  removeSessionEditedCardIds([cardId])
 }
 
 export function defaultVocabulary(): VocabularyCardContent {
@@ -396,7 +367,6 @@ export function grammarFromVocabularyContent(
 export async function createVocabularyCard(
   deckId: string,
   content: VocabularyCardContent,
-  user: User | null,
 ): Promise<Card> {
   const err = validateVocabulary(content)
   if (err) throw new Error(err)
@@ -408,14 +378,13 @@ export async function createVocabularyCard(
     content,
     updatedAt: now,
   }
-  await saveCard(card, user)
+  await saveCard(card)
   return card
 }
 
 export async function createGrammarCard(
   deckId: string,
   content: GrammarCardContent,
-  user: User | null,
 ): Promise<Card> {
   const normalized = normalizeGrammarContent(content)
   const err = validateGrammar(normalized)
@@ -428,7 +397,7 @@ export async function createGrammarCard(
     content: normalized,
     updatedAt: now,
   }
-  await saveCard(card, user)
+  await saveCard(card)
   return card
 }
 
@@ -439,36 +408,25 @@ export async function loadSchedulingRow(
   return db.scheduling.get(schedulingId(cardId, modeId))
 }
 
-export async function updateSchedulingRow(
-  row: SchedulingRow,
-  user: User | null,
-): Promise<void> {
+export async function updateSchedulingRow(row: SchedulingRow): Promise<void> {
   await db.scheduling.put(row)
-  pushDocInBackground(pushSchedulingRemote(user, row.id))
-  schedulePushAfterMutation(user)
 }
 
 /** Bring a suspended/leech card (see ankiSrs.ts) back into review by
  * resetting its pushed-out due date to now — mirrors Anki's own
  * "unsuspend" action, which likewise just clears the exclusion without
  * touching the card's study history. */
-export async function unsuspendCard(
-  cardId: string,
-  user: User | null,
-): Promise<void> {
+export async function unsuspendCard(cardId: string): Promise<void> {
   const now = Date.now()
   const rows = await db.scheduling.where("cardId").equals(cardId).toArray()
   for (const row of rows) {
     if (!isSuspendedDue(row.due, now)) continue
-    await updateSchedulingRow(
-      {
-        ...row,
-        due: now,
-        fsrs: { ...row.fsrs, due: now },
-        updatedAt: now,
-      },
-      user,
-    )
+    await updateSchedulingRow({
+      ...row,
+      due: now,
+      fsrs: { ...row.fsrs, due: now },
+      updatedAt: now,
+    })
   }
 }
 

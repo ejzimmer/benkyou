@@ -16,12 +16,7 @@
  *      the referenced media — and stores the media in IndexedDB with the
  *      correct mime type so `<img src=blob:>` actually renders.
  *
- *   4. Sync runs are triggered intentionally, not "randomly" on every tab
- *      visibility flip. The visibility-driven sync trigger must throttle
- *      itself so that repeated visibility flips inside a short window do not
- *      kick off additional sync runs.
- *
- * All four `it()` blocks are expected to FAIL on the current `main` and to
+ * All three `it()` blocks are expected to FAIL on the current `main` and to
  * pass once the bugs are fixed.
  */
 
@@ -203,32 +198,4 @@ describe("import & sync flow — reported bugs", () => {
     }
   })
 
-  it("bug #4: visibility-driven sync triggers are throttled (no runaway re-syncs on screen flips)", async () => {
-    const { createVisibilitySyncTrigger } = await import("./syncTrigger")
-    vi.useFakeTimers()
-    try {
-      const syncNow = vi.fn(async () => {})
-      const trigger = createVisibilitySyncTrigger({
-        syncNow,
-        now: () => Date.now(),
-        minIntervalMs: 60_000,
-      })
-
-      await trigger.onVisible()
-      expect(syncNow).toHaveBeenCalledTimes(1)
-
-      await trigger.onVisible()
-      vi.advanceTimersByTime(5_000)
-      await trigger.onVisible()
-      vi.advanceTimersByTime(20_000)
-      await trigger.onVisible()
-      expect(syncNow).toHaveBeenCalledTimes(1)
-
-      vi.advanceTimersByTime(60_000)
-      await trigger.onVisible()
-      expect(syncNow).toHaveBeenCalledTimes(2)
-    } finally {
-      vi.useRealTimers()
-    }
-  })
 })

@@ -11,7 +11,6 @@ import { applyGrade, deserializeFsrs, serializeFsrs } from "../lib/srs/schedule"
 import { responseTimeToGrade } from "../lib/srs/time-to-rating"
 import type { Grade } from "ts-fsrs"
 import { loadSchedulingRow, updateSchedulingRow } from "./cards"
-import type { User } from "firebase/auth"
 
 export type DueItem = {
   card: Card
@@ -174,7 +173,6 @@ export async function commitJudgement(
   promptToRevealMs: number | null,
   selfCorrect: boolean,
   snapshot: JudgementSnapshot | null,
-  user: User | null,
 ): Promise<void> {
   const row = await loadSchedulingRow(cardId, modeId)
   if (!row) return
@@ -194,7 +192,7 @@ export async function commitJudgement(
     due: nextCard.due.getTime(),
     updatedAt: Date.now(),
   }
-  await updateSchedulingRow(updated, user)
+  await updateSchedulingRow(updated)
 
   const card = await db.cards.get(cardId)
   const eventId = newId()
@@ -234,9 +232,7 @@ export async function commitJudgement(
   }
 }
 
-export async function undoLastJudgement(
-  user: User | null,
-): Promise<DueItem | null> {
+export async function undoLastJudgement(): Promise<DueItem | null> {
   const last = await db.reviewUndo.toCollection().first()
   if (!last) return null
   let restored: SchedulingRow
@@ -246,7 +242,7 @@ export async function undoLastJudgement(
     return null
   }
   await db.reviewUndo.delete(last.id)
-  await updateSchedulingRow(restored, user)
+  await updateSchedulingRow(restored)
 
   if (last.linkedEventId) {
     await db.reviewEvents.delete(last.linkedEventId)
@@ -266,7 +262,6 @@ export async function undoLastJudgement(
 
 export async function restoreSchedulingSnapshot(
   snapshot: JudgementSnapshot,
-  user: User | null,
 ): Promise<void> {
-  await updateSchedulingRow(snapshot.schedulingRow, user)
+  await updateSchedulingRow(snapshot.schedulingRow)
 }

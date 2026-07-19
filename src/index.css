@@ -1689,6 +1689,25 @@ code {
   height: 1em;
 }
 
+/* Fixed to the top of the viewport (rather than in-flow) so it floats above
+   whichever page/header is showing, matching .sync-indicator-global's
+   approach for the bottom-right spinner. */
+.sync-edits-banner {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sync-edits-btn {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
 .import-spinner {
   display: inline-block;
   width: 0.85em;

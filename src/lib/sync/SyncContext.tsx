@@ -11,7 +11,12 @@ import {
 import { useAuth } from "../auth/AuthContext"
 import { getFirestoreDb, getFirebaseStorage } from "../firebase"
 import { SyncConflictModal } from "./SyncConflictModal"
-import { readLastSyncedAt, runFullSync, type SyncProgress } from "./runSync"
+import {
+  readLastSyncedAt,
+  runFullSync,
+  runPushOnly,
+  type SyncProgress,
+} from "./runSync"
 import {
   clearSyncLog,
   getSyncLogEntries,
@@ -19,6 +24,8 @@ import {
   syncLog,
   type SyncLogEntry,
 } from "./syncLog"
+import { clearSessionEdits } from "./sessionEdits"
+import { pushSessionEditsNow } from "../../services/decks"
 import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
 
 export type SyncPhase = "idle" | "running" | "conflict"
@@ -28,12 +35,15 @@ type SyncState = {
   syncPhase: SyncPhase
   syncStatusLabel: string
   syncProgress: SyncProgress | null
-  /** True once the first sync of this session has settled (or none is needed). */
-  initialSyncComplete: boolean
   syncLog: readonly SyncLogEntry[]
   lastError: string | null
   lastSyncedAt: number | null
+  /** Two-way merge sync: pulls remote changes and pushes local ones, with conflict resolution. */
   syncNow: () => Promise<void>
+  /** Push-only: uploads local changes without pulling or resolving conflicts. */
+  pushNow: () => Promise<void>
+  /** Force-pushes just the cards edited/created this session, no merge. */
+  syncEditsNow: () => Promise<void>
   conflictActive: boolean
   /**
    * Bumped once a sync that hit at least one conflict has settled. A review
@@ -50,8 +60,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [syncing, setSyncing] = useState(false)
   const [syncPhase, setSyncPhase] = useState<SyncPhase>("idle")
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null)
-  /** uid whose initial sync has settled this session (success or failure). */
-  const [completedSyncUid, setCompletedSyncUid] = useState<string | null>(null)
   const [lastError, setLastError] = useState<string | null>(null)
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
   const [activeConflict, setActiveConflict] = useState<SyncConflict | null>(null)
@@ -111,16 +119,19 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const syncInFlightRef = useRef<Promise<void> | null>(null)
+  // Shared across syncNow/pushNow/syncEditsNow so they can't run concurrently
+  // against Firestore — calling one while another is already in flight just
+  // joins it.
+  const operationInFlightRef = useRef<Promise<void> | null>(null)
 
   const syncNow = useCallback(async () => {
     if (offlineOnly || !user) {
       syncLog("sync skipped", { offlineOnly, hasUser: Boolean(user) })
       return
     }
-    if (syncInFlightRef.current) {
+    if (operationInFlightRef.current) {
       syncLog("sync already in flight — joining existing run")
-      return syncInFlightRef.current
+      return operationInFlightRef.current
     }
 
     const run = (async () => {
@@ -133,8 +144,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           hasFirestore: Boolean(fs),
           hasStorage: Boolean(storage),
         })
-        // Nothing we can do — don't block review on a sync that can't run.
-        setCompletedSyncUid(user.uid)
         return
       }
       setSyncing(true)
@@ -153,6 +162,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           onProgress: setSyncProgress,
         })
         setLastSyncedAt(Date.now())
+        // A full sync pushes every local-only/local-newer card, so nothing
+        // this session edited is still pending afterward.
+        clearSessionEdits()
         syncLog("syncNow finished OK")
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -164,9 +176,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setSyncing(false)
         setSyncPhase("idle")
         setSyncProgress(null)
-        // The first sync of the session has settled (success or failure); stop
-        // blocking review either way.
-        setCompletedSyncUid(user.uid)
         setActiveConflict(null)
         conflictNumberRef.current = 0
         setConflictNumber(0)
@@ -176,11 +185,106 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       }
     })()
 
-    syncInFlightRef.current = run.finally(() => {
-      syncInFlightRef.current = null
+    operationInFlightRef.current = run.finally(() => {
+      operationInFlightRef.current = null
     })
-    return syncInFlightRef.current
+    return operationInFlightRef.current
   }, [offlineOnly, user, onConflict])
+
+  const pushNow = useCallback(async () => {
+    if (offlineOnly || !user) {
+      syncLog("push skipped", { offlineOnly, hasUser: Boolean(user) })
+      return
+    }
+    if (operationInFlightRef.current) {
+      syncLog("push already in flight — joining existing run")
+      return operationInFlightRef.current
+    }
+
+    const run = (async () => {
+      clearSyncLog()
+      syncLog("pushNow invoked", { uid: user.uid })
+      const fs = getFirestoreDb()
+      const storage = getFirebaseStorage()
+      if (!fs || !storage) {
+        syncLog("push aborted: Firebase not ready", {
+          hasFirestore: Boolean(fs),
+          hasStorage: Boolean(storage),
+        })
+        return
+      }
+      setSyncing(true)
+      setSyncPhase("running")
+      setLastError(null)
+      try {
+        await runPushOnly(fs, storage, user.uid)
+        // Push-only uploads every local-only/local-newer card too, so
+        // nothing this session edited is still pending afterward.
+        clearSessionEdits()
+        syncLog("pushNow finished OK")
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        syncLog("pushNow failed", { error: msg })
+        setLastError(msg)
+        throw e
+      } finally {
+        setSyncing(false)
+        setSyncPhase("idle")
+      }
+    })()
+
+    operationInFlightRef.current = run.finally(() => {
+      operationInFlightRef.current = null
+    })
+    return operationInFlightRef.current
+  }, [offlineOnly, user])
+
+  const syncEditsNow = useCallback(async () => {
+    if (offlineOnly || !user) {
+      syncLog("sync edits skipped", { offlineOnly, hasUser: Boolean(user) })
+      return
+    }
+    if (operationInFlightRef.current) {
+      syncLog("sync edits already in flight — joining existing run")
+      return operationInFlightRef.current
+    }
+
+    const run = (async () => {
+      clearSyncLog()
+      syncLog("syncEditsNow invoked", { uid: user.uid })
+      const fs = getFirestoreDb()
+      const storage = getFirebaseStorage()
+      if (!fs || !storage) {
+        syncLog("sync edits aborted: Firebase not ready", {
+          hasFirestore: Boolean(fs),
+          hasStorage: Boolean(storage),
+        })
+        return
+      }
+      setSyncing(true)
+      setSyncPhase("running")
+      setLastError(null)
+      try {
+        // pushSessionEditsNow clears the specific cards it pushed itself,
+        // once it's confirmed they actually went out.
+        await pushSessionEditsNow(user)
+        syncLog("syncEditsNow finished OK")
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        syncLog("syncEditsNow failed", { error: msg })
+        setLastError(msg)
+        throw e
+      } finally {
+        setSyncing(false)
+        setSyncPhase("idle")
+      }
+    })()
+
+    operationInFlightRef.current = run.finally(() => {
+      operationInFlightRef.current = null
+    })
+    return operationInFlightRef.current
+  }, [offlineOnly, user])
 
   const syncStatusLabel = useMemo(() => {
     if (syncPhase === "conflict") {
@@ -194,22 +298,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return ""
   }, [syncPhase, syncing, syncLogEntries])
 
-  // No sync to wait for when offline or signed out; otherwise wait until this
-  // user's first sync of the session has settled.
-  const initialSyncComplete =
-    offlineOnly || !user || completedSyncUid === user.uid
-
   const value = useMemo(
     () => ({
       syncing,
       syncPhase,
       syncStatusLabel,
       syncProgress,
-      initialSyncComplete,
       syncLog: syncLogEntries,
       lastError,
       lastSyncedAt,
       syncNow,
+      pushNow,
+      syncEditsNow,
       conflictActive: activeConflict != null,
       conflictResolutionVersion,
     }),
@@ -218,11 +318,12 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       syncPhase,
       syncStatusLabel,
       syncProgress,
-      initialSyncComplete,
       syncLogEntries,
       lastError,
       lastSyncedAt,
       syncNow,
+      pushNow,
+      syncEditsNow,
       activeConflict,
       conflictResolutionVersion,
     ],

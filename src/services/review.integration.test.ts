@@ -160,7 +160,7 @@ describe("review + scheduling (IndexedDB)", () => {
   })
 
   it("creates due rows for each review mode and updates after judgement", async () => {
-    const deck = await createDeck("D", null)
+    const deck = await createDeck("D")
     const card = await createVocabularyCard(
       deck.id,
       {
@@ -171,7 +171,6 @@ describe("review + scheduling (IndexedDB)", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     const rowBefore = await loadSchedulingRow(
@@ -193,7 +192,6 @@ describe("review + scheduling (IndexedDB)", () => {
       1500,
       true,
       snap,
-      null,
     )
 
     const undoRow = await db.reviewUndo.orderBy("ts").last()
@@ -208,7 +206,7 @@ describe("review + scheduling (IndexedDB)", () => {
   })
 
   it("undoLastJudgement restores prior scheduling row", async () => {
-    const deck = await createDeck("D", null)
+    const deck = await createDeck("D")
     const card = await createVocabularyCard(
       deck.id,
       {
@@ -219,7 +217,6 @@ describe("review + scheduling (IndexedDB)", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     const snap = await prepareJudgement(card.id, "vocab_oral_en")
@@ -231,14 +228,13 @@ describe("review + scheduling (IndexedDB)", () => {
       800,
       true,
       snap,
-      null,
     )
     const afterDue = (await loadSchedulingRow(card.id, "vocab_oral_en"))!.due
     expect(afterDue).not.toBe(beforeDue)
 
     const eventId = (await db.reviewEvents.orderBy("ts").last())!.id
 
-    const undone = await undoLastJudgement(null)
+    const undone = await undoLastJudgement()
     expect(undone).not.toBeNull()
     const restored = await loadSchedulingRow(card.id, "vocab_oral_en")
     expect(restored!.due).toBe(beforeDue)
@@ -253,7 +249,7 @@ describe("review + scheduling (IndexedDB)", () => {
     // either row. `reviewUndo` is meant to be a single-slot record of just
     // the most recent judgement, so undo must always act on the second one
     // here regardless of id ordering.
-    const deck = await createDeck("D", null)
+    const deck = await createDeck("D")
     const first = await createVocabularyCard(
       deck.id,
       {
@@ -264,7 +260,6 @@ describe("review + scheduling (IndexedDB)", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
     const second = await createVocabularyCard(
       deck.id,
@@ -276,24 +271,23 @@ describe("review + scheduling (IndexedDB)", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     const frozenNow = 1_000_000
     const nowSpy = vi.spyOn(Date, "now").mockReturnValue(frozenNow)
     try {
       const snapFirst = await prepareJudgement(first.id, "vocab_oral_en")
-      await commitJudgement(first.id, "vocab_oral_en", 800, true, snapFirst, null)
+      await commitJudgement(first.id, "vocab_oral_en", 800, true, snapFirst)
 
       const secondBeforeDue = (
         await loadSchedulingRow(second.id, "vocab_oral_en")
       )!.due
       const snapSecond = await prepareJudgement(second.id, "vocab_oral_en")
-      await commitJudgement(second.id, "vocab_oral_en", 800, true, snapSecond, null)
+      await commitJudgement(second.id, "vocab_oral_en", 800, true, snapSecond)
 
       expect(await db.reviewUndo.count()).toBe(1)
 
-      const undone = await undoLastJudgement(null)
+      const undone = await undoLastJudgement()
       expect(undone?.card.id).toBe(second.id)
       expect(
         (await loadSchedulingRow(second.id, "vocab_oral_en"))!.due,

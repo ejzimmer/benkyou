@@ -31,7 +31,6 @@ import {
   vocabularyFromGrammarContent,
 } from "../../services/cards"
 import { deleteImageBlob, saveImageBlob } from "../../services/media"
-import { useAuth } from "../../lib/auth/AuthContext"
 import { db } from "../../lib/db/schema"
 import { CardImage } from "../../ui/CardImage"
 import { normalizeJapanese } from "../../lib/japanese/normalize"
@@ -93,7 +92,6 @@ export function CardEditPage() {
   const { deckId = "", cardId: cardIdParam = "" } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const isNewRoute = useMatch({ path: "/decks/:deckId/cards/new", end: true })
   const cardId = cardIdParam ? decodeURIComponent(cardIdParam) : ""
   const isNew = Boolean(isNewRoute) || cardId === "new" || !cardId
@@ -263,31 +261,28 @@ export function CardEditPage() {
         const emsg = validateVocabulary(vocab)
         if (emsg) throw new Error(emsg)
         if (isNew) {
-          await createVocabularyCard(deckId, vocab, user)
+          await createVocabularyCard(deckId, vocab)
           resetNewCardForm()
           return
         } else {
-          await saveCard(currentCardDraft(), user)
+          await saveCard(currentCardDraft())
         }
       } else {
         const normalizedGrammar = normalizeGrammarContent(grammar)
         const emsg = validateGrammar(normalizedGrammar)
         if (emsg) throw new Error(emsg)
         if (isNew) {
-          await createGrammarCard(deckId, normalizedGrammar, user)
+          await createGrammarCard(deckId, normalizedGrammar)
           resetNewCardForm()
           return
         } else {
-          await saveCard(
-            {
-              id: cardId,
-              deckId,
-              kind: "grammar",
-              content: normalizedGrammar,
-              updatedAt: Date.now(),
-            },
-            user,
-          )
+          await saveCard({
+            id: cardId,
+            deckId,
+            kind: "grammar",
+            content: normalizedGrammar,
+            updatedAt: Date.now(),
+          })
         }
       }
       navigate(returnTo ?? `/decks/${deckId}`)
@@ -303,7 +298,7 @@ export function CardEditPage() {
   function onConfirmDeleteCard() {
     setConfirmingDelete(false)
     navigate(returnTo ?? `/decks/${deckId}`)
-    deleteCard(cardId, user).catch(console.error)
+    deleteCard(cardId).catch(console.error)
   }
 
   async function onFindDuplicates() {
@@ -317,7 +312,7 @@ export function CardEditPage() {
     setMergeErr(null)
     setMergingId(match.id)
     try {
-      const merged = await mergeCards(currentCardDraft(), match, user)
+      const merged = await mergeCards(currentCardDraft(), match)
       if (merged.kind === "vocabulary") {
         setVocab(merged.content)
         setReadingsMapDraft(
@@ -353,7 +348,7 @@ export function CardEditPage() {
     const ids: string[] = []
     try {
       for (const file of files) {
-        ids.push(await saveImageBlob(file, user))
+        ids.push(await saveImageBlob(file))
       }
     } catch (x) {
       setErr(x instanceof Error ? x.message : "Image upload failed")
@@ -383,10 +378,13 @@ export function CardEditPage() {
           images: vocab.images.filter((imgId) => imgId !== id),
         }
         if (!isNew) {
-          await saveCard(
-            { id: cardId, deckId, kind: "vocabulary", content: updated, updatedAt: Date.now() },
-            user,
-          )
+          await saveCard({
+            id: cardId,
+            deckId,
+            kind: "vocabulary",
+            content: updated,
+            updatedAt: Date.now(),
+          })
         }
         setVocab(updated)
       } else {
@@ -395,10 +393,13 @@ export function CardEditPage() {
           images: grammar.images.filter((imgId) => imgId !== id),
         }
         if (!isNew) {
-          await saveCard(
-            { id: cardId, deckId, kind: "grammar", content: updated, updatedAt: Date.now() },
-            user,
-          )
+          await saveCard({
+            id: cardId,
+            deckId,
+            kind: "grammar",
+            content: updated,
+            updatedAt: Date.now(),
+          })
         }
         setGrammar(updated)
       }
@@ -407,7 +408,7 @@ export function CardEditPage() {
       // still back a different card — only delete the blob once nothing else
       // points at it.
       if (!(await isMediaReferencedByOtherCards(id, cardId))) {
-        await deleteImageBlob(id, user)
+        await deleteImageBlob(id)
       }
     } catch (x) {
       setErr(x instanceof Error ? x.message : "Failed to remove image")

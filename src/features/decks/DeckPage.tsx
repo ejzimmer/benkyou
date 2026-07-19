@@ -4,7 +4,6 @@ import { db, type SchedulingRow } from "../../lib/db/schema"
 import { deleteDeck } from "../../services/decks"
 import { unsuspendCard } from "../../services/cards"
 import { isSuspendedDue } from "../../lib/srs/schedule"
-import { useAuth } from "../../lib/auth/AuthContext"
 import { useMemo, useState } from "react"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
@@ -14,7 +13,6 @@ import { NextReviewBar } from "../../ui/NextReviewBar"
 export function DeckPage() {
   const { deckId = "" } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const deck = useLiveQuery(() => db.decks.get(deckId), [deckId])
   const cards = useLiveQuery(
     () => db.cards.where("deckId").equals(deckId).toArray(),
@@ -66,7 +64,7 @@ export function DeckPage() {
   function onConfirmDeleteDeck() {
     setConfirmingDelete(false)
     navigate("/")
-    deleteDeck(deckId, user).catch(console.error)
+    deleteDeck(deckId).catch(console.error)
   }
 
   if (deck === undefined) return <div className="page">Loading…</div>
@@ -128,7 +126,7 @@ export function DeckPage() {
                           className="btn secondary unsuspend-btn"
                           title="Resume reviewing this card"
                           aria-label="Resume reviewing this card"
-                          onClick={() => unsuspendCard(c.id, user).catch(console.error)}
+                          onClick={() => unsuspendCard(c.id).catch(console.error)}
                         >
                           再開
                         </button>
