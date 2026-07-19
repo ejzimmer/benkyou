@@ -40,10 +40,13 @@ function isTouchPrimaryDevice() {
   return window.matchMedia("(hover: none) and (pointer: coarse)").matches
 }
 
-// Sizes an inline gap input to roughly fit its expected answer: 6 characters
-// wide normally, or answer length + 4 once the answer itself exceeds 6.
-function gapInputWidthStyle(answer: string): CSSProperties {
-  const length = Array.from(answer).length
+// Sizes an inline gap input to roughly fit the given text: 6 characters wide
+// normally, or length + 4 once the text itself exceeds 6. Callers should pass
+// the reading of the expected answer when one is available (readings are
+// typed in hiragana, which runs longer than the kanji answer itself), falling
+// back to the answer's own text otherwise.
+function gapInputWidthStyle(text: string): CSSProperties {
+  const length = Array.from(text).length
   return { width: length > 6 ? `${length + 4}ch` : "6ch" }
 }
 
@@ -460,18 +463,26 @@ export function ReviewSessionPromptBody({
               readings={card.content.readings}
               renderGap={
                 !revealed && hasInlineGap
-                  ? (gapIndex) => (
-                      <TypingAnswerInput
-                        value={gapInputValue(gapIndex)}
-                        onChange={(value) => onGapInputChange(gapIndex, value)}
-                        onSubmit={onTypedSubmit}
-                        focusKey={focusKey}
-                        className="inline-gap-input"
-                        style={gapInputWidthStyle(gapAnswerText(gapIndex))}
-                        ariaLabel={`Construction gap ${gapIndex + 1}`}
-                        autoFocus={gapIndex === 0}
-                      />
-                    )
+                  ? (gapIndex) => {
+                      const answerText = gapAnswerText(gapIndex)
+                      return (
+                        <TypingAnswerInput
+                          value={gapInputValue(gapIndex)}
+                          onChange={(value) => onGapInputChange(gapIndex, value)}
+                          onSubmit={onTypedSubmit}
+                          focusKey={focusKey}
+                          className="inline-gap-input"
+                          style={gapInputWidthStyle(
+                            readingForConstruction(
+                              answerText,
+                              card.content.readings,
+                            ) ?? answerText,
+                          )}
+                          ariaLabel={`Construction gap ${gapIndex + 1}`}
+                          autoFocus={gapIndex === 0}
+                        />
+                      )
+                    }
                   : revealed
                     ? (gapIndex) => (
                         <span className="gap-filled">
