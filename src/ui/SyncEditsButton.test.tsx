@@ -4,10 +4,7 @@ import userEvent from "@testing-library/user-event"
 import { SyncEditsButton } from "./SyncEditsButton"
 import { clearSessionEdits, markCardEdited } from "../lib/sync/sessionEdits"
 
-const pushSessionEditsNow = vi.fn()
-vi.mock("../services/decks", () => ({
-  pushSessionEditsNow: (...args: unknown[]) => pushSessionEditsNow(...args),
-}))
+const syncEditsNow = vi.fn()
 
 let mockAuth: { user: { uid: string } | null; offlineOnly: boolean } = {
   user: { uid: "u1" },
@@ -17,11 +14,20 @@ vi.mock("../lib/auth/AuthContext", () => ({
   useAuth: () => mockAuth,
 }))
 
+let mockSyncing = false
+vi.mock("../lib/sync/SyncContext", () => ({
+  useSync: () => ({
+    syncEditsNow: (...args: unknown[]) => syncEditsNow(...args),
+    syncing: mockSyncing,
+  }),
+}))
+
 describe("SyncEditsButton", () => {
   beforeEach(() => {
     clearSessionEdits()
-    pushSessionEditsNow.mockReset()
+    syncEditsNow.mockReset()
     mockAuth = { user: { uid: "u1" }, offlineOnly: false }
+    mockSyncing = false
   })
 
   it("renders nothing when there are no session edits", () => {
@@ -52,9 +58,16 @@ describe("SyncEditsButton", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument()
   })
 
-  it("pushes edits on click and disappears once the push clears them", async () => {
+  it("is disabled while a sync/push/sync-edits operation is already in flight", () => {
+    mockSyncing = true
     markCardEdited("card-1")
-    pushSessionEditsNow.mockImplementation(async () => {
+    render(<SyncEditsButton />)
+    expect(screen.getByRole("button", { name: /syncing/i })).toBeDisabled()
+  })
+
+  it("calls syncEditsNow (which shares SyncContext's in-flight guard) on click and disappears once it clears the edits", async () => {
+    markCardEdited("card-1")
+    syncEditsNow.mockImplementation(async () => {
       clearSessionEdits()
     })
     const user = userEvent.setup()
@@ -62,13 +75,13 @@ describe("SyncEditsButton", () => {
 
     await user.click(screen.getByRole("button", { name: /sync edits/i }))
 
-    expect(pushSessionEditsNow).toHaveBeenCalledWith({ uid: "u1" })
+    expect(syncEditsNow).toHaveBeenCalledTimes(1)
     expect(screen.queryByRole("button")).not.toBeInTheDocument()
   })
 
   it("shows the push error and keeps the button (edits are still pending)", async () => {
     markCardEdited("card-1")
-    pushSessionEditsNow.mockRejectedValue(new Error("network down"))
+    syncEditsNow.mockRejectedValue(new Error("network down"))
     const user = userEvent.setup()
     render(<SyncEditsButton />)
 

@@ -4,7 +4,6 @@ import { createDeck } from "../../services/decks"
 import { getDueCountsByDeck } from "../../services/review"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
-import { clearSessionEdits } from "../../lib/sync/sessionEdits"
 import { useState } from "react"
 import { useDebouncedQuery } from "../../lib/useDebouncedQuery"
 import { AppIcon } from "../../ui/AppIcon"
@@ -40,7 +39,6 @@ export function DeckListPage() {
     setSyncErr(null)
     try {
       await syncNow()
-      clearSessionEdits()
     } catch (x) {
       setSyncErr(x instanceof Error ? x.message : "Sync failed")
     }

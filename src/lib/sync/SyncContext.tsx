@@ -24,6 +24,8 @@ import {
   syncLog,
   type SyncLogEntry,
 } from "./syncLog"
+import { clearSessionEdits } from "./sessionEdits"
+import { pushSessionEditsNow } from "../../services/decks"
 import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
 
 export type SyncPhase = "idle" | "running" | "conflict"
@@ -40,6 +42,8 @@ type SyncState = {
   syncNow: () => Promise<void>
   /** Push-only: uploads local changes without pulling or resolving conflicts. */
   pushNow: () => Promise<void>
+  /** Force-pushes just the cards edited/created this session, no merge. */
+  syncEditsNow: () => Promise<void>
   conflictActive: boolean
   /**
    * Bumped once a sync that hit at least one conflict has settled. A review
@@ -115,8 +119,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  // Shared across syncNow/pushNow so the two can't run concurrently against
-  // Firestore — calling either while one is already in flight just joins it.
+  // Shared across syncNow/pushNow/syncEditsNow so they can't run concurrently
+  // against Firestore — calling one while another is already in flight just
+  // joins it.
   const operationInFlightRef = useRef<Promise<void> | null>(null)
 
   const syncNow = useCallback(async () => {
@@ -157,6 +162,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           onProgress: setSyncProgress,
         })
         setLastSyncedAt(Date.now())
+        // A full sync pushes every local-only/local-newer card, so nothing
+        // this session edited is still pending afterward.
+        clearSessionEdits()
         syncLog("syncNow finished OK")
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -210,10 +218,60 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setLastError(null)
       try {
         await runPushOnly(fs, storage, user.uid)
+        // Push-only uploads every local-only/local-newer card too, so
+        // nothing this session edited is still pending afterward.
+        clearSessionEdits()
         syncLog("pushNow finished OK")
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
         syncLog("pushNow failed", { error: msg })
+        setLastError(msg)
+        throw e
+      } finally {
+        setSyncing(false)
+        setSyncPhase("idle")
+      }
+    })()
+
+    operationInFlightRef.current = run.finally(() => {
+      operationInFlightRef.current = null
+    })
+    return operationInFlightRef.current
+  }, [offlineOnly, user])
+
+  const syncEditsNow = useCallback(async () => {
+    if (offlineOnly || !user) {
+      syncLog("sync edits skipped", { offlineOnly, hasUser: Boolean(user) })
+      return
+    }
+    if (operationInFlightRef.current) {
+      syncLog("sync edits already in flight — joining existing run")
+      return operationInFlightRef.current
+    }
+
+    const run = (async () => {
+      clearSyncLog()
+      syncLog("syncEditsNow invoked", { uid: user.uid })
+      const fs = getFirestoreDb()
+      const storage = getFirebaseStorage()
+      if (!fs || !storage) {
+        syncLog("sync edits aborted: Firebase not ready", {
+          hasFirestore: Boolean(fs),
+          hasStorage: Boolean(storage),
+        })
+        return
+      }
+      setSyncing(true)
+      setSyncPhase("running")
+      setLastError(null)
+      try {
+        // pushSessionEditsNow clears the specific cards it pushed itself,
+        // once it's confirmed they actually went out.
+        await pushSessionEditsNow(user)
+        syncLog("syncEditsNow finished OK")
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        syncLog("syncEditsNow failed", { error: msg })
         setLastError(msg)
         throw e
       } finally {
@@ -251,6 +309,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       lastSyncedAt,
       syncNow,
       pushNow,
+      syncEditsNow,
       conflictActive: activeConflict != null,
       conflictResolutionVersion,
     }),
@@ -264,6 +323,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       lastSyncedAt,
       syncNow,
       pushNow,
+      syncEditsNow,
       activeConflict,
       conflictResolutionVersion,
     ],

@@ -2,7 +2,6 @@ import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
-import { clearSessionEdits } from "../../lib/sync/sessionEdits"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 
 const CONFETTI_COLORS = [
@@ -55,7 +54,6 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
     setUploadError(null)
     try {
       await pushNow()
-      clearSessionEdits()
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : "Failed to upload changes")
     }

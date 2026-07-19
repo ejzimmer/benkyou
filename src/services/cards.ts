@@ -26,7 +26,7 @@ import {
   serializeFsrs,
 } from "../lib/srs/schedule"
 import { recordTombstone } from "../lib/sync/tombstones"
-import { markCardEdited } from "../lib/sync/sessionEdits"
+import { markCardEdited, removeSessionEditedCardIds } from "../lib/sync/sessionEdits"
 
 export function validateVocabulary(content: VocabularyCardContent): string | null {
   if (!content.wordJa.trim()) return "Japanese word is required"
@@ -260,6 +260,10 @@ export async function deleteCard(
     await db.cards.delete(cardId)
     await db.scheduling.where("cardId").equals(cardId).delete()
   })
+
+  // A deleted card can't be pushed by "Sync edits" any more — drop it so the
+  // button doesn't keep counting it, or silently no-op a push for it later.
+  removeSessionEditedCardIds([cardId])
 }
 
 export function defaultVocabulary(): VocabularyCardContent {
