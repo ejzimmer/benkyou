@@ -11,7 +11,7 @@ import type {
   GrammarCardContent,
   VocabularyCardContent,
 } from "../../domain/types"
-import { CARD_KIND_LABELS, containsKanji } from "../../domain/types"
+import { CARD_KIND_LABELS } from "../../domain/types"
 import { countGaps } from "../../domain/grammarGaps"
 import { isKanaOnly } from "../../domain/vocabularyContent"
 import { isSingleSided } from "../../domain/grammarContent"
@@ -512,11 +512,6 @@ export function CardEditPage() {
                 required
               />
             </label>
-            {!containsKanji(vocab.wordJa) && (
-              <p className="muted small">
-                Kana-only words do not need a reading.
-              </p>
-            )}
             <p className="muted small">
               Include at least one of: pronunciation (for kanji words),
               meaning, or an image.
