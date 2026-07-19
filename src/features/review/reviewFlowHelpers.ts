@@ -140,14 +140,6 @@ export function requiresTyping(mode: ReviewModeId): boolean {
   )
 }
 
-/**
- * The generic mode heading is visually hidden for every mode — it stays in
- * the DOM for screen-reader heading navigation only.
- */
-export function modeHeadingVisible(_mode: ReviewModeId): boolean {
-  return false
-}
-
 export function expectedAnswer(card: Card, mode: ReviewModeId): string {
   if (mode === "vocab_type_reading") {
     if (card.kind !== "vocabulary") return ""
