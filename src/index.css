@@ -301,6 +301,7 @@ textarea {
   color: inherit;
   color-scheme: dark;
   caret-color: var(--blue);
+  font: inherit;
 }
 
 .input::selection,
@@ -1126,9 +1127,14 @@ fieldset.plain legend {
   text-align: left;
 }
 
+/* Matches `.reading-answer-value`'s font-size — the revealed correct answer
+   is shown at the same size in the same spot, so revealing it doesn't read
+   as a resize. No `max-width` cap: the input fills its label's already-capped
+   `min(22rem, 100%)` box exactly, so it shares the label's centered position
+   (and left edge) instead of sitting left-biased within a wider box. */
 .review-answer-prompt .input {
   color: #e8e8f0;
-  max-width: 75%;
+  font-size: 1.5rem;
 }
 
 /* "Type the Japanese word": the input (before reveal) and its eventual
@@ -1166,7 +1172,7 @@ fieldset.plain legend {
   padding: 0.5rem 0.65rem;
   border: 1px solid transparent;
   border-radius: 8px;
-  font-size: 1.1rem;
+  font-size: 1.5rem;
 }
 
 /* A red maru (◯) is how a Japanese teacher marks a correct answer on paper;
