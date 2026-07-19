@@ -11,7 +11,7 @@ import type {
   GrammarCardContent,
   VocabularyCardContent,
 } from "../../domain/types"
-import { CARD_KIND_LABELS, containsKanji } from "../../domain/types"
+import { CARD_KIND_LABELS } from "../../domain/types"
 import { countGaps } from "../../domain/grammarGaps"
 import { isKanaOnly } from "../../domain/vocabularyContent"
 import { isSingleSided } from "../../domain/grammarContent"
@@ -127,25 +127,40 @@ export function CardEditPage() {
   const [mergingId, setMergingId] = useState<string | null>(null)
   const [mergeErr, setMergeErr] = useState<string | null>(null)
 
-  const duplicateJapaneseCards = useLiveQuery(
+  const currentJapanese = kind === "vocabulary" ? vocab.wordJa : grammar.construction
+  const normalizedCurrentJapanese = normalizeJapanese(currentJapanese)
+
+  // useLiveQuery resolves asynchronously, so its result can still reflect a
+  // previously-typed word for a render or two after the field itself has
+  // moved on (e.g. cleared by resetNewCardForm() on save, or replaced by a
+  // paste). Tagging each result with the word it was computed for lets the
+  // read below detect and ignore a stale result rather than trusting
+  // whatever the query last returned.
+  const duplicateJapaneseCheck = useLiveQuery(
     async () => {
-      if (!isNew) return []
-      const currentJapanese =
-        kind === "vocabulary" ? vocab.wordJa : grammar.construction
-      const normalizedCurrentJapanese = normalizeJapanese(currentJapanese)
-      if (!normalizedCurrentJapanese) return []
+      if (!isNew || !normalizedCurrentJapanese) {
+        return { forWord: normalizedCurrentJapanese, cards: [] as Card[] }
+      }
       const cards = await db.cards.toArray()
-      return cards.filter(
-        (card) =>
-          normalizeJapanese(japaneseWordForCard(card)) ===
-          normalizedCurrentJapanese,
-      )
+      return {
+        forWord: normalizedCurrentJapanese,
+        cards: cards.filter(
+          (card) =>
+            normalizeJapanese(japaneseWordForCard(card)) ===
+            normalizedCurrentJapanese,
+        ),
+      }
     },
-    [isNew, kind, vocab.wordJa, grammar.construction],
+    [isNew, normalizedCurrentJapanese],
   )
 
+  const duplicateJapaneseCards =
+    duplicateJapaneseCheck?.forWord === normalizedCurrentJapanese
+      ? duplicateJapaneseCheck.cards
+      : undefined
+
   const duplicateJapaneseWarning =
-    isNew && duplicateJapaneseCards?.length
+    isNew && normalizedCurrentJapanese && duplicateJapaneseCards?.length
       ? (() => {
           const count = duplicateJapaneseCards.length
           const fieldName =
@@ -513,11 +528,6 @@ export function CardEditPage() {
                 required
               />
             </label>
-            {!containsKanji(vocab.wordJa) && (
-              <p className="muted small">
-                Kana-only words do not need a reading.
-              </p>
-            )}
             <p className="muted small">
               Include at least one of: pronunciation (for kanji words),
               meaning, or an image.
