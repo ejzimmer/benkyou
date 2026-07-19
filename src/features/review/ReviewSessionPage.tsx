@@ -11,9 +11,7 @@ import {
   type DueItem,
   type JudgementSnapshot,
 } from "../../services/review"
-import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
-import { ReviewSyncGate } from "./ReviewSyncGate"
 import { finalizeReadingAnswer, hasLatinScript } from "../../lib/japanese/normalize"
 import {
   isSynonymAnswer,
@@ -103,13 +101,7 @@ export function ReviewSessionPage() {
    */
   const setSearchParamsRef = useRef(setSearchParams)
   setSearchParamsRef.current = setSearchParams
-  const { user } = useAuth()
-  const {
-    initialSyncComplete,
-    syncProgress,
-    syncStatusLabel,
-    conflictResolutionVersion,
-  } = useSync()
+  const { conflictResolutionVersion } = useSync()
   const [sessionQueue, setSessionQueue] = useState<DueItem[]>([])
   const [phase, setPhase] = useState<Phase>("prompt")
   const [typed, setTyped] = useState("")
@@ -240,11 +232,9 @@ export function ReviewSessionPage() {
   }, [deckId])
 
   useEffect(() => {
-    // Wait for the first sync to finish so the queue reflects the latest cards
-    // and scheduling rather than stale local data. Also reload whenever a
-    // later sync resolves a conflict — that can overwrite the card/scheduling
-    // row this session is holding with the merged version.
-    if (!initialSyncComplete) return
+    // Reload whenever a manually-triggered sync resolves a conflict — that
+    // can overwrite the card/scheduling row this session is holding with the
+    // merged version.
     // Don't yank the current card out from under the user while they're
     // looking at the revealed answer, deciding correct/incorrect — defer
     // until they've moved back to a prompt.
@@ -254,7 +244,7 @@ export function ReviewSessionPage() {
     }
     load()
     // phaseRef is a ref mirror, read but intentionally not a dependency here.
-  }, [load, initialSyncComplete, conflictResolutionVersion])
+  }, [load, conflictResolutionVersion])
 
   useEffect(() => {
     if (phase === "prompt" && conflictReloadPendingRef.current) {
@@ -416,7 +406,6 @@ export function ReviewSessionPage() {
       promptToRevealMs,
       correct,
       snapshot,
-      user,
     )
 
     if (correct) {
@@ -446,7 +435,7 @@ export function ReviewSessionPage() {
   }
 
   async function onUndoAnswer() {
-    if (snapshot) await restoreSchedulingSnapshot(snapshot, user)
+    if (snapshot) await restoreSchedulingSnapshot(snapshot)
     setPhase("prompt")
     setSnapshot(null)
     setPromptToRevealMs(null)
@@ -463,7 +452,7 @@ export function ReviewSessionPage() {
     }
     setPendingIncorrectDelay(false)
 
-    const undone = await undoLastJudgement(user)
+    const undone = await undoLastJudgement()
     if (!undone) return
 
     setSessionQueue((q) => {
@@ -501,16 +490,6 @@ export function ReviewSessionPage() {
     // No prompt→reveal pass yet — grading uses neutral timing (null → Good if correct)
     setPromptToRevealMs(null)
     setStartedAt(null)
-  }
-
-  if (!initialSyncComplete) {
-    return (
-      <ReviewSyncGate
-        progress={syncProgress}
-        statusLabel={syncStatusLabel}
-        backTo={deckId ? `/decks/${deckId}` : "/"}
-      />
-    )
   }
 
   if (loading) return <div className="page review">Loading queue…</div>

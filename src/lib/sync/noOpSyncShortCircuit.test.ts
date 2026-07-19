@@ -10,9 +10,9 @@
  * "Safe to" is the point of this file: the fast path must positively rule
  * out every way remote or local could have moved, not just the common one
  * (a changed `updatedAt`). In particular, deleting an entity removes its
- * document immediately but only creates a tombstone via the debounced
- * safety-net push (`schedulePushAfterMutation`, up to 30s) — so a plain
- * timestamp check can't see a deletion that hasn't reached that point yet.
+ * local document immediately but only reaches Firestore the next time the
+ * user explicitly pushes (Sync now / Upload changes / Sync edits) — so a
+ * plain timestamp check can't see a deletion that hasn't been pushed yet.
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest"

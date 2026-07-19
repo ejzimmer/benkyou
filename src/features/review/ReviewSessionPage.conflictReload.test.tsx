@@ -46,9 +46,6 @@ vi.mock("../../services/review", () => ({
 let conflictResolutionVersion = 0
 vi.mock("../../lib/sync/SyncContext", () => ({
   useSync: () => ({
-    initialSyncComplete: true,
-    syncProgress: null,
-    syncStatusLabel: "",
     conflictResolutionVersion,
   }),
 }))

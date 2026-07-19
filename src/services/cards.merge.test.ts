@@ -45,7 +45,7 @@ describe("mergeCards", () => {
     await db.cards.put(target)
     await db.cards.put(source)
 
-    const merged = await mergeCards(target, source, null)
+    const merged = await mergeCards(target, source)
 
     expect(merged.content.images).toEqual(["img-source"])
     expect(await db.cards.get("card-source")).toBeUndefined()
@@ -70,7 +70,7 @@ describe("mergeCards", () => {
     await db.cards.put(target)
     await db.cards.put(source)
 
-    const merged = await mergeCards(target, source, null)
+    const merged = await mergeCards(target, source)
 
     expect(merged.content.images).toEqual(["img-1"])
   })

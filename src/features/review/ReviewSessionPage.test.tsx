@@ -25,7 +25,7 @@ vi.mock("../../lib/sync/firestoreSync", () => ({
 describe("ReviewSessionPage", () => {
   it("shows a plain empty state, not the completion screen, when nothing was ever due", async () => {
     await resetDatabase()
-    await createDeck("T", null)
+    await createDeck("T")
 
     render(
       <MemoryRouter initialEntries={["/review"]}>
@@ -46,7 +46,7 @@ describe("ReviewSessionPage", () => {
   it("shows a due card and advances after grading", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     await createVocabularyCard(
       deck.id,
       {
@@ -57,7 +57,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -89,7 +88,7 @@ describe("ReviewSessionPage", () => {
   it("after incorrect, does not flash next card answer during queue rotation gap", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     await createVocabularyCard(
       deck.id,
       {
@@ -100,7 +99,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
     await createVocabularyCard(
       deck.id,
@@ -112,7 +110,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -145,7 +142,7 @@ describe("ReviewSessionPage", () => {
   it("returns from card edit to the same review card and mode", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     const firstCard = await createVocabularyCard(
       deck.id,
       {
@@ -156,7 +153,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
     const secondCard = await createVocabularyCard(
       deck.id,
@@ -168,7 +164,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -220,7 +215,7 @@ describe("ReviewSessionPage", () => {
   it("keeps a typed but unrevealed answer after returning from card edit", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     await createVocabularyCard(
       deck.id,
       {
@@ -231,7 +226,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -266,7 +260,7 @@ describe("ReviewSessionPage", () => {
   it("keeps the revealed answer showing after returning from card edit", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     await createVocabularyCard(
       deck.id,
       {
@@ -277,7 +271,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -316,7 +309,7 @@ describe("ReviewSessionPage", () => {
   it("keeps the question visible when the answer is shown", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     await createVocabularyCard(
       deck.id,
       {
@@ -327,7 +320,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -359,7 +351,7 @@ describe("ReviewSessionPage", () => {
   it("keeps the question visible after undo last judgement reopens the answer", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     await createVocabularyCard(
       deck.id,
       {
@@ -370,7 +362,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -411,7 +402,7 @@ describe("ReviewSessionPage", () => {
   it("restores the entered answer after undoing the last judgement", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     await createVocabularyCard(
       deck.id,
       {
@@ -422,7 +413,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -465,7 +455,7 @@ describe("ReviewSessionPage", () => {
   it("reveals the aligned reading diff for an incorrect hiragana answer", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("Reading", null)
+    const deck = await createDeck("Reading")
     await createVocabularyCard(
       deck.id,
       {
@@ -476,7 +466,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -511,7 +500,7 @@ describe("ReviewSessionPage", () => {
   it("blocks submitting a reading answer that contains kanji, instead of grading it", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     await createVocabularyCard(
       deck.id,
       {
@@ -522,7 +511,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -552,7 +540,7 @@ describe("ReviewSessionPage", () => {
   it("blocks submitting a kana-only answer for a type-the-word question whose answer has kanji", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     const card = await createVocabularyCard(
       deck.id,
       {
@@ -563,7 +551,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -597,7 +584,7 @@ describe("ReviewSessionPage", () => {
   it("blocks submitting an English answer for a type-the-word question, instead of grading it", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     const card = await createVocabularyCard(
       deck.id,
       {
@@ -608,7 +595,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -642,7 +628,7 @@ describe("ReviewSessionPage", () => {
   it("allows a correct answer that legitimately contains Latin script, e.g. a loanword", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     const card = await createVocabularyCard(
       deck.id,
       {
@@ -653,7 +639,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(
@@ -686,7 +671,7 @@ describe("ReviewSessionPage", () => {
   it("clears a validation warning once the answer is corrected, including after undoing the reveal", async () => {
     await resetDatabase()
     const user = userEvent.setup()
-    const deck = await createDeck("T", null)
+    const deck = await createDeck("T")
     await createVocabularyCard(
       deck.id,
       {
@@ -697,7 +682,6 @@ describe("ReviewSessionPage", () => {
         exampleSentences: [],
         synonymsJa: [],
       },
-      null,
     )
 
     render(

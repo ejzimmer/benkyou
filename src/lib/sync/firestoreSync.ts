@@ -155,9 +155,9 @@ export async function hasAnyRemoteChangesSince(
  * `hasAnyRemoteChangesSince` can only see a *new or updated* timestamp — it
  * can't see a document that's simply gone. Deleting a deck removes its
  * remote decks/cards/scheduling documents immediately, but the tombstone
- * that would otherwise explain the disappearance only reaches Firestore
- * later, via the debounced safety-net push (`schedulePushAfterMutation`,
- * up to 30s) — so there's a real window where an entity has vanished from
+ * that would otherwise explain the disappearance only reaches Firestore the
+ * next time the user explicitly pushes (Sync now / Upload changes / Sync
+ * edits) — so there's a real window where an entity has vanished from
  * remote with no trace of why. A plain document count (via Firestore's
  * count aggregation, not a full fetch) catches that: if remote now has
  * fewer decks/cards/scheduling than this device believes exist, something

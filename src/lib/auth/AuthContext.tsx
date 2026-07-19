@@ -19,6 +19,7 @@ import {
 } from "firebase/auth"
 import { getFirebaseApp, isFirebaseConfigured } from "../firebase"
 import { clearLastSyncedAt } from "../sync/runSync"
+import { clearSessionEdits } from "../sync/sessionEdits"
 
 type AuthCtx = {
   user: User | null
@@ -76,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!app) return
     await firebaseSignOut(getAuth(app))
     clearLastSyncedAt()
+    clearSessionEdits()
   }, [])
 
   const value = useMemo(

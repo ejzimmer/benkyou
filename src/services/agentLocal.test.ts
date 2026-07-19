@@ -24,19 +24,15 @@ describe("agentLocal", () => {
   })
 
   it("agentListDue includes card when scheduling is due", async () => {
-    const deck = await createDeck("T", null)
-    await createVocabularyCard(
-      deck.id,
-      {
-        wordJa: "本",
-        reading: "ほん",
-        definitionsEn: ["book"],
-        images: [],
-        exampleSentences: [],
-        synonymsJa: [],
-      },
-      null,
-    )
+    const deck = await createDeck("T")
+    await createVocabularyCard(deck.id, {
+      wordJa: "本",
+      reading: "ほん",
+      definitionsEn: ["book"],
+      images: [],
+      exampleSentences: [],
+      synonymsJa: [],
+    })
     const due = await agentListDue(Date.now() + 7 * 24 * 60 * 60 * 1000)
     expect(due.length).toBeGreaterThan(0)
   })
