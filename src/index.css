@@ -1691,16 +1691,17 @@ code {
 
 /* Fixed to the top of the viewport (rather than in-flow) so it floats above
    whichever page/header is showing, matching .sync-indicator-global's
-   approach for the bottom-right spinner. */
+   approach for the bottom-right spinner. Anchored top-right so it reads as
+   sitting to the right of each page's own header buttons (Sync now/user
+   menu on DeckListPage/SettingsPage) rather than competing with them. */
 .sync-edits-banner {
   position: fixed;
   top: 0.75rem;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 0.75rem;
   z-index: 30;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.35rem;
 }
 

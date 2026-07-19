@@ -30,18 +30,21 @@ describe("SyncEditsButton", () => {
     mockSyncing = false
   })
 
-  it("renders nothing when there are no session edits", () => {
+  it("shows a plain blue 'Sync' button when there are no session edits", () => {
     render(<SyncEditsButton />)
-    expect(screen.queryByRole("button")).not.toBeInTheDocument()
+    const button = screen.getByRole("button", { name: /^sync$/i })
+    expect(button).toBeInTheDocument()
+    expect(button).toHaveClass("btn", "secondary")
+    expect(button).not.toHaveClass("green")
   })
 
-  it("shows the count of edited cards once something has been edited", () => {
+  it("shows the count of edited cards and turns green once something has been edited", () => {
     markCardEdited("card-1")
     markCardEdited("card-2")
     render(<SyncEditsButton />)
-    expect(
-      screen.getByRole("button", { name: /sync edits \(2\)/i }),
-    ).toBeInTheDocument()
+    const button = screen.getByRole("button", { name: /sync \(2\)/i })
+    expect(button).toBeInTheDocument()
+    expect(button).toHaveClass("btn", "secondary", "green")
   })
 
   it("hides when offline-only, even with pending edits", () => {
@@ -65,7 +68,7 @@ describe("SyncEditsButton", () => {
     expect(screen.getByRole("button", { name: /syncing/i })).toBeDisabled()
   })
 
-  it("calls syncEditsNow (which shares SyncContext's in-flight guard) on click and disappears once it clears the edits", async () => {
+  it("calls syncEditsNow (which shares SyncContext's in-flight guard) on click and reverts to the plain blue state once it clears the edits", async () => {
     markCardEdited("card-1")
     syncEditsNow.mockImplementation(async () => {
       clearSessionEdits()
@@ -73,10 +76,11 @@ describe("SyncEditsButton", () => {
     const user = userEvent.setup()
     render(<SyncEditsButton />)
 
-    await user.click(screen.getByRole("button", { name: /sync edits/i }))
+    await user.click(screen.getByRole("button", { name: /sync \(1\)/i }))
 
     expect(syncEditsNow).toHaveBeenCalledTimes(1)
-    expect(screen.queryByRole("button")).not.toBeInTheDocument()
+    const button = screen.getByRole("button", { name: /^sync$/i })
+    expect(button).not.toHaveClass("green")
   })
 
   it("shows the push error and keeps the button (edits are still pending)", async () => {
@@ -85,9 +89,9 @@ describe("SyncEditsButton", () => {
     const user = userEvent.setup()
     render(<SyncEditsButton />)
 
-    await user.click(screen.getByRole("button", { name: /sync edits/i }))
+    await user.click(screen.getByRole("button", { name: /sync \(1\)/i }))
 
     expect(await screen.findByText("network down")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /sync edits/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /sync \(1\)/i })).toBeInTheDocument()
   })
 })
