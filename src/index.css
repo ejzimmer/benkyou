@@ -1163,6 +1163,15 @@ fieldset.plain legend {
   font-size: 1.5rem;
 }
 
+/* The typed text should land dead-center of the card, matching where the
+   revealed answer's centered text appears — the label's box above is
+   centered but text-align: left leaves a short typed answer hugging its
+   left edge instead. Scoped to inputs inside a label so `.inline-gap-input`
+   (which sits inline within a sentence, not in a label) is unaffected. */
+.review-answer-prompt label .input {
+  text-align: center;
+}
+
 /* "Type the Japanese word": the input (before reveal) and its eventual
    answer (after reveal) both sit centered in the same spot on the card, so
    revealing the answer reads as the input itself resolving in place rather
@@ -1184,7 +1193,12 @@ fieldset.plain legend {
   text-align: center;
 }
 
-.word-from-clue-correct {
+/* Shared by every "correct answer" display that pairs the answer text with
+   a maru mark: word-from-clue's dedicated correct state, and
+   AnswerComparison's correct case (used by the reading/construction typed
+   modes). */
+.word-from-clue-correct,
+.answer-correct-row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -1352,6 +1366,7 @@ fieldset.plain legend {
 .prompt-extras-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
 }
 
@@ -1379,8 +1394,8 @@ fieldset.plain legend {
 }
 
 .prompt-extras-chevron {
-  width: 1.1em;
-  height: 1.1em;
+  width: 1.6rem;
+  height: 1.6rem;
   transition:
     transform 0.2s ease,
     filter 0.15s ease;
