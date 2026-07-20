@@ -30,6 +30,7 @@ import {
   requiresTyping,
 } from "./reviewFlowHelpers"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
+import { UserMenu } from "../../ui/UserMenu"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
@@ -509,6 +510,9 @@ export function ReviewSessionPage() {
           <Link to={backTo} className="back-link" aria-label="Exit review">
             <ChevronLeftIcon className="back-chevron" />
           </Link>
+          <div className="review-header-menu">
+            <UserMenu />
+          </div>
         </header>
         <p className="muted">Nothing due right now.</p>
         <div className="toolbar">
@@ -544,9 +548,10 @@ export function ReviewSessionPage() {
         >
           <ChevronLeftIcon className="back-chevron" />
         </Link>
-        <p className="muted small review-header-count">
-          {sessionQueue.length} remaining
-        </p>
+        <div className="review-header-menu">
+          <p className="muted small">{sessionQueue.length} remaining</p>
+          <UserMenu />
+        </div>
         <div className="review-header-actions">
           <Link
             to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(

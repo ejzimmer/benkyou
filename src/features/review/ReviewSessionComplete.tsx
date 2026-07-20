@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
+import { UserMenu } from "../../ui/UserMenu"
 
 const CONFETTI_COLORS = [
   "var(--blue)",
@@ -65,6 +66,9 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
         <Link to={backTo} className="back-link" aria-label="Exit review">
           <ChevronLeftIcon className="back-chevron" />
         </Link>
+        <div className="review-header-menu">
+          <UserMenu />
+        </div>
       </header>
 
       <div className="review-complete-body">

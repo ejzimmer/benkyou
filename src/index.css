@@ -908,8 +908,25 @@ fieldset.plain legend {
   gap: 0.75rem;
 }
 
-.review-header-count {
+/* Groups the "N remaining" count with the user menu at the header's right
+   edge, and keeps the user menu there even on the "nothing due"/complete
+   headers where it's the only thing in this group — kept separate from
+   .review-header-actions so the two wrap onto their own lines rather than
+   this group's trigger (and its dropdown) ending up stranded mid-row.
+   `.review-header` has no margin-top clearance the way `.app-header` does
+   (see `.sync-edits-banner`), so the fixed sync-edits button — top-right,
+   same corner — would otherwise sit directly on top of this group instead
+   of beside it. Reserve horizontal room for it here rather than pushing
+   the header down: this page already reveals/scrolls the typed-answer
+   input into view on focus, and adding a margin-top tall enough to clear
+   the fixed button was enough extra page height to make that scroll
+   trigger, undoing the clearance it was meant to provide. */
+.review-header-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-left: auto;
+  margin-right: 7rem;
 }
 
 .review-header-actions {
@@ -1807,12 +1824,12 @@ code {
 /* Rendered once in App.tsx so it's visible on every page, regardless of
    that page's own header layout — fixed to the viewport rather than the
    in-flow header-actions slot it used to occupy on a couple of pages.
-   Anchored to the bottom-right corner rather than the top-right: only
-   DeckListPage/SettingsPage's `.app-header` reserves top-right space
-   (via its 40px margin-top) — DeckPage, CardEditPage, and especially
-   ReviewSessionPage's `.review-header` (whose "N remaining" counter and
-   Edit/Undo buttons are themselves right-aligned) all sit flush against
-   the top of the page, so a top-right badge would sit on top of them.
+   Anchored to the bottom-right corner rather than the top-right: pages
+   using `.app-header` (DeckListPage, SettingsPage, DeckPage, CardEditPage)
+   reserve top-right space via its 40px margin-top, but ReviewSessionPage's
+   `.review-header` only reserves *horizontal* room there (see
+   `.review-header-menu`'s margin-right) — it stays flush against the top
+   of the page, so a top-right badge would still sit on top of its content.
    Nothing in the app is pinned to the bottom, so that corner is safe. */
 .sync-indicator-global {
   position: fixed;
@@ -1833,8 +1850,10 @@ code {
 /* Fixed to the top of the viewport (rather than in-flow) so it floats above
    whichever page/header is showing, matching .sync-indicator-global's
    approach for the bottom-right spinner. Anchored top-right so it reads as
-   sitting to the right of each page's own header buttons (Sync now/user
-   menu on DeckListPage/SettingsPage) rather than competing with them. */
+   sitting to the right of each page's own header buttons rather than
+   competing with them — `.app-header` pages reserve space via margin-top,
+   and ReviewSessionPage's `.review-header-menu` reserves space via its own
+   margin-right (see that rule for why). */
 .sync-edits-banner {
   position: fixed;
   top: 0.75rem;

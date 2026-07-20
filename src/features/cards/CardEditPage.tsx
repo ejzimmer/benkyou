@@ -38,6 +38,7 @@ import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
+import { UserMenu } from "../../ui/UserMenu"
 import { Switch } from "../../ui/Switch"
 import {
   combinedReadingsToText,
@@ -449,10 +450,13 @@ export function CardEditPage() {
 
   return (
     <div className="page">
-      <header className="header">
+      <header className="header app-header">
         <PageHeading backTo={backTo} backLabel={returnTo ? "Back" : "Back to deck"}>
           {isNew ? "New card" : "Edit card"}
         </PageHeading>
+        <div className="header-actions">
+          <UserMenu />
+        </div>
       </header>
 
       {!isNew && (
