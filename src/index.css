@@ -885,7 +885,15 @@ fieldset.plain legend {
   gap: 0.75rem;
 }
 
-.review-header-count {
+/* Groups the "N remaining" count with the user menu at the header's right
+   edge, and keeps the user menu there even on the "nothing due"/complete
+   headers where it's the only thing in this group — kept separate from
+   .review-header-actions so the two wrap onto their own lines rather than
+   this group's trigger (and its dropdown) ending up stranded mid-row. */
+.review-header-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-left: auto;
 }
 

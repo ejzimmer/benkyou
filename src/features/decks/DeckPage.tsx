@@ -9,6 +9,7 @@ import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { NextReviewBar } from "../../ui/NextReviewBar"
+import { UserMenu } from "../../ui/UserMenu"
 
 export function DeckPage() {
   const { deckId = "" } = useParams()
@@ -72,10 +73,13 @@ export function DeckPage() {
 
   return (
     <div className="page">
-      <header className="header">
+      <header className="header app-header">
         <PageHeading backTo="/" backLabel="Back to decks">
           {deck.name}
         </PageHeading>
+        <div className="header-actions">
+          <UserMenu />
+        </div>
       </header>
 
       <div className="toolbar deck-toolbar">
