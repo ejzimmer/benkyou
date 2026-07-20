@@ -321,7 +321,7 @@ export function ReviewSessionPromptBody({
           <div className="phrase-reading-inputs">
             {kanjiSegments.map((seg, i) => (
               <label key={i} className="phrase-reading-input">
-                {seg.text}（ひらがなで）
+                <span className="input-label-text">{seg.text}（ひらがなで）</span>
                 <TypingAnswerInput
                   value={segInputValue(i)}
                   onChange={(value) => onSegInputChange(i, value)}
@@ -336,7 +336,7 @@ export function ReviewSessionPromptBody({
           </div>
         ) : (
           <label>
-            ひらがなで
+            <span className="input-label-text">ひらがなで</span>
             <TypingAnswerInput
               value={typed}
               onChange={onTypedChange}
@@ -389,7 +389,7 @@ export function ReviewSessionPromptBody({
     return (
       <div className="stack word-from-clue-input">
         <label>
-          日本語で
+          <span className="input-label-text">日本語で</span>
           <TypingAnswerInput
             value={typed}
             onChange={onTypedChange}
@@ -510,7 +510,7 @@ export function ReviewSessionPromptBody({
       <div className="stack">
         {!hasInlineGap && (
           <label>
-            Construction
+            <span className="input-label-text">Construction</span>
             <TypingAnswerInput
               value={typed}
               onChange={onTypedChange}
@@ -611,7 +611,7 @@ export function ReviewSessionPromptBody({
           <div className="phrase-reading-inputs">
             {kanjiSegments.map((seg, i) => (
               <label key={i} className="phrase-reading-input">
-                {seg.text}（ひらがなで）
+                <span className="input-label-text">{seg.text}（ひらがなで）</span>
                 <TypingAnswerInput
                   value={segInputValue(i)}
                   onChange={(value) => onSegInputChange(i, value)}
@@ -626,7 +626,7 @@ export function ReviewSessionPromptBody({
           </div>
         ) : (
           <label>
-            ひらがなで
+            <span className="input-label-text">ひらがなで</span>
             <TypingAnswerInput
               value={typed}
               onChange={onTypedChange}
