@@ -31,9 +31,11 @@ Tests use Vitest with `fake-indexeddb` standing in for Dexie under jsdom.
 
 ## Git / PR workflow
 
+This is a solo project. There is no other reviewer — no human, no bot, no CI approval gate — who will ever look at your PRs. Do not wait, pause, or ask permission before merging; that review and that merge are entirely yours to give.
+
 - Always create a PR, even if the user didn't explicitly ask for one. Develop on a feature branch (never commit directly to `main`), commit with a clear message, push, and open a PR against `main` (check for a PR template first).
-- Review the PR yourself — there will be no other reviews. Use `/code-review` on the diff and fix anything it surfaces.
-- Merge the PR yourself once you're happy with it. There's no need to keep the PR open waiting on outside activity (reviews, comments) that isn't coming.
+- Review the PR yourself — nobody else is going to. Use `/code-review` on the diff and fix anything it surfaces.
+- Merge the PR yourself once you're happy with it, in the same turn, without waiting on outside activity (reviews, approvals, comments) — none is coming. Don't leave a finished PR open "just in case" someone weighs in.
 
 ## Architecture
 
