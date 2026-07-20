@@ -574,19 +574,27 @@ export function ReviewSessionPage() {
         ) : (
           <div className="review-columns">
             <div className="review-question">
-              <ReviewSessionPromptBody
-                item={item}
-                typed={typed}
-                onTypedChange={handleTypedChange}
-                readingWarn={readingWarn}
-                synonymWarn={synonymWarn}
-                kanjiWarn={kanjiWarn}
-                latinWarn={latinWarn}
-                onTypedSubmit={() => tryShowAnswerRef.current()}
-                revealed={phase === "answer"}
-                column="question"
-                promptFocusToken={promptFocusToken}
-              />
+              <div className="review-question-content">
+                <ReviewSessionPromptBody
+                  item={item}
+                  typed={typed}
+                  onTypedChange={handleTypedChange}
+                  readingWarn={readingWarn}
+                  synonymWarn={synonymWarn}
+                  kanjiWarn={kanjiWarn}
+                  latinWarn={latinWarn}
+                  onTypedSubmit={() => tryShowAnswerRef.current()}
+                  revealed={phase === "answer"}
+                  column="question"
+                  promptFocusToken={promptFocusToken}
+                />
+              </div>
+              {/* Invisible twin of `.review-footer` — reserves the same
+                  space the answer card's real footer takes, so this card's
+                  text centers at the same height as the answer's. */}
+              <ReviewFooter className="review-question-footer-spacer" aria-hidden>
+                <span className="btn">Show answer</span>
+              </ReviewFooter>
             </div>
             <div className="review-answer">
               {/* Both layers stay mounted throughout — revealing the answer

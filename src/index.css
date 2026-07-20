@@ -983,10 +983,27 @@ fieldset.plain legend {
 }
 
 .review-question {
+  padding: 1.75rem 1.25rem 1rem;
+}
+
+/* Centers the question text in the space above `.review-question-footer-spacer`
+   below, so it lands at the same vertical position as the answer card's text —
+   which is centered above its own real `.review-footer` buttons. */
+.review-question-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 1.75rem 1.25rem 1rem;
+}
+
+/* Same size and position as the real `.review-footer` on the answer side,
+   just invisible — reserves matching space so the question text centers over
+   the same area the answer text does above its Correct/Incorrect buttons. */
+.review-question-footer-spacer {
+  visibility: hidden;
 }
 
 .review-answer {
@@ -1053,7 +1070,7 @@ fieldset.plain legend {
     align-items: stretch;
   }
 
-  .review-question {
+  .review-question-content {
     overflow-y: auto;
     /* Centering + overflow can otherwise hide the start of content that's
        taller than the card — "safe" falls back to top-aligned once it
@@ -1167,7 +1184,10 @@ fieldset.plain legend {
    revealed answer's centered text appears — the label's box above is
    centered but text-align: left leaves a short typed answer hugging its
    left edge instead. Scoped to inputs inside a label so `.inline-gap-input`
-   (which sits inline within a sentence, not in a label) is unaffected. */
+   (which sits inline within a sentence, not in a label) is unaffected.
+   Word-from-clue overrides this back to left below — its revealed answer is
+   left-aligned in the same box, not centered like the reading/construction
+   diff views this rule is for. */
 .review-answer-prompt label .input {
   text-align: center;
 }
@@ -1175,12 +1195,19 @@ fieldset.plain legend {
 /* "Type the Japanese word": the input (before reveal) and its eventual
    answer (after reveal) both sit centered in the same spot on the card, so
    revealing the answer reads as the input itself resolving in place rather
-   than a new block of content appearing elsewhere. */
+   than a new block of content appearing elsewhere. Text inside stays left
+   aligned (matching the label above it) — only the box itself is centered,
+   via the label's own width + auto margins. Specificity needs to beat
+   `.review-answer-prompt label .input` above (2 classes + 1 type) — hence
+   the extra `.review-answer-prompt` qualifier here. */
+.review-answer-prompt .word-from-clue-input .input {
+  text-align: left;
+}
+
 .word-from-clue-input {
   flex: 1;
   min-height: 0;
   justify-content: center;
-  text-align: center;
 }
 
 .word-from-clue-result {
@@ -1189,8 +1216,6 @@ fieldset.plain legend {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
-  text-align: center;
 }
 
 /* Shared by every "correct answer" display that pairs the answer text with
@@ -1210,6 +1235,15 @@ fieldset.plain legend {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+/* Matches the label's own box (width + auto margins) so the revealed word
+   lands at the same left-aligned starting position the input's typed text
+   had, rather than centering as a standalone shrink-wrapped row — the maru
+   just follows it, it doesn't recenter the pair. */
+.word-from-clue-correct {
+  width: min(22rem, 100%);
+  margin: 0 auto;
 }
 
 /* Mirrors .input's own box model (padding, border width, radius) with the
@@ -1268,6 +1302,9 @@ fieldset.plain legend {
   align-items: center;
   text-align: center;
   gap: 0.75rem;
+  /* Matches `.prompt-main`'s font-size so the revealed answer reads at the
+     same size as the question it's paired with. */
+  font-size: 1.5rem;
 }
 
 .compare-diff {
