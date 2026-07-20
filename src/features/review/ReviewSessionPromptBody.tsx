@@ -16,6 +16,7 @@ import {
 } from "../../domain/grammarGaps"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
 import { constructionReadingSegments } from "../../domain/grammarContent"
+import { containsKanji } from "../../domain/types"
 import {
   deriveFurigana,
   fullyCoveredSegments,
@@ -40,14 +41,31 @@ function isTouchPrimaryDevice() {
   return window.matchMedia("(hover: none) and (pointer: coarse)").matches
 }
 
-// Sizes an inline gap input to roughly fit the given text: 6 characters wide
-// normally, or length + 4 once the text itself exceeds 6. Callers should pass
-// the reading of the expected answer when one is available (readings are
-// typed in hiragana, which runs longer than the kanji answer itself), falling
-// back to the answer's own text otherwise.
-function gapInputWidthStyle(text: string): CSSProperties {
-  const length = Array.from(text).length
-  return { width: length > 6 ? `${length + 4}ch` : "6ch" }
+// A small "random" pad (1-3) added to a gap's width so a row of gaps doesn't
+// look mechanically uniform. Seeded from the text itself, rather than
+// Math.random(), so the same gap keeps the same width across re-renders
+// (e.g. every keystroke re-renders the whole prompt) instead of visibly
+// jittering as the user types.
+function seededPad(text: string): number {
+  let sum = 0
+  for (const ch of text) sum += ch.codePointAt(0) ?? 0
+  return (sum % 3) + 1
+}
+
+// Sizes an inline gap input to roughly fit what will actually be typed into
+// it: readings are typed in hiragana, which runs longer than a kanji answer
+// itself, so a kanji answer with a known reading is sized off the reading
+// rather than the kanji. A kanji answer with no reading available has no
+// hiragana length to go on, so it falls back to a rougher kanji-count-based
+// estimate.
+function gapInputWidthStyle(answerText: string, reading?: string): CSSProperties {
+  if (!containsKanji(answerText)) {
+    return { width: `${Array.from(answerText).length + seededPad(answerText)}ch` }
+  }
+  if (reading?.trim()) {
+    return { width: `${Array.from(reading).length + seededPad(reading)}ch` }
+  }
+  return { width: `${Array.from(answerText).length * 2.5}ch` }
 }
 
 function TypingAnswerInput({
@@ -473,10 +491,11 @@ export function ReviewSessionPromptBody({
                           focusKey={focusKey}
                           className="inline-gap-input"
                           style={gapInputWidthStyle(
+                            answerText,
                             readingForConstruction(
                               answerText,
                               card.content.readings,
-                            ) ?? answerText,
+                            ),
                           )}
                           ariaLabel={`Construction gap ${gapIndex + 1}`}
                           autoFocus={gapIndex === 0}
