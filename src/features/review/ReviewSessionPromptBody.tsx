@@ -213,7 +213,7 @@ export function ReviewSessionPromptBody({
     )
     const hasHidden = examples.length > 0
     return (
-      <div className="stack">
+      <div className="stack prompt-extras-anchor">
         <div className="prompt-extras-row">
           <p className="prompt-main">
             {wordSegments ? (
@@ -289,7 +289,7 @@ export function ReviewSessionPromptBody({
         examples.length > 0 ||
         card.content.images.length > 0
       return (
-        <div className="stack">
+        <div className="stack prompt-extras-anchor">
           <div className="prompt-extras-row">
             <p className="prompt-main">{card.content.wordJa}</p>
             {hasHidden && renderExtrasToggle("Show meaning, examples & images")}
@@ -576,7 +576,7 @@ export function ReviewSessionPromptBody({
         card.content.translationEn.trim().length > 0 ||
         card.content.images.length > 0
       return (
-        <div className="stack">
+        <div className="stack prompt-extras-anchor">
           <div className="prompt-extras-row">
             <p className="prompt-main grammar-gap-sentence">
               {hasInlineGap ? (
