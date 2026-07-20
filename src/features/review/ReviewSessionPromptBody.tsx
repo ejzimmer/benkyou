@@ -335,40 +335,42 @@ export function ReviewSessionPromptBody({
 
     return (
       <div className="stack">
-        {usesPerSegmentInputs ? (
-          <div className="phrase-reading-inputs">
-            {kanjiSegments.map((seg, i) => (
-              <label key={i} className="phrase-reading-input">
-                <span className="input-label-text">{seg.text}（ひらがなで）</span>
-                <TypingAnswerInput
-                  value={segInputValue(i)}
-                  onChange={(value) => onSegInputChange(i, value)}
-                  onSubmit={onTypedSubmit}
-                  focusKey={focusKey}
-                  autoComplete="off"
-                  autoFocus={i === 0}
-                  ariaLabel={`Reading for ${seg.text}`}
-                />
-              </label>
-            ))}
-          </div>
-        ) : (
-          <label>
-            <span className="input-label-text">ひらがなで</span>
-            <TypingAnswerInput
-              value={typed}
-              onChange={onTypedChange}
-              onSubmit={onTypedSubmit}
-              focusKey={focusKey}
-              autoComplete="off"
-            />
-          </label>
-        )}
-        {readingWarn && (
-          <p className="error">
-            Use hiragana only for readings (no kanji or katakana).
-          </p>
-        )}
+        <div className="answer-input-anchor">
+          {usesPerSegmentInputs ? (
+            <div className="phrase-reading-inputs">
+              {kanjiSegments.map((seg, i) => (
+                <label key={i} className="phrase-reading-input">
+                  <span className="input-label-text">{seg.text}（ひらがなで）</span>
+                  <TypingAnswerInput
+                    value={segInputValue(i)}
+                    onChange={(value) => onSegInputChange(i, value)}
+                    onSubmit={onTypedSubmit}
+                    focusKey={focusKey}
+                    autoComplete="off"
+                    autoFocus={i === 0}
+                    ariaLabel={`Reading for ${seg.text}`}
+                  />
+                </label>
+              ))}
+            </div>
+          ) : (
+            <label>
+              <span className="input-label-text">ひらがなで</span>
+              <TypingAnswerInput
+                value={typed}
+                onChange={onTypedChange}
+                onSubmit={onTypedSubmit}
+                focusKey={focusKey}
+                autoComplete="off"
+              />
+            </label>
+          )}
+          {readingWarn && (
+            <p className="error">
+              Use hiragana only for readings (no kanji or katakana).
+            </p>
+          )}
+        </div>
       </div>
     )
   }
@@ -406,28 +408,30 @@ export function ReviewSessionPromptBody({
     if (revealed) return null
     return (
       <div className="stack word-from-clue-input">
-        <label>
-          <span className="input-label-text">日本語で</span>
-          <TypingAnswerInput
-            value={typed}
-            onChange={onTypedChange}
-            onSubmit={onTypedSubmit}
-            focusKey={focusKey}
-          />
-        </label>
-        {latinWarn && (
-          <p className="error">Type the answer in Japanese, not English.</p>
-        )}
-        {kanjiWarn && (
-          <p className="error">
-            The answer uses kanji — typing the reading isn't enough here.
-          </p>
-        )}
-        {synonymWarn && (
-          <p className="warn">
-            That matches a synonym — try the main form on the card.
-          </p>
-        )}
+        <div className="answer-input-anchor">
+          <label>
+            <span className="input-label-text">日本語で</span>
+            <TypingAnswerInput
+              value={typed}
+              onChange={onTypedChange}
+              onSubmit={onTypedSubmit}
+              focusKey={focusKey}
+            />
+          </label>
+          {latinWarn && (
+            <p className="error">Type the answer in Japanese, not English.</p>
+          )}
+          {kanjiWarn && (
+            <p className="error">
+              The answer uses kanji — typing the reading isn't enough here.
+            </p>
+          )}
+          {synonymWarn && (
+            <p className="warn">
+              That matches a synonym — try the main form on the card.
+            </p>
+          )}
+        </div>
       </div>
     )
   }
@@ -527,25 +531,27 @@ export function ReviewSessionPromptBody({
     if (revealed) return null
     return (
       <div className="stack">
-        {!hasInlineGap && (
-          <label>
-            <span className="input-label-text">Construction</span>
-            <TypingAnswerInput
-              value={typed}
-              onChange={onTypedChange}
-              onSubmit={onTypedSubmit}
-              focusKey={focusKey}
-            />
-          </label>
-        )}
-        {latinWarn && (
-          <p className="error">Type the answer in Japanese, not English.</p>
-        )}
-        {synonymWarn && (
-          <p className="warn">
-            That matches a synonym — try the construction written on the card.
-          </p>
-        )}
+        <div className="answer-input-anchor">
+          {!hasInlineGap && (
+            <label>
+              <span className="input-label-text">Construction</span>
+              <TypingAnswerInput
+                value={typed}
+                onChange={onTypedChange}
+                onSubmit={onTypedSubmit}
+                focusKey={focusKey}
+              />
+            </label>
+          )}
+          {latinWarn && (
+            <p className="error">Type the answer in Japanese, not English.</p>
+          )}
+          {synonymWarn && (
+            <p className="warn">
+              That matches a synonym — try the construction written on the card.
+            </p>
+          )}
+        </div>
       </div>
     )
   }
@@ -626,40 +632,42 @@ export function ReviewSessionPromptBody({
 
     return (
       <div className="stack">
-        {usesPerSegmentInputs ? (
-          <div className="phrase-reading-inputs">
-            {kanjiSegments.map((seg, i) => (
-              <label key={i} className="phrase-reading-input">
-                <span className="input-label-text">{seg.text}（ひらがなで）</span>
-                <TypingAnswerInput
-                  value={segInputValue(i)}
-                  onChange={(value) => onSegInputChange(i, value)}
-                  onSubmit={onTypedSubmit}
-                  focusKey={focusKey}
-                  autoComplete="off"
-                  autoFocus={i === 0}
-                  ariaLabel={`Reading for ${seg.text}`}
-                />
-              </label>
-            ))}
-          </div>
-        ) : (
-          <label>
-            <span className="input-label-text">ひらがなで</span>
-            <TypingAnswerInput
-              value={typed}
-              onChange={onTypedChange}
-              onSubmit={onTypedSubmit}
-              focusKey={focusKey}
-              autoComplete="off"
-            />
-          </label>
-        )}
-        {readingWarn && (
-          <p className="error">
-            Use hiragana only for readings (no kanji or katakana).
-          </p>
-        )}
+        <div className="answer-input-anchor">
+          {usesPerSegmentInputs ? (
+            <div className="phrase-reading-inputs">
+              {kanjiSegments.map((seg, i) => (
+                <label key={i} className="phrase-reading-input">
+                  <span className="input-label-text">{seg.text}（ひらがなで）</span>
+                  <TypingAnswerInput
+                    value={segInputValue(i)}
+                    onChange={(value) => onSegInputChange(i, value)}
+                    onSubmit={onTypedSubmit}
+                    focusKey={focusKey}
+                    autoComplete="off"
+                    autoFocus={i === 0}
+                    ariaLabel={`Reading for ${seg.text}`}
+                  />
+                </label>
+              ))}
+            </div>
+          ) : (
+            <label>
+              <span className="input-label-text">ひらがなで</span>
+              <TypingAnswerInput
+                value={typed}
+                onChange={onTypedChange}
+                onSubmit={onTypedSubmit}
+                focusKey={focusKey}
+                autoComplete="off"
+              />
+            </label>
+          )}
+          {readingWarn && (
+            <p className="error">
+              Use hiragana only for readings (no kanji or katakana).
+            </p>
+          )}
+        </div>
       </div>
     )
   }

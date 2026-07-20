@@ -1144,14 +1144,30 @@ fieldset.plain legend {
   justify-content: center;
 }
 
-/* Match the label→input gap (.35rem) rather than the wider gap .stack
-   otherwise uses between all its children, and match the label+input's own
-   centered width/position (see `.review-answer-prompt label` below) so the
-   message lines up under the input instead of spanning the full card. */
+/* Anchors the error/warn message below (mirrors `.prompt-extras-anchor`
+   above the fold-out extras): the input's row must stay exactly as tall as
+   the input itself, with the message absolutely positioned outside that
+   flow. Otherwise a validation message appearing/disappearing changes the
+   row's height, and since the row sits in a `justify-content: safe center`
+   (or, for word-from-clue, unconditionally centered) stack, that recenters
+   the stack and visibly shifts the input itself. */
+.answer-input-anchor {
+  position: relative;
+}
+
+/* Match the label→input gap (.35rem) and the label+input's own centered
+   width/position (see `.review-answer-prompt label` below) so the message
+   lines up under the input instead of spanning the full card. Positioned
+   absolutely (out of flow) rather than stacked normally — see
+   `.answer-input-anchor` above for why. */
 .review-answer-prompt .error,
 .review-answer-prompt .warn {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   width: min(22rem, 100%);
-  margin: -0.4rem auto 0;
+  margin: 0.35rem auto 0;
 }
 
 /* Centers the label+input as a unit (a fixed width + auto margins, not
