@@ -549,9 +549,7 @@ export function ReviewSessionPage() {
           <ChevronLeftIcon className="back-chevron" />
         </Link>
         <div className="review-header-menu">
-          <p className="muted small review-header-count">
-            {sessionQueue.length} remaining
-          </p>
+          <p className="muted small">{sessionQueue.length} remaining</p>
           <UserMenu />
         </div>
         <div className="review-header-actions">
