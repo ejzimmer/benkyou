@@ -41,20 +41,29 @@ function isTouchPrimaryDevice() {
   return window.matchMedia("(hover: none) and (pointer: coarse)").matches
 }
 
+// A small "random" pad (1-3) added to a gap's width so a row of gaps doesn't
+// look mechanically uniform. Seeded from the text itself, rather than
+// Math.random(), so the same gap keeps the same width across re-renders
+// (e.g. every keystroke re-renders the whole prompt) instead of visibly
+// jittering as the user types.
+function seededPad(text: string): number {
+  let sum = 0
+  for (const ch of text) sum += ch.codePointAt(0) ?? 0
+  return (sum % 3) + 1
+}
+
 // Sizes an inline gap input to roughly fit what will actually be typed into
 // it: readings are typed in hiragana, which runs longer than a kanji answer
 // itself, so a kanji answer with a known reading is sized off the reading
 // rather than the kanji. A kanji answer with no reading available has no
 // hiragana length to go on, so it falls back to a rougher kanji-count-based
-// estimate. A small random pad keeps a row of gaps from looking mechanically
-// uniform.
+// estimate.
 function gapInputWidthStyle(answerText: string, reading?: string): CSSProperties {
-  const randomPad = () => 1 + Math.floor(Math.random() * 3)
   if (!containsKanji(answerText)) {
-    return { width: `${Array.from(answerText).length + randomPad()}ch` }
+    return { width: `${Array.from(answerText).length + seededPad(answerText)}ch` }
   }
   if (reading?.trim()) {
-    return { width: `${Array.from(reading).length + randomPad()}ch` }
+    return { width: `${Array.from(reading).length + seededPad(reading)}ch` }
   }
   return { width: `${Array.from(answerText).length * 2.5}ch` }
 }
