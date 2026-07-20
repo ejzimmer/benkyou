@@ -93,6 +93,10 @@ a:hover {
   margin-top: 60px;
 }
 
+.toolbar.card-edit-toolbar {
+  justify-content: flex-end;
+}
+
 .page-heading h1 {
   font-size: 1.75rem;
 }
@@ -259,6 +263,14 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.card-edit-form.stack {
+  gap: 1.5rem;
+}
+
+.card-edit-form label:not(.switch-external-label) {
+  font-weight: 700;
 }
 
 .align-end {
@@ -496,6 +508,17 @@ fieldset.plain legend {
   box-shadow:
     0 0 8px var(--blue),
     0 0 20px var(--blue);
+}
+
+.btn.primary.pink {
+  background: var(--pink);
+  border-color: var(--pink);
+}
+
+.btn.primary.pink:hover {
+  box-shadow:
+    0 0 8px var(--pink),
+    0 0 20px var(--pink);
 }
 
 .btn.good {
@@ -816,7 +839,7 @@ fieldset.plain legend {
   padding: 0;
   border: 2px solid var(--pink);
   border-radius: 50%;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.35);
   color: var(--pink);
   font-size: 0.75rem;
   font-weight: 900;

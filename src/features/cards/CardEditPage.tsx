@@ -456,11 +456,11 @@ export function CardEditPage() {
       </header>
 
       {!isNew && (
-        <div className="toolbar">
-          <button type="button" className="btn" onClick={onFindDuplicates}>
+        <div className="toolbar card-edit-toolbar">
+          <button type="button" className="btn secondary" onClick={onFindDuplicates}>
             Find duplicate cards
           </button>
-          <button type="button" className="btn danger" onClick={onDeleteCard}>
+          <button type="button" className="btn primary pink" onClick={onDeleteCard}>
             Delete card
           </button>
         </div>
@@ -488,7 +488,7 @@ export function CardEditPage() {
         ref={formRef}
         onSubmit={onSubmit}
         onPaste={onPaste}
-        className="panel stack"
+        className="panel stack card-edit-form"
         aria-label="Card editor"
       >
         <Switch
@@ -664,8 +664,8 @@ export function CardEditPage() {
                 setGrammar({ ...grammar, singleSided: sides === "one" })
               }
               options={[
-                { value: "both", label: "Test both sides" },
-                { value: "one", label: "Test 1 side" },
+                { value: "both", label: "両面" },
+                { value: "one", label: "片面" },
               ]}
             />
             <label>
