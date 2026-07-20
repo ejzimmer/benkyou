@@ -161,6 +161,14 @@ export function AnswerComparison({
   const isCorrect = answeredCorrectly ?? typed === expected
   const showRuby = Boolean(reading?.trim()) && KANJI.test(expected)
   const diff = isCorrect ? null : buildAlignedDiff(expected, typed)
+  // Mirrors DiffLine's own hasFurigana check for the correct line: when it
+  // reserves margin-top for a floating furigana annotation, the maru beside
+  // it needs the same margin (see .answer-correct-row-has-furigana in
+  // index.css) so align-items: center still centers on the kanji itself,
+  // not on the kanji plus the reserved furigana space above it.
+  const correctLineHasFurigana =
+    diff !== null &&
+    furiganaGroups(diff.correct, showRuby ? reading : undefined).length > 0
 
   const correctBody = diff ? (
     <DiffLine
@@ -200,7 +208,12 @@ export function AnswerComparison({
         <span id={correctId} className="answer-grid-label sr-only">
           Correct answer
         </span>
-        <span className="answer-correct-row">
+        <span
+          className={
+            "answer-correct-row" +
+            (correctLineHasFurigana ? " answer-correct-row-has-furigana" : "")
+          }
+        >
           {correctAnswer}
           <span className="maru-mark" aria-hidden="true" />
           {isCorrect && <span className="sr-only">Correct</span>}

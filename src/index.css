@@ -1267,6 +1267,17 @@ fieldset.plain legend {
   border-radius: 50%;
 }
 
+/* When the correct-answer line reserves margin-top above itself for a
+   floating furigana annotation (.reading-answer-diff-line-has-furigana),
+   align-items: center on .answer-correct-row centers the maru against that
+   taller box — kanji plus reserved furigana space — rather than against the
+   kanji alone, pushing the maru above the kanji's own vertical center.
+   Giving the maru the same margin-top cancels that offset so it centers on
+   the kanji line itself. */
+.answer-correct-row-has-furigana .maru-mark {
+  margin-top: 1.1em;
+}
+
 /* A cross (×) marking the learner's own (wrong) answer, in the same pink
    used elsewhere for incorrect/destructive actions. */
 .cross-mark {
