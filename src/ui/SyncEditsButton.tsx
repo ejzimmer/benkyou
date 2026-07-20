@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useAuth } from "../lib/auth/AuthContext"
 import { useSync } from "../lib/sync/SyncContext"
 import { useSessionEditedCardIds } from "../lib/sync/sessionEdits"
+import { RefreshIcon } from "./RefreshIcon"
 
 /**
  * Global "push this device's edited/created cards to the backend" button.
@@ -40,16 +41,17 @@ export function SyncEditsButton() {
         className={hasEdits ? "btn secondary green sync-edits-btn" : "btn secondary sync-edits-btn"}
         onClick={() => void onClick()}
         disabled={syncing}
+        aria-label={syncing ? "Syncing…" : hasEdits ? `Sync (${editedCardIds.length})` : "Sync"}
       >
         {syncing ? (
-          <>
-            <span className="import-spinner" aria-hidden="true" />
-            <span className="sr-only">Syncing…</span>
-          </>
+          <span className="import-spinner" aria-hidden="true" />
         ) : hasEdits ? (
-          `Sync (${editedCardIds.length})`
+          <>
+            <RefreshIcon className="sync-edits-icon" />
+            {` (${editedCardIds.length})`}
+          </>
         ) : (
-          "Sync"
+          <RefreshIcon className="sync-edits-icon" />
         )}
       </button>
       {error && <span className="error small">{error}</span>}

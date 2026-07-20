@@ -1792,6 +1792,12 @@ code {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
+.sync-edits-icon {
+  width: 0.9em;
+  height: 0.9em;
+  vertical-align: -0.1em;
+}
+
 .import-spinner {
   display: inline-block;
   width: 0.85em;
