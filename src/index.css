@@ -1162,12 +1162,31 @@ fieldset.plain legend {
    to its text content, and the input's `width: 100%` would then resolve
    against that much narrower shrunk width instead of a sensible input
    size). The label's own text stays left-aligned so it lines up with the
-   input's left edge rather than floating centered above it. */
+   input's left edge rather than floating centered above it. `position:
+   relative` anchors `.input-label-text` below (an absolutely positioned
+   caption, not a normal flex child), so the label's own flow height is just
+   the input's — see that rule for why. */
 .review-answer-prompt label {
+  position: relative;
   color: #9898b0;
   width: min(22rem, 100%);
   margin: 0 auto;
   text-align: left;
+}
+
+/* Floats the "ひらがなで"/"日本語で"/"Construction" caption above the input
+   instead of stacking it as a normal flex child — otherwise its height gets
+   folded into the block `justify-content: safe center` centers on the
+   question side, so the input ends up sitting below the card's vertical
+   center while the revealed answer (a single line, no caption) sits dead
+   center: the two visibly don't line up. With the caption out of flow, the
+   label's height is just the input's, so both sides center on the same
+   spot. */
+.review-answer-prompt .input-label-text {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 0.35rem;
 }
 
 /* Matches `.reading-answer-value`'s font-size — the revealed correct answer
