@@ -1180,27 +1180,13 @@ fieldset.plain legend {
   font-size: 1.5rem;
 }
 
-/* The typed text should land dead-center of the card, matching where the
-   revealed answer's centered text appears — the label's box above is
-   centered but text-align: left leaves a short typed answer hugging its
-   left edge instead. Scoped to inputs inside a label so `.inline-gap-input`
-   (which sits inline within a sentence, not in a label) is unaffected.
-   Word-from-clue overrides this back to left below — its revealed answer is
-   left-aligned in the same box, not centered like the reading/construction
-   diff views this rule is for. */
+/* The typed text stays left-aligned within the label's own box — the box
+   itself is centered on the card (via the label's width + auto margins),
+   but text inside starts at its left edge, matching the label text above
+   it and the revealed answer that lands in the same spot. Scoped to inputs
+   inside a label so `.inline-gap-input` (which sits inline within a
+   sentence, not in a label) is unaffected. */
 .review-answer-prompt label .input {
-  text-align: center;
-}
-
-/* "Type the Japanese word": the input (before reveal) and its eventual
-   answer (after reveal) both sit centered in the same spot on the card, so
-   revealing the answer reads as the input itself resolving in place rather
-   than a new block of content appearing elsewhere. Text inside stays left
-   aligned (matching the label above it) — only the box itself is centered,
-   via the label's own width + auto margins. Specificity needs to beat
-   `.review-answer-prompt label .input` above (2 classes + 1 type) — hence
-   the extra `.review-answer-prompt` qualifier here. */
-.review-answer-prompt .word-from-clue-input .input {
   text-align: left;
 }
 
@@ -1361,17 +1347,23 @@ fieldset.plain legend {
   word-break: break-word;
 }
 
+/* Matches the label/input's own box (width + auto margins) so the
+   correct/incorrect comparison lands at the same left-aligned starting
+   position the input's typed text had, rather than centering as a
+   full-width row. */
 .reading-answer-comparison {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.55rem;
+  width: min(22rem, 100%);
+  margin: 0 auto;
 }
 
 .reading-answer-row {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.1rem;
 }
 
