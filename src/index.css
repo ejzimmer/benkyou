@@ -1487,9 +1487,12 @@ fieldset.plain legend {
 /* Positioned relative to `.prompt-extras-anchor` below, so the always-visible
    row (word/sentence + toggle) never contributes the disclosure's height to
    its own centering — opening it grows downward in place instead of
-   recentering (and shifting) the row above it. */
+   recentering (and shifting) the row above it. Full width (rather than
+   shrink-wrapped to the row) so the absolutely positioned disclosure below
+   has the whole card to lay out in, not just the row's own narrow width. */
 .prompt-extras-anchor {
   position: relative;
+  width: 100%;
 }
 
 /* Animates open/closed via the grid-rows trick: a 0fr/1fr track transition
