@@ -1195,10 +1195,18 @@ fieldset.plain legend {
 
 /* Shared by every "correct answer" display that pairs the answer text with
    a maru mark: word-from-clue's dedicated correct state, and
-   AnswerComparison's correct case (used by the reading/construction typed
-   modes). */
+   AnswerComparison's correct-answer row (used by the reading/construction
+   typed modes, marked regardless of whether the learner's own answer was
+   right). */
 .word-from-clue-correct,
 .answer-correct-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* AnswerComparison's "your answer" row, paired with a pink cross mark. */
+.answer-incorrect-row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -1223,6 +1231,35 @@ fieldset.plain legend {
   flex: 0 0 auto;
   border: 0.15em solid var(--green);
   border-radius: 50%;
+}
+
+/* A cross (×) marking the learner's own (wrong) answer, in the same pink
+   used elsewhere for incorrect/destructive actions. */
+.cross-mark {
+  position: relative;
+  width: 1.4em;
+  height: 1.4em;
+  flex: 0 0 auto;
+}
+
+.cross-mark::before,
+.cross-mark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 0.15em;
+  background: var(--pink);
+  border-radius: 0.1em;
+}
+
+.cross-mark::before {
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.cross-mark::after {
+  transform: translateY(-50%) rotate(-45deg);
 }
 
 .oral-answer {
@@ -1313,11 +1350,9 @@ fieldset.plain legend {
   gap: 0.08em;
 }
 
-/* AnswerComparison stacks a visible "Correct answer" label directly above
-   this row with very little gap — reserve room so the floating furigana
-   annotation doesn't overlap it when revealed. Only needed here (the
-   incorrect-answer diff view): the correct-answer ruby's label is sr-only,
-   so it has no visible gap to protect and skips this margin. */
+/* Reserves room above the diff line so the floating furigana annotation
+   (absolutely positioned, bottom: 100%) has space to render without being
+   clipped by whatever sits above the answer block. */
 .reading-answer-diff-line-has-furigana {
   margin-top: 1.1em;
 }
