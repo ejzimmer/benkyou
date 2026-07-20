@@ -16,6 +16,7 @@ import {
 } from "../../domain/grammarGaps"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
 import { constructionReadingSegments } from "../../domain/grammarContent"
+import { containsKanji } from "../../domain/types"
 import {
   deriveFurigana,
   fullyCoveredSegments,
@@ -40,14 +41,22 @@ function isTouchPrimaryDevice() {
   return window.matchMedia("(hover: none) and (pointer: coarse)").matches
 }
 
-// Sizes an inline gap input to roughly fit the given text: 6 characters wide
-// normally, or length + 4 once the text itself exceeds 6. Callers should pass
-// the reading of the expected answer when one is available (readings are
-// typed in hiragana, which runs longer than the kanji answer itself), falling
-// back to the answer's own text otherwise.
-function gapInputWidthStyle(text: string): CSSProperties {
-  const length = Array.from(text).length
-  return { width: length > 6 ? `${length + 4}ch` : "6ch" }
+// Sizes an inline gap input to roughly fit what will actually be typed into
+// it: readings are typed in hiragana, which runs longer than a kanji answer
+// itself, so a kanji answer with a known reading is sized off the reading
+// rather than the kanji. A kanji answer with no reading available has no
+// hiragana length to go on, so it falls back to a rougher kanji-count-based
+// estimate. A small random pad keeps a row of gaps from looking mechanically
+// uniform.
+function gapInputWidthStyle(answerText: string, reading?: string): CSSProperties {
+  const randomPad = () => 1 + Math.floor(Math.random() * 3)
+  if (!containsKanji(answerText)) {
+    return { width: `${Array.from(answerText).length + randomPad()}ch` }
+  }
+  if (reading?.trim()) {
+    return { width: `${Array.from(reading).length + randomPad()}ch` }
+  }
+  return { width: `${Array.from(answerText).length * 2.5}ch` }
 }
 
 function TypingAnswerInput({
@@ -473,10 +482,11 @@ export function ReviewSessionPromptBody({
                           focusKey={focusKey}
                           className="inline-gap-input"
                           style={gapInputWidthStyle(
+                            answerText,
                             readingForConstruction(
                               answerText,
                               card.content.readings,
-                            ) ?? answerText,
+                            ),
                           )}
                           ariaLabel={`Construction gap ${gapIndex + 1}`}
                           autoFocus={gapIndex === 0}
