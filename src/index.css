@@ -1156,7 +1156,7 @@ fieldset.plain legend {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.4s ease;
 }
 
 .review-answer-prompt.is-hidden,
@@ -1170,9 +1170,17 @@ fieldset.plain legend {
   pointer-events: auto;
 }
 
+/* Overrides `.stack`'s default gap: the prompt layer it cross-fades with
+   (`.review-answer-prompt`, built from a plain flex column with no gap
+   between its content and `.review-footer`) relies solely on the footer's
+   own padding-top for that spacing. Without this, `.answer-block` reserved
+   an extra 12px here that the prompt layer didn't, so their content areas
+   centered at different heights — a visible vertical jump when the two
+   layers cross-fade despite occupying the same grid cell. */
 .review-answer .answer-block {
   flex: 1;
   min-height: 0;
+  gap: 0;
 }
 
 /* Pinned to the bottom of the card — the auto margin absorbs any slack —
