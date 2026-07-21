@@ -95,7 +95,7 @@ export function DeckListPage() {
             className="input"
           />
           <button type="submit" className="btn secondary add-deck-btn">
-            Add deck
+            デッキを作る
           </button>
         </form>
       </section>

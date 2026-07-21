@@ -58,7 +58,7 @@ export function UserMenu() {
               navigate("/settings")
             }}
           >
-            Settings
+            設定
           </button>
           {user && (
             <button
@@ -70,7 +70,7 @@ export function UserMenu() {
                 void signOut()
               }}
             >
-              Logout
+              ログアウト
             </button>
           )}
         </div>
