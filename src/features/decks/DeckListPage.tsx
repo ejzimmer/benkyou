@@ -2,8 +2,6 @@ import { Link, useNavigate } from "react-router-dom"
 import { db } from "../../lib/db/schema"
 import { createDeck } from "../../services/decks"
 import { getDueCountsByDeck } from "../../services/review"
-import { useAuth } from "../../lib/auth/AuthContext"
-import { useSync } from "../../lib/sync/SyncContext"
 import { useState } from "react"
 import { useDebouncedQuery } from "../../lib/useDebouncedQuery"
 import { AppIcon } from "../../ui/AppIcon"
@@ -17,11 +15,8 @@ export function DeckListPage() {
   )
   const dueCounts = useDebouncedQuery(() => getDueCountsByDeck(), [])
   const totalDue = dueCounts ? [...dueCounts.values()].reduce((sum, n) => sum + n, 0) : 0
-  const { user, offlineOnly } = useAuth()
-  const { syncNow, syncing, conflictActive, syncStatusLabel } = useSync()
   const [name, setName] = useState("")
   const [err, setErr] = useState<string | null>(null)
-  const [syncErr, setSyncErr] = useState<string | null>(null)
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -35,15 +30,6 @@ export function DeckListPage() {
     }
   }
 
-  async function onSyncNow() {
-    setSyncErr(null)
-    try {
-      await syncNow()
-    } catch (x) {
-      setSyncErr(x instanceof Error ? x.message : "Sync failed")
-    }
-  }
-
   return (
     <div className="page">
       <header className="header app-header">
@@ -52,24 +38,9 @@ export function DeckListPage() {
           <span className="brand-name">Benkyou</span>
         </Link>
         <div className="header-actions">
-          {!offlineOnly && (
-            <button
-              type="button"
-              className="btn secondary"
-              disabled={!user || syncing || conflictActive}
-              onClick={() => void onSyncNow()}
-              title="Check for changes made on another device, and push anything local"
-            >
-              {conflictActive ? "Resolve conflict…" : syncing ? "Syncing…" : "Sync now"}
-            </button>
-          )}
           <UserMenu />
         </div>
       </header>
-      {!offlineOnly && syncing && syncStatusLabel && (
-        <p className="muted small">{syncStatusLabel}</p>
-      )}
-      {syncErr && <p className="error">{syncErr}</p>}
 
       <section className="panel">
         <ul className="deck-list">
