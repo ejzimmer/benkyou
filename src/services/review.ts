@@ -9,6 +9,7 @@ import {
 import { newId } from "../lib/db/id"
 import { applyGrade, deserializeFsrs, serializeFsrs } from "../lib/srs/schedule"
 import { responseTimeToGrade } from "../lib/srs/time-to-rating"
+import { recordTimingSample } from "../lib/srs/timingSamples"
 import type { Grade } from "ts-fsrs"
 import { loadSchedulingRow, updateSchedulingRow } from "./cards"
 
@@ -176,6 +177,10 @@ export async function commitJudgement(
 ): Promise<void> {
   const row = await loadSchedulingRow(cardId, modeId)
   if (!row) return
+
+  if (promptToRevealMs != null && promptToRevealMs > 0) {
+    await recordTimingSample(modeId, promptToRevealMs, selfCorrect)
+  }
 
   const grade = responseTimeToGrade(
     modeId,

@@ -203,6 +203,33 @@ describe("review + scheduling (IndexedDB)", () => {
       "vocab_type_reading",
     )
     expect(rowAfter!.due).not.toBe(dueBefore)
+
+    const sample = await db.timingSamples.orderBy("ts").last()
+    expect(sample).toMatchObject({
+      modeId: "vocab_type_reading",
+      responseMs: 1500,
+      correct: true,
+    })
+  })
+
+  it("does not record a timing sample when latency wasn't captured", async () => {
+    const deck = await createDeck("D")
+    const card = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "鳥",
+        reading: "とり",
+        definitionsEn: ["bird"],
+        images: [],
+        exampleSentences: [],
+        synonymsJa: [],
+      },
+    )
+
+    const snap = await prepareJudgement(card.id, "vocab_type_reading")
+    await commitJudgement(card.id, "vocab_type_reading", null, true, snap)
+
+    expect(await db.timingSamples.count()).toBe(0)
   })
 
   it("undoLastJudgement restores prior scheduling row", async () => {
