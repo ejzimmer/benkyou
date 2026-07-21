@@ -63,6 +63,20 @@ export type SyncOutboxRow = {
   updatedAt: number
 }
 
+/**
+ * Raw prompt→reveal timing sample, kept deliberately separate from
+ * cards/scheduling/reviewEvents (no cardId/deckId) so the whole table can be
+ * bulk-deleted once thresholds are calibrated from it (see
+ * lib/srs/time-to-rating.ts) without touching real review data.
+ */
+export type TimingSampleRow = {
+  id: string
+  ts: number
+  modeId: ReviewModeId
+  responseMs: number
+  correct: boolean
+}
+
 export class BenkyouDB extends Dexie {
   decks!: EntityTable<Deck, "id">
   cards!: EntityTable<Card, "id">
@@ -72,6 +86,7 @@ export class BenkyouDB extends Dexie {
   media!: EntityTable<MediaRow, "id">
   tombstones!: EntityTable<Tombstone, "id">
   syncOutbox!: EntityTable<SyncOutboxRow, "id">
+  timingSamples!: EntityTable<TimingSampleRow, "id">
 
   constructor() {
     super("benkyou")
@@ -111,6 +126,17 @@ export class BenkyouDB extends Dexie {
           if (row.updatedAt == null) row.updatedAt = Date.now()
         }),
     )
+    this.version(4).stores({
+      decks: "id, name, updatedAt",
+      cards: "id, deckId, kind, updatedAt",
+      scheduling: "id, cardId, modeId, due, updatedAt",
+      reviewEvents: "id, ts, cardId, modeId",
+      reviewUndo: "id, ts, cardId, modeId",
+      media: "id, updatedAt",
+      tombstones: "id, entityType, entityId, deletedAt",
+      syncOutbox: "id, collection, updatedAt",
+      timingSamples: "id, ts, modeId",
+    })
   }
 }
 
