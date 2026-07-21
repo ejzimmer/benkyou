@@ -128,7 +128,7 @@ export function SyncConflictModal({
               </button>
               <button
                 type="button"
-                className="btn"
+                className="btn secondary"
                 onClick={() => onChoose("local", true)}
               >
                 Keep this device for all remaining
@@ -160,7 +160,7 @@ export function SyncConflictModal({
               </button>
               <button
                 type="button"
-                className="btn"
+                className="btn secondary"
                 onClick={() => onChoose("remote", true)}
               >
                 Keep cloud for all remaining

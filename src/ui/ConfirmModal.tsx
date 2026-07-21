@@ -21,11 +21,11 @@ export function ConfirmModal({
       <div className="modal-panel panel" onClick={(e) => e.stopPropagation()}>
         <p>{message}</p>
         <div className="toolbar">
-          <button type="button" className="btn danger" onClick={onConfirm}>
-            {confirmLabel}
-          </button>
-          <button type="button" className="btn" onClick={onCancel}>
+          <button type="button" className="btn secondary" onClick={onCancel}>
             Cancel
+          </button>
+          <button type="button" className="btn primary pink" onClick={onConfirm}>
+            {confirmLabel}
           </button>
         </div>
       </div>

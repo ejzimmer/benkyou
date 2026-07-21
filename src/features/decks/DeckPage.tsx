@@ -83,9 +83,9 @@ export function DeckPage() {
       </header>
 
       <div className="toolbar deck-toolbar">
-        <Link to={`/decks/${deckId}/cards/new`} className="btn primary blue">
-          Add card
-        </Link>
+        <span className="muted small toolbar-count">
+          {cardCount} card{cardCount === 1 ? "" : "s"}
+        </span>
         <Link to={`/decks/${deckId}/review`} className="btn secondary green">
           Review this deck
         </Link>
@@ -96,9 +96,9 @@ export function DeckPage() {
         >
           Delete deck
         </button>
-        <span className="muted small toolbar-count">
-          {cardCount} card{cardCount === 1 ? "" : "s"}
-        </span>
+        <Link to={`/decks/${deckId}/cards/new`} className="btn primary blue">
+          Add card
+        </Link>
       </div>
 
       <section className="panel">

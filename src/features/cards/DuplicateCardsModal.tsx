@@ -51,7 +51,7 @@ export function DuplicateCardsModal({
                   </Link>
                   <button
                     type="button"
-                    className="btn"
+                    className="btn secondary"
                     disabled={mergingId === match.id}
                     onClick={() => onMerge(match)}
                   >
@@ -66,7 +66,7 @@ export function DuplicateCardsModal({
         {error && <p className="error">{error}</p>}
 
         <div className="toolbar">
-          <button type="button" className="btn" onClick={onClose}>
+          <button type="button" className="btn secondary" onClick={onClose}>
             Close
           </button>
         </div>
