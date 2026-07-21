@@ -273,6 +273,12 @@ a:hover {
   font-weight: 700;
 }
 
+.card-edit-form input.input,
+.card-edit-form textarea.input {
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
 .align-end {
   align-self: flex-end;
 }
