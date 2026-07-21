@@ -3,6 +3,7 @@ import {
   answerMissingKanji,
   answersMatch,
   expectedAnswer,
+  hasMissingDoubledN,
   hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
   requiresTyping,
@@ -149,6 +150,35 @@ describe("reviewFlowHelpers", () => {
 
   it("answerMissingKanji does not flag kana-only words", () => {
     expect(answerMissingKanji("ねこ", "ねこ")).toBe(false)
+  })
+
+  it("hasMissingDoubledN flags a single-segment reading missing a doubled n", () => {
+    expect(hasMissingDoubledN("うねいしゃ", "うんえいしゃ")).toBe(true)
+  })
+
+  it("hasMissingDoubledN flags just the affected segment in a multi-gap answer", () => {
+    expect(hasMissingDoubledN("けつろん, さない", "けつろん, さんあい")).toBe(
+      true,
+    )
+  })
+
+  it("hasMissingDoubledN does not flag an already-correct answer", () => {
+    expect(hasMissingDoubledN("うんえいしゃ", "うんえいしゃ")).toBe(false)
+  })
+
+  it("hasMissingDoubledN does not flag a wrong answer with an unrelated mistake", () => {
+    expect(hasMissingDoubledN("ねこ", "いぬ")).toBe(false)
+  })
+
+  it("hasMissingDoubledN does not flag when segment counts differ", () => {
+    expect(hasMissingDoubledN("さない", "けつろん, さんあい")).toBe(false)
+  })
+
+  it("hasMissingDoubledN requires every differing segment to be explained by the n slip", () => {
+    // First segment has an unrelated typo, second is the n slip — not a pure case.
+    expect(hasMissingDoubledN("ねほん, さない", "にほん, さんあい")).toBe(
+      false,
+    )
   })
 
   it("requiresTyping and isReadingTypingMode cover grammar_type_reading", () => {

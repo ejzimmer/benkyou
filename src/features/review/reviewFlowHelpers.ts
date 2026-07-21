@@ -15,7 +15,10 @@ import {
 } from "../../domain/readingsMap"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
 import { constructionReadingSegments } from "../../domain/grammarContent"
-import { hasNonHiraganaKana } from "../../lib/japanese/normalize"
+import {
+  hasNonHiraganaKana,
+  isMissingDoubledN,
+} from "../../lib/japanese/normalize"
 
 /** Marker used to blank out the target word in an example sentence. */
 export const EXAMPLE_PLACEHOLDER = "___"
@@ -86,6 +89,28 @@ export function isReadingTypingMode(mode: ReviewModeId): boolean {
  */
 export function hasNonHiraganaReadingAnswer(typed: string): boolean {
   return splitGapAnswers(typed).some((part) => hasNonHiraganaKana(part))
+}
+
+/**
+ * Whether a wrong reading-typing answer is wrong only because of a missed
+ * doubled "n" before a vowel/や行 mora (see isMissingDoubledN), checked per
+ * gap segment so one mistyped ん in a multi-segment answer is still caught
+ * even though the other segments are correct. False if any differing
+ * segment has some other, unrelated mistake — this flags the specific IME
+ * slip, not "the answer is wrong for some reason".
+ */
+export function hasMissingDoubledN(typed: string, expected: string): boolean {
+  const typedParts = splitGapAnswers(typed)
+  const expectedParts = splitGapAnswers(expected)
+  if (typedParts.length === 0 || typedParts.length !== expectedParts.length)
+    return false
+  let anyMerged = false
+  for (let i = 0; i < typedParts.length; i++) {
+    if (typedParts[i] === expectedParts[i]) continue
+    if (!isMissingDoubledN(typedParts[i], expectedParts[i])) return false
+    anyMerged = true
+  }
+  return anyMerged
 }
 
 /**

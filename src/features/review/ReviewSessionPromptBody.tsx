@@ -121,6 +121,10 @@ export type ReviewSessionPromptBodyProps = {
   /** Typed answer contains Latin/English characters — a validation error,
    * not a graded mistake, for modes expecting a Japanese answer. */
   latinWarn?: boolean
+  /** Reading answer is wrong only because of a missed doubled "n" before a
+   * vowel/や行 mora (e.g. typing "unei" instead of "unnei" for うんえい) —
+   * a validation error, not a graded mistake. */
+  nWarn?: boolean
   /** Called when user presses Enter in a typing field */
   onTypedSubmit: () => void
   /** Answer is visible — show the prompt only, not typing inputs or warnings */
@@ -153,6 +157,7 @@ export function ReviewSessionPromptBody({
   synonymWarn,
   kanjiWarn,
   latinWarn = false,
+  nWarn = false,
   onTypedSubmit,
   revealed = false,
   column,
@@ -368,6 +373,12 @@ export function ReviewSessionPromptBody({
           {readingWarn && (
             <p className="error">
               Use hiragana only for readings (no kanji or katakana).
+            </p>
+          )}
+          {nWarn && (
+            <p className="error">
+              Looks like a missed ん — try doubling the &quot;n&quot; before a
+              vowel or や/ゆ/よ (e.g. &quot;nn&quot; instead of &quot;n&quot;).
             </p>
           )}
         </div>
@@ -676,6 +687,12 @@ export function ReviewSessionPromptBody({
           {readingWarn && (
             <p className="error">
               Use hiragana only for readings (no kanji or katakana).
+            </p>
+          )}
+          {nWarn && (
+            <p className="error">
+              Looks like a missed ん — try doubling the &quot;n&quot; before a
+              vowel or や/ゆ/よ (e.g. &quot;nn&quot; instead of &quot;n&quot;).
             </p>
           )}
         </div>
