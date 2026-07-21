@@ -132,7 +132,7 @@ describe("ReviewSessionPage", () => {
     await user.click(screen.getByRole("button", { name: /^incorrect$/i }))
 
     await waitFor(() => {
-      expect(screen.getByText(/next card/i)).toBeInTheDocument()
+      expect(screen.getByText("次。。。")).toBeInTheDocument()
     })
     expect(
       screen.queryByRole("heading", { name: /^answer$/i }),
