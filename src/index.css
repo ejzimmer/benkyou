@@ -851,11 +851,13 @@ fieldset.plain legend {
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
+  box-shadow: 0 0 6px 2px rgba(0, 0, 0, 0.35);
   transition: box-shadow 0.15s ease;
 }
 
 .image-preview-remove:hover {
   box-shadow:
+    0 0 6px 2px rgba(0, 0, 0, 0.35),
     0 0 8px var(--pink),
     0 0 20px var(--pink);
 }
