@@ -1159,9 +1159,15 @@ fieldset.plain legend {
    width/position (see `.review-answer-prompt label` below) so the message
    lines up under the input instead of spanning the full card. Positioned
    absolutely (out of flow) rather than stacked normally — see
-   `.answer-input-anchor` above for why. */
-.review-answer-prompt .error,
-.review-answer-prompt .warn {
+   `.answer-input-anchor` above for why. Scoped to inside the anchor (not
+   just `.review-answer-prompt`): a construction with an inline gap has no
+   input here at all (it lives in the question sentence instead — see
+   `grammar_type_construction`'s `hasInlineGap` branch), so its warning
+   renders as a plain `.stack` child, not inside an anchor — with nothing to
+   protect from shifting, it can stay in normal flow and centered like any
+   other single `.stack` child. */
+.answer-input-anchor .error,
+.answer-input-anchor .warn {
   position: absolute;
   top: 100%;
   left: 0;

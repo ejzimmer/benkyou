@@ -529,10 +529,28 @@ export function ReviewSessionPromptBody({
     // lives in the question sentence itself. The synonym warning still
     // belongs here regardless, since it's about what was typed either way.
     if (revealed) return null
+    const warnings = (
+      <>
+        {latinWarn && (
+          <p className="error">Type the answer in Japanese, not English.</p>
+        )}
+        {synonymWarn && (
+          <p className="warn">
+            That matches a synonym — try the construction written on the card.
+          </p>
+        )}
+      </>
+    )
     return (
       <div className="stack">
-        <div className="answer-input-anchor">
-          {!hasInlineGap && (
+        {hasInlineGap ? (
+          // No input rendered on this side (it's inline in the question
+          // sentence instead), so there's nothing here for a warning to
+          // shift — no need for the anchor/absolute-position treatment
+          // below, which requires an anchored input to measure against.
+          warnings
+        ) : (
+          <div className="answer-input-anchor">
             <label>
               <span className="input-label-text">Construction</span>
               <TypingAnswerInput
@@ -542,16 +560,9 @@ export function ReviewSessionPromptBody({
                 focusKey={focusKey}
               />
             </label>
-          )}
-          {latinWarn && (
-            <p className="error">Type the answer in Japanese, not English.</p>
-          )}
-          {synonymWarn && (
-            <p className="warn">
-              That matches a synonym — try the construction written on the card.
-            </p>
-          )}
-        </div>
+            {warnings}
+          </div>
+        )}
       </div>
     )
   }
