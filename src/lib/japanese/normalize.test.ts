@@ -3,6 +3,7 @@ import {
   finalizeReadingAnswer,
   hasKanjiOrKatakana,
   hasNonHiraganaKana,
+  isMissingDoubledN,
   normalizeJapanese,
 } from "./normalize"
 
@@ -65,5 +66,40 @@ describe("finalizeReadingAnswer", () => {
     // toHiragana itself converts the ASCII "," to "、" along the way.
     expect(finalizeReadingAnswer("けつろn, いたる")).toBe("けつろん、 いたる")
     expect(finalizeReadingAnswer("けつろn、いたる")).toBe("けつろん、いたる")
+  })
+})
+
+describe("isMissingDoubledN", () => {
+  it("flags ん swallowed into な行 before a vowel (missed doubled n)", () => {
+    // うんえいしゃ typed as "u,n,e,i,sha" (single n) comes out うねいしゃ,
+    // not うんえいしゃ, because a lone "n" before "e" reads as "ne".
+    expect(isMissingDoubledN("うねいしゃ", "うんえいしゃ")).toBe(true)
+  })
+  it("flags each vowel row: な/に/ぬ/ね/の swallowing ん+あいうえお", () => {
+    expect(isMissingDoubledN("さない", "さんあい")).toBe(true)
+    expect(isMissingDoubledN("さにい", "さんいい")).toBe(true)
+    expect(isMissingDoubledN("さぬい", "さんうい")).toBe(true)
+    expect(isMissingDoubledN("さねい", "さんえい")).toBe(true)
+    expect(isMissingDoubledN("さのい", "さんおい")).toBe(true)
+  })
+  it("flags ん swallowed into にゃ/にゅ/にょ before や行", () => {
+    expect(isMissingDoubledN("かにょう", "かんよう")).toBe(true)
+    expect(isMissingDoubledN("さにゅう", "さんゆう")).toBe(true)
+    expect(isMissingDoubledN("さにゃ", "さんや")).toBe(true)
+  })
+  it("handles more than one missed doubled n in the same word", () => {
+    expect(isMissingDoubledN("さなね", "さんあんえ")).toBe(true)
+  })
+  it("does not flag an already-correct answer", () => {
+    expect(isMissingDoubledN("うんえいしゃ", "うんえいしゃ")).toBe(false)
+  })
+  it("does not flag ん before a consonant, where there's no ambiguity to begin with", () => {
+    expect(isMissingDoubledN("しんぶ", "しんぶん")).toBe(false)
+  })
+  it("does not flag a wrong answer unrelated to a missed ん", () => {
+    expect(isMissingDoubledN("ねこ", "いぬ")).toBe(false)
+  })
+  it("does not flag an empty answer", () => {
+    expect(isMissingDoubledN("", "うんえいしゃ")).toBe(false)
   })
 })

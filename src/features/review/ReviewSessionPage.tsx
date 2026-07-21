@@ -24,6 +24,7 @@ import { ReviewFooter } from "./ReviewFooter"
 import {
   answerMissingKanji,
   expectedAnswer,
+  hasMissingDoubledN,
   hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
   REVIEW_MODE_LABELS,
@@ -109,6 +110,7 @@ export function ReviewSessionPage() {
   const [readingWarn, setReadingWarn] = useState(false)
   const [kanjiWarn, setKanjiWarn] = useState(false)
   const [latinWarn, setLatinWarn] = useState(false)
+  const [nWarn, setNWarn] = useState(false)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [snapshot, setSnapshot] = useState<JudgementSnapshot | null>(null)
   /** Prompt shown → “Show answer” (FSRS latency heuristic); cleared after grading */
@@ -186,6 +188,7 @@ export function ReviewSessionPage() {
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
+    setNWarn(false)
     setStartedAt(null)
     setPromptToRevealMs(null)
     setPendingIncorrectDelay(false)
@@ -308,6 +311,7 @@ export function ReviewSessionPage() {
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
+    setNWarn(false)
     setStartedAt(null)
     setSnapshot(null)
     setPromptToRevealMs(null)
@@ -331,6 +335,7 @@ export function ReviewSessionPage() {
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
+    setNWarn(false)
     if (
       (m === "vocab_type_word_from_clue" || m === "grammar_type_construction") &&
       hasLatinScript(typedValue) &&
@@ -359,6 +364,14 @@ export function ReviewSessionPage() {
     }
     if (isReadingTypingMode(m) && typedValue && hasNonHiraganaReadingAnswer(typedValue)) {
       setReadingWarn(true)
+      return false
+    }
+    if (
+      isReadingTypingMode(m) &&
+      typedValue &&
+      hasMissingDoubledN(typedValue, expectedAnswer(c, m))
+    ) {
+      setNWarn(true)
       return false
     }
     return true
@@ -443,6 +456,7 @@ export function ReviewSessionPage() {
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
+    setNWarn(false)
   }
 
   async function onUndoJudgementFromHeader() {
@@ -480,6 +494,7 @@ export function ReviewSessionPage() {
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
+    setNWarn(false)
     if (!snap) {
       setSnapshot(null)
       setPhase("prompt")
@@ -588,6 +603,7 @@ export function ReviewSessionPage() {
                   synonymWarn={synonymWarn}
                   kanjiWarn={kanjiWarn}
                   latinWarn={latinWarn}
+                  nWarn={nWarn}
                   onTypedSubmit={() => tryShowAnswerRef.current()}
                   revealed={phase === "answer"}
                   column="question"
@@ -622,6 +638,7 @@ export function ReviewSessionPage() {
                     synonymWarn={synonymWarn}
                     kanjiWarn={kanjiWarn}
                     latinWarn={latinWarn}
+                    nWarn={nWarn}
                     onTypedSubmit={() => tryShowAnswerRef.current()}
                     column="answer"
                     promptFocusToken={promptFocusToken}

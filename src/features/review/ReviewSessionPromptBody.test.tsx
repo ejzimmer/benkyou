@@ -732,6 +732,24 @@ describe("ReviewSessionPromptBody", () => {
 
     expect(screen.getByText(/answer uses kanji/i)).toBeInTheDocument()
   })
+
+  it("shows the missed-doubled-n validation error for a reading answer", () => {
+    render(
+      <ReviewSessionPromptBody
+        item={vocabItem}
+        typed="うねいしゃ"
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        synonymWarn={false}
+        kanjiWarn={false}
+        nWarn
+        onTypedSubmit={vi.fn()}
+        column="answer"
+      />,
+    )
+
+    expect(screen.getByText(/missed ん/i)).toBeInTheDocument()
+  })
 })
 
 const twoGapItem: DueItem = {
