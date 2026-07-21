@@ -590,7 +590,7 @@ export function ReviewSessionPage() {
         {modeLabel && <h2 className="sr-only">{modeLabel}</h2>}
 
         {pendingIncorrectDelay ? (
-          <p className="muted small">Next card…</p>
+          <p className="muted small">次。。。</p>
         ) : (
           <div className="review-columns">
             <div className="review-question">
