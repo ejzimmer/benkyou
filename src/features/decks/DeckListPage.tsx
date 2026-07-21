@@ -20,9 +20,14 @@ export function DeckListPage() {
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed) {
+      setErr("Deck name can't be empty")
+      return
+    }
     setErr(null)
     try {
-      const deck = await createDeck(name.trim() || "New deck")
+      const deck = await createDeck(trimmed)
       setName("")
       navigate(`/decks/${deck.id}`)
     } catch (x) {

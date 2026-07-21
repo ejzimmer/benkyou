@@ -258,7 +258,7 @@ export function AnkiImportGapReview({
         </button>
         <button
           type="button"
-          className="btn"
+          className="btn secondary"
           disabled={importing}
           onClick={onCancel}
         >
