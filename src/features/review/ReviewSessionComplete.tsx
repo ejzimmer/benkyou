@@ -4,6 +4,7 @@ import { useAuth } from "../../lib/auth/AuthContext"
 import { useSync } from "../../lib/sync/SyncContext"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
+import { SyncEditsButton } from "../../ui/SyncEditsButton"
 
 const CONFETTI_COLORS = [
   "var(--blue)",
@@ -66,8 +67,9 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
         <Link to={backTo} className="back-link" aria-label="Exit review">
           <ChevronLeftIcon className="back-chevron" />
         </Link>
-        <div className="review-header-menu">
-          <UserMenu />
+        <div className="review-header-actions">
+          <UserMenu iconOnly />
+          <SyncEditsButton inline />
         </div>
       </header>
 
@@ -107,7 +109,7 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
             </button>
           )}
           <button type="button" className="btn secondary" onClick={onUndoLastJudgement}>
-            Undo last judgement
+            取り消す
           </button>
         </div>
         {uploadError && <p className="error">{uploadError}</p>}

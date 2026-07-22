@@ -32,6 +32,7 @@ import {
 } from "./reviewFlowHelpers"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
+import { SyncEditsButton } from "../../ui/SyncEditsButton"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
@@ -525,8 +526,9 @@ export function ReviewSessionPage() {
           <Link to={backTo} className="back-link" aria-label="Exit review">
             <ChevronLeftIcon className="back-chevron" />
           </Link>
-          <div className="review-header-menu">
-            <UserMenu />
+          <div className="review-header-actions">
+            <UserMenu iconOnly />
+            <SyncEditsButton inline />
           </div>
         </header>
         <p className="muted">Nothing due right now.</p>
@@ -536,7 +538,7 @@ export function ReviewSessionPage() {
             className="btn secondary"
             onClick={() => void onUndoJudgementFromHeader()}
           >
-            Undo last judgement
+            取り消す
           </button>
         </div>
       </div>
@@ -563,26 +565,25 @@ export function ReviewSessionPage() {
         >
           <ChevronLeftIcon className="back-chevron" />
         </Link>
-        <div className="review-header-menu">
-          <p className="muted small">{sessionQueue.length} remaining</p>
-          <UserMenu />
-        </div>
         <div className="review-header-actions">
+          <p className="muted small">残り{sessionQueue.length}枚</p>
           <Link
             to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(
               reviewReturnTo,
             )}`}
             className="btn secondary"
           >
-            Edit card
+            カード編集
           </Link>
           <button
             type="button"
             className="btn secondary"
             onClick={() => void onUndoJudgementFromHeader()}
           >
-            Undo last judgement
+            取り消す
           </button>
+          <UserMenu iconOnly />
+          <SyncEditsButton inline />
         </div>
       </header>
 
