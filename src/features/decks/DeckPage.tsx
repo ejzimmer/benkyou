@@ -83,28 +83,26 @@ export function DeckPage() {
       </header>
 
       <div className="toolbar deck-toolbar">
-        <span className="muted small toolbar-count">
-          {cardCount} card{cardCount === 1 ? "" : "s"}
-        </span>
+        <span className="muted small toolbar-count">{cardCount}枚のカード</span>
         <Link to={`/decks/${deckId}/review`} className="btn secondary green">
-          Review this deck
+          デッキを復習
         </Link>
         <button
           type="button"
           className="btn secondary pink"
           onClick={onDeleteDeck}
         >
-          Delete deck
+          デッキを削除
         </button>
         <Link to={`/decks/${deckId}/cards/new`} className="btn primary blue">
-          Add card
+          カードを作る
         </Link>
       </div>
 
       <section className="panel">
         <input
           className="input"
-          placeholder="Search…"
+          placeholder="探す"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
