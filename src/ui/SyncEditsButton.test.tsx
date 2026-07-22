@@ -30,11 +30,11 @@ describe("SyncEditsButton", () => {
     mockSyncing = false
   })
 
-  it("shows a plain blue 'Sync' button when there are no session edits", () => {
+  it("shows a plain white 'Sync' button when there are no session edits", () => {
     render(<SyncEditsButton />)
     const button = screen.getByRole("button", { name: /^sync$/i })
     expect(button).toBeInTheDocument()
-    expect(button).toHaveClass("btn", "secondary")
+    expect(button).toHaveClass("btn", "secondary", "white")
     expect(button).not.toHaveClass("green")
   })
 
@@ -71,7 +71,7 @@ describe("SyncEditsButton", () => {
     expect(button).not.toHaveTextContent(/sync \(1\)/i)
   })
 
-  it("calls syncEditsNow (which shares SyncContext's in-flight guard) on click and reverts to the plain blue state once it clears the edits", async () => {
+  it("calls syncEditsNow (which shares SyncContext's in-flight guard) on click and reverts to the plain white state once it clears the edits", async () => {
     markCardEdited("card-1")
     syncEditsNow.mockImplementation(async () => {
       clearSessionEdits()
@@ -83,6 +83,7 @@ describe("SyncEditsButton", () => {
 
     expect(syncEditsNow).toHaveBeenCalledTimes(1)
     const button = screen.getByRole("button", { name: /^sync$/i })
+    expect(button).toHaveClass("white")
     expect(button).not.toHaveClass("green")
   })
 
@@ -96,5 +97,12 @@ describe("SyncEditsButton", () => {
 
     expect(await screen.findByText("network down")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /sync \(1\)/i })).toBeInTheDocument()
+  })
+
+  it("renders as a plain in-flow item instead of the fixed banner when inline", () => {
+    const { container } = render(<SyncEditsButton inline />)
+    expect(container.querySelector(".sync-edits-banner")).not.toBeInTheDocument()
+    expect(container.querySelector(".sync-edits-inline")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^sync$/i })).toBeInTheDocument()
   })
 })
