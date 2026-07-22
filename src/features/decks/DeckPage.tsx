@@ -68,7 +68,7 @@ export function DeckPage() {
     deleteDeck(deckId).catch(console.error)
   }
 
-  if (deck === undefined) return <div className="page">Loading…</div>
+  if (deck === undefined) return <div className="page">読み込み中</div>
   if (deck === null) return <div className="page">Deck not found.</div>
 
   return (
