@@ -82,7 +82,7 @@ describe("ReviewSessionPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
     })
-    expect(screen.getByText(/2 remaining/i)).toBeInTheDocument()
+    expect(screen.getByText("残り2枚")).toBeInTheDocument()
   })
 
   it("after incorrect, does not flash next card answer during queue rotation gap", async () => {
@@ -190,7 +190,7 @@ describe("ReviewSessionPage", () => {
       expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
     })
 
-    const editLinkBefore = screen.getByRole("link", { name: /edit card/i })
+    const editLinkBefore = screen.getByRole("link", { name: "カード編集" })
     expect(editLinkBefore).toHaveAttribute(
       "href",
       expect.stringContaining(`/cards/${secondCard.id}`),
@@ -208,7 +208,7 @@ describe("ReviewSessionPage", () => {
       expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
     })
 
-    const editLinkAfter = screen.getByRole("link", { name: /edit card/i })
+    const editLinkAfter = screen.getByRole("link", { name: "カード編集" })
     expect(editLinkAfter.getAttribute("href")).toBe(hrefBefore)
   })
 
@@ -247,7 +247,7 @@ describe("ReviewSessionPage", () => {
     const input = await screen.findByLabelText(/ひらがなで/)
     await user.type(input, "ほけ")
 
-    await user.click(screen.getByRole("link", { name: /edit card/i }))
+    await user.click(screen.getByRole("link", { name: "カード編集" }))
     await user.click(await screen.findByRole("link", { name: /back/i }))
 
     const restoredInput = await screen.findByLabelText(/ひらがなで/)
@@ -295,7 +295,7 @@ describe("ReviewSessionPage", () => {
       await screen.findByRole("button", { name: /^correct$/i }),
     ).toBeInTheDocument()
 
-    await user.click(screen.getByRole("link", { name: /edit card/i }))
+    await user.click(screen.getByRole("link", { name: "カード編集" }))
     await user.click(await screen.findByRole("link", { name: /back/i }))
 
     expect(
@@ -388,7 +388,7 @@ describe("ReviewSessionPage", () => {
     // undo — otherwise undo can race the grade and find no record.
     await screen.findByText("全カードやり終わった!")
 
-    await user.click(screen.getByRole("button", { name: /undo last judgement/i }))
+    await user.click(screen.getByRole("button", { name: "取り消す" }))
 
     expect(
       await screen.findByRole("button", { name: /^correct$/i }),
@@ -442,7 +442,7 @@ describe("ReviewSessionPage", () => {
     await screen.findByRole("button", { name: /show answer/i })
 
     await user.click(
-      screen.getByRole("button", { name: /undo last judgement/i }),
+      screen.getByRole("button", { name: "取り消す" }),
     )
 
     // The answer screen reopens showing what was entered, not a blank answer.
