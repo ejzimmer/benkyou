@@ -446,7 +446,7 @@ export function CardEditPage() {
     void addImageFiles(files)
   }
 
-  if (loading) return <div className="page">Loading…</div>
+  if (loading) return <div className="page">読み込み中</div>
 
   return (
     <div className="page">

@@ -103,10 +103,10 @@ export function DeckListPage() {
       <nav className="footer-nav">
         {totalDue > 0 ? (
           <Link to="/review" className="btn primary">
-            Review {totalDue} due
+            復習する
           </Link>
         ) : (
-          <span className="muted">No reviews currently due</span>
+          <span className="muted">復習するカードはありません</span>
         )}
       </nav>
     </div>

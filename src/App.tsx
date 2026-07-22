@@ -31,7 +31,7 @@ export function App() {
   if (loading) {
     return (
       <div className="page centred">
-        <p>Loading…</p>
+        <p>読み込み中</p>
       </div>
     )
   }

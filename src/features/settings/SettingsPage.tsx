@@ -202,7 +202,7 @@ export function SettingsPage() {
       {(offlineOnly || !user) && (
         <section className="panel">
           <h2>Account</h2>
-          {loading && <p>Loading…</p>}
+          {loading && <p>読み込み中</p>}
           {offlineOnly && (
             <p className="muted">
               Firebase env vars are not set — running in offline-only mode. Add
