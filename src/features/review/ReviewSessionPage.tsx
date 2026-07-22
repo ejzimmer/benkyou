@@ -29,6 +29,7 @@ import {
   isReadingTypingMode,
   REVIEW_MODE_LABELS,
   requiresTyping,
+  showAnswerOnQuestionSide,
 } from "./reviewFlowHelpers"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
@@ -545,6 +546,7 @@ export function ReviewSessionPage() {
 
   const item = current
   const exp = expectedAnswer(item.card, item.modeId)
+  const buttonOnQuestionSide = showAnswerOnQuestionSide(item.card, item.modeId)
   const reviewReturnParams = new URLSearchParams({
     resumeCardId: item.card.id,
     resumeModeId: item.modeId,
@@ -610,12 +612,39 @@ export function ReviewSessionPage() {
                   promptFocusToken={promptFocusToken}
                 />
               </div>
-              {/* Invisible twin of `.review-footer` — reserves the same
-                  space the answer card's real footer takes, so this card's
-                  text centers at the same height as the answer's. */}
-              <ReviewFooter className="review-question-footer-spacer" aria-hidden>
-                <span className="btn">Show answer</span>
-              </ReviewFooter>
+              {buttonOnQuestionSide ? (
+                // For oral modes and an inline-gap construction, all of the
+                // user's interaction (speaking, or typing the gap) happens on
+                // this side, so the button that advances past it lives here
+                // too, pinned to the bottom and scrolled behind by
+                // `.review-question-content`'s own overflow. Once the answer
+                // is revealed this collapses to an invisible/inert spacer,
+                // same as the never-had-a-button case below — the
+                // Correct/Incorrect controls that replace it live in the
+                // answer card's revealed layer regardless of which side the
+                // button was on.
+                <ReviewFooter
+                  className={phase === "answer" ? "review-footer-spacer" : undefined}
+                  aria-hidden={phase === "answer"}
+                >
+                  <button
+                    ref={showAnswerBtnRef}
+                    type="button"
+                    className="btn primary"
+                    onClick={() => tryShowAnswerRef.current()}
+                    {...inertWhen(phase === "answer")}
+                  >
+                    Show answer
+                  </button>
+                </ReviewFooter>
+              ) : (
+                // Invisible twin of `.review-footer` — reserves the same
+                // space the answer card's real footer takes, so this card's
+                // text centers at the same height as the answer's.
+                <ReviewFooter className="review-footer-spacer" aria-hidden>
+                  <span className="btn">Show answer</span>
+                </ReviewFooter>
+              )}
             </div>
             <div className="review-answer">
               {/* Both layers stay mounted throughout — revealing the answer
@@ -643,16 +672,26 @@ export function ReviewSessionPage() {
                     column="answer"
                     promptFocusToken={promptFocusToken}
                   />
-                  <ReviewFooter>
-                    <button
-                      ref={showAnswerBtnRef}
-                      type="button"
-                      className="btn primary"
-                      onClick={() => tryShowAnswerRef.current()}
-                    >
-                      Show answer
-                    </button>
-                  </ReviewFooter>
+                  {buttonOnQuestionSide ? (
+                    // The real button lives on the question side for this
+                    // mode (see above) — reserve the same footer space here
+                    // so this card's content still centers at the same
+                    // height as the question card's.
+                    <ReviewFooter className="review-footer-spacer" aria-hidden>
+                      <span className="btn">Show answer</span>
+                    </ReviewFooter>
+                  ) : (
+                    <ReviewFooter>
+                      <button
+                        ref={showAnswerBtnRef}
+                        type="button"
+                        className="btn primary"
+                        onClick={() => tryShowAnswerRef.current()}
+                      >
+                        Show answer
+                      </button>
+                    </ReviewFooter>
+                  )}
                 </div>
 
                 <div

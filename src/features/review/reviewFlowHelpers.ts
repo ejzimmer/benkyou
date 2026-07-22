@@ -156,6 +156,23 @@ export function readingForConstruction(
   return undefined
 }
 
+/**
+ * Whether the "Show answer" button belongs at the bottom of the question
+ * (left) card instead of its usual spot on the answer (right) card: the oral
+ * modes (answered aloud, with nothing to type) and a construction gap typed
+ * inline in the question sentence itself both put all of the user's
+ * interaction on the question side, so the button that advances past it
+ * should live there too rather than across the layout on the answer side.
+ */
+export function showAnswerOnQuestionSide(card: Card, mode: ReviewModeId): boolean {
+  if (mode === "vocab_oral_en" || mode === "grammar_oral_meaning") return true
+  if (mode === "grammar_type_construction" && card.kind === "grammar") {
+    const gapMarker = card.content.gapMarker.trim()
+    return Boolean(gapMarker) && card.content.sentenceWithGap.includes(gapMarker)
+  }
+  return false
+}
+
 export function requiresTyping(mode: ReviewModeId): boolean {
   return (
     mode === "vocab_type_reading" ||
