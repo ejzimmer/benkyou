@@ -52,6 +52,12 @@ function seededPad(text: string): number {
   return (sum % 3) + 1
 }
 
+// The `ch` unit is the width of the font's "0" glyph, which in the app's
+// Japanese-capable font stack is much narrower than a full-width kana glyph —
+// sizing kana text by raw character count in `ch` leaves the box too
+// cramped for what actually gets typed into it.
+const KANA_CH_WIDTH = 1.8
+
 // Sizes an inline gap input to roughly fit what will actually be typed into
 // it: readings are typed in hiragana, which runs longer than a kanji answer
 // itself, so a kanji answer with a known reading is sized off the reading
@@ -60,12 +66,14 @@ function seededPad(text: string): number {
 // estimate.
 function gapInputWidthStyle(answerText: string, reading?: string): CSSProperties {
   if (!containsKanji(answerText)) {
-    return { width: `${Array.from(answerText).length + seededPad(answerText)}ch` }
+    const len = Array.from(answerText).length
+    return { width: `${len * KANA_CH_WIDTH + seededPad(answerText)}ch` }
   }
   if (reading?.trim()) {
-    return { width: `${Array.from(reading).length + seededPad(reading)}ch` }
+    const len = Array.from(reading).length
+    return { width: `${len * KANA_CH_WIDTH + seededPad(reading)}ch` }
   }
-  return { width: `${Array.from(answerText).length * 2.5}ch` }
+  return { width: `${Array.from(answerText).length * 2.5 * KANA_CH_WIDTH}ch` }
 }
 
 function TypingAnswerInput({
