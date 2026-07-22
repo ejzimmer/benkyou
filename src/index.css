@@ -1046,9 +1046,10 @@ fieldset.plain legend {
   padding: 1.75rem 1.25rem 1rem;
 }
 
-/* Centers the question text in the space above `.review-question-footer-spacer`
-   below, so it lands at the same vertical position as the answer card's text —
-   which is centered above its own real `.review-footer` buttons. */
+/* Centers the question text in the space above the footer below (real
+   "Show answer" button, or an invisible spacer — see `showAnswerOnQuestionSide`),
+   so it lands at the same vertical position as the answer card's text — which
+   is centered above its own footer. */
 .review-question-content {
   flex: 1;
   min-height: 0;
@@ -1064,10 +1065,11 @@ fieldset.plain legend {
   overflow-y: auto;
 }
 
-/* Same size and position as the real `.review-footer` on the answer side,
-   just invisible — reserves matching space so the question text centers over
-   the same area the answer text does above its Correct/Incorrect buttons. */
-.review-question-footer-spacer {
+/* Same size and position as the real `.review-footer` in the same spot on
+   the other card, just invisible — reserves matching space so both cards'
+   content centers at the same height regardless of which one has the real
+   "Show answer" button (see `showAnswerOnQuestionSide`). */
+.review-footer-spacer {
   visibility: hidden;
 }
 
@@ -1207,6 +1209,7 @@ fieldset.plain legend {
   padding-top: 2.5rem;
 }
 
+.review-question .review-footer,
 .review-answer-prompt .review-footer,
 .review-answer-revealed .review-footer {
   justify-content: center;
