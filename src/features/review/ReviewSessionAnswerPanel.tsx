@@ -112,28 +112,31 @@ export function ReviewSessionAnswerPanel({
         ref={correctBtnRef}
         type="button"
         className="btn good"
+        aria-label="Correct"
         disabled={pendingIncorrectDelay}
         onClick={() => onJudge(true)}
       >
-        Correct
+        <span className="maru-mark" aria-hidden="true" />
       </button>
       <button
         ref={incorrectBtnRef}
         type="button"
         className="btn bad"
+        aria-label="Incorrect"
         disabled={pendingIncorrectDelay}
         onClick={() => onJudge(false)}
       >
-        Incorrect
+        <span className="cross-mark" aria-hidden="true" />
       </button>
       {typingMode && (
         <button
           type="button"
           className="btn secondary"
+          aria-label="Undo answer"
           disabled={pendingIncorrectDelay}
           onClick={() => onUndoAnswer()}
         >
-          Undo answer
+          やり直す
         </button>
       )}
     </ReviewFooter>

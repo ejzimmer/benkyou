@@ -564,6 +564,9 @@ fieldset.plain legend {
   border-color: var(--green);
   color: var(--on-fluoro);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn.bad {
@@ -571,6 +574,22 @@ fieldset.plain legend {
   border-color: var(--pink);
   color: var(--on-fluoro);
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The Correct/Incorrect buttons reuse the answer panel's maru/cross marks,
+   but coloured to match their own button fill (rather than the green/pink
+   they take on the dark answer-card background) so they read as a plain
+   coloured button, not a contrasting ring/cross drawn on top of it. */
+.btn.good .maru-mark {
+  border-color: var(--green);
+}
+
+.btn.bad .cross-mark::before,
+.btn.bad .cross-mark::after {
+  background: var(--pink);
 }
 
 .btn:disabled {
