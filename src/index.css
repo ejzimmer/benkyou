@@ -734,6 +734,7 @@ fieldset.plain legend {
    is otherwise happy to break in the middle of it to even out line lengths. */
 .construction-fill {
   background: hsl(0 0% 100% / 0.5);
+  color: hsl(0 0% 100% / 0.5);
   border-radius: 4px;
   padding: 0.05em 0.25em;
   font-weight: 600;
