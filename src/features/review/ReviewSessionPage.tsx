@@ -632,10 +632,11 @@ export function ReviewSessionPage() {
                     ref={showAnswerBtnRef}
                     type="button"
                     className="btn primary"
+                    aria-label="Show answer"
                     onClick={() => tryShowAnswerRef.current()}
                     {...inertWhen(phase === "answer")}
                   >
-                    Show answer
+                    答えを見る
                   </button>
                 </ReviewFooter>
               ) : (
@@ -643,7 +644,7 @@ export function ReviewSessionPage() {
                 // space the answer card's real footer takes, so this card's
                 // text centers at the same height as the answer's.
                 <ReviewFooter className="review-footer-spacer" aria-hidden>
-                  <span className="btn">Show answer</span>
+                  <span className="btn">答えを見る</span>
                 </ReviewFooter>
               )}
             </div>
@@ -679,7 +680,7 @@ export function ReviewSessionPage() {
                     // so this card's content still centers at the same
                     // height as the question card's.
                     <ReviewFooter className="review-footer-spacer" aria-hidden>
-                      <span className="btn">Show answer</span>
+                      <span className="btn">答えを見る</span>
                     </ReviewFooter>
                   ) : (
                     <ReviewFooter>
@@ -687,9 +688,10 @@ export function ReviewSessionPage() {
                         ref={showAnswerBtnRef}
                         type="button"
                         className="btn primary"
+                        aria-label="Show answer"
                         onClick={() => tryShowAnswerRef.current()}
                       >
-                        Show answer
+                        答えを見る
                       </button>
                     </ReviewFooter>
                   )}
