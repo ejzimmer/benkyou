@@ -1528,7 +1528,6 @@ fieldset.plain legend {
 }
 
 .reading-answer-diff-cell {
-  min-width: 1.05em;
   border-radius: 3px;
   padding: 0.04em 0.08em;
   text-align: center;

@@ -110,7 +110,7 @@ function DiffLine({
       data-reading-diff-line={line}
       tabIndex={hasFurigana ? 0 : undefined}
       style={{
-        gridTemplateColumns: `repeat(${columns}, minmax(1.05em, max-content))`,
+        gridTemplateColumns: `repeat(${columns}, 1.4em)`,
       }}
     >
       {hasFurigana && (
