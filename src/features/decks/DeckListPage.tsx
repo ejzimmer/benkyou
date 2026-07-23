@@ -103,7 +103,7 @@ export function DeckListPage() {
       <nav className="footer-nav">
         {totalDue > 0 ? (
           <Link to="/review" className="btn primary">
-            復習する
+            {totalDue}枚を復習する
           </Link>
         ) : (
           <span className="muted">復習するカードはありません</span>
