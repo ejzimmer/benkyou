@@ -1,7 +1,5 @@
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import { Link } from "react-router-dom"
-import { useAuth } from "../../lib/auth/AuthContext"
-import { useSync } from "../../lib/sync/SyncContext"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncEditsButton } from "../../ui/SyncEditsButton"
@@ -48,18 +46,6 @@ type Props = {
 
 export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
   const pieces = useConfettiPieces()
-  const { user, offlineOnly } = useAuth()
-  const { pushNow, syncing } = useSync()
-  const [uploadError, setUploadError] = useState<string | null>(null)
-
-  async function onUploadChanges() {
-    setUploadError(null)
-    try {
-      await pushNow()
-    } catch (e) {
-      setUploadError(e instanceof Error ? e.message : "Failed to upload changes")
-    }
-  }
 
   return (
     <div className="page review review-complete">
@@ -96,23 +82,12 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
 
         <div className="review-complete-actions">
           <Link to="/" className="btn primary">
-            Home
+            ホーム
           </Link>
-          {!offlineOnly && user && (
-            <button
-              type="button"
-              className="btn secondary"
-              onClick={() => void onUploadChanges()}
-              disabled={syncing}
-            >
-              {syncing ? "Uploading…" : "Upload changes"}
-            </button>
-          )}
           <button type="button" className="btn secondary" onClick={onUndoLastJudgement}>
             取り消す
           </button>
         </div>
-        {uploadError && <p className="error">{uploadError}</p>}
       </div>
     </div>
   )
