@@ -484,7 +484,7 @@ fieldset.plain legend {
 /* Standard secondary CTA: coloured border/text on a dark fill, glowing on
    hover — same soft double-blur used on the deck page's back-link hover. */
 .btn.secondary {
-  background: var(--on-fluoro);
+  background: transparent;
   border-color: var(--blue);
   color: var(--blue);
 }
@@ -1811,6 +1811,18 @@ code {
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+.duplicate-cards-panel {
+  max-width: 420px;
+}
+
+.duplicate-cards-panel .card-list a {
+  font-size: 1.1rem;
+}
+
+.duplicate-cards-footer {
+  justify-content: flex-end;
 }
 
 .sync-conflict-columns {

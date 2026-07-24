@@ -67,14 +67,14 @@ describe("CardEditPage duplicate finder / merge", () => {
     })
 
     await user.click(
-      screen.getByRole("button", { name: /find duplicate cards/i }),
+      screen.getByRole("button", { name: "重複カード検索" }),
     )
 
     const dialog = await screen.findByRole("dialog")
     expect(within(dialog).getByText(/子猫/)).toBeInTheDocument()
 
     await user.click(
-      within(dialog).getByRole("button", { name: /merge into this card/i }),
+      within(dialog).getByRole("button", { name: "統合" }),
     )
 
     await waitFor(() => {
@@ -139,11 +139,11 @@ describe("CardEditPage duplicate finder / merge", () => {
     })
 
     await user.click(
-      screen.getByRole("button", { name: /find duplicate cards/i }),
+      screen.getByRole("button", { name: "重複カード検索" }),
     )
     const dialog = await screen.findByRole("dialog")
     await user.click(
-      within(dialog).getByRole("button", { name: /merge into this card/i }),
+      within(dialog).getByRole("button", { name: "統合" }),
     )
 
     await waitFor(() => {
@@ -176,7 +176,7 @@ describe("CardEditPage duplicate finder / merge", () => {
     })
 
     await user.click(
-      screen.getByRole("button", { name: /find duplicate cards/i }),
+      screen.getByRole("button", { name: "重複カード検索" }),
     )
 
     expect(
