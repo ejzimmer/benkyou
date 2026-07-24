@@ -3,6 +3,7 @@ import type { DueItem } from "../../services/review"
 import { AnswerComparison } from "../../ui/AnswerComparison"
 import { CardImageRow } from "../../ui/CardImageRow"
 import { fullyCoveredSegments } from "../../domain/readingsMap"
+import { useScrollShadow } from "../../ui/useScrollShadow"
 import { ReviewFooter } from "./ReviewFooter"
 import {
   answersMatch,
@@ -49,6 +50,7 @@ export function ReviewSessionAnswerPanel({
 }: ReviewSessionAnswerPanelProps) {
   const { card, modeId: m } = item
   const typingMode = requiresTyping(m)
+  const answerContentRef = useScrollShadow<HTMLDivElement>()
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
   const answeredCorrectly = answersMatch(m, typed, expected)
@@ -149,7 +151,7 @@ export function ReviewSessionAnswerPanel({
 
   return (
     <div className="answer-block stack">
-      <div className="answer-content stack">
+      <div className="answer-content stack" ref={answerContentRef}>
         {m === "vocab_oral_en" && card.kind === "vocabulary" && (
           <div className="oral-answer">
             {card.content.definitionsEn

@@ -4,6 +4,7 @@ import {
   REVIEW_STAGE_LABEL,
   summariesLookIdentical,
 } from "./syncCompare"
+import { useScrollShadow } from "../../ui/useScrollShadow"
 
 type Props = {
   conflict: SyncConflict
@@ -78,10 +79,11 @@ export function SyncConflictModal({
     conflict.localSummary,
     conflict.remoteSummary,
   )
+  const panelRef = useScrollShadow<HTMLDivElement>()
 
   return (
     <div className="sync-conflict-backdrop" role="dialog" aria-modal="true">
-      <div className="sync-conflict-panel panel">
+      <div ref={panelRef} className="sync-conflict-panel panel">
         <h2>{title}</h2>
         {conflict.contextLabel && (
           <p className="small">
