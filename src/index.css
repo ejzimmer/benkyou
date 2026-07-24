@@ -290,7 +290,7 @@ a:hover {
   gap: 1.5rem;
 }
 
-.card-edit-form label:not(.switch-external-label) {
+.card-edit-form label:not(.switch-option) {
   font-weight: 700;
 }
 
@@ -369,74 +369,71 @@ fieldset.plain legend {
   float: none;
 }
 
-.switch-row {
-  display: flex;
+.switch-group {
   align-items: center;
-  gap: 0.5rem;
-}
-
-.switch-external-label {
-  font-style: italic;
-  font-size: 0.85rem;
-  cursor: pointer;
 }
 
 .switch {
-  position: relative;
   display: inline-flex;
-  width: 2.5rem;
-  height: 1.3rem;
-  flex-shrink: 0;
   border: 1px solid #33334a;
-  border-radius: 999px;
-  padding: 2px;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .switch:has(input:disabled) {
   opacity: 0.5;
-  cursor: not-allowed;
 }
 
-.switch:has(input:disabled) .switch-hit {
-  cursor: not-allowed;
-}
-
-.switch-row:has(input:disabled) .switch-external-label {
-  cursor: not-allowed;
-}
-
-.switch-thumb {
-  position: absolute;
-  inset: 2px 50% 2px 2px;
-  border-radius: 999px;
-  background: var(--blue);
-  transition: transform 0.15s ease;
-}
-
-.switch-end .switch-thumb {
-  transform: translateX(100%);
-}
-
-.switch-hit {
+.switch-option {
   position: relative;
-  z-index: 1;
-  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.5rem;
+  font-size: 1.15rem;
+  font-style: normal;
+  font-weight: 600;
+  color: inherit;
+  background: #171726;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.switch-hit input {
+.switch-option:not(:first-child) {
+  border-left: 1px solid #33334a;
+}
+
+.switch-option:hover {
+  background: #252538;
+}
+
+.switch-option-selected,
+.switch-option-selected:hover {
+  background: var(--blue);
+  color: #0f0f18;
+}
+
+.switch:has(input:disabled) .switch-option {
+  cursor: not-allowed;
+}
+
+.switch-option input {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
-.switch-hit:has(input:focus-visible) {
+.switch-option:has(input:focus-visible) {
   outline: 2px solid var(--blue);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 .btn {

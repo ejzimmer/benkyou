@@ -16,10 +16,9 @@ type Props<T extends string> = {
 
 /**
  * A toggle between exactly two equally-weighted options — e.g. vocabulary vs
- * grammar. Unlike an on/off switch, neither side reads as the "active" or
- * "default" state; the sliding thumb just tracks which of the two labels is
- * currently selected. The labels themselves sit beside the (small) track
- * rather than inside it.
+ * grammar. Rendered as two joined buttons, one per option, with the selected
+ * option shown pressed. Neither side reads as the "active" or "default"
+ * state.
  */
 export function Switch<T extends string>({
   legend,
@@ -30,38 +29,33 @@ export function Switch<T extends string>({
   disabled = false,
 }: Props<T>) {
   const uid = useId()
-  const selectedSide = value === options[1].value ? "end" : "start"
   const idFor = (option: Option<T>) => `${uid}-${option.value}`
 
   return (
-    <fieldset className="plain">
-      <legend>{legend}</legend>
-      <div className="switch-row">
-        <label className="switch-external-label" htmlFor={idFor(options[0])}>
-          {options[0].label}
-        </label>
-        <div className={`switch switch-${selectedSide}`}>
-          <span className="switch-thumb" aria-hidden="true" />
-          {options.map((option) => (
-            <span
-              className="switch-hit"
-              key={option.value}
-              onClick={() => !disabled && onChange(option.value)}
-            >
-              <input
-                id={idFor(option)}
-                type="radio"
-                name={name}
-                checked={value === option.value}
-                disabled={disabled}
-                onChange={() => onChange(option.value)}
-              />
-            </span>
-          ))}
-        </div>
-        <label className="switch-external-label" htmlFor={idFor(options[1])}>
-          {options[1].label}
-        </label>
+    <fieldset className="plain switch-group">
+      <legend className="sr-only">{legend}</legend>
+      <div className="switch">
+        {options.map((option) => (
+          <label
+            key={option.value}
+            className={
+              value === option.value
+                ? "switch-option switch-option-selected"
+                : "switch-option"
+            }
+            htmlFor={idFor(option)}
+          >
+            <input
+              id={idFor(option)}
+              type="radio"
+              name={name}
+              checked={value === option.value}
+              disabled={disabled}
+              onChange={() => onChange(option.value)}
+            />
+            {option.label}
+          </label>
+        ))}
       </div>
     </fieldset>
   )
