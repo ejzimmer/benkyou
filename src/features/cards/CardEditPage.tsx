@@ -452,7 +452,7 @@ export function CardEditPage() {
     <div className="page">
       <header className="header app-header">
         <PageHeading backTo={backTo} backLabel={returnTo ? "Back" : "Back to deck"}>
-          {isNew ? "New card" : "Edit card"}
+          {isNew ? "新規カード" : "カード編集"}
         </PageHeading>
         <div className="header-actions">
           <UserMenu />
