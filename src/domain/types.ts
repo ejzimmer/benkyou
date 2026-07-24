@@ -110,10 +110,10 @@ export const REVIEW_MODES = [
 
 export type ReviewModeId = (typeof REVIEW_MODES)[number]
 
-/** User-facing label for a card's kind — the internal "grammar" kind is shown as "Fill in the gap". */
+/** User-facing label for a card's kind — the internal "grammar" kind is shown as "穴埋めカード" (fill-in-the-gap card). */
 export const CARD_KIND_LABELS: Record<Card["kind"], string> = {
-  vocabulary: "Vocabulary",
-  grammar: "Fill in the gap",
+  vocabulary: "単語カード",
+  grammar: "穴埋めカード",
 }
 
 export function reviewModesForCard(card: Card): ReviewModeId[] {

@@ -59,8 +59,8 @@ describe("Switch", () => {
     expect(onChange).toHaveBeenCalledWith("grammar")
   })
 
-  it("flips the track's start/end class with the selected side", () => {
-    const { container, rerender } = render(
+  it("marks only the selected option's button as pressed", () => {
+    const { rerender } = render(
       <Switch
         legend="Type"
         name="card-kind"
@@ -72,7 +72,10 @@ describe("Switch", () => {
         ]}
       />,
     )
-    expect(container.querySelector(".switch")).toHaveClass("switch-start")
+    expect(screen.getByText("Vocabulary")).toHaveClass("switch-option-selected")
+    expect(screen.getByText("Grammar")).not.toHaveClass(
+      "switch-option-selected",
+    )
 
     rerender(
       <Switch
@@ -86,7 +89,10 @@ describe("Switch", () => {
         ]}
       />,
     )
-    expect(container.querySelector(".switch")).toHaveClass("switch-end")
+    expect(screen.getByText("Vocabulary")).not.toHaveClass(
+      "switch-option-selected",
+    )
+    expect(screen.getByText("Grammar")).toHaveClass("switch-option-selected")
   })
 
   it("disables both options when disabled", () => {
