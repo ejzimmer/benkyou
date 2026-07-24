@@ -375,7 +375,7 @@ fieldset.plain legend {
 
 .switch {
   display: inline-flex;
-  border: 1px solid #33334a;
+  border: 1px solid var(--blue);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -393,8 +393,8 @@ fieldset.plain legend {
   font-size: 1.15rem;
   font-style: normal;
   font-weight: 600;
-  color: inherit;
-  background: #171726;
+  color: var(--blue);
+  background: var(--on-fluoro);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -402,17 +402,18 @@ fieldset.plain legend {
 }
 
 .switch-option:not(:first-child) {
-  border-left: 1px solid #33334a;
+  border-left: 1px solid var(--blue);
 }
 
 .switch-option:hover {
-  background: #252538;
+  box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--blue) 15%, transparent);
 }
 
 .switch-option-selected,
 .switch-option-selected:hover {
   background: var(--blue);
   color: #0f0f18;
+  box-shadow: none;
 }
 
 .switch:has(input:disabled) .switch-option {
@@ -420,11 +421,7 @@ fieldset.plain legend {
 }
 
 .switch:has(input:disabled) .switch-option:hover {
-  background: #171726;
-}
-
-.switch:has(input:disabled) .switch-option-selected:hover {
-  background: var(--blue);
+  box-shadow: none;
 }
 
 .switch-option input {
