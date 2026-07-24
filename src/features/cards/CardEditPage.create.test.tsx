@@ -51,7 +51,7 @@ describe("CardEditPage create flow", () => {
 
     expect(screen.queryByText("Deck page")).not.toBeInTheDocument()
     expect(
-      screen.getByRole("heading", { name: /new card/i }),
+      screen.getByRole("heading", { name: "新規カード" }),
     ).toBeInTheDocument()
     await waitFor(() => {
       expect(screen.getByLabelText(/japanese word/i)).toHaveValue("")
