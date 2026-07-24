@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { AnswerComparison } from "../../ui/AnswerComparison"
 import { CardImageRow } from "../../ui/CardImageRow"
+import { fullyCoveredSegments } from "../../domain/readingsMap"
 import { ReviewFooter } from "./ReviewFooter"
 import {
   answersMatch,
@@ -62,6 +63,10 @@ export function ReviewSessionAnswerPanel({
       : undefined
   const wordFromClueShowRuby =
     Boolean(wordFromClueReading?.trim()) && containsKanji(displayExpected)
+  const wordFromClueSegments =
+    wordFromClueShowRuby && card.kind === "vocabulary"
+      ? fullyCoveredSegments(displayExpected, card.content.readings ?? {})
+      : undefined
   // When the card structurally has multiple answer parts (a multi-gap
   // construction, or a phrase word/construction reading quizzed segment by
   // segment), the comma between them is meaningful content (a part
@@ -178,10 +183,23 @@ export function ReviewSessionAnswerPanel({
                     lang="ja"
                     tabIndex={0}
                   >
-                    <ruby>
-                      {displayExpected}
-                      <rt>{wordFromClueReading}</rt>
-                    </ruby>
+                    {wordFromClueSegments ? (
+                      wordFromClueSegments.map((s, i) =>
+                        s.reading?.trim() ? (
+                          <ruby key={i}>
+                            {s.text}
+                            <rt>{s.reading}</rt>
+                          </ruby>
+                        ) : (
+                          <span key={i}>{s.text}</span>
+                        ),
+                      )
+                    ) : (
+                      <ruby>
+                        {displayExpected}
+                        <rt>{wordFromClueReading}</rt>
+                      </ruby>
+                    )}
                   </span>
                 ) : (
                   <span className="word-from-clue-word" lang="ja">
@@ -196,6 +214,7 @@ export function ReviewSessionAnswerPanel({
                 typed={typed}
                 expected={displayExpected}
                 reading={wordFromClueReading}
+                readings={card.content.readings}
                 answeredCorrectly={answeredCorrectly}
               />
             )}
@@ -210,6 +229,7 @@ export function ReviewSessionAnswerPanel({
               card.content.construction,
               card.content.readings,
             )}
+            readings={card.content.readings}
             answeredCorrectly={answeredCorrectly}
           />
         )}

@@ -1,5 +1,6 @@
 import { diffChars } from "diff"
 import { useId } from "react"
+import { fullyCoveredSegments, type ReadingSegment } from "../domain/readingsMap"
 
 export type AnswerComparisonProps = {
   /** What the user typed. */
@@ -11,6 +12,14 @@ export type AnswerComparisonProps = {
    * the correct line shows furigana on hover/focus.
    */
   reading?: string
+  /**
+   * Kanji phrase → reading map for `expected` (e.g. a card's furigana
+   * `readings` field). When it fully covers every kanji cluster in
+   * `expected`, each cluster gets its own furigana annotation (matching how
+   * the same map renders elsewhere, e.g. `RubySegment`) instead of `reading`
+   * being shown as a single span over the whole answer.
+   */
+  readings?: Record<string, string>
   /**
    * Override for whether `typed` counts as correct. Defaults to strict
    * equality — pass this when the caller's grading is more lenient (e.g.
@@ -51,22 +60,50 @@ function buildAlignedDiff(expected: string, typed: string): {
 const KANJI = /[一-鿿]/
 
 /**
- * Furigana grouped by which diff cells it sits above. When the reading has
- * exactly one character per real (non-gap) cell — the common case for a
- * kanji+okurigana word — each cell gets its own character, so the
- * annotation tracks the diff's column alignment even when gap cells (from
- * extra typed characters) split the word into separate runs. Otherwise the
- * whole reading spans from the first to the last real cell, matching prior
- * behaviour.
+ * Furigana grouped by which diff cells it sits above.
+ *
+ * When `segments` is given (a phrase fully broken down by a readings map),
+ * each segment gets its own group spanning just its own cells — so e.g.
+ * 緩やかな風 with 緩=ゆる/風=かぜ shows "ゆる" over 緩 and "かぜ" over 風
+ * rather than the whole reading spanning the entire phrase.
+ *
+ * Otherwise, when the flat `reading` has exactly one character per real
+ * (non-gap) cell — the common case for a kanji+okurigana word — each cell
+ * gets its own character, so the annotation tracks the diff's column
+ * alignment even when gap cells (from extra typed characters) split the word
+ * into separate runs. Otherwise the whole reading spans from the first to
+ * the last real cell.
  */
-function furiganaGroups(cells: Cell[], reading: string | undefined) {
-  const trimmed = reading?.trim()
-  if (!trimmed) return []
+function furiganaGroups(
+  cells: Cell[],
+  reading: string | undefined,
+  segments?: ReadingSegment[],
+) {
   const realIndexes = cells.reduce<number[]>((acc, cell, index) => {
     if (cell.kind !== "gap") acc.push(index)
     return acc
   }, [])
   if (realIndexes.length === 0) return []
+
+  if (segments) {
+    const groups: { start: number; end: number; text: string }[] = []
+    let pos = 0
+    for (const segment of segments) {
+      const segReading = segment.reading?.trim()
+      if (segReading) {
+        const start = realIndexes[pos]
+        const end = realIndexes[pos + segment.text.length - 1]
+        if (start !== undefined && end !== undefined) {
+          groups.push({ start, end, text: segReading })
+        }
+      }
+      pos += segment.text.length
+    }
+    return groups
+  }
+
+  const trimmed = reading?.trim()
+  if (!trimmed) return []
   if (trimmed.length === realIndexes.length) {
     return realIndexes.map((index, i) => ({
       start: index,
@@ -88,15 +125,17 @@ function DiffLine({
   labelId,
   line,
   reading,
+  segments,
 }: {
   cells: Cell[]
   labelId: string
   line: "correct" | "yours"
   reading?: string
+  segments?: ReadingSegment[]
 }) {
   const descId = useId()
   const columns = Math.max(cells.length, 1)
-  const groups = furiganaGroups(cells, reading)
+  const groups = furiganaGroups(cells, reading, segments)
   const hasFurigana = groups.length > 0
   return (
     <span
@@ -154,12 +193,17 @@ export function AnswerComparison({
   typed,
   expected,
   reading,
+  readings,
   answeredCorrectly,
 }: AnswerComparisonProps) {
   const correctId = useId()
   const yoursId = useId()
   const isCorrect = answeredCorrectly ?? typed === expected
   const showRuby = Boolean(reading?.trim()) && KANJI.test(expected)
+  const segments =
+    showRuby && readings && Object.keys(readings).length > 0
+      ? fullyCoveredSegments(expected, readings)
+      : undefined
   const diff = isCorrect ? null : buildAlignedDiff(expected, typed)
   // Mirrors DiffLine's own hasFurigana check for the correct line: when it
   // reserves margin-top for a floating furigana annotation, the maru beside
@@ -168,7 +212,8 @@ export function AnswerComparison({
   // not on the kanji plus the reserved furigana space above it.
   const correctLineHasFurigana =
     diff !== null &&
-    furiganaGroups(diff.correct, showRuby ? reading : undefined).length > 0
+    furiganaGroups(diff.correct, showRuby ? reading : undefined, segments)
+      .length > 0
 
   const correctBody = diff ? (
     <DiffLine
@@ -176,6 +221,7 @@ export function AnswerComparison({
       labelId={correctId}
       line="correct"
       reading={showRuby ? reading : undefined}
+      segments={segments}
     />
   ) : (
     <span
@@ -183,20 +229,36 @@ export function AnswerComparison({
       lang="ja"
       aria-labelledby={correctId}
     >
-      {expected || "—"}
+      {segments
+        ? segments.map((s, i) =>
+            s.reading?.trim() ? (
+              <ruby key={i}>
+                {s.text}
+                <rt>{s.reading}</rt>
+              </ruby>
+            ) : (
+              <span key={i}>{s.text}</span>
+            ),
+          )
+        : expected || "—"}
     </span>
   )
 
-  const correctAnswer = showRuby && isCorrect ? (
-    <span className="ruby-hover" tabIndex={0}>
-      <ruby>
-        {correctBody}
-        <rt>{reading}</rt>
-      </ruby>
-    </span>
-  ) : (
-    correctBody
-  )
+  const correctAnswer =
+    showRuby && isCorrect ? (
+      <span className="ruby-hover" tabIndex={0}>
+        {segments ? (
+          correctBody
+        ) : (
+          <ruby>
+            {correctBody}
+            <rt>{reading}</rt>
+          </ruby>
+        )}
+      </span>
+    ) : (
+      correctBody
+    )
 
   return (
     <div
