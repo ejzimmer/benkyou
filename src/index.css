@@ -580,16 +580,16 @@ fieldset.plain legend {
 }
 
 /* The Correct/Incorrect buttons reuse the answer panel's maru/cross marks,
-   but coloured to match their own button fill (rather than the green/pink
-   they take on the dark answer-card background) so they read as a plain
-   coloured button, not a contrasting ring/cross drawn on top of it. */
+   but coloured to match the app's background (rather than the green/pink
+   they take on the dark answer-card background) so they read as a mark
+   drawn on top of the button's fill, not a plain coloured button. */
 .btn.good .maru-mark {
-  border-color: var(--green);
+  border-color: var(--on-fluoro);
 }
 
 .btn.bad .cross-mark::before,
 .btn.bad .cross-mark::after {
-  background: var(--pink);
+  background: var(--on-fluoro);
 }
 
 .btn:disabled {
