@@ -50,4 +50,51 @@ describe("AnswerComparison", () => {
     )
     expect(container.querySelector("ruby")).toBeNull()
   })
+
+  it("splits furigana per kanji cluster when a readings map fully covers the answer (correct case)", () => {
+    const { container } = render(
+      <AnswerComparison
+        typed="緩やかな風"
+        expected="緩やかな風"
+        reading="ゆるやかなかぜ"
+        readings={{ 緩: "ゆる", 風: "かぜ" }}
+      />,
+    )
+    const rubies = container.querySelectorAll("ruby")
+    expect(rubies).toHaveLength(2)
+    expect(rubies[0]?.textContent).toBe("緩ゆる")
+    expect(rubies[1]?.textContent).toBe("風かぜ")
+  })
+
+  it("splits furigana per kanji cluster when a readings map fully covers the answer (wrong case)", () => {
+    const { container } = render(
+      <AnswerComparison
+        typed="緩やかな空"
+        expected="緩やかな風"
+        reading="ゆるやかなかぜ"
+        readings={{ 緩: "ゆる", 風: "かぜ" }}
+      />,
+    )
+    const correct = container.querySelector(
+      '[data-reading-diff-line="correct"]',
+    )!
+    const rubies = correct.querySelectorAll(".reading-answer-diff-furigana")
+    expect(rubies).toHaveLength(2)
+    expect(rubies[0]?.querySelector("rt")?.textContent).toBe("ゆる")
+    expect(rubies[1]?.querySelector("rt")?.textContent).toBe("かぜ")
+  })
+
+  it("falls back to a single flat reading when the map doesn't fully cover the answer", () => {
+    const { container } = render(
+      <AnswerComparison
+        typed="緩やかな風"
+        expected="緩やかな風"
+        reading="ゆるやかなかぜ"
+        readings={{ 緩: "ゆる" }}
+      />,
+    )
+    const rubies = container.querySelectorAll("ruby")
+    expect(rubies).toHaveLength(1)
+    expect(rubies[0]?.textContent).toBe("緩やかな風ゆるやかなかぜ")
+  })
 })
