@@ -419,6 +419,14 @@ fieldset.plain legend {
   cursor: not-allowed;
 }
 
+.switch:has(input:disabled) .switch-option:hover {
+  background: #171726;
+}
+
+.switch:has(input:disabled) .switch-option-selected:hover {
+  background: var(--blue);
+}
+
 .switch-option input {
   position: absolute;
   width: 1px;
