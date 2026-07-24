@@ -28,52 +28,45 @@ export function DuplicateCardsModal({
     >
       <div
         ref={panelRef}
-        className="modal-panel panel"
+        className="modal-panel panel duplicate-cards-panel"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2>Duplicate cards</h2>
+        <h2>重複カード</h2>
 
         {matches.length === 0 ? (
           <p className="muted small">No other cards contain this word.</p>
         ) : (
-          <>
-            <p className="muted small">
-              These cards contain this card&apos;s Japanese word. Merging
-              concatenates matching fields onto this card — clean up the
-              result afterwards.
-            </p>
-            <ul className="card-list">
-              {matches.map((match) => (
-                <li key={match.id}>
-                  <Link
-                    to={`/decks/${match.deckId}/cards/${encodeURIComponent(match.id)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {japaneseWordForCard(match)}{" "}
-                    <span className="muted small">
-                      ({CARD_KIND_LABELS[match.kind]})
-                    </span>
-                  </Link>
-                  <button
-                    type="button"
-                    className="btn secondary"
-                    disabled={mergingId === match.id}
-                    onClick={() => onMerge(match)}
-                  >
-                    {mergingId === match.id ? "Merging…" : "Merge into this card"}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
+          <ul className="card-list">
+            {matches.map((match) => (
+              <li key={match.id}>
+                <Link
+                  to={`/decks/${match.deckId}/cards/${encodeURIComponent(match.id)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {japaneseWordForCard(match)}{" "}
+                  <span className="muted small">
+                    ({CARD_KIND_LABELS[match.kind]})
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  className="btn secondary"
+                  disabled={mergingId === match.id}
+                  onClick={() => onMerge(match)}
+                >
+                  {mergingId === match.id ? "Merging…" : "統合"}
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
 
         {error && <p className="error">{error}</p>}
 
-        <div className="toolbar">
-          <button type="button" className="btn secondary" onClick={onClose}>
-            Close
+        <div className="toolbar duplicate-cards-footer">
+          <button type="button" className="btn primary" onClick={onClose}>
+            閉じる
           </button>
         </div>
       </div>

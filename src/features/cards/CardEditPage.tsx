@@ -464,7 +464,7 @@ export function CardEditPage() {
       {!isNew && (
         <div className="toolbar card-edit-toolbar">
           <button type="button" className="btn secondary" onClick={onFindDuplicates}>
-            Find duplicate cards
+            重複カード検索
           </button>
           <button type="button" className="btn primary pink" onClick={onDeleteCard}>
             Delete card
