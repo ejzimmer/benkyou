@@ -214,9 +214,7 @@ export function ReviewSessionAnswerPanel({
                 typed={typed}
                 expected={displayExpected}
                 reading={wordFromClueReading}
-                readings={
-                  card.kind === "vocabulary" ? card.content.readings : undefined
-                }
+                readings={card.content.readings}
                 answeredCorrectly={answeredCorrectly}
               />
             )}
