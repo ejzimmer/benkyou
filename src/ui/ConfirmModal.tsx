@@ -1,3 +1,5 @@
+import { useScrollShadow } from "./useScrollShadow"
+
 type Props = {
   message: string
   confirmLabel?: string
@@ -11,6 +13,7 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: Props) {
+  const panelRef = useScrollShadow<HTMLDivElement>()
   return (
     <div
       className="modal-backdrop"
@@ -18,7 +21,11 @@ export function ConfirmModal({
       aria-modal="true"
       onClick={onCancel}
     >
-      <div className="modal-panel panel" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        className="modal-panel panel"
+        onClick={(e) => e.stopPropagation()}
+      >
         <p>{message}</p>
         <div className="toolbar">
           <button type="button" className="btn secondary" onClick={onCancel}>

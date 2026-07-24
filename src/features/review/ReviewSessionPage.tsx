@@ -34,6 +34,8 @@ import {
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncEditsButton } from "../../ui/SyncEditsButton"
+import { ScrollShadow } from "../../ui/ScrollShadow"
+import { useScrollShadow } from "../../ui/useScrollShadow"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
@@ -119,6 +121,7 @@ export function ReviewSessionPage() {
   const [promptToRevealMs, setPromptToRevealMs] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [pendingIncorrectDelay, setPendingIncorrectDelay] = useState(false)
+  const questionContentRef = useScrollShadow<HTMLDivElement>()
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /**
    * Typed answers per judgement, newest last, so "undo last judgement" can
@@ -597,7 +600,7 @@ export function ReviewSessionPage() {
         ) : (
           <div className="review-columns">
             <div className="review-question">
-              <div className="review-question-content">
+              <div className="review-question-content" ref={questionContentRef}>
                 <ReviewSessionPromptBody
                   item={item}
                   typed={typed}
@@ -661,19 +664,21 @@ export function ReviewSessionPage() {
                   aria-hidden={phase === "answer"}
                   {...inertWhen(phase === "answer")}
                 >
-                  <ReviewSessionPromptBody
-                    item={item}
-                    typed={typed}
-                    onTypedChange={handleTypedChange}
-                    readingWarn={readingWarn}
-                    synonymWarn={synonymWarn}
-                    kanjiWarn={kanjiWarn}
-                    latinWarn={latinWarn}
-                    nWarn={nWarn}
-                    onTypedSubmit={() => tryShowAnswerRef.current()}
-                    column="answer"
-                    promptFocusToken={promptFocusToken}
-                  />
+                  <ScrollShadow className="stack">
+                    <ReviewSessionPromptBody
+                      item={item}
+                      typed={typed}
+                      onTypedChange={handleTypedChange}
+                      readingWarn={readingWarn}
+                      synonymWarn={synonymWarn}
+                      kanjiWarn={kanjiWarn}
+                      latinWarn={latinWarn}
+                      nWarn={nWarn}
+                      onTypedSubmit={() => tryShowAnswerRef.current()}
+                      column="answer"
+                      promptFocusToken={promptFocusToken}
+                    />
+                  </ScrollShadow>
                   {buttonOnQuestionSide ? (
                     // The real button lives on the question side for this
                     // mode (see above) — reserve the same footer space here

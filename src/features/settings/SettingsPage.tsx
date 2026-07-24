@@ -23,6 +23,7 @@ import { AnkiImportGapReview } from "./AnkiImportGapReview"
 import { GrammarClassifyReview } from "./GrammarClassifyReview"
 import { UserMenu } from "../../ui/UserMenu"
 import { PageHeading } from "../../ui/PageHeading"
+import { useScrollShadow } from "../../ui/useScrollShadow"
 
 function importProgressLabel(progress: ImportProgress): string {
   switch (progress.phase) {
@@ -70,6 +71,7 @@ export function SettingsPage() {
   )
   const wakeLockStatus = useWakeLock(importing)
   const [importElapsedSec, setImportElapsedSec] = useState(0)
+  const syncLogRef = useScrollShadow<HTMLPreElement>()
 
   // A visible, second-by-second tick so a stalled/slow phase (e.g. syncing
   // each card over the network) still looks alive between progress updates.
@@ -254,7 +256,7 @@ export function SettingsPage() {
         {syncLog.length > 0 && (
           <details className="sync-log-details" open={syncing || syncPhase === "conflict"}>
             <summary className="muted small">Sync log ({syncLog.length} lines)</summary>
-            <pre className="sync-log-pre small">
+            <pre className="sync-log-pre small" ref={syncLogRef}>
               {syncLog.slice(-24).map((e) => formatSyncLogLine(e)).join("\n")}
             </pre>
           </details>

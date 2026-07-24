@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 import { CARD_KIND_LABELS, type Card } from "../../domain/types"
 import { japaneseWordForCard } from "../../domain/duplicates"
+import { useScrollShadow } from "../../ui/useScrollShadow"
 
 type Props = {
   matches: Card[]
@@ -17,6 +18,7 @@ export function DuplicateCardsModal({
   onMerge,
   onClose,
 }: Props) {
+  const panelRef = useScrollShadow<HTMLDivElement>()
   return (
     <div
       className="modal-backdrop"
@@ -24,7 +26,11 @@ export function DuplicateCardsModal({
       aria-modal="true"
       onClick={onClose}
     >
-      <div className="modal-panel panel" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        className="modal-panel panel"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2>Duplicate cards</h2>
 
         {matches.length === 0 ? (
