@@ -56,7 +56,7 @@ export function DeckListPage() {
                 <Link to={`/decks/${d.id}`}>{d.name}</Link>
                 <span className="deck-list-actions">
                   {due > 0 ? (
-                    <span className="muted small">レビュウ待ち：{due}枚</span>
+                    <span className="muted small">{due}枚</span>
                   ) : (
                     <span className="due-complete" title="No reviews due" aria-label="No reviews due">
                       <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
