@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
+import { SyncProvider } from "../../lib/sync/SyncContext"
 import { CardEditPage } from "./CardEditPage"
 import { resetDatabase } from "../../test/db"
 import { db } from "../../lib/db/schema"
@@ -24,10 +25,12 @@ function renderNewCardPage() {
   return render(
     <MemoryRouter initialEntries={["/decks/deck-1/cards/new"]}>
       <AuthProvider>
+        <SyncProvider>
         <Routes>
           <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
           <Route path="/decks/:deckId" element={<div>Deck page</div>} />
         </Routes>
+        </SyncProvider>
       </AuthProvider>
     </MemoryRouter>,
   )
@@ -73,7 +76,7 @@ describe("CardEditPage clipboard images", () => {
       )
     })
 
-    await user.type(screen.getByLabelText(/japanese word/i), "猫")
+    await user.type(screen.getByLabelText("日本語で"), "猫")
     await user.click(screen.getByRole("button", { name: /save/i }))
 
     await waitFor(async () => {

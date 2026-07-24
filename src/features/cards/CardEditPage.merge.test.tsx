@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
+import { SyncProvider } from "../../lib/sync/SyncContext"
 import { CardEditPage } from "./CardEditPage"
 import { resetDatabase } from "../../test/db"
 import { db } from "../../lib/db/schema"
@@ -18,6 +19,7 @@ function renderEditPage(deckId: string, cardId: string) {
   render(
     <MemoryRouter initialEntries={[`/decks/${deckId}/cards/${cardId}`]}>
       <AuthProvider>
+        <SyncProvider>
         <Routes>
           <Route path="/decks/:deckId" element={<div>Deck page</div>} />
           <Route
@@ -25,6 +27,7 @@ function renderEditPage(deckId: string, cardId: string) {
             element={<CardEditPage />}
           />
         </Routes>
+        </SyncProvider>
       </AuthProvider>
     </MemoryRouter>,
   )
@@ -83,8 +86,8 @@ describe("CardEditPage duplicate finder / merge", () => {
       within(dialog).getByText(/no other cards contain this word/i),
     ).toBeInTheDocument()
 
-    expect(screen.getByLabelText(/meaning \(one per line\)/i)).toHaveValue(
-      "cat\nkitten (contains 猫)",
+    expect(screen.getByLabelText("意味")).toHaveValue(
+      "cat; kitten (contains 猫)",
     )
     expect(screen.getByLabelText(/synonyms in japanese/i)).toHaveValue("猫")
 

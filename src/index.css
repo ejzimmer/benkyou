@@ -73,6 +73,13 @@ a:hover {
   margin-top: 40px;
 }
 
+/* The card editor renders its own inline sync-edits button and user menu
+   instead of the fixed top-right banner, so it doesn't need that banner's
+   reserved clearance. */
+.card-edit-header {
+  margin-top: 0;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -1915,11 +1922,11 @@ code {
    that page's own header layout — fixed to the viewport rather than the
    in-flow header-actions slot it used to occupy on a couple of pages.
    Anchored to the bottom-right corner rather than the top-right: pages
-   using `.app-header` (DeckListPage, SettingsPage, DeckPage, CardEditPage)
-   reserve top-right space via its 40px margin-top, but `.review-header`
-   stays flush against the top of the page, so a top-right badge would
-   still sit on top of its content. Nothing in the app is pinned to the
-   bottom, so that corner is safe. */
+   using `.app-header` (DeckListPage, SettingsPage, DeckPage) reserve
+   top-right space via its 40px margin-top, but `.review-header` and the
+   card editor's header stay flush against the top of the page, so a
+   top-right badge would still sit on top of its content. Nothing in the
+   app is pinned to the bottom, so that corner is safe. */
 .sync-indicator-global {
   position: fixed;
   bottom: 0.75rem;
@@ -1941,9 +1948,9 @@ code {
    approach for the bottom-right spinner. Anchored top-right so it reads as
    sitting to the right of each page's own header buttons rather than
    competing with them — `.app-header` pages reserve space via margin-top.
-   Not rendered at all on review routes: those render an inline copy in
-   `.review-header-actions` instead (see `.sync-edits-inline`), so there's
-   nothing to reserve space for there. */
+   Not rendered at all on review routes or the card editor: those render an
+   inline copy in their own header-actions row instead (see
+   `.sync-edits-inline`), so there's nothing to reserve space for there. */
 .sync-edits-banner {
   position: fixed;
   top: 0.75rem;

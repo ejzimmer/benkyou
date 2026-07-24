@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
+import { SyncProvider } from "../../lib/sync/SyncContext"
 import { CardEditPage } from "./CardEditPage"
 import { resetDatabase } from "../../test/db"
 import { db } from "../../lib/db/schema"
@@ -33,6 +34,7 @@ describe("CardEditPage load existing", () => {
     render(
       <MemoryRouter initialEntries={["/decks/deck-1/cards/card-1"]}>
         <AuthProvider>
+          <SyncProvider>
           <Routes>
             <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
             <Route
@@ -40,6 +42,7 @@ describe("CardEditPage load existing", () => {
               element={<CardEditPage />}
             />
           </Routes>
+          </SyncProvider>
         </AuthProvider>
       </MemoryRouter>,
     )
@@ -62,6 +65,7 @@ describe("CardEditPage load existing", () => {
     render(
       <MemoryRouter initialEntries={["/decks/deck-1/cards/card-1"]}>
         <AuthProvider>
+          <SyncProvider>
           <Routes>
             <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
             <Route
@@ -69,6 +73,7 @@ describe("CardEditPage load existing", () => {
               element={<CardEditPage />}
             />
           </Routes>
+          </SyncProvider>
         </AuthProvider>
       </MemoryRouter>,
     )
@@ -100,6 +105,7 @@ describe("CardEditPage load existing", () => {
     render(
       <MemoryRouter initialEntries={["/decks/deck-1/cards/card-1"]}>
         <AuthProvider>
+          <SyncProvider>
           <Routes>
             <Route path="/decks/:deckId" element={<div>Deck page</div>} />
             <Route
@@ -107,6 +113,7 @@ describe("CardEditPage load existing", () => {
               element={<CardEditPage />}
             />
           </Routes>
+          </SyncProvider>
         </AuthProvider>
       </MemoryRouter>,
     )
@@ -116,11 +123,11 @@ describe("CardEditPage load existing", () => {
     })
     await user.click(screen.getByRole("radio", { name: CARD_KIND_LABELS.vocabulary }))
 
-    expect(screen.getByLabelText(/japanese word/i)).toHaveValue("学生")
+    expect(screen.getByLabelText("日本語で")).toHaveValue("学生")
     expect(screen.getByRole("textbox", { name: /^readings$/i })).toHaveValue(
       "がくせい\n学生=がくせい",
     )
-    expect(screen.getByLabelText(/meaning \(one per line\)/i)).toHaveValue("student")
+    expect(screen.getByLabelText("意味")).toHaveValue("student")
     expect(
       screen.getByLabelText(/example sentences \(one per line\)/i),
     ).toHaveValue("私は___です")
@@ -160,6 +167,7 @@ describe("CardEditPage load existing", () => {
     render(
       <MemoryRouter initialEntries={["/decks/deck-1/cards/card-1"]}>
         <AuthProvider>
+          <SyncProvider>
           <Routes>
             <Route path="/decks/:deckId" element={<div>Deck page</div>} />
             <Route
@@ -167,6 +175,7 @@ describe("CardEditPage load existing", () => {
               element={<CardEditPage />}
             />
           </Routes>
+          </SyncProvider>
         </AuthProvider>
       </MemoryRouter>,
     )
@@ -206,6 +215,7 @@ describe("CardEditPage load existing", () => {
     render(
       <MemoryRouter initialEntries={["/decks/deck-1/cards/card-1"]}>
         <AuthProvider>
+          <SyncProvider>
           <Routes>
             <Route path="/decks/:deckId" element={<div>Deck page</div>} />
             <Route
@@ -213,6 +223,7 @@ describe("CardEditPage load existing", () => {
               element={<CardEditPage />}
             />
           </Routes>
+          </SyncProvider>
         </AuthProvider>
       </MemoryRouter>,
     )
