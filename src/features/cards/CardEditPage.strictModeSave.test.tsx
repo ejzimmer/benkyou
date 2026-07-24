@@ -4,6 +4,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
+import { SyncProvider } from "../../lib/sync/SyncContext"
 import { CardEditPage } from "./CardEditPage"
 import { resetDatabase } from "../../test/db"
 import { db } from "../../lib/db/schema"
@@ -22,15 +23,17 @@ describe("CardEditPage under StrictMode", () => {
       <StrictMode>
         <MemoryRouter initialEntries={["/decks/deck-1/cards/new"]}>
           <AuthProvider>
+            <SyncProvider>
             <Routes>
               <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
             </Routes>
+            </SyncProvider>
           </AuthProvider>
         </MemoryRouter>
       </StrictMode>,
     )
 
-    const wordInput = await screen.findByLabelText(/japanese word/i)
+    const wordInput = await screen.findByLabelText("日本語で")
     await user.type(wordInput, "猫")
 
     const readingsTa = screen.getByRole("textbox", { name: /^readings$/i })
@@ -40,7 +43,7 @@ describe("CardEditPage under StrictMode", () => {
       expect(readingsTa).toHaveValue("ねこ\n猫=ねこ")
     })
 
-    const meaningTa = screen.getByLabelText(/meaning/i)
+    const meaningTa = screen.getByLabelText("意味")
     await user.type(meaningTa, "cat")
 
     const saveBtn = screen.getByRole("button", { name: /save/i })

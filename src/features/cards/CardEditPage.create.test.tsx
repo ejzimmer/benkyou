@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
+import { SyncProvider } from "../../lib/sync/SyncContext"
 import { db } from "../../lib/db/schema"
 import { resetDatabase } from "../../test/db"
 import { CardEditPage } from "./CardEditPage"
@@ -17,10 +18,12 @@ function renderNewCardPage() {
   render(
     <MemoryRouter initialEntries={["/decks/deck-1/cards/new"]}>
       <AuthProvider>
+        <SyncProvider>
         <Routes>
           <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
           <Route path="/decks/:deckId" element={<div>Deck page</div>} />
         </Routes>
+        </SyncProvider>
       </AuthProvider>
     </MemoryRouter>,
   )
@@ -35,9 +38,9 @@ describe("CardEditPage create flow", () => {
     const user = userEvent.setup()
     renderNewCardPage()
 
-    await user.type(screen.getByLabelText(/japanese word/i), "猫")
+    await user.type(screen.getByLabelText("日本語で"), "猫")
     await user.type(screen.getByRole("textbox", { name: /^readings$/i }), "ねこ")
-    await user.type(screen.getByLabelText(/meaning \(one per line\)/i), "cat")
+    await user.type(screen.getByLabelText("意味"), "cat")
     await user.click(screen.getByRole("button", { name: /save/i }))
 
     await waitFor(async () => {
@@ -54,9 +57,9 @@ describe("CardEditPage create flow", () => {
       screen.getByRole("heading", { name: "新規カード" }),
     ).toBeInTheDocument()
     await waitFor(() => {
-      expect(screen.getByLabelText(/japanese word/i)).toHaveValue("")
+      expect(screen.getByLabelText("日本語で")).toHaveValue("")
     })
     expect(screen.getByRole("textbox", { name: /^readings$/i })).toHaveValue("")
-    expect(screen.getByLabelText(/meaning \(one per line\)/i)).toHaveValue("")
+    expect(screen.getByLabelText("意味")).toHaveValue("")
   })
 })

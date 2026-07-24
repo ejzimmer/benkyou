@@ -39,6 +39,7 @@ import { DuplicateCardsModal } from "./DuplicateCardsModal"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { UserMenu } from "../../ui/UserMenu"
+import { SyncEditsButton } from "../../ui/SyncEditsButton"
 import { Switch } from "../../ui/Switch"
 import {
   combinedReadingsToText,
@@ -450,12 +451,13 @@ export function CardEditPage() {
 
   return (
     <div className="page">
-      <header className="header app-header">
+      <header className="header app-header card-edit-header">
         <PageHeading backTo={backTo} backLabel={returnTo ? "Back" : "Back to deck"}>
           {isNew ? "新規カード" : "カード編集"}
         </PageHeading>
         <div className="header-actions">
-          <UserMenu />
+          <UserMenu iconOnly />
+          <SyncEditsButton inline />
         </div>
       </header>
 
@@ -509,7 +511,7 @@ export function CardEditPage() {
         {kind === "vocabulary" ? (
           <>
             <label>
-              Japanese word
+              日本語で
               <input
                 className="input"
                 value={vocab.wordJa}
@@ -532,25 +534,20 @@ export function CardEditPage() {
                 required
               />
             </label>
-            <p className="muted small">
-              Include at least one of: pronunciation (for kanji words),
-              meaning, or an image.
-            </p>
             {duplicateJapaneseWarning && (
               <p className="warn small" role="status">
                 {duplicateJapaneseWarning}
               </p>
             )}
             <label>
-              Meaning (one per line)
-              <textarea
+              意味
+              <input
                 className="input"
-                rows={4}
-                value={vocab.definitionsEn.join("\n")}
+                value={vocab.definitionsEn.join("; ")}
                 onChange={(e) =>
                   setVocab({
                     ...vocab,
-                    definitionsEn: e.target.value.split("\n"),
+                    definitionsEn: e.target.value.split("; "),
                   })
                 }
               />

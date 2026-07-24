@@ -49,7 +49,7 @@ describe("CardEditPage vocab combined Readings field", () => {
     const user = userEvent.setup()
     render(wrapVocab())
 
-    await user.type(screen.getByLabelText(/japanese word/i), "猫")
+    await user.type(screen.getByLabelText("日本語で"), "猫")
     await user.type(screen.getByRole("textbox", { name: /^readings$/i }), "ねこ")
 
     expect(
@@ -61,7 +61,7 @@ describe("CardEditPage vocab combined Readings field", () => {
     const user = userEvent.setup()
     render(wrapVocab())
 
-    await user.type(screen.getByLabelText(/japanese word/i), "結論に至る")
+    await user.type(screen.getByLabelText("日本語で"), "結論に至る")
     const readingsTa = screen.getByRole("textbox", { name: /^readings$/i })
     await user.type(readingsTa, "けつろんにいたる\n至=いた")
 
@@ -72,7 +72,7 @@ describe("CardEditPage vocab combined Readings field", () => {
     const user = userEvent.setup()
     render(wrapVocab())
 
-    const wordInput = screen.getByLabelText(/japanese word/i)
+    const wordInput = screen.getByLabelText("日本語で")
     await user.type(wordInput, "猫")
     const readingsTa = screen.getByRole("textbox", { name: /^readings$/i })
     await user.type(readingsTa, "ねこ\n猫=ねこ")
