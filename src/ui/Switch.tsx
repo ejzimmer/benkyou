@@ -16,9 +16,10 @@ type Props<T extends string> = {
 
 /**
  * A toggle between exactly two equally-weighted options — e.g. vocabulary vs
- * grammar. Rendered as two joined buttons, one per option, with the selected
- * option shown pressed. Neither side reads as the "active" or "default"
- * state.
+ * grammar. Rendered as two joined buttons, one per option, with a sliding
+ * thumb behind the selected option's label. Neither side reads as the
+ * "active" or "default" state; the thumb just tracks which label is
+ * currently selected.
  */
 export function Switch<T extends string>({
   legend,
@@ -30,11 +31,13 @@ export function Switch<T extends string>({
 }: Props<T>) {
   const uid = useId()
   const idFor = (option: Option<T>) => `${uid}-${option.value}`
+  const selectedSide = value === options[1].value ? "end" : "start"
 
   return (
     <fieldset className="plain switch-group">
       <legend className="sr-only">{legend}</legend>
-      <div className="switch">
+      <div className={`switch switch-${selectedSide}`}>
+        <span className="switch-thumb" aria-hidden="true" />
         {options.map((option) => (
           <label
             key={option.value}
