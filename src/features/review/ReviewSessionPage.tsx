@@ -32,6 +32,7 @@ import { UserMenu } from "../../ui/UserMenu"
 import { SyncButton } from "../../ui/SyncButton"
 import { ScrollShadow } from "../../ui/ScrollShadow"
 import { useScrollShadow } from "../../ui/useScrollShadow"
+import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
@@ -522,6 +523,15 @@ export function ReviewSessionPage() {
             取り消す
           </button>
         </div>
+
+        <footer className="build-footer">
+          <p
+            className="muted small"
+            title="If this time is older than the latest GitHub deploy, hard-refresh or clear site data."
+          >
+            {BUILD_LABEL_LOCAL}
+          </p>
+        </footer>
       </div>
     )
   }
