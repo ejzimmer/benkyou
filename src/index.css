@@ -1679,13 +1679,13 @@ fieldset.plain legend {
 
 .reading-answer-diff-missing,
 .reading-answer-diff-gap {
-  background: #1e40af;
-  color: #eff6ff;
+  background: none;
+  color: var(--blue);
 }
 
 .reading-answer-diff-extra {
-  background: #991b1b;
-  color: #fef2f2;
+  background: var(--pink);
+  color: var(--on-fluoro);
 }
 
 .prompt-extras-row {
