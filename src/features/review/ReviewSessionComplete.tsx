@@ -4,6 +4,7 @@ import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncButton } from "../../ui/SyncButton"
 import { useSync } from "../../lib/sync/SyncContext"
+import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 
 const CONFETTI_COLORS = [
   "var(--blue)",
@@ -102,6 +103,15 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
           </button>
         </div>
       </div>
+
+      <footer className="build-footer">
+        <p
+          className="muted small"
+          title="If this time is older than the latest GitHub deploy, hard-refresh or clear site data."
+        >
+          {BUILD_LABEL_LOCAL}
+        </p>
+      </footer>
     </div>
   )
 }
