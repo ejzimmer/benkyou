@@ -78,10 +78,10 @@ describe("CardEditPage Fill in kanji", () => {
     render(wrapGrammar())
 
     await user.type(
-      screen.getByLabelText(/sentence with gap/i),
+      screen.getByLabelText("問題文"),
       "彼は___に至った",
     )
-    await user.type(screen.getByLabelText("Answer"), "結論")
+    await user.type(screen.getByLabelText("答え"), "結論")
     await user.click(screen.getByRole("button", { name: /fill in kanji/i }))
 
     expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue(

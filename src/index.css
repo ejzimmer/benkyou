@@ -259,6 +259,15 @@ a:hover {
 .card-edit-form label:not(.switch-option),
 .card-edit-form fieldset.plain legend {
   font-weight: 700;
+  font-size: 0.99rem;
+}
+
+/* <legend> isn't a normal flex item even inside a flex fieldset, so it
+   doesn't pick up the label/fieldset gap below — add the matching space
+   explicitly so 画像 sits the same distance from its content as every
+   other label sits from its input. */
+.card-edit-form fieldset.plain legend {
+  margin-bottom: 0.35rem;
 }
 
 /* Triple the panel's own 1rem top padding just above the card-kind
@@ -271,6 +280,32 @@ a:hover {
 .card-edit-form textarea.input {
   font-size: 1.15rem;
   font-weight: 400;
+}
+
+.card-edit-form input.input {
+  width: 75%;
+  border: none;
+  border-radius: 0;
+  border-bottom: 2px solid #fff;
+  padding: 0.5rem 0.65rem 0;
+}
+
+.card-edit-form input.input:focus-visible {
+  outline: none;
+  box-shadow:
+    0 4px 6px -4px #fff,
+    0 6px 14px -6px #fff;
+}
+
+.card-edit-form textarea.input {
+  border: 1px solid #fff;
+}
+
+.card-edit-form textarea.input:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 8px #fff,
+    0 0 20px #fff;
 }
 
 .align-end {
@@ -1016,6 +1051,16 @@ fieldset.plain legend {
   height: 2.5rem;
   font-size: 1.8rem;
   pointer-events: none;
+}
+
+/* Hovering anywhere over the (larger) add-image button should glow the
+   icon, not just the icon's own small hit area — and more noticeably than
+   the plain add-card-btn hover it's otherwise identical to. */
+.image-preview-add:hover .btn.secondary.add-card-btn {
+  text-shadow:
+    0 0 8px var(--blue),
+    0 0 20px var(--blue),
+    0 0 32px var(--blue);
 }
 
 .import-card-preview {
