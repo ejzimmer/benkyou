@@ -404,7 +404,11 @@ fieldset.plain legend {
    shadowed differently from the square one. Its border-radius flips
    between the two ends so only the outer corner (against the switch's
    own rounded border) is rounded — the inner edge, at the divide
-   between the two options, stays square. */
+   between the two options, stays square. `left`/`width` below are just the
+   fallback for the first paint before Switch.tsx measures the selected
+   option's real box and overrides them inline — the two options aren't
+   the same width, so a fixed 50% would leave the thumb's edge short of
+   or past the actual divide between the labels. */
 .switch-thumb {
   position: absolute;
   top: 0;
@@ -415,12 +419,12 @@ fieldset.plain legend {
   background: linear-gradient(180deg, hsl(200 100% 62%), var(--blue) 65%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
   transition:
-    transform 0.2s ease,
+    left 0.2s ease,
+    width 0.2s ease,
     border-radius 0.2s ease;
 }
 
 .switch-end .switch-thumb {
-  transform: translateX(100%);
   border-radius: 0 9px 9px 0;
 }
 
@@ -428,9 +432,11 @@ fieldset.plain legend {
   position: relative;
   z-index: 1;
   display: flex;
-  /* Force both options to the same width regardless of label length, so
-     each side's padding looks even and lines up with the thumb's 50%. */
-  flex: 1 1 0;
+  /* Each option sizes to its own content plus padding rather than being
+     forced to a shared 50/50 width — labels differ in length, and even
+     padding around each word matters more than equal-width boxes. The
+     thumb (see .switch-thumb) is measured in JS to match whichever box is
+     actually selected. */
   align-items: center;
   justify-content: center;
   padding: 0.36rem 0.9rem;
