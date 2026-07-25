@@ -42,8 +42,9 @@ import { UserMenu } from "../../ui/UserMenu"
 import { SyncEditsButton } from "../../ui/SyncEditsButton"
 import { Switch } from "../../ui/Switch"
 import {
-  combinedReadingsToText,
-  parseCombinedReadingsText,
+  addMissingKanjiLines,
+  parseReadingsMapText,
+  readingsMapToText,
 } from "../../domain/readingsMap"
 
 function safeReturnTo(raw: string | null): string | null {
@@ -129,8 +130,8 @@ export function CardEditPage() {
   const [vocab, setVocab] = useState<VocabularyCardContent>(defaultVocabulary)
   const [grammar, setGrammar] = useState<GrammarCardContent>(defaultGrammar)
   /** Controlled draft so incomplete `kanji=` lines are not dropped on each
-   * keystroke — shared by both card kinds' combined "Readings" field. */
-  const [readingsMapDraft, setReadingsMapDraft] = useState("")
+   * keystroke — shared by both card kinds' Furigana field. */
+  const [furiganaDraft, setFuriganaDraft] = useState("")
   const formRef = useRef<HTMLFormElement | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -201,7 +202,7 @@ export function CardEditPage() {
     if (isNew) {
       setLoading(false)
       setErr(null)
-      setReadingsMapDraft("")
+      setFuriganaDraft("")
       hydratedCardIdRef.current = null
       return
     }
@@ -220,32 +221,20 @@ export function CardEditPage() {
     setKind(loadedCard.kind)
     if (loadedCard.kind === "vocabulary") {
       setVocab(loadedCard.content)
-      setReadingsMapDraft(
-        combinedReadingsToText({
-          reading: loadedCard.content.reading,
-          readingParts: loadedCard.content.readingParts,
-          readings: loadedCard.content.readings ?? {},
-        }),
-      )
+      setFuriganaDraft(readingsMapToText(loadedCard.content.readings ?? {}))
     } else {
       setGrammar({
         ...loadedCard.content,
         singleSided: isSingleSided(loadedCard.content),
       })
-      setReadingsMapDraft(
-        combinedReadingsToText({
-          reading: loadedCard.content.constructionReading,
-          readingParts: loadedCard.content.constructionReadingParts,
-          readings: loadedCard.content.readings,
-        }),
-      )
+      setFuriganaDraft(readingsMapToText(loadedCard.content.readings))
     }
   }, [cardId, deckId, isNew, loadedCard])
 
   function resetNewCardForm() {
     setVocab(defaultVocabulary())
     setGrammar(defaultGrammar())
-    setReadingsMapDraft("")
+    setFuriganaDraft("")
     formRef.current?.reset()
   }
 
@@ -261,26 +250,14 @@ export function CardEditPage() {
     if (nextKind === "vocabulary") {
       const nextVocab = vocabularyFromGrammarContent(grammar)
       setVocab(nextVocab)
-      setReadingsMapDraft(
-        combinedReadingsToText({
-          reading: nextVocab.reading,
-          readingParts: nextVocab.readingParts,
-          readings: nextVocab.readings ?? {},
-        }),
-      )
+      setFuriganaDraft(readingsMapToText(nextVocab.readings ?? {}))
       setKind("vocabulary")
       return
     }
 
     const nextGrammar = grammarFromVocabularyContent(vocab)
     setGrammar(nextGrammar)
-    setReadingsMapDraft(
-      combinedReadingsToText({
-        reading: nextGrammar.constructionReading,
-        readingParts: nextGrammar.constructionReadingParts,
-        readings: nextGrammar.readings,
-      }),
-    )
+    setFuriganaDraft(readingsMapToText(nextGrammar.readings))
     setKind("grammar")
   }
 
@@ -346,22 +323,10 @@ export function CardEditPage() {
       const merged = await mergeCards(currentCardDraft(), match)
       if (merged.kind === "vocabulary") {
         setVocab(merged.content)
-        setReadingsMapDraft(
-          combinedReadingsToText({
-            reading: merged.content.reading,
-            readingParts: merged.content.readingParts,
-            readings: merged.content.readings ?? {},
-          }),
-        )
+        setFuriganaDraft(readingsMapToText(merged.content.readings ?? {}))
       } else {
         setGrammar(merged.content)
-        setReadingsMapDraft(
-          combinedReadingsToText({
-            reading: merged.content.constructionReading,
-            readingParts: merged.content.constructionReadingParts,
-            readings: merged.content.readings,
-          }),
-        )
+        setFuriganaDraft(readingsMapToText(merged.content.readings))
       }
       setDuplicateMatches((matches) => matches.filter((c) => c.id !== match.id))
     } catch (x) {
@@ -535,15 +500,6 @@ export function CardEditPage() {
                   const reading = kanaOnly ? undefined : vocab.reading
                   const readingParts = kanaOnly ? {} : vocab.readingParts
                   setVocab((v) => ({ ...v, wordJa, reading, readingParts }))
-                  // Becoming kana-only clears the tested reading above, so the
-                  // visible Readings textarea must drop it too — otherwise it
-                  // keeps showing a reading line that no longer matches what
-                  // would actually be saved.
-                  if (kanaOnly) {
-                    setReadingsMapDraft(
-                      combinedReadingsToText({ readings: vocab.readings ?? {} }),
-                    )
-                  }
                 }}
                 required
               />
@@ -567,6 +523,22 @@ export function CardEditPage() {
               />
             </label>
             <label>
+              Reading
+              <input
+                className="input"
+                aria-label="Reading"
+                value={vocab.reading ?? ""}
+                onChange={(e) => {
+                  const reading = e.target.value
+                  setVocab((v) => ({
+                    ...v,
+                    reading: reading || undefined,
+                    readingParts: {},
+                  }))
+                }}
+              />
+            </label>
+            <label>
               例文
               <textarea
                 className="input"
@@ -581,20 +553,33 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Readings
+              Furigana
               <textarea
                 className="input"
                 rows={4}
-                aria-label="Readings"
-                value={readingsMapDraft}
+                aria-label="Furigana"
+                value={furiganaDraft}
                 onChange={(e) => {
                   const text = e.target.value
-                  setReadingsMapDraft(text)
-                  const { reading, readings } = parseCombinedReadingsText(text)
-                  setVocab((v) => ({ ...v, reading, readingParts: {}, readings }))
+                  setFuriganaDraft(text)
+                  setVocab((v) => ({ ...v, readings: parseReadingsMapText(text) }))
                 }}
               />
             </label>
+            <button
+              type="button"
+              className="btn secondary align-end"
+              onClick={() => {
+                const next = addMissingKanjiLines(furiganaDraft, [
+                  vocab.wordJa,
+                  ...vocab.exampleSentences,
+                ])
+                setFuriganaDraft(next)
+                setVocab((v) => ({ ...v, readings: parseReadingsMapText(next) }))
+              }}
+            >
+              Fill in kanji
+            </button>
             <fieldset className="plain">
               <legend>画像</legend>
               <ImagePreviewList
@@ -672,25 +657,49 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Readings
-              <textarea
+              Reading
+              <input
                 className="input"
-                rows={4}
-                aria-label="Readings"
-                value={readingsMapDraft}
+                aria-label="Reading"
+                value={grammar.constructionReading ?? ""}
                 onChange={(e) => {
-                  const text = e.target.value
-                  setReadingsMapDraft(text)
-                  const { reading, readings } = parseCombinedReadingsText(text)
+                  const reading = e.target.value
                   setGrammar((g) => ({
                     ...g,
-                    constructionReading: reading,
+                    constructionReading: reading || undefined,
                     constructionReadingParts: {},
-                    readings,
                   }))
                 }}
               />
             </label>
+            <label>
+              Furigana
+              <textarea
+                className="input"
+                rows={4}
+                aria-label="Furigana"
+                value={furiganaDraft}
+                onChange={(e) => {
+                  const text = e.target.value
+                  setFuriganaDraft(text)
+                  setGrammar((g) => ({ ...g, readings: parseReadingsMapText(text) }))
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn secondary align-end"
+              onClick={() => {
+                const next = addMissingKanjiLines(furiganaDraft, [
+                  grammar.construction,
+                  grammar.sentenceWithGap,
+                ])
+                setFuriganaDraft(next)
+                setGrammar((g) => ({ ...g, readings: parseReadingsMapText(next) }))
+              }}
+            >
+              Fill in kanji
+            </button>
             <fieldset className="plain">
               <legend>画像</legend>
               <ImagePreviewList

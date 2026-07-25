@@ -123,8 +123,9 @@ describe("CardEditPage load existing", () => {
     await user.click(screen.getByRole("radio", { name: CARD_KIND_LABELS.vocabulary }))
 
     expect(screen.getByLabelText("日本語で")).toHaveValue("学生")
-    expect(screen.getByRole("textbox", { name: /^readings$/i })).toHaveValue(
-      "がくせい\n学生=がくせい",
+    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue("がくせい")
+    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue(
+      "学生=がくせい",
     )
     expect(screen.getByLabelText("意味")).toHaveValue("student")
     expect(screen.getByLabelText("例文")).toHaveValue("私は___です")
@@ -143,7 +144,7 @@ describe("CardEditPage load existing", () => {
     })
   })
 
-  it("keeps the Readings field editable after converting a kana-only construction with per-cluster readings to vocabulary", async () => {
+  it("keeps the Furigana field empty and editable after converting a kana-only construction with per-cluster readings to vocabulary", async () => {
     const user = userEvent.setup()
     await db.cards.put({
       id: "card-1",
@@ -180,15 +181,15 @@ describe("CardEditPage load existing", () => {
     })
     await user.click(screen.getByRole("radio", { name: CARD_KIND_LABELS.vocabulary }))
 
-    // The kana-only construction's per-cluster reading carries over into the
-    // vocab Readings field as a furigana line (readingParts isn't gated by
-    // containsKanji the way reading is) — that stray content must stay
-    // editable/clearable rather than getting stuck behind a disabled field.
-    const readingsField = screen.getByRole("textbox", { name: /^readings$/i })
-    expect(readingsField).toHaveValue("で=で")
-    expect(readingsField).toBeEnabled()
-    await user.clear(readingsField)
-    expect(readingsField).toHaveValue("")
+    // The kana-only construction's per-cluster reading is a tested-reading
+    // concept, not furigana, so it isn't surfaced in the Furigana field —
+    // that field stays empty and editable rather than getting stuck with
+    // stray content leaked in from a different field.
+    const furiganaField = screen.getByRole("textbox", { name: /^furigana$/i })
+    expect(furiganaField).toHaveValue("")
+    expect(furiganaField).toBeEnabled()
+    await user.type(furiganaField, "でも=でも")
+    expect(furiganaField).toHaveValue("でも=でも")
   })
 
   it("keeps an in-progress type change when the card row is rewritten in the background (e.g. by sync)", async () => {

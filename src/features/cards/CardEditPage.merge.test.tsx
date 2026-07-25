@@ -101,7 +101,7 @@ describe("CardEditPage duplicate finder / merge", () => {
     })
   })
 
-  it("surfaces a whole-word reading merged alongside per-cluster readings, instead of hiding one", async () => {
+  it("keeps a whole-word reading and merged per-cluster readings both intact after a merge", async () => {
     await db.cards.put({
       id: "card-1",
       deckId: "deck-1",
@@ -146,13 +146,24 @@ describe("CardEditPage duplicate finder / merge", () => {
       expect(within(dialog).queryByText(/結論に至る/)).not.toBeInTheDocument()
     })
 
-    // Both the whole-word reading and the per-cluster readings survived the
-    // merge in the underlying data — the combined field must show both
-    // rather than silently hiding one.
-    const readingsField = screen.getByRole("textbox", { name: /^readings$/i })
-    expect(readingsField).toHaveValue(
-      "けつろんにいたる\n結論=けつろん\n至る=いたる",
+    // The whole-word reading survived the merge and shows in the Reading
+    // field...
+    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue(
+      "けつろんにいたる",
     )
+
+    // ...and the per-cluster readings survived alongside it in the
+    // underlying data, even though this field doesn't surface them (the UI
+    // has never offered a way to author multi-cluster readings directly).
+    await waitFor(async () => {
+      const merged = await db.cards.get("card-1")
+      expect(merged?.kind).toBe("vocabulary")
+      if (merged?.kind !== "vocabulary") return
+      expect(merged.content.readingParts).toEqual({
+        結論: "けつろん",
+        至る: "いたる",
+      })
+    })
   })
 
   it("shows a message when there are no matching cards", async () => {

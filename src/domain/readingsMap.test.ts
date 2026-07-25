@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
-  combinedReadingsToText,
+  addMissingKanjiLines,
   deriveFurigana,
   fullyCoveredSegments,
   kanjiOnlyEntry,
-  parseCombinedReadingsText,
   parseReadingsMapText,
   readingsMapToText,
   segmentText,
@@ -26,67 +25,35 @@ describe("readingsMapToText / parseReadingsMapText", () => {
   })
 })
 
-describe("parseCombinedReadingsText / combinedReadingsToText", () => {
-  it("treats a line with = as furigana, not a tested reading", () => {
-    expect(parseCombinedReadingsText("返=かえ")).toEqual({
-      reading: undefined,
-      readings: { 返: "かえ" },
-    })
+describe("addMissingKanjiLines", () => {
+  it("appends a blank line for every kanji found in the source texts", () => {
+    expect(addMissingKanjiLines("", ["結論に至る"])).toBe("結=\n論=\n至=")
   })
 
-  it("treats a line with no = as the word/construction's tested reading", () => {
-    expect(parseCombinedReadingsText("かんばしい")).toEqual({
-      reading: "かんばしい",
-      readings: {},
-    })
+  it("dedupes repeated kanji across multiple source texts", () => {
+    expect(addMissingKanjiLines("", ["結論", "結論に至る"])).toBe("結=\n論=\n至=")
   })
 
-  it("splits mixed lines into furigana entries and a tested reading", () => {
-    expect(parseCombinedReadingsText("かんばしい\n芳=かんば")).toEqual({
-      reading: "かんばしい",
-      readings: { 芳: "かんば" },
-    })
+  it("skips a kanji already present as its own key", () => {
+    expect(addMissingKanjiLines("結=けつ", ["結論"])).toBe("結=けつ\n論=")
   })
 
-  it("also splits furigana lines on a fullwidth ＝", () => {
-    expect(parseCombinedReadingsText("返＝かえ")).toEqual({
-      reading: undefined,
-      readings: { 返: "かえ" },
-    })
+  it("skips a kanji already covered by a longer existing key", () => {
+    expect(addMissingKanjiLines("結論=けつろん", ["結論に至る"])).toBe(
+      "結論=けつろん\n至=",
+    )
   })
 
-  it("treats blank text as neither a reading nor any furigana", () => {
-    expect(parseCombinedReadingsText("  \n")).toEqual({
-      reading: undefined,
-      readings: {},
-    })
+  it("ignores non-kanji characters", () => {
+    expect(addMissingKanjiLines("", ["ねこ"])).toBe("")
   })
 
-  it("round-trips a tested reading plus furigana back to text", () => {
-    expect(
-      combinedReadingsToText({
-        reading: "かんばしい",
-        readings: { 芳: "かんば" },
-      }),
-    ).toBe("かんばしい\n芳=かんば")
+  it("leaves the text unchanged when there's nothing new to add", () => {
+    expect(addMissingKanjiLines("結論=けつろん", ["結論"])).toBe("結論=けつろん")
   })
 
-  it("folds legacy readingParts in as furigana lines", () => {
-    expect(
-      combinedReadingsToText({
-        readingParts: { 結論: "けつろん", 至る: "いたる" },
-        readings: {},
-      }),
-    ).toBe("結論=けつろん\n至る=いたる")
-  })
-
-  it("does not let a legacy readingParts entry override an explicit readings entry", () => {
-    expect(
-      combinedReadingsToText({
-        readingParts: { 結論: "stale" },
-        readings: { 結論: "けつろん" },
-      }),
-    ).toBe("結論=けつろん")
+  it("ignores an incomplete draft line with no separator when checking coverage", () => {
+    expect(addMissingKanjiLines("結論", ["結論"])).toBe("結論\n結=\n論=")
   })
 })
 

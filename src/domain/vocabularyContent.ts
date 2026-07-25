@@ -11,6 +11,20 @@ export function containsKanji(s: string): boolean {
   return false
 }
 
+/** Unique kanji characters across `texts`, in order of first appearance. */
+export function extractKanji(texts: string[]): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const ch of texts.join("")) {
+    const cp = ch.codePointAt(0)!
+    if (cp >= 0x4e00 && cp <= 0x9fff && !seen.has(ch)) {
+      seen.add(ch)
+      result.push(ch)
+    }
+  }
+  return result
+}
+
 /** True when the surface form uses only hiragana/katakana (no kanji). */
 export function isKanaOnly(text: string): boolean {
   const s = text.trim()

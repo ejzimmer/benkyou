@@ -32,12 +32,12 @@ function wrap(ui: JSX.Element) {
   )
 }
 
-describe("CardEditPage grammar readings draft", () => {
+describe("CardEditPage grammar furigana draft", () => {
   it("keeps textarea content while typing before '=' appears", async () => {
     const user = userEvent.setup()
     render(wrap(<CardEditPage />))
 
-    const ta = screen.getByRole("textbox", { name: /^readings$/i })
+    const ta = screen.getByRole("textbox", { name: /^furigana$/i })
     await user.type(ta, "私")
     expect(ta).toHaveValue("私")
     await user.type(ta, "=")
@@ -47,7 +47,7 @@ describe("CardEditPage grammar readings draft", () => {
   })
 })
 
-describe("CardEditPage vocabulary readings draft", () => {
+describe("CardEditPage vocabulary furigana draft", () => {
   it("accepts per-word readings for example sentences", async () => {
     const user = userEvent.setup()
     render(
@@ -62,7 +62,7 @@ describe("CardEditPage vocabulary readings draft", () => {
       </MemoryRouter>,
     )
 
-    const ta = screen.getByRole("textbox", { name: /^readings$/i })
+    const ta = screen.getByRole("textbox", { name: /^furigana$/i })
     await user.type(ta, "大好き")
     expect(ta).toHaveValue("大好き")
     await user.type(ta, "=")
