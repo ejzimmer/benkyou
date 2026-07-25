@@ -4,9 +4,8 @@
  * being closed) before hitting "Sync" doesn't forget which cards are still
  * pending — the edits themselves are already safe in Dexie, but without this
  * the "Sync" button would forget to flag them as unsynced. Drives that global
- * button: it shows a count and turns green once there's something to push,
- * and reverts to its plain blue state once those specific cards have been
- * pushed.
+ * button: it turns green once there's something to push, and reverts to its
+ * plain white state once those specific cards have been pushed.
  */
 
 import { useSyncExternalStore } from "react"
