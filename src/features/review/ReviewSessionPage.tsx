@@ -516,7 +516,7 @@ export function ReviewSessionPage() {
         <div className="toolbar">
           <button
             type="button"
-            className="btn secondary"
+            className="btn secondary white"
             onClick={() => void onUndoJudgementFromHeader()}
           >
             取り消す
@@ -553,13 +553,13 @@ export function ReviewSessionPage() {
             to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(
               reviewReturnTo,
             )}`}
-            className="btn secondary"
+            className="btn secondary white"
           >
             カード編集
           </Link>
           <button
             type="button"
-            className="btn secondary"
+            className="btn secondary white"
             onClick={() => void onUndoJudgementFromHeader()}
           >
             取り消す
