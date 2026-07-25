@@ -41,7 +41,6 @@ import { PageHeading } from "../../ui/PageHeading"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncEditsButton } from "../../ui/SyncEditsButton"
 import { Switch } from "../../ui/Switch"
-import { Toggle } from "../../ui/Toggle"
 import {
   addMissingKanjiLines,
   parseReadingsMapText,
@@ -524,7 +523,7 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Reading
+              ひらがなで
               <input
                 className="input"
                 aria-label="Reading"
@@ -554,7 +553,7 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Furigana
+              ふりがな
               <textarea
                 className="input"
                 rows={4}
@@ -570,6 +569,7 @@ export function CardEditPage() {
             <button
               type="button"
               className="btn secondary align-end"
+              aria-label="Fill in kanji"
               onClick={() => {
                 const next = addMissingKanjiLines(furiganaDraft, [
                   vocab.wordJa,
@@ -579,7 +579,7 @@ export function CardEditPage() {
                 setVocab((v) => ({ ...v, readings: parseReadingsMapText(next) }))
               }}
             >
-              Fill in kanji
+              漢字入れる
             </button>
             <fieldset className="plain">
               <legend>画像</legend>
@@ -593,7 +593,7 @@ export function CardEditPage() {
         ) : (
           <>
             <label>
-              Sentence with gap (mark the gap with _ or ＿)
+              問題文
               <input
                 className="input"
                 value={grammar.sentenceWithGap}
@@ -607,7 +607,7 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Answer
+              答え
               <input
                 className="input"
                 value={grammar.construction}
@@ -629,12 +629,17 @@ export function CardEditPage() {
                 {duplicateJapaneseWarning}
               </p>
             )}
-            <Toggle
-              label={grammar.singleSided ? "片面" : "両面"}
-              checked={grammar.singleSided ?? false}
-              onChange={(singleSided) =>
-                setGrammar({ ...grammar, singleSided })
+            <Switch
+              legend="Testing"
+              name="grammar-sides"
+              value={grammar.singleSided ? "one" : "both"}
+              onChange={(sides) =>
+                setGrammar({ ...grammar, singleSided: sides === "one" })
               }
+              options={[
+                { value: "both", label: "両面" },
+                { value: "one", label: "片面" },
+              ]}
             />
             <label>
               意味
@@ -647,7 +652,7 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Reading
+              ひらがなで
               <input
                 className="input"
                 aria-label="Reading"
@@ -663,7 +668,7 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Furigana
+              ふりがな
               <textarea
                 className="input"
                 rows={4}
@@ -679,6 +684,7 @@ export function CardEditPage() {
             <button
               type="button"
               className="btn secondary align-end"
+              aria-label="Fill in kanji"
               onClick={() => {
                 const next = addMissingKanjiLines(furiganaDraft, [
                   grammar.construction,
@@ -688,7 +694,7 @@ export function CardEditPage() {
                 setGrammar((g) => ({ ...g, readings: parseReadingsMapText(next) }))
               }}
             >
-              Fill in kanji
+              漢字入れる
             </button>
             <fieldset className="plain">
               <legend>画像</legend>
