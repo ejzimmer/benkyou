@@ -16,7 +16,7 @@ vi.mock("../../lib/firebase", () => ({
 }))
 
 describe("CardEditPage under StrictMode", () => {
-  it("saves the reading and furigana typed into the combined Readings field for a new vocab word", async () => {
+  it("saves the reading and furigana typed into the split Reading/Furigana fields for a new vocab word", async () => {
     await resetDatabase()
     const user = userEvent.setup()
     render(
@@ -36,11 +36,15 @@ describe("CardEditPage under StrictMode", () => {
     const wordInput = await screen.findByLabelText("日本語で")
     await user.type(wordInput, "猫")
 
-    const readingsTa = screen.getByRole("textbox", { name: /^readings$/i })
-    await user.type(readingsTa, "ねこ\n猫=ねこ")
+    const readingInput = screen.getByRole("textbox", { name: /^reading$/i })
+    await user.type(readingInput, "ねこ")
+
+    const furiganaTa = screen.getByRole("textbox", { name: /^furigana$/i })
+    await user.type(furiganaTa, "猫=ねこ")
 
     await waitFor(() => {
-      expect(readingsTa).toHaveValue("ねこ\n猫=ねこ")
+      expect(readingInput).toHaveValue("ねこ")
+      expect(furiganaTa).toHaveValue("猫=ねこ")
     })
 
     const meaningTa = screen.getByLabelText("意味")

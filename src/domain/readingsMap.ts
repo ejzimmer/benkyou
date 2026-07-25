@@ -1,4 +1,4 @@
-import { containsKanji } from "./vocabularyContent"
+import { containsKanji, extractKanji } from "./vocabularyContent"
 
 export type ReadingSegment = { text: string; reading?: string }
 
@@ -104,63 +104,33 @@ export function parseReadingsMapText(text: string): Record<string, string> {
   return readings
 }
 
-export type CombinedReading = {
-  /** The word/construction's own tested reading — not shown as furigana. */
-  reading: string | undefined
-  /** Kanji phrases → readings shown as furigana. */
-  readings: Record<string, string>
-}
-
 /**
- * Parse a card's combined "Readings" field (shared by vocab words and
- * grammar constructions): `phrase=reading` (or `phrase＝reading`) lines are
- * furigana shown over the word/sentence; a line with no separator is the
- * word/construction's own tested reading, kept separate from furigana since
- * it may deliberately differ from the literal text (e.g. testing a
- * conjugated form's dictionary-form reading).
+ * Append a blank `kanji=` line to a furigana textarea's draft text for every
+ * kanji character found in `sourceTexts` (e.g. a card's term and example
+ * sentences) that isn't already covered by an existing key — either an exact
+ * match or as part of a longer phrase already entered (e.g. 結論 already
+ * covers 結 and 論). Leaves the reading side of each new line blank for the
+ * author to fill in.
  */
-export function parseCombinedReadingsText(text: string): CombinedReading {
-  const furiganaLines: string[] = []
-  const readingLines: string[] = []
-  for (const line of text.split("\n")) {
-    if (KEY_VALUE_SEPARATOR.test(line)) {
-      furiganaLines.push(line)
-    } else if (line.trim()) {
-      readingLines.push(line.trim())
-    }
-  }
-  return {
-    reading: readingLines.join("") || undefined,
-    readings: parseReadingsMapText(furiganaLines.join("\n")),
-  }
-}
+export function addMissingKanjiLines(
+  furiganaText: string,
+  sourceTexts: string[],
+): string {
+  const existingKeys = furiganaText
+    .split("\n")
+    .map((line) => {
+      const match = KEY_VALUE_SEPARATOR.exec(line)
+      return match ? line.slice(0, match.index).trim() : ""
+    })
+    .filter((key) => key.length > 0)
 
-/**
- * Inverse of `parseCombinedReadingsText`, for hydrating the combined field
- * from saved content. Folds any legacy per-cluster `readingParts` the card
- * still carries (e.g. from before the reading/furigana fields were
- * combined, or from an Anki import) in as furigana lines too, so that data
- * isn't silently dropped now that this field is the only place either kind
- * of reading is authored.
- */
-export function combinedReadingsToText(content: {
-  reading?: string
-  readingParts?: Record<string, string>
-  readings: Record<string, string>
-}): string {
-  const readings = { ...content.readings }
-  for (const [label, reading] of Object.entries(content.readingParts ?? {})) {
-    if (label.trim() && reading.trim() && !(label in readings)) {
-      readings[label] = reading
-    }
-  }
-  const lines: string[] = []
-  if (content.reading?.trim()) {
-    lines.push(content.reading.trim())
-  }
-  const furiganaText = readingsMapToText(readings)
-  if (furiganaText) lines.push(furiganaText)
-  return lines.join("\n")
+  const missing = extractKanji(sourceTexts).filter(
+    (kanji) => !existingKeys.some((key) => key.includes(kanji)),
+  )
+  if (missing.length === 0) return furiganaText
+
+  const newLines = missing.map((kanji) => `${kanji}=`).join("\n")
+  return furiganaText.trim() ? `${furiganaText}\n${newLines}` : newLines
 }
 
 /**

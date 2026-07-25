@@ -39,7 +39,7 @@ describe("CardEditPage create flow", () => {
     renderNewCardPage()
 
     await user.type(screen.getByLabelText("日本語で"), "猫")
-    await user.type(screen.getByRole("textbox", { name: /^readings$/i }), "ねこ")
+    await user.type(screen.getByRole("textbox", { name: /^reading$/i }), "ねこ")
     await user.type(screen.getByLabelText("意味"), "cat")
     await user.click(screen.getByRole("button", { name: /save/i }))
 
@@ -59,7 +59,7 @@ describe("CardEditPage create flow", () => {
     await waitFor(() => {
       expect(screen.getByLabelText("日本語で")).toHaveValue("")
     })
-    expect(screen.getByRole("textbox", { name: /^readings$/i })).toHaveValue("")
+    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue("")
     expect(screen.getByLabelText("意味")).toHaveValue("")
   })
 })

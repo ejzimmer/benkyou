@@ -32,60 +32,64 @@ function wrapVocab() {
   )
 }
 
-describe("CardEditPage vocab combined Readings field", () => {
-  it("has a single combined Readings field, not separate reading/furigana fields", async () => {
+describe("CardEditPage vocab Reading / Furigana fields", () => {
+  it("has separate Reading and Furigana fields, not a single combined Readings field", async () => {
     render(wrapVocab())
 
     expect(
-      screen.getByRole("textbox", { name: /^readings$/i }),
+      screen.getByRole("textbox", { name: /^reading$/i }),
     ).toBeInTheDocument()
-    expect(screen.queryByRole("textbox", { name: /^reading$/i })).toBeNull()
     expect(
-      screen.queryByRole("textbox", { name: /kanji to reading map/i }),
-    ).toBeNull()
+      screen.getByRole("textbox", { name: /^furigana$/i }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole("textbox", { name: /^readings$/i })).toBeNull()
   })
 
-  it("treats a line with no = as the word's tested reading", async () => {
+  it("treats the Reading field as the word's tested reading, independent of furigana", async () => {
     const user = userEvent.setup()
     render(wrapVocab())
 
     await user.type(screen.getByLabelText("日本語で"), "猫")
-    await user.type(screen.getByRole("textbox", { name: /^readings$/i }), "ねこ")
+    await user.type(screen.getByRole("textbox", { name: /^reading$/i }), "ねこ")
 
-    expect(
-      screen.getByRole("textbox", { name: /^readings$/i }),
-    ).toHaveValue("ねこ")
+    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue("ねこ")
+    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue("")
   })
 
-  it("treats kanjiPhrase=reading lines as furigana, combined in the same field as the tested reading", async () => {
+  it("treats kanjiPhrase=reading lines in Furigana as separate from the tested reading", async () => {
     const user = userEvent.setup()
     render(wrapVocab())
 
     await user.type(screen.getByLabelText("日本語で"), "結論に至る")
-    const readingsTa = screen.getByRole("textbox", { name: /^readings$/i })
-    await user.type(readingsTa, "けつろんにいたる\n至=いた")
+    await user.type(
+      screen.getByRole("textbox", { name: /^reading$/i }),
+      "けつろんにいたる",
+    )
+    await user.type(screen.getByRole("textbox", { name: /^furigana$/i }), "至=いた")
 
-    expect(readingsTa).toHaveValue("けつろんにいたる\n至=いた")
+    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue(
+      "けつろんにいたる",
+    )
+    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue("至=いた")
   })
 
-  it("drops the tested reading line from the Readings field when the word becomes kana-only, keeping furigana entries", async () => {
+  it("clears the Reading field when the word becomes kana-only, keeping furigana entries", async () => {
     const user = userEvent.setup()
     render(wrapVocab())
 
     const wordInput = screen.getByLabelText("日本語で")
     await user.type(wordInput, "猫")
-    const readingsTa = screen.getByRole("textbox", { name: /^readings$/i })
-    await user.type(readingsTa, "ねこ\n猫=ねこ")
-    expect(readingsTa).toHaveValue("ねこ\n猫=ねこ")
+    await user.type(screen.getByRole("textbox", { name: /^reading$/i }), "ねこ")
+    await user.type(screen.getByRole("textbox", { name: /^furigana$/i }), "猫=ねこ")
 
     await user.clear(wordInput)
     await user.type(wordInput, "ねこちゃん")
 
-    // The word is now kana-only, so the tested "ねこ" reading line no longer
-    // applies and must not linger in the field the author can still see —
+    // The word is now kana-only, so the tested reading no longer applies —
     // the furigana entry for 猫 is stale too (猫 isn't in the word anymore)
     // but that's left to the author to clean up, same as any unrelated hand
     // authored furigana entry.
-    expect(readingsTa).toHaveValue("猫=ねこ")
+    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue("")
+    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue("猫=ねこ")
   })
 })
