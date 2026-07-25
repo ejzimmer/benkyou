@@ -99,9 +99,8 @@ describe("SyncEditsButton", () => {
     expect(screen.getByRole("button", { name: /sync \(1\)/i })).toBeInTheDocument()
   })
 
-  it("renders as a plain in-flow item instead of the fixed banner when inline", () => {
-    const { container } = render(<SyncEditsButton inline />)
-    expect(container.querySelector(".sync-edits-banner")).not.toBeInTheDocument()
+  it("renders as a plain in-flow item", () => {
+    const { container } = render(<SyncEditsButton />)
     expect(container.querySelector(".sync-edits-inline")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /^sync$/i })).toBeInTheDocument()
   })

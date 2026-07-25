@@ -508,8 +508,8 @@ export function ReviewSessionPage() {
             <ChevronLeftIcon className="back-chevron" />
           </Link>
           <div className="review-header-actions">
-            <UserMenu iconOnly />
-            <SyncEditsButton inline />
+            <UserMenu />
+            <SyncEditsButton />
           </div>
         </header>
         <p className="muted">Nothing due right now.</p>
@@ -564,8 +564,8 @@ export function ReviewSessionPage() {
           >
             取り消す
           </button>
-          <UserMenu iconOnly />
-          <SyncEditsButton inline />
+          <UserMenu />
+          <SyncEditsButton />
         </div>
       </header>
 
