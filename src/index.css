@@ -2093,6 +2093,10 @@ code {
   vertical-align: -0.1em;
 }
 
+.sync-btn .import-spinner {
+  margin-right: 0;
+}
+
 .import-spinner {
   display: inline-block;
   width: 0.85em;
