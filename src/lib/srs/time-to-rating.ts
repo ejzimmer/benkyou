@@ -5,29 +5,30 @@ import type { ReviewModeId } from "../../domain/types"
 export type RevealThresholdsSec = {
   /** Below this → Easy (when self-correct) */
   easyBelow: number
-  /** Below this → Good */
+  /** Below this → Good; at or above → Hard */
   goodBelow: number
-  /** Below this → Hard */
-  hardBelow: number
 }
 
 export const REVEAL_THRESHOLDS_SEC: Record<ReviewModeId, RevealThresholdsSec> = {
   /** Oral recall — usually quicker than typing */
-  vocab_oral_en: { easyBelow: 4, goodBelow: 18, hardBelow: 45 },
-  grammar_oral_meaning: { easyBelow: 5, goodBelow: 22, hardBelow: 50 },
+  vocab_oral_en: { easyBelow: 4, goodBelow: 18 },
+  grammar_oral_meaning: { easyBelow: 5, goodBelow: 22 },
   /** Short hiragana typing */
-  vocab_type_reading: { easyBelow: 6, goodBelow: 25, hardBelow: 55 },
+  vocab_type_reading: { easyBelow: 6, goodBelow: 25 },
   /** Recall Japanese word from clues */
-  vocab_type_word_from_clue: { easyBelow: 12, goodBelow: 45, hardBelow: 95 },
+  vocab_type_word_from_clue: { easyBelow: 12, goodBelow: 45 },
   /** Typed construction — typically slowest */
-  grammar_type_construction: { easyBelow: 20, goodBelow: 55, hardBelow: 120 },
+  grammar_type_construction: { easyBelow: 20, goodBelow: 55 },
   /** Short hiragana typing, same pacing as the vocab reading quiz */
-  grammar_type_reading: { easyBelow: 6, goodBelow: 25, hardBelow: 55 },
+  grammar_type_reading: { easyBelow: 6, goodBelow: 25 },
 }
 
 /**
  * Maps prompt→reveal latency to an FSRS grade (when self-marked correct).
- * Incorrect always Again. Phase B: calibrate thresholds from review logs per user/mode.
+ * Incorrect always Again; a correct answer never drops to Again no matter how
+ * slow, since Again forces a same-day relearn step and slowness alone doesn't
+ * mean the card was forgotten — Hard is the floor. Phase B: calibrate
+ * thresholds from review logs per user/mode.
  */
 export function responseTimeToGrade(
   modeId: ReviewModeId,
@@ -42,6 +43,5 @@ export function responseTimeToGrade(
   const s = promptToRevealMs / 1000
   if (s < t.easyBelow) return Rating.Easy
   if (s < t.goodBelow) return Rating.Good
-  if (s < t.hardBelow) return Rating.Hard
-  return Rating.Again
+  return Rating.Hard
 }

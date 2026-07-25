@@ -48,6 +48,10 @@ function inertWhen(condition: boolean) {
 
 type Phase = "prompt" | "answer"
 
+function dueItemKey(item: DueItem): string {
+  return `${item.card.id}:${item.modeId}`
+}
+
 function prioritizeResumeItem(
   queue: DueItem[],
   resumeCardId: string | null,
@@ -105,6 +109,13 @@ export function ReviewSessionPage() {
   setSearchParamsRef.current = setSearchParams
   const { conflictResolutionVersion } = useSync()
   const [sessionQueue, setSessionQueue] = useState<DueItem[]>([])
+  /**
+   * Keys (`dueItemKey`) of items currently in `sessionQueue` that were
+   * judged incorrect at least once this session and are waiting on a
+   * correct retry. Reset alongside `sessionQueue` on every `load()` — it's
+   * a same-session display concern, not persisted state.
+   */
+  const [wrongKeys, setWrongKeys] = useState<Set<string>>(new Set())
   const [phase, setPhase] = useState<Phase>("prompt")
   const [typed, setTyped] = useState("")
   const [readingWarn, setReadingWarn] = useState(false)
@@ -124,7 +135,13 @@ export function ReviewSessionPage() {
    * restore what was entered. In-session only — not persisted across reloads.
    */
   const judgedTypedHistoryRef = useRef<
-    Array<{ cardId: string; modeId: string; typed: string }>
+    Array<{
+      cardId: string
+      modeId: string
+      typed: string
+      /** Was this item already in `wrongKeys` right before this judgement? */
+      wasWrong: boolean
+    }>
   >([])
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
   const phaseRef = useRef<Phase>(phase)
@@ -168,6 +185,7 @@ export function ReviewSessionPage() {
     const q = prioritizeResumeItem(deckQueue, resumeCardId, resumeModeId)
     if (q.length > 0) hadDueItemsRef.current = true
     setSessionQueue(q)
+    setWrongKeys(new Set())
 
     // Resuming from the edit page: put back the phase/typed answer the user
     // had before navigating away, as long as the same card+mode is still
@@ -263,6 +281,12 @@ export function ReviewSessionPage() {
   }, [])
 
   const current = sessionQueue[0]
+
+  const wrongCount = useMemo(
+    () => sessionQueue.filter((item) => wrongKeys.has(dueItemKey(item))).length,
+    [sessionQueue, wrongKeys],
+  )
+  const remainingCount = sessionQueue.length - wrongCount
 
   const handleTypedChange = useCallback(
     (value: string) => {
@@ -392,11 +416,14 @@ export function ReviewSessionPage() {
   async function onJudge(correct: boolean) {
     if (!current || pendingIncorrectDelay) return
     const item = current
+    const key = dueItemKey(item)
+    const wasWrong = wrongKeys.has(key)
     // Remember the answer entered so undoing this judgement can show it again.
     judgedTypedHistoryRef.current.push({
       cardId: item.card.id,
       modeId: item.modeId,
       typed,
+      wasWrong,
     })
     await commitJudgement(
       item.card.id,
@@ -408,6 +435,13 @@ export function ReviewSessionPage() {
 
     if (correct) {
       setSessionQueue((q) => q.slice(1))
+      if (wasWrong) {
+        setWrongKeys((prev) => {
+          const next = new Set(prev)
+          next.delete(key)
+          return next
+        })
+      }
       resetPromptAfterJudgement()
       setPhase("prompt")
       return
@@ -418,6 +452,9 @@ export function ReviewSessionPage() {
 
     const delayMs = rest.length > 0 ? INCORRECT_ADVANCE_DELAY_MS : 0
     setSessionQueue(requeueAfterIncorrect(rest, first))
+    if (!wasWrong) {
+      setWrongKeys((prev) => new Set(prev).add(key))
+    }
 
     resetPromptAfterJudgement()
     setPhase("prompt")
@@ -467,13 +504,26 @@ export function ReviewSessionPage() {
 
     const snap = await prepareJudgement(undone.card.id, undone.modeId)
     const lastTyped = judgedTypedHistoryRef.current.pop()
-    const restoredTyped =
-      lastTyped &&
+    const matchesUndone =
+      lastTyped != null &&
       lastTyped.cardId === undone.card.id &&
       lastTyped.modeId === undone.modeId
-        ? lastTyped.typed
-        : ""
+    const restoredTyped = matchesUndone ? lastTyped.typed : ""
     setTyped(restoredTyped)
+    if (matchesUndone) {
+      const key = dueItemKey(undone)
+      setWrongKeys((prev) => {
+        const has = prev.has(key)
+        if (lastTyped.wasWrong === has) return prev
+        const next = new Set(prev)
+        if (lastTyped.wasWrong) {
+          next.add(key)
+        } else {
+          next.delete(key)
+        }
+        return next
+      })
+    }
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
@@ -558,7 +608,10 @@ export function ReviewSessionPage() {
           <ChevronLeftIcon className="back-chevron" />
         </Link>
         <div className="review-header-actions">
-          <p className="muted small">残り{sessionQueue.length}枚</p>
+          <p className="muted small">
+            残り{remainingCount}枚
+            {wrongCount > 0 && `・やり直し${wrongCount}枚`}
+          </p>
           <Link
             to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(
               reviewReturnTo,

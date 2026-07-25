@@ -24,4 +24,11 @@ describe("responseTimeToGrade", () => {
   it("null timing → Good when correct", () => {
     expect(responseTimeToGrade("vocab_type_reading", null, true)).toBe(Rating.Good)
   })
+
+  it("correct but very slow → Hard, never Again", () => {
+    expect(responseTimeToGrade("vocab_oral_en", 999_000, true)).toBe(Rating.Hard)
+    expect(
+      responseTimeToGrade("grammar_type_construction", 999_000, true),
+    ).toBe(Rating.Hard)
+  })
 })
