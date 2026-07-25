@@ -40,6 +40,7 @@ import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncButton } from "../../ui/SyncButton"
+import { LabeledToggle } from "../../ui/LabeledToggle"
 import { Switch } from "../../ui/Switch"
 import {
   addMissingKanjiLines,
@@ -629,7 +630,7 @@ export function CardEditPage() {
                 {duplicateJapaneseWarning}
               </p>
             )}
-            <Switch
+            <LabeledToggle
               legend="Testing"
               name="grammar-sides"
               value={grammar.singleSided ? "one" : "both"}
