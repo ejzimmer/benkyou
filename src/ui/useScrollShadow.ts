@@ -58,23 +58,35 @@ export function useScrollShadow<T extends HTMLElement>() {
     // Images inside the container change its scrollable size once they
     // load, well after the mutation that inserted the (still-sizeless) <img>.
     el.addEventListener("load", update, true)
+    // A disclosure (e.g. the review prompt's "show meaning/images" expander)
+    // grows the scrollable area via a CSS grid-template-rows transition
+    // triggered by a class toggle, not by inserting/removing nodes — the
+    // `attributes` mutation below fires the moment that class flips, before
+    // the transition has actually resized anything, so it needs this to
+    // catch the real, settled size once the animation finishes.
+    el.addEventListener("transitionend", update)
 
     // jsdom (tests) doesn't implement ResizeObserver.
     const resizeObserver =
       typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : undefined
     resizeObserver?.observe(el)
 
+    // `attributes: true` catches class/style-driven layout changes (like the
+    // disclosure above) that don't add or remove any nodes — without it,
+    // toggling a class deep in the subtree is invisible to this observer.
     const mutationObserver = new MutationObserver(update)
     mutationObserver.observe(el, {
       childList: true,
       subtree: true,
       characterData: true,
+      attributes: true,
     })
 
     return () => {
       el.removeEventListener("scroll", update)
       window.removeEventListener("resize", update)
       el.removeEventListener("load", update, true)
+      el.removeEventListener("transitionend", update)
       resizeObserver?.disconnect()
       mutationObserver.disconnect()
     }

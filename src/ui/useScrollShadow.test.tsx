@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest"
-import { render } from "@testing-library/react"
+import { render, waitFor } from "@testing-library/react"
 import { useScrollShadow } from "./useScrollShadow"
 
 function TestBox() {
   const ref = useScrollShadow<HTMLDivElement>()
   return (
     <div ref={ref} data-testid="box">
-      content
+      <div data-testid="disclosure" className="closed">
+        content
+      </div>
     </div>
   )
 }
@@ -81,5 +83,34 @@ describe("useScrollShadow", () => {
     const shadow = box.style.boxShadow
     expect(shadowCount(shadow)).toBe(1)
     expect(shadow).toContain("8px 0")
+  })
+
+  // Mirrors a CSS disclosure (like the review prompt's "show meaning/images"
+  // expander) that grows a container's scrollable content purely via a class
+  // toggle on a descendant, with no nodes added/removed and no scroll event —
+  // the toggle itself is what should be caught, not a following interaction.
+  it("recomputes when a descendant's class changes with no node insertion", async () => {
+    const { getByTestId } = render(<TestBox />)
+    const box = getByTestId("box")
+    const disclosure = getByTestId("disclosure")
+    Object.defineProperty(box, "scrollTop", { configurable: true, value: 0 })
+    Object.defineProperty(box, "scrollHeight", { configurable: true, value: 300 })
+    Object.defineProperty(box, "clientHeight", { configurable: true, value: 100 })
+
+    disclosure.className = "open"
+
+    await waitFor(() => expect(box.style.boxShadow).toContain("-8px"))
+  })
+
+  it("recomputes on transitionend, after a CSS transition settles the size", async () => {
+    const { getByTestId } = render(<TestBox />)
+    const box = getByTestId("box")
+    Object.defineProperty(box, "scrollTop", { configurable: true, value: 0 })
+    Object.defineProperty(box, "scrollHeight", { configurable: true, value: 300 })
+    Object.defineProperty(box, "clientHeight", { configurable: true, value: 100 })
+
+    box.dispatchEvent(new Event("transitionend", { bubbles: true }))
+
+    await waitFor(() => expect(box.style.boxShadow).toContain("-8px"))
   })
 })
