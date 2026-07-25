@@ -1,6 +1,18 @@
 /** Separator between per-gap answers in a construction: ASCII "," or Japanese "、". */
 const ANSWER_SEPARATOR = /[、,]/
 
+/** A run of halfwidth "_" or fullwidth "＿" — the fill-in-the-gap marker. */
+const GAP_MARKER_PATTERN = /[_＿]+/
+
+/**
+ * The gap marker actually used in a sentence: a run of underscores (any
+ * length, halfwidth or fullwidth). Falls back to "___" when the sentence
+ * doesn't contain one yet, e.g. for a freshly created card.
+ */
+export function detectGapMarker(sentenceWithGap: string): string {
+  return sentenceWithGap.match(GAP_MARKER_PATTERN)?.[0] ?? "___"
+}
+
 /** Number of gap-marker occurrences in a fill-in-the-gap sentence. */
 export function countGaps(sentenceWithGap: string, gapMarker: string): number {
   const marker = gapMarker.trim()

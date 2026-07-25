@@ -12,7 +12,7 @@ import type {
   VocabularyCardContent,
 } from "../../domain/types"
 import { CARD_KIND_LABELS } from "../../domain/types"
-import { countGaps } from "../../domain/grammarGaps"
+import { countGaps, detectGapMarker } from "../../domain/grammarGaps"
 import { isKanaOnly } from "../../domain/vocabularyContent"
 import { isSingleSided } from "../../domain/grammarContent"
 import {
@@ -41,6 +41,7 @@ import { PageHeading } from "../../ui/PageHeading"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncEditsButton } from "../../ui/SyncEditsButton"
 import { Switch } from "../../ui/Switch"
+import { Toggle } from "../../ui/Toggle"
 import {
   addMissingKanjiLines,
   parseReadingsMapText,
@@ -592,22 +593,16 @@ export function CardEditPage() {
         ) : (
           <>
             <label>
-              Sentence with gap (include marker)
+              Sentence with gap (mark the gap with _ or ＿)
               <input
                 className="input"
                 value={grammar.sentenceWithGap}
                 onChange={(e) =>
-                  setGrammar({ ...grammar, sentenceWithGap: e.target.value })
-                }
-              />
-            </label>
-            <label>
-              Gap marker
-              <input
-                className="input"
-                value={grammar.gapMarker}
-                onChange={(e) =>
-                  setGrammar({ ...grammar, gapMarker: e.target.value })
+                  setGrammar({
+                    ...grammar,
+                    sentenceWithGap: e.target.value,
+                    gapMarker: detectGapMarker(e.target.value),
+                  })
                 }
               />
             </label>
@@ -634,20 +629,15 @@ export function CardEditPage() {
                 {duplicateJapaneseWarning}
               </p>
             )}
-            <Switch
-              legend="Testing"
-              name="grammar-sides"
-              value={grammar.singleSided ? "one" : "both"}
-              onChange={(sides) =>
-                setGrammar({ ...grammar, singleSided: sides === "one" })
+            <Toggle
+              label={grammar.singleSided ? "片面" : "両面"}
+              checked={grammar.singleSided ?? false}
+              onChange={(singleSided) =>
+                setGrammar({ ...grammar, singleSided })
               }
-              options={[
-                { value: "both", label: "両面" },
-                { value: "one", label: "片面" },
-              ]}
             />
             <label>
-              Translation
+              意味
               <input
                 className="input"
                 value={grammar.translationEn}

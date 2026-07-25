@@ -1,10 +1,25 @@
 import { describe, expect, it } from "vitest"
 import {
   countGaps,
+  detectGapMarker,
   normalizeGapAnswers,
   splitGapAnswers,
   typedGapValues,
 } from "./grammarGaps"
+
+describe("detectGapMarker", () => {
+  it("finds a run of halfwidth underscores", () => {
+    expect(detectGapMarker("私は____です")).toBe("____")
+  })
+
+  it("finds a run of fullwidth underscores", () => {
+    expect(detectGapMarker("私は＿＿＿です")).toBe("＿＿＿")
+  })
+
+  it("falls back to three underscores when the sentence has no gap yet", () => {
+    expect(detectGapMarker("私はです")).toBe("___")
+  })
+})
 
 describe("countGaps", () => {
   it("counts inline gap-marker occurrences", () => {
