@@ -17,6 +17,7 @@ import { loadSchedulingRow } from "./cards"
 import { db, type SchedulingRow } from "../lib/db/schema"
 import { emptyFsrs, serializeFsrs } from "../lib/srs/schedule"
 import type { Card, ReviewModeId } from "../domain/types"
+import { clearSessionEdits, getSessionEditedCardIds } from "../lib/sync/sessionEdits"
 
 const startOfLocalDay = (timestamp: number) => {
   const date = new Date(timestamp)
@@ -84,6 +85,7 @@ function dueItem(
 describe("review + scheduling (IndexedDB)", () => {
   beforeEach(async () => {
     await resetDatabase()
+    clearSessionEdits()
   })
 
   it("randomizes due review modes while spacing prompts from the same card", () => {
@@ -210,6 +212,28 @@ describe("review + scheduling (IndexedDB)", () => {
     })
   })
 
+  it("flags the card as a pending sync edit so grading it reaches other devices", async () => {
+    const deck = await createDeck("D")
+    const card = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "魚",
+        reading: "さかな",
+        definitionsEn: ["fish"],
+        images: [],
+        exampleSentences: [],
+      },
+    )
+    // Creating the card already flags it (via saveCard) — clear that so this
+    // only asserts what grading itself does.
+    clearSessionEdits()
+
+    const snap = await prepareJudgement(card.id, "vocab_oral_en")
+    await commitJudgement(card.id, "vocab_oral_en", 800, true, snap)
+
+    expect(getSessionEditedCardIds()).toContain(card.id)
+  })
+
   it("does not record a timing sample when latency wasn't captured", async () => {
     const deck = await createDeck("D")
     const card = await createVocabularyCard(
@@ -262,6 +286,28 @@ describe("review + scheduling (IndexedDB)", () => {
     const restored = await loadSchedulingRow(card.id, "vocab_oral_en")
     expect(restored!.due).toBe(beforeDue)
     expect(await db.reviewEvents.get(eventId)).toBeUndefined()
+  })
+
+  it("flags the card as a pending sync edit when a judgement is undone, too", async () => {
+    const deck = await createDeck("D")
+    const card = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "馬",
+        reading: "うま",
+        definitionsEn: ["horse"],
+        images: [],
+        exampleSentences: [],
+      },
+    )
+
+    const snap = await prepareJudgement(card.id, "vocab_oral_en")
+    await commitJudgement(card.id, "vocab_oral_en", 800, true, snap)
+    clearSessionEdits()
+
+    await undoLastJudgement()
+
+    expect(getSessionEditedCardIds()).toContain(card.id)
   })
 
   it("undoes the judgement that actually happened last, even when two judgements share the same millisecond timestamp", async () => {

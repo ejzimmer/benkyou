@@ -46,6 +46,7 @@ let conflictResolutionVersion = 0
 vi.mock("../../lib/sync/SyncContext", () => ({
   useSync: () => ({
     conflictResolutionVersion,
+    syncEditsNow: () => Promise.resolve(),
   }),
 }))
 
