@@ -887,17 +887,15 @@ fieldset.plain legend {
 }
 
 /* The construction filling the gap in a "say the meaning" prompt — highlighted
-   so it's clear which part of the sentence is the target, with its text
-   blended into the highlight so the answer isn't legible. `nowrap` keeps the
+   so it's clear which part of the sentence is the target. `nowrap` keeps the
    highlight from splitting across a line break — balanced wrapping (below)
    is otherwise happy to break in the middle of it to even out line lengths.
-   Background and text use the same solid (non-alpha) colour rather than a
-   translucent one: stacking the same alpha twice (box over the card, text
-   over the box) compounds to a lighter shade than the box itself, leaving
-   the text visible instead of blending in. */
+   Text uses the app's background colour (the same trick buttons use for text
+   on a fluoro background) so it reads clearly against the grey highlight
+   instead of disappearing into it. */
 .construction-fill {
   background: rgb(141 141 148);
-  color: rgb(141 141 148);
+  color: var(--on-fluoro);
   border-radius: 4px;
   padding: 0.05em 0.25em;
   font-weight: 600;
