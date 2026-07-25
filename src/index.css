@@ -1873,8 +1873,15 @@ fieldset.plain legend {
   padding-right: 1.25rem;
 }
 
+.page:has(.build-footer) {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(var(--vvh, 100dvh) - 4rem);
+}
+
 .build-footer {
-  margin-top: 2.5rem;
+  margin-top: auto;
+  padding-top: 2.5rem;
   text-align: center;
 }
 
