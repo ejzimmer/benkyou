@@ -65,12 +65,12 @@ function imageFilesFromClipboard(data: DataTransfer): File[] {
 function ImagePreviewList({
   imageIds,
   onRemove,
+  onAdd,
 }: {
   imageIds: string[]
   onRemove: (id: string) => void
+  onAdd: () => void
 }) {
-  if (imageIds.length === 0) return null
-
   return (
     <div className="image-preview-list">
       {imageIds.map((id) => (
@@ -86,6 +86,19 @@ function ImagePreviewList({
           </button>
         </div>
       ))}
+      <button
+        type="button"
+        className="image-preview-add"
+        onClick={onAdd}
+        aria-label="Add image"
+      >
+        <span
+          className="btn secondary icon add-card-btn image-preview-add-icon"
+          aria-hidden="true"
+        >
+          +
+        </span>
+      </button>
     </div>
   )
 }
@@ -119,6 +132,7 @@ export function CardEditPage() {
    * keystroke — shared by both card kinds' combined "Readings" field. */
   const [readingsMapDraft, setReadingsMapDraft] = useState("")
   const formRef = useRef<HTMLFormElement | null>(null)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [imageUploadCount, setImageUploadCount] = useState(0)
   const isUploadingImages = imageUploadCount > 0
@@ -581,22 +595,14 @@ export function CardEditPage() {
                 }}
               />
             </label>
-            <label>
-              Images
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  void onPickImage(e.currentTarget.files)
-                  e.currentTarget.value = ""
-                }}
+            <fieldset className="plain">
+              <legend>画像</legend>
+              <ImagePreviewList
+                imageIds={vocab.images}
+                onRemove={onRemoveImage}
+                onAdd={() => imageInputRef.current?.click()}
               />
-            </label>
-            <p className="muted small">
-              Choose an image file or paste an image from your clipboard
-              anywhere in this form.
-            </p>
-            <ImagePreviewList imageIds={vocab.images} onRemove={onRemoveImage} />
+            </fieldset>
           </>
         ) : (
           <>
@@ -685,24 +691,28 @@ export function CardEditPage() {
                 }}
               />
             </label>
-            <label>
-              Images
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  void onPickImage(e.currentTarget.files)
-                  e.currentTarget.value = ""
-                }}
+            <fieldset className="plain">
+              <legend>画像</legend>
+              <ImagePreviewList
+                imageIds={grammar.images}
+                onRemove={onRemoveImage}
+                onAdd={() => imageInputRef.current?.click()}
               />
-            </label>
-            <p className="muted small">
-              Choose an image file or paste an image from your clipboard
-              anywhere in this form.
-            </p>
-            <ImagePreviewList imageIds={grammar.images} onRemove={onRemoveImage} />
+            </fieldset>
           </>
         )}
+
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          tabIndex={-1}
+          onChange={(e) => {
+            void onPickImage(e.currentTarget.files)
+            e.currentTarget.value = ""
+          }}
+        />
 
         {isUploadingImages && (
           <p className="muted small" aria-live="polite">
@@ -714,10 +724,10 @@ export function CardEditPage() {
         {err && <p className="error">{err}</p>}
         <button
           type="submit"
-          className="btn primary align-end"
+          className="btn primary blue align-end"
           disabled={isUploadingImages}
         >
-          Save
+          保存
         </button>
       </form>
     </div>
