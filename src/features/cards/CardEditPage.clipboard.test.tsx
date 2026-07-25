@@ -77,7 +77,7 @@ describe("CardEditPage clipboard images", () => {
     })
 
     await user.type(screen.getByLabelText("日本語で"), "猫")
-    await user.click(screen.getByRole("button", { name: /save/i }))
+    await user.click(screen.getByRole("button", { name: "保存" }))
 
     await waitFor(async () => {
       const cards = await db.cards.toArray()

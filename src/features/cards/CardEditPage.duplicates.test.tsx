@@ -56,7 +56,7 @@ describe("CardEditPage duplicate warning", () => {
     ).toBeInTheDocument()
 
     await user.type(screen.getByLabelText("意味"), "cat")
-    await user.click(screen.getByRole("button", { name: /save/i }))
+    await user.click(screen.getByRole("button", { name: "保存" }))
 
     await waitFor(async () => {
       const cards = await db.cards.toArray()

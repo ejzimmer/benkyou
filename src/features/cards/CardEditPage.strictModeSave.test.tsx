@@ -50,7 +50,7 @@ describe("CardEditPage under StrictMode", () => {
     const meaningTa = screen.getByLabelText("意味")
     await user.type(meaningTa, "cat")
 
-    const saveBtn = screen.getByRole("button", { name: /save/i })
+    const saveBtn = screen.getByRole("button", { name: "保存" })
     await user.click(saveBtn)
 
     await waitFor(async () => {
