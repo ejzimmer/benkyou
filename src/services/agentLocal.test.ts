@@ -31,7 +31,6 @@ describe("agentLocal", () => {
       definitionsEn: ["book"],
       images: [],
       exampleSentences: [],
-      synonymsJa: [],
     })
     const due = await agentListDue(Date.now() + 7 * 24 * 60 * 60 * 1000)
     expect(due.length).toBeGreaterThan(0)

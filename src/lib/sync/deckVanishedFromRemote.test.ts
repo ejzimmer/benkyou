@@ -93,7 +93,6 @@ function tinyDeckPayload(): BulkImportPayload {
           definitionsEn: ["cat"],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
     ],

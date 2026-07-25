@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest"
-import {
-  isSynonymAnswer,
-  matchesPrimaryJapanese,
-} from "./synonyms"
+import { matchesPrimaryJapanese } from "./primaryAnswer"
 import type { Card } from "../../domain/types"
 
 const vocabCard = (): Card => ({
@@ -16,7 +13,6 @@ const vocabCard = (): Card => ({
     definitionsEn: ["sushi"],
     images: [],
     exampleSentences: [],
-    synonymsJa: ["鮨", "すし屋"],
   },
 })
 
@@ -32,20 +28,7 @@ const grammarCard = (): Card => ({
     translationEn: "student context",
     readings: {},
     images: [],
-    synonymsJa: ["生徒"],
   },
-})
-
-describe("isSynonymAnswer", () => {
-  it("matches listed synonym for vocabulary", () => {
-    expect(isSynonymAnswer(vocabCard(), "鮨")).toBe(true)
-  })
-  it("does not match unrelated text", () => {
-    expect(isSynonymAnswer(vocabCard(), "天ぷら")).toBe(false)
-  })
-  it("matches grammar synonym", () => {
-    expect(isSynonymAnswer(grammarCard(), "生徒")).toBe(true)
-  })
 })
 
 describe("matchesPrimaryJapanese", () => {

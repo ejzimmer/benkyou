@@ -26,7 +26,6 @@ function vocabItem(modeId: ReviewModeId): DueItem {
         definitionsEn: ["cat"],
         images: ["img-cat"],
         exampleSentences: ["猫がいます。"],
-        synonymsJa: [],
       },
     },
     modeId,
@@ -144,7 +143,6 @@ function grammarItem(modeId: ReviewModeId): DueItem {
         translationEn: "I searched in the dictionary",
         readings: {},
         images: ["img-grammar"],
-        synonymsJa: [],
       },
     },
     modeId,
@@ -160,7 +158,6 @@ function renderRevealedReview(item: DueItem) {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         revealed
@@ -279,7 +276,6 @@ describe("ReviewSessionAnswerPanel", () => {
           definitionsEn: ["to reach a conclusion"],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_type_word_from_clue",
@@ -315,7 +311,6 @@ function twoGapItem(): DueItem {
         translationEn: "Call a carriage",
         readings: {},
         images: [],
-        synonymsJa: [],
       },
     },
     modeId: "grammar_type_construction",
@@ -339,7 +334,6 @@ describe("ReviewSessionAnswerPanel — grammar reading quiz", () => {
           constructionReadingParts: { 結論: "けつろん", 至る: "いたる" },
           readings: {},
           images: [],
-          synonymsJa: [],
         },
       },
       modeId: "grammar_type_reading",
@@ -436,7 +430,6 @@ describe("ReviewSessionAnswerPanel — multi-gap focus bias", () => {
           translationEn: "he said, yes that's right",
           readings: {},
           images: [],
-          synonymsJa: [],
         },
       },
       modeId: "grammar_type_construction",

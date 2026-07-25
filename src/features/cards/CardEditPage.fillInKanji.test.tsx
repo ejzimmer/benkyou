@@ -52,10 +52,7 @@ describe("CardEditPage Fill in kanji", () => {
     render(wrapVocab())
 
     await user.type(screen.getByLabelText("日本語で"), "結論に至る")
-    await user.type(
-      screen.getByLabelText(/example sentences \(one per line\)/i),
-      "彼は結論に至った",
-    )
+    await user.type(screen.getByLabelText("例文"), "彼は結論に至った")
     await user.click(screen.getByRole("button", { name: /fill in kanji/i }))
 
     expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue(

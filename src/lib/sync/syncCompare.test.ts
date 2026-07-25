@@ -46,7 +46,6 @@ describe("cardChanged", () => {
       definitionsEn: ["cat"],
       images: [],
       exampleSentences: [],
-      synonymsJa: [],
     },
   }
 

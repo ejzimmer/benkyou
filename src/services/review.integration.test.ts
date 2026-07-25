@@ -68,7 +68,6 @@ function vocabularyCard(id: string, deckId?: string): Card {
       definitionsEn: ["definition"],
       images: [],
       exampleSentences: [],
-      synonymsJa: [],
     },
     updatedAt: 1,
   }
@@ -169,7 +168,6 @@ describe("review + scheduling (IndexedDB)", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -222,7 +220,6 @@ describe("review + scheduling (IndexedDB)", () => {
         definitionsEn: ["bird"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -242,7 +239,6 @@ describe("review + scheduling (IndexedDB)", () => {
         definitionsEn: ["dog"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -285,7 +281,6 @@ describe("review + scheduling (IndexedDB)", () => {
         definitionsEn: ["one"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
     const second = await createVocabularyCard(
@@ -296,7 +291,6 @@ describe("review + scheduling (IndexedDB)", () => {
         definitionsEn: ["two"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 

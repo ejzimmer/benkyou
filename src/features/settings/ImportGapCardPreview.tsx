@@ -63,17 +63,6 @@ export function ImportGapCardPreview({
             </ul>
           </Fact>
         )}
-        {c.synonymsJa.some((s) => s.trim()) && (
-          <Fact label="Synonyms">
-            <ul className="import-card-list">
-              {c.synonymsJa
-                .filter((s) => s.trim())
-                .map((s, i) => (
-                  <li key={i}>{s}</li>
-                ))}
-            </ul>
-          </Fact>
-        )}
       </div>
     )
   }
@@ -108,17 +97,6 @@ export function ImportGapCardPreview({
               <ImportGapMediaImage key={id} mediaId={id} mediaItems={mediaItems} />
             ))}
           </div>
-        </Fact>
-      )}
-      {c.synonymsJa.some((s) => s.trim()) && (
-        <Fact label="Synonyms">
-          <ul className="import-card-list">
-            {c.synonymsJa
-              .filter((s) => s.trim())
-              .map((s, i) => (
-                <li key={i}>{s}</li>
-              ))}
-          </ul>
         </Fact>
       )}
     </div>

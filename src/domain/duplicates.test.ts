@@ -33,16 +33,12 @@ describe("findDuplicateCards", () => {
     expect(findDuplicateCards(target, [target, other])).toEqual([other])
   })
 
-  it("matches when the word appears in an example sentence or synonym", () => {
+  it("matches when the word appears in an example sentence", () => {
     const target = vocab("a", "deck-1", { wordJa: "猫" })
     const bySentence = vocab("b", "deck-1", {
       exampleSentences: ["猫がいます"],
     })
-    const bySynonym = vocab("c", "deck-1", { synonymsJa: ["猫"] })
-    expect(findDuplicateCards(target, [target, bySentence, bySynonym])).toEqual([
-      bySentence,
-      bySynonym,
-    ])
+    expect(findDuplicateCards(target, [target, bySentence])).toEqual([bySentence])
   })
 
   it("matches against grammar card fields, including readings", () => {

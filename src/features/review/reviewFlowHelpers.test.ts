@@ -22,7 +22,6 @@ const vocabCard = (): Extract<Card, { kind: "vocabulary" }> => ({
     definitionsEn: ["cat"],
     images: [],
     exampleSentences: [],
-    synonymsJa: [],
   },
 })
 
@@ -60,7 +59,6 @@ describe("reviewFlowHelpers", () => {
         definitionsEn: [],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       }),
     ).toEqual({})
   })
@@ -77,7 +75,6 @@ describe("reviewFlowHelpers", () => {
         definitionsEn: [],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     }
     expect(expectedAnswer(c, "vocab_type_reading")).toBe("けつろん, いたる")
@@ -97,7 +94,6 @@ describe("reviewFlowHelpers", () => {
         constructionReadingParts: { 結論: "けつろん", 至る: "いたる" },
         readings: {},
         images: [],
-        synonymsJa: [],
       },
     }
     expect(expectedAnswer(c, "grammar_type_reading")).toBe("けつろん, いたる")
@@ -117,7 +113,6 @@ describe("reviewFlowHelpers", () => {
         translationEn: "",
         readings: {},
         images: [],
-        synonymsJa: [],
       },
     }
     expect(expectedAnswer(c, "grammar_type_reading")).toBe("かんばしい")

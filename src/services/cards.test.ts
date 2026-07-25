@@ -17,7 +17,6 @@ describe("validateVocabulary", () => {
         definitionsEn: ["x"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       }),
     ).toMatch(/required/)
   })
@@ -29,7 +28,6 @@ describe("validateVocabulary", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       }),
     ).toBeNull()
   })
@@ -42,7 +40,6 @@ describe("validateVocabulary", () => {
         definitionsEn: [],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       }),
     ).toBeNull()
   })
@@ -55,7 +52,6 @@ describe("validateVocabulary", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       }),
     ).toMatch(/Pronunciation/)
   })
@@ -67,7 +63,6 @@ describe("validateVocabulary", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       }),
     ).toBeNull()
   })
@@ -79,7 +74,6 @@ describe("validateVocabulary", () => {
         definitionsEn: ["", ""],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       }),
     ).toMatch(/pronunciation|English|image/i)
   })
@@ -91,7 +85,6 @@ describe("validateVocabulary", () => {
         definitionsEn: [],
         images: ["blob-id"],
         exampleSentences: [],
-        synonymsJa: [],
       }),
     ).toBeNull()
   })
@@ -107,7 +100,6 @@ describe("validateGrammar", () => {
         translationEn: "y",
         readings: {},
         images: [],
-        synonymsJa: [],
       }),
     ).toMatch(/gap marker/)
   })
@@ -121,7 +113,6 @@ describe("validateGrammar", () => {
         translationEn: "I am ~",
         readings: {},
         images: [],
-        synonymsJa: [],
       }),
     ).toBeNull()
   })
@@ -135,7 +126,6 @@ describe("validateGrammar", () => {
         translationEn: "",
         readings: {},
         images: ["blob-id"],
-        synonymsJa: [],
       }),
     ).toBeNull()
   })
@@ -149,7 +139,6 @@ describe("validateGrammar", () => {
         translationEn: "Call a carriage",
         readings: {},
         images: [],
-        synonymsJa: [],
       }),
     ).toBeNull()
   })
@@ -163,7 +152,6 @@ describe("validateGrammar", () => {
         translationEn: "Call a carriage",
         readings: {},
         images: [],
-        synonymsJa: [],
       }),
     ).toMatch(/2 gaps/)
   })
@@ -177,7 +165,6 @@ describe("validateGrammar", () => {
         translationEn: "Call a carriage",
         readings: {},
         images: [],
-        synonymsJa: [],
       }),
     ).toMatch(/2 gaps/)
   })
@@ -193,7 +180,6 @@ describe("normalizeGrammarContent", () => {
         translationEn: "Call a carriage",
         readings: {},
         images: [],
-        synonymsJa: [],
       }).construction,
     ).toBe("流し, 呼ぶ")
   })
@@ -207,7 +193,6 @@ describe("normalizeGrammarContent", () => {
         translationEn: "I am ~",
         readings: {},
         images: [],
-        synonymsJa: [],
       }).construction,
     ).toBe("学生")
   })
@@ -223,7 +208,6 @@ describe("normalizeGrammarContent", () => {
         translationEn: "eating and drinking, among other things",
         readings: {},
         images: [],
-        synonymsJa: [],
       }).construction,
     ).toBe("食べたり、飲んだり")
   })
@@ -240,7 +224,6 @@ describe("card type conversions", () => {
         translationEn: "student",
         readings: { 学生: "がくせい" },
         images: ["image-1"],
-        synonymsJa: ["生徒"],
       }),
     ).toEqual({
       wordJa: "学生",
@@ -250,7 +233,6 @@ describe("card type conversions", () => {
       definitionsEn: ["student"],
       images: ["image-1"],
       exampleSentences: ["私は___です"],
-      synonymsJa: ["生徒"],
     })
   })
 
@@ -262,7 +244,6 @@ describe("card type conversions", () => {
         definitionsEn: ["cat", "feline", ""],
         images: ["image-1"],
         exampleSentences: ["猫がいます"],
-        synonymsJa: ["ネコ"],
       }),
     ).toEqual({
       sentenceWithGap: "___がいます",
@@ -273,7 +254,6 @@ describe("card type conversions", () => {
       translationEn: "cat; feline",
       readings: {},
       images: ["image-1"],
-      synonymsJa: ["ネコ"],
     })
   })
 
@@ -286,7 +266,6 @@ describe("card type conversions", () => {
         translationEn: "student",
         readings: { 学生: "がくせい" },
         images: [],
-        synonymsJa: [],
       }),
     ).toMatchObject({
       wordJa: "学生",
@@ -304,7 +283,6 @@ describe("card type conversions", () => {
         translationEn: "",
         readings: { 結論: "けつろん", 至る: "いたる" },
         images: [],
-        synonymsJa: [],
       }),
     ).toMatchObject({
       wordJa: "結論に至る",
@@ -323,7 +301,6 @@ describe("card type conversions", () => {
         translationEn: "",
         readings: {},
         images: [],
-        synonymsJa: [],
       }).reading,
     ).toBeUndefined()
   })
@@ -336,7 +313,6 @@ describe("card type conversions", () => {
         definitionsEn: [],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       }),
     ).toMatchObject({
       construction: "結論に至る",
@@ -354,7 +330,6 @@ describe("card type conversions", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       }).readings,
     ).toEqual({ 猫: "みょう" })
   })
@@ -372,7 +347,6 @@ describe("mergeCardContent", () => {
         definitionsEn: ["cat"],
         images: ["img-a"],
         exampleSentences: ["猫がいます"],
-        synonymsJa: [],
       },
       updatedAt: 0,
     }
@@ -386,7 +360,6 @@ describe("mergeCardContent", () => {
         definitionsEn: ["feline"],
         images: ["img-b"],
         exampleSentences: [],
-        synonymsJa: ["ネコ"],
       },
       updatedAt: 0,
     }
@@ -401,7 +374,6 @@ describe("mergeCardContent", () => {
       definitionsEn: ["cat", "feline"],
       images: ["img-a", "img-b"],
       exampleSentences: ["猫がいます"],
-      synonymsJa: ["ネコ"],
     })
   })
 
@@ -415,7 +387,6 @@ describe("mergeCardContent", () => {
         definitionsEn: ["student"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
       updatedAt: 0,
     }
@@ -430,7 +401,6 @@ describe("mergeCardContent", () => {
         translationEn: "I am a student",
         readings: {},
         images: [],
-        synonymsJa: [],
       },
       updatedAt: 0,
     }
@@ -456,7 +426,6 @@ describe("mergeCardContent", () => {
         readings: { 大好き: "だいすき" },
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
       updatedAt: 0,
     }
@@ -470,7 +439,6 @@ describe("mergeCardContent", () => {
         readings: { 大好き: "だいすき!", 元気: "げんき" },
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
       updatedAt: 0,
     }
@@ -495,7 +463,6 @@ describe("mergeCardContent", () => {
         translationEn: "student",
         readings: { 学生: "がくせい" },
         images: [],
-        synonymsJa: [],
       },
       updatedAt: 0,
     }
@@ -510,7 +477,6 @@ describe("mergeCardContent", () => {
         translationEn: "",
         readings: { 学生: "がくせいさん" },
         images: [],
-        synonymsJa: [],
       },
       updatedAt: 0,
     }
@@ -534,7 +500,6 @@ describe("mergeCardContent", () => {
         translationEn: "student",
         readings: {},
         images: [],
-        synonymsJa: [],
         singleSided: true,
       },
       updatedAt: 0,
@@ -550,7 +515,6 @@ describe("mergeCardContent", () => {
         translationEn: "",
         readings: {},
         images: [],
-        synonymsJa: [],
       },
       updatedAt: 0,
     }
@@ -572,7 +536,6 @@ describe("mergeCardContent", () => {
         translationEn: "student",
         readings: {},
         images: [],
-        synonymsJa: [],
         singleSided: false,
       },
       updatedAt: 0,
@@ -588,7 +551,6 @@ describe("mergeCardContent", () => {
         translationEn: "",
         readings: {},
         images: [],
-        synonymsJa: [],
         singleSided: true,
       },
       updatedAt: 0,

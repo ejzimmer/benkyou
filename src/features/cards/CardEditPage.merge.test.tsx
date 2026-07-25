@@ -54,7 +54,6 @@ describe("CardEditPage duplicate finder / merge", () => {
         ...defaultVocabulary(),
         wordJa: "子猫",
         definitionsEn: ["kitten (contains 猫)"],
-        synonymsJa: ["猫"],
       },
       updatedAt: Date.now(),
     })
@@ -89,7 +88,6 @@ describe("CardEditPage duplicate finder / merge", () => {
     expect(screen.getByLabelText("意味")).toHaveValue(
       "cat; kitten (contains 猫)",
     )
-    expect(screen.getByLabelText(/synonyms in japanese/i)).toHaveValue("猫")
 
     await waitFor(async () => {
       expect(await db.cards.get("card-2")).toBeUndefined()
@@ -100,7 +98,6 @@ describe("CardEditPage duplicate finder / merge", () => {
         "cat",
         "kitten (contains 猫)",
       ])
-      expect(merged.content.synonymsJa).toEqual(["猫"])
     })
   })
 
@@ -126,7 +123,6 @@ describe("CardEditPage duplicate finder / merge", () => {
         wordJa: "結論に至る",
         readingParts: { 結論: "けつろん", 至る: "いたる" },
         definitionsEn: ["arrive at a conclusion"],
-        synonymsJa: ["結論に至る"],
       },
       updatedAt: Date.now(),
     })

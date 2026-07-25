@@ -28,7 +28,6 @@ describe("reviewModesForCard", () => {
         definitionsEn: ["sushi"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     }
     expect(reviewModesForCard(card)).toEqual([
@@ -49,7 +48,6 @@ describe("reviewModesForCard", () => {
         definitionsEn: ["sushi"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     }
     expect(reviewModesForCard(card)).toEqual([
@@ -71,7 +69,6 @@ describe("reviewModesForCard", () => {
         definitionsEn: [],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     }
     expect(reviewModesForCard(card)).toEqual(["vocab_type_reading"])
@@ -88,7 +85,6 @@ describe("reviewModesForCard", () => {
         definitionsEn: [],
         images: ["img-1"],
         exampleSentences: [],
-        synonymsJa: [],
       },
     }
     expect(reviewModesForCard(card)).toEqual(["vocab_type_word_from_clue"])
@@ -107,7 +103,6 @@ describe("reviewModesForCard", () => {
         translationEn: "I am a student",
         readings: {},
         images: [],
-        synonymsJa: [],
       },
     }
     expect(reviewModesForCard(card)).toEqual([
@@ -130,7 +125,6 @@ describe("reviewModesForCard", () => {
         translationEn: "I am a student",
         readings: {},
         images: [],
-        synonymsJa: [],
       },
     }
     expect(reviewModesForCard(card)).toEqual([
@@ -154,7 +148,6 @@ describe("reviewModesForCard", () => {
         translationEn: "I watched the presentation, but it was boring so I left.",
         readings: {},
         images: [],
-        synonymsJa: [],
         singleSided: true,
       },
     }
@@ -179,7 +172,6 @@ describe("reviewModesForCard", () => {
         translationEn: "I watched the presentation, but it was boring so I left.",
         readings: {},
         images: [],
-        synonymsJa: [],
         grammarPoint: "conjugation",
       } as GrammarCardContent,
     }
@@ -198,7 +190,6 @@ describe("reviewModesForCard", () => {
         definitionsEn: ["to reach a conclusion"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     }
     expect(reviewModesForCard(card)).toEqual([
@@ -220,7 +211,6 @@ describe("reviewModesForCard", () => {
         definitionsEn: ["to reach a conclusion"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     }
     expect(reviewModesForCard(card)).toEqual([

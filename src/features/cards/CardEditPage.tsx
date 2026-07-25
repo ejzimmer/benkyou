@@ -432,7 +432,7 @@ export function CardEditPage() {
             重複カード検索
           </button>
           <button type="button" className="btn primary pink" onClick={onDeleteCard}>
-            Delete card
+            削除
           </button>
         </div>
       )}
@@ -525,7 +525,7 @@ export function CardEditPage() {
               />
             </label>
             <label>
-              Example sentences (one per line)
+              例文
               <textarea
                 className="input"
                 rows={3}
@@ -566,20 +566,6 @@ export function CardEditPage() {
             >
               Fill in kanji
             </button>
-            <label>
-              Synonyms in Japanese (one per line)
-              <textarea
-                className="input"
-                rows={2}
-                value={vocab.synonymsJa.join("\n")}
-                onChange={(e) =>
-                  setVocab({
-                    ...vocab,
-                    synonymsJa: e.target.value.split("\n"),
-                  })
-                }
-              />
-            </label>
             <label>
               Images
               <input
@@ -708,20 +694,6 @@ export function CardEditPage() {
             >
               Fill in kanji
             </button>
-            <label>
-              Synonyms (Japanese, one per line)
-              <textarea
-                className="input"
-                rows={2}
-                value={grammar.synonymsJa.join("\n")}
-                onChange={(e) =>
-                  setGrammar({
-                    ...grammar,
-                    synonymsJa: e.target.value.split("\n"),
-                  })
-                }
-              />
-            </label>
             <label>
               Images
               <input

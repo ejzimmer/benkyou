@@ -24,7 +24,6 @@ const dueItemFor = (word: string): DueItem => ({
       definitionsEn: ["def"],
       images: [],
       exampleSentences: [],
-      synonymsJa: [],
     },
     updatedAt: Date.now(),
   } satisfies Card,
