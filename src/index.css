@@ -297,7 +297,8 @@ a:hover {
   gap: 1.5rem;
 }
 
-.card-edit-form label:not(.switch-option) {
+.card-edit-form label:not(.switch-option),
+.card-edit-form fieldset.plain legend {
   font-weight: 700;
 }
 
@@ -969,6 +970,28 @@ fieldset.plain legend {
     0 0 6px 2px rgba(0, 0, 0, 0.35),
     0 0 8px var(--pink),
     0 0 20px var(--pink);
+}
+
+/* Same footprint as an image preview thumbnail, so it sits in line with
+   them (or stands alone when there are none yet) rather than reading as
+   a separate control below the row. */
+.image-preview-add {
+  width: 6rem;
+  height: 6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.btn.icon.image-preview-add-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.8rem;
+  pointer-events: none;
 }
 
 .import-card-preview {

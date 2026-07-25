@@ -41,7 +41,7 @@ describe("CardEditPage create flow", () => {
     await user.type(screen.getByLabelText("日本語で"), "猫")
     await user.type(screen.getByRole("textbox", { name: /^readings$/i }), "ねこ")
     await user.type(screen.getByLabelText("意味"), "cat")
-    await user.click(screen.getByRole("button", { name: /save/i }))
+    await user.click(screen.getByRole("button", { name: "保存" }))
 
     await waitFor(async () => {
       expect(await db.cards.count()).toBe(1)

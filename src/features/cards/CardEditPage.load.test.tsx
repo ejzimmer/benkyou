@@ -129,7 +129,7 @@ describe("CardEditPage load existing", () => {
     expect(screen.getByLabelText("意味")).toHaveValue("student")
     expect(screen.getByLabelText("例文")).toHaveValue("私は___です")
 
-    await user.click(screen.getByRole("button", { name: /save/i }))
+    await user.click(screen.getByRole("button", { name: "保存" }))
 
     await waitFor(async () => {
       const card = await db.cards.get("card-1")
