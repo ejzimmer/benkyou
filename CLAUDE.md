@@ -49,20 +49,20 @@ Adding a new review mode touches: `REVIEW_MODES`/`reviewModesForCard` (`domain/t
 
 ### Services (`src/services/`)
 
-- `cards.ts` — CRUD + validation, creates the initial `scheduling` rows for whichever modes `reviewModesForCard` returns, marks the card as edited this session (`lib/sync/sessionEdits.ts`) so the "Sync edits" button picks it up.
-- `decks.ts` — deck CRUD; deleting a deck cascades tombstones across its cards/scheduling/media. Also holds the single-doc push helpers (`pushCardRemote`/`pushSchedulingRemote`/`pushAllSchedulingForCard`) and `pushSessionEditsNow`, used by the manual "Sync edits" action.
+- `cards.ts` — CRUD + validation, creates the initial `scheduling` rows for whichever modes `reviewModesForCard` returns, marks the card as edited this session (`lib/sync/sessionEdits.ts`).
+- `decks.ts` — deck CRUD; deleting a deck cascades tombstones across its cards/scheduling/media. Also holds the single-doc push helpers (`pushCardRemote`/`pushSchedulingRemote`/`pushAllSchedulingForCard`) and `pushSessionEditsNow`.
 - `review.ts` — the due-queue and grading engine. `getDueQueue(now)` loads due `scheduling` rows, bulk-fetches only the referenced cards, filters to modes still valid for the card, and shuffles while keeping two due items for the same card non-adjacent. Judging: `prepareJudgement` snapshots the row for undo → `commitJudgement` converts response latency to an FSRS grade (`lib/srs/time-to-rating.ts`; a wrong answer is always "Again") → `applyGrade` (`lib/srs/schedule.ts`, via `ts-fsrs`) computes the next due date.
-- `bulkImport.ts`/`ankiImport.ts` — persist a parsed `BulkImportPayload` into Dexie and push it to remote in batches.
+- `bulkImport.ts` — persists a parsed `BulkImportPayload` into Dexie and pushes it to remote in batches.
 
 ### Sync (`src/lib/sync/`)
 
 Every mutation writes to Dexie first and is immediately usable offline. Sync to Firestore is entirely manual — no startup sync, no tab-visibility-triggered sync, no debounced background push. Three explicit user actions, all going through `SyncContext` (`useSync()`):
 
-- **Sync now** (`syncNow`, landing page `DeckListPage`) — a full two-way `runFullSync`: pull a remote snapshot → apply tombstones (deletions win if newer than the entity) → per-entity conflict resolution by `updatedAt` (real conflicts surface to the user via `SyncConflictModal`) → media sync by content digest (only differing blobs move) → push anything local-only or local-newer. First runs a cheap no-op short-circuit: if `lastSyncedAt` (localStorage) is set, the full pipeline last actually ran within `MAX_SHORT_CIRCUIT_INTERVAL_MS` (tracked separately as `lastFullSyncAt`, since `lastSyncedAt` itself advances on every short-circuited pass too and can't bound staleness on its own), and local has decks/cards/scheduling all non-empty, it checks — via indexed Dexie range queries and tiny Firestore `where(...">"...)`/count-aggregation queries, not full downloads — whether anything changed on either side since; if nothing did, it skips straight to a media-hydration retry and returns. Otherwise (or on any doubt, or if that check throws) it falls through to the full pipeline above. Writes during merge re-check tombstone/staleness inside the same Dexie transaction to close races against concurrent user edits mid-sync.
+- **Sync now** (`syncNow`, global "Sync" button `ui/SyncButton.tsx`) — a full two-way `runFullSync`: pull a remote snapshot → apply tombstones (deletions win if newer than the entity) → per-entity conflict resolution by `updatedAt` (real conflicts surface to the user via `SyncConflictModal`) → media sync by content digest (only differing blobs move) → push anything local-only or local-newer. First runs a cheap no-op short-circuit: if `lastSyncedAt` (localStorage) is set, the full pipeline last actually ran within `MAX_SHORT_CIRCUIT_INTERVAL_MS` (tracked separately as `lastFullSyncAt`, since `lastSyncedAt` itself advances on every short-circuited pass too and can't bound staleness on its own), and local has decks/cards/scheduling all non-empty, it checks — via indexed Dexie range queries and tiny Firestore `where(...">"...)`/count-aggregation queries, not full downloads — whether anything changed on either side since; if nothing did, it skips straight to a media-hydration retry and returns. Otherwise (or on any doubt, or if that check throws) it falls through to the full pipeline above. Writes during merge re-check tombstone/staleness inside the same Dexie transaction to close races against concurrent user edits mid-sync. `ui/SyncButton.tsx` is rendered top-right on every page (hidden when offline-only or signed out) and is the only manual sync trigger left in the UI.
 - **Upload changes** (`pushNow`, review "all done" screen `ReviewSessionComplete`) — `runPushOnly`: pushes all local-only/local-newer decks/cards/scheduling/media to Firestore, no pull, no conflict prompts.
-- **Sync edits** (`pushSessionEditsNow` in `services/decks.ts`, global "Sync" button `ui/SyncEditsButton.tsx`) — pushes only the cards created/edited this browser session (tracked by `lib/sync/sessionEdits.ts`, populated by `saveCard`, mirrored to localStorage so a refresh before syncing doesn't forget which cards are still pending), unconditionally overwriting whatever's remote — no merge, no conflict check. Always visible top-right; blue with no pending edits, green with an edit count once there's something to push, a spinner while the push is in flight.
+- **Sync edits** (`syncEditsNow` → `pushSessionEditsNow` in `services/decks.ts`) — pushes only the cards created/edited this browser session (tracked by `lib/sync/sessionEdits.ts`, populated by `saveCard`, mirrored to localStorage so a refresh before syncing doesn't forget which cards are still pending), unconditionally overwriting whatever's remote — no merge, no conflict check. Still exposed on `SyncContext` but has no UI trigger since `SyncButton` switched to full two-way sync.
 
-`SyncContext.syncNow`/`pushNow` share one in-flight guard so the two can't race against Firestore concurrently; a call while the other is running just joins it.
+`SyncContext.syncNow`/`pushNow`/`syncEditsNow` share one in-flight guard so they can't race against Firestore concurrently; a call while another is running just joins it.
 
 ### Review session UI (`src/features/review/`)
 
@@ -75,10 +75,6 @@ Every mutation writes to Dexie first and is immediately usable offline. Sync to 
 `src/lib/japanese/` holds lower-level text utilities not tied to the card model: `normalize.ts` (NFKC normalization, hiragana/kanji/katakana detection, `finalizeReadingAnswer` which fixes wanakana's dangling-romaji-"n" IME issue on submit), `primaryAnswer.ts` (detects "typed the primary word instead of its reading").
 
 Typed reading answers are converted live via wanakana's `toHiragana` IME mode, then finalized on submit before grading.
-
-### Anki import (`src/lib/import/`)
-
-Client-side `.apkg` importer: unzips (JSZip), decompresses zstd SQLite (`fzstd`), reads it with `sql.js` (WASM), and resolves the media filename map. `convert.ts` classifies each Anki note into vocabulary vs. grammar by field heuristics, producing a `BulkImportPayload`. `ankiSrs.ts` maps Anki's scheduling fields onto an approximate FSRS state; suspended/leech cards get a due date pushed ~100 years out to mimic never surfacing. Notes the heuristics can't confidently classify go through a manual review UI (`GrammarClassifyReview`, `AnkiImportGapReview`).
 
 ## Configuration
 

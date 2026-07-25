@@ -54,7 +54,8 @@ a:hover {
   max-width: 1100px;
 }
 
-.page.centred {
+.page.centred,
+.centred {
   display: grid;
   place-items: center;
   min-height: 60vh;
@@ -1063,47 +1064,6 @@ fieldset.plain legend {
     0 0 32px var(--blue);
 }
 
-.import-card-preview {
-  background: #12121a;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  border: 1px solid #2a2a3a;
-}
-
-.import-card-fact {
-  display: grid;
-  grid-template-columns: minmax(6rem, 8rem) 1fr;
-  gap: 0.35rem 0.75rem;
-  align-items: start;
-}
-
-.import-card-fact-label {
-  color: #9898b0;
-  font-size: 0.85rem;
-}
-
-.import-card-fact-value {
-  min-width: 0;
-}
-
-.import-card-list {
-  margin: 0;
-  padding-left: 1.1rem;
-}
-
-.import-gap-card--discarded {
-  opacity: 0.55;
-}
-
-.import-gap-discard {
-  margin-top: 0.25rem;
-}
-
-.import-gap-fill {
-  padding-top: 0.25rem;
-  border-top: 1px dashed #2a2a3a;
-}
-
 .compare {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1118,7 +1078,7 @@ fieldset.plain legend {
 }
 
 /* Every review header button — remaining count, edit/undo, the user menu,
-   and the inline sync-edits button — lives in this single right-aligned
+   and the inline sync button — lives in this single right-aligned
    row, in that order. */
 .review-header-actions {
   display: flex;
@@ -1907,6 +1867,15 @@ fieldset.plain legend {
   padding-right: 1.25rem;
 }
 
+.build-footer {
+  margin-top: 2.5rem;
+  text-align: center;
+}
+
+.build-footer p {
+  margin: 0;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -2080,17 +2049,17 @@ code {
   height: 1em;
 }
 
-.sync-edits-inline {
+.sync-inline {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
 }
 
-.sync-edits-btn {
+.sync-btn {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
-.sync-edits-icon {
+.sync-icon {
   width: 0.9em;
   height: 0.9em;
   vertical-align: -0.1em;
@@ -2118,21 +2087,4 @@ code {
   .import-spinner {
     animation: none;
   }
-}
-
-.sync-log-details {
-  margin-top: 0.75rem;
-}
-
-.sync-log-pre {
-  margin: 0.5rem 0 0;
-  padding: 0.5rem 0.75rem;
-  max-height: 12rem;
-  overflow: auto;
-  background: #12121a;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-break: break-word;
 }

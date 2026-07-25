@@ -29,7 +29,7 @@ import {
 } from "./reviewFlowHelpers"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
-import { SyncEditsButton } from "../../ui/SyncEditsButton"
+import { SyncButton } from "../../ui/SyncButton"
 import { ScrollShadow } from "../../ui/ScrollShadow"
 import { useScrollShadow } from "../../ui/useScrollShadow"
 
@@ -509,7 +509,7 @@ export function ReviewSessionPage() {
           </Link>
           <div className="review-header-actions">
             <UserMenu />
-            <SyncEditsButton />
+            <SyncButton />
           </div>
         </header>
         <p className="muted">Nothing due right now.</p>
@@ -565,7 +565,7 @@ export function ReviewSessionPage() {
             取り消す
           </button>
           <UserMenu />
-          <SyncEditsButton />
+          <SyncButton />
         </div>
       </header>
 

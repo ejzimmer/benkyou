@@ -11,10 +11,6 @@ export default defineConfig({
   build: {
     outDir: "build",
   },
-  assetsInclude: ["**/*.wasm"],
-  optimizeDeps: {
-    include: ["jszip", "fzstd", "sql.js"],
-  },
   plugins: [
     react(),
     VitePWA({
