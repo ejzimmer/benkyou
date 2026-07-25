@@ -70,14 +70,6 @@ a:hover {
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  margin-top: 40px;
-}
-
-/* The card editor renders its own inline sync-edits button and user menu
-   instead of the fixed top-right banner, so it doesn't need that banner's
-   reserved clearance. */
-.card-edit-header {
-  margin-top: 0;
 }
 
 .header-actions {
@@ -86,18 +78,10 @@ a:hover {
   gap: 0.75rem;
 }
 
-.app-header + .panel {
-  margin-top: 60px;
-}
-
 .page-heading {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.toolbar.deck-toolbar {
-  margin-top: 60px;
 }
 
 .toolbar.card-edit-toolbar {
@@ -174,8 +158,7 @@ a:hover {
 .user-menu-trigger {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  max-width: 12rem;
+  padding: 0.3rem 0.5rem;
 }
 
 .btn.secondary.user-menu-trigger {
@@ -185,16 +168,6 @@ a:hover {
 
 .btn.secondary.user-menu-trigger:hover {
   box-shadow: none;
-  text-shadow:
-    0 0 6px #fff,
-    0 0 16px #fff;
-}
-
-/* Bare-chevron trigger used in the review header, sized to read alongside
-   the back button's chevron rather than the full email label. */
-.user-menu-trigger-icon-only {
-  max-width: none;
-  padding: 0.3rem 0.5rem;
 }
 
 .user-menu-chevron {
@@ -204,25 +177,11 @@ a:hover {
   transition: filter 0.15s ease;
 }
 
-.user-menu-trigger-icon-only:hover .user-menu-chevron,
-.user-menu-trigger-icon-only:focus-visible .user-menu-chevron {
+.user-menu-trigger:hover .user-menu-chevron,
+.user-menu-trigger:focus-visible .user-menu-chevron {
   filter:
     drop-shadow(0 0 4px #fff)
     drop-shadow(0 0 8px #fff);
-}
-
-.user-menu-trigger-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-menu-caret {
-  flex: 0 0 auto;
-  font-size: 1.3rem;
-  line-height: 1;
-  transform: scaleX(1.6);
-  opacity: 0.7;
 }
 
 .user-menu-dropdown {
@@ -2057,12 +2016,9 @@ code {
 /* Rendered once in App.tsx so it's visible on every page, regardless of
    that page's own header layout — fixed to the viewport rather than the
    in-flow header-actions slot it used to occupy on a couple of pages.
-   Anchored to the bottom-right corner rather than the top-right: pages
-   using `.app-header` (DeckListPage, SettingsPage, DeckPage) reserve
-   top-right space via its 40px margin-top, but `.review-header` and the
-   card editor's header stay flush against the top of the page, so a
-   top-right badge would still sit on top of its content. Nothing in the
-   app is pinned to the bottom, so that corner is safe. */
+   Anchored to the bottom-right corner: nothing in the app is pinned to the
+   bottom, so that corner is safe, and every page's own header already has
+   its own user menu/sync button pair up top. */
 .sync-indicator-global {
   position: fixed;
   bottom: 0.75rem;
@@ -2077,25 +2033,6 @@ code {
   margin-right: 0;
   width: 1em;
   height: 1em;
-}
-
-/* Fixed to the top of the viewport (rather than in-flow) so it floats above
-   whichever page/header is showing, matching .sync-indicator-global's
-   approach for the bottom-right spinner. Anchored top-right so it reads as
-   sitting to the right of each page's own header buttons rather than
-   competing with them — `.app-header` pages reserve space via margin-top.
-   Not rendered at all on review routes or the card editor: those render an
-   inline copy in their own header-actions row instead (see
-   `.sync-edits-inline`), so there's nothing to reserve space for there. */
-.sync-edits-banner {
-  position: fixed;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
 }
 
 .sync-edits-inline {

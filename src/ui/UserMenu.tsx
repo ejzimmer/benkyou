@@ -3,14 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "../lib/auth/AuthContext"
 import { ChevronDownIcon } from "./ChevronDownIcon"
 
-type Props = {
-  /** Trigger renders as a bare chevron instead of the email label — used in
-   *  the review header where space is tight and the row already has enough
-   *  buttons competing for attention. */
-  iconOnly?: boolean
-}
-
-export function UserMenu({ iconOnly = false }: Props) {
+export function UserMenu() {
   const { user, offlineOnly, signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -45,26 +38,13 @@ export function UserMenu({ iconOnly = false }: Props) {
       <button
         type="button"
         ref={triggerRef}
-        className={
-          iconOnly
-            ? "btn secondary user-menu-trigger user-menu-trigger-icon-only"
-            : "btn secondary user-menu-trigger"
-        }
+        className="btn secondary user-menu-trigger"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={iconOnly ? label : undefined}
+        aria-label={label}
         onClick={() => setOpen((o) => !o)}
       >
-        {iconOnly ? (
-          <ChevronDownIcon className="user-menu-chevron" />
-        ) : (
-          <>
-            <span className="user-menu-trigger-label">{label}</span>
-            <span className="user-menu-caret" aria-hidden="true">
-              ▾
-            </span>
-          </>
-        )}
+        <ChevronDownIcon className="user-menu-chevron" />
       </button>
       {open && (
         <div className="user-menu-dropdown" role="menu">

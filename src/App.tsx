@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom"
+import { Navigate, Route, Routes } from "react-router-dom"
 import { DeckListPage } from "./features/decks/DeckListPage"
 import { DeckPage } from "./features/decks/DeckPage"
 import { CardEditPage } from "./features/cards/CardEditPage"
@@ -7,15 +7,9 @@ import { SettingsPage } from "./features/settings/SettingsPage"
 import { useAuth } from "./lib/auth/AuthContext"
 import { useEffect } from "react"
 import { SyncIndicator } from "./ui/SyncIndicator"
-import { SyncEditsButton } from "./ui/SyncEditsButton"
 
 export function App() {
   const { loading } = useAuth()
-  const location = useLocation()
-  // The review flow and the card editor render their own inline sync-edits
-  // button in their header instead of relying on this fixed corner one.
-  const hasInlineSyncButton =
-    location.pathname.endsWith("/review") || /\/cards\/[^/]+$/.test(location.pathname)
 
   useEffect(() => {
     const vv = window.visualViewport
@@ -44,7 +38,6 @@ export function App() {
   return (
     <div className="app-shell">
       <SyncIndicator className="sync-indicator-global" />
-      {!hasInlineSyncButton && <SyncEditsButton />}
       <Routes>
         <Route path="/" element={<DeckListPage />} />
         <Route path="/decks/:deckId" element={<DeckPage />} />

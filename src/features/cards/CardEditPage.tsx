@@ -431,13 +431,13 @@ export function CardEditPage() {
 
   return (
     <div className="page">
-      <header className="header app-header card-edit-header">
+      <header className="header app-header">
         <PageHeading backTo={backTo} backLabel={returnTo ? "Back" : "Back to deck"}>
           {isNew ? "新規カード" : "カード編集"}
         </PageHeading>
         <div className="header-actions">
-          <UserMenu iconOnly />
-          <SyncEditsButton inline />
+          <UserMenu />
+          <SyncEditsButton />
         </div>
       </header>
 

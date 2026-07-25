@@ -54,8 +54,8 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
           <ChevronLeftIcon className="back-chevron" />
         </Link>
         <div className="review-header-actions">
-          <UserMenu iconOnly />
-          <SyncEditsButton inline />
+          <UserMenu />
+          <SyncEditsButton />
         </div>
       </header>
 

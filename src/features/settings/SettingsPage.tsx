@@ -22,6 +22,7 @@ import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 import { AnkiImportGapReview } from "./AnkiImportGapReview"
 import { GrammarClassifyReview } from "./GrammarClassifyReview"
 import { UserMenu } from "../../ui/UserMenu"
+import { SyncEditsButton } from "../../ui/SyncEditsButton"
 import { PageHeading } from "../../ui/PageHeading"
 import { useScrollShadow } from "../../ui/useScrollShadow"
 
@@ -188,6 +189,7 @@ export function SettingsPage() {
         </PageHeading>
         <div className="header-actions">
           <UserMenu />
+          <SyncEditsButton />
         </div>
       </header>
 

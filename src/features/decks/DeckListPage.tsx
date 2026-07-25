@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useDebouncedQuery } from "../../lib/useDebouncedQuery"
 import { AppIcon } from "../../ui/AppIcon"
 import { UserMenu } from "../../ui/UserMenu"
+import { SyncEditsButton } from "../../ui/SyncEditsButton"
 
 export function DeckListPage() {
   const navigate = useNavigate()
@@ -44,6 +45,7 @@ export function DeckListPage() {
         </Link>
         <div className="header-actions">
           <UserMenu />
+          <SyncEditsButton />
         </div>
       </header>
 
