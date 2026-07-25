@@ -1,8 +1,9 @@
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { Link } from "react-router-dom"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncEditsButton } from "../../ui/SyncEditsButton"
+import { useSync } from "../../lib/sync/SyncContext"
 
 const CONFETTI_COLORS = [
   "var(--blue)",
@@ -46,6 +47,18 @@ type Props = {
 
 export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
   const pieces = useConfettiPieces()
+  const { syncEditsNow } = useSync()
+
+  // Reaching this screen means judgements are sitting locally, pending sync
+  // — push them once automatically so a second device doesn't need the user
+  // to remember to press the button. Runs once per mount (each time the
+  // queue empties out), reuses the same push-only path as the manual
+  // button, and shares its in-flight guard, error handling, and retry (via
+  // the button) — no full two-way sync here, since that's what caused the
+  // freezes when this was tried before.
+  useEffect(() => {
+    syncEditsNow().catch(() => {})
+  }, [syncEditsNow])
 
   return (
     <div className="page review review-complete">

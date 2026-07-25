@@ -10,6 +10,7 @@ import { newId } from "../lib/db/id"
 import { applyGrade, deserializeFsrs, serializeFsrs } from "../lib/srs/schedule"
 import { responseTimeToGrade } from "../lib/srs/time-to-rating"
 import { recordTimingSample } from "../lib/srs/timingSamples"
+import { markCardEdited } from "../lib/sync/sessionEdits"
 import type { Grade } from "ts-fsrs"
 import { loadSchedulingRow, updateSchedulingRow } from "./cards"
 
@@ -198,6 +199,10 @@ export async function commitJudgement(
     updatedAt: Date.now(),
   }
   await updateSchedulingRow(updated)
+  // Grading isn't a "card edit", but it changes a scheduling row that needs
+  // to reach other devices — flag it the same way so the sync-edits button
+  // (and the auto-push on the review-complete screen) actually pick it up.
+  markCardEdited(cardId)
 
   const card = await db.cards.get(cardId)
   const eventId = newId()
@@ -248,6 +253,7 @@ export async function undoLastJudgement(): Promise<DueItem | null> {
   }
   await db.reviewUndo.delete(last.id)
   await updateSchedulingRow(restored)
+  markCardEdited(restored.cardId)
 
   if (last.linkedEventId) {
     await db.reviewEvents.delete(last.linkedEventId)
