@@ -13,7 +13,6 @@ const base: GrammarCardContent = {
   translationEn: "",
   readings: {},
   images: [],
-  synonymsJa: [],
 }
 
 describe("constructionReadingSegments", () => {

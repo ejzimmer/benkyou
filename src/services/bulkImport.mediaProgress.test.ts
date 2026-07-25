@@ -76,7 +76,6 @@ function deckWithMediaPayload(mediaCount: number): BulkImportPayload {
           definitionsEn: ["cat"],
           images: mediaIds,
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
     ],

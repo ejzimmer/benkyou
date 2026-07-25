@@ -40,7 +40,6 @@ function vocabCard(overrides: Partial<Card> & { id: string }): Card {
       definitionsEn: ["cat"],
       images: [],
       exampleSentences: [],
-      synonymsJa: [],
     },
     updatedAt: Date.now(),
     ...overrides,

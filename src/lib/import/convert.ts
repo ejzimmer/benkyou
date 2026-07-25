@@ -528,7 +528,6 @@ export function convertExtractedPackage(
         ),
       images: overrides?.images ?? images,
       exampleSentences: overrides?.exampleSentences ?? [],
-      synonymsJa: [],
     }
     // A reversed note carries two Anki cards (forward + reverse); fall back to
     // them for the oral / type-the-word modes when there's no Basic/type note.
@@ -637,7 +636,6 @@ export function convertExtractedPackage(
         ),
         images,
         exampleSentences: sentenceWithGap ? [sentenceWithGap] : [],
-        synonymsJa: [],
       }
       const readingEntry = entries.find((entry) => entry.kind === "reading")
       const sources: ModeSchedulingMap = {
@@ -687,7 +685,6 @@ export function convertExtractedPackage(
       translationEn,
       readings,
       images,
-      synonymsJa: [],
     }
     const sources: ModeSchedulingMap = {
       grammar_type_construction: typeEntry

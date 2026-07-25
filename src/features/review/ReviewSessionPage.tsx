@@ -13,10 +13,6 @@ import {
 } from "../../services/review"
 import { useSync } from "../../lib/sync/SyncContext"
 import { finalizeReadingAnswer, hasLatinScript } from "../../lib/japanese/normalize"
-import {
-  isSynonymAnswer,
-  matchesPrimaryJapanese,
-} from "../../lib/japanese/synonyms"
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionComplete } from "./ReviewSessionComplete"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
@@ -110,7 +106,6 @@ export function ReviewSessionPage() {
   const [sessionQueue, setSessionQueue] = useState<DueItem[]>([])
   const [phase, setPhase] = useState<Phase>("prompt")
   const [typed, setTyped] = useState("")
-  const [synonymWarn, setSynonymWarn] = useState(false)
   const [readingWarn, setReadingWarn] = useState(false)
   const [kanjiWarn, setKanjiWarn] = useState(false)
   const [latinWarn, setLatinWarn] = useState(false)
@@ -189,7 +184,6 @@ export function ReviewSessionPage() {
 
     const restoredTyped = canResume ? (resumeTyped ?? "") : ""
     setTyped(restoredTyped)
-    setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
@@ -271,11 +265,10 @@ export function ReviewSessionPage() {
 
   const handleTypedChange = useCallback(
     (value: string) => {
-      // Validation messages (Latin script, kanji-missing, synonym, non-hiragana
+      // Validation messages (Latin script, kanji-missing, non-hiragana
       // reading) are about what was typed at submit time — once the user edits
       // the answer, clear them immediately rather than leaving a stale warning
       // up until the next submit attempt re-validates.
-      setSynonymWarn(false)
       setReadingWarn(false)
       setKanjiWarn(false)
       setLatinWarn(false)
@@ -312,7 +305,6 @@ export function ReviewSessionPage() {
 
   function resetPromptAfterJudgement() {
     setTyped("")
-    setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
@@ -336,7 +328,6 @@ export function ReviewSessionPage() {
     if (!current) return true
     const c = current.card
     const m = current.modeId
-    setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
@@ -348,18 +339,6 @@ export function ReviewSessionPage() {
     ) {
       setLatinWarn(true)
       return false
-    }
-    if (
-      m === "vocab_type_word_from_clue" ||
-      m === "grammar_type_construction"
-    ) {
-      if (
-        isSynonymAnswer(c, typedValue) &&
-        !matchesPrimaryJapanese(c, typedValue)
-      ) {
-        setSynonymWarn(true)
-        return false
-      }
     }
     if (m === "vocab_type_word_from_clue" && typedValue.trim()) {
       if (answerMissingKanji(typedValue, expectedAnswer(c, m))) {
@@ -457,7 +436,6 @@ export function ReviewSessionPage() {
     setPhase("prompt")
     setSnapshot(null)
     setPromptToRevealMs(null)
-    setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
@@ -495,7 +473,6 @@ export function ReviewSessionPage() {
         ? lastTyped.typed
         : ""
     setTyped(restoredTyped)
-    setSynonymWarn(false)
     setReadingWarn(false)
     setKanjiWarn(false)
     setLatinWarn(false)
@@ -606,7 +583,6 @@ export function ReviewSessionPage() {
                   typed={typed}
                   onTypedChange={handleTypedChange}
                   readingWarn={readingWarn}
-                  synonymWarn={synonymWarn}
                   kanjiWarn={kanjiWarn}
                   latinWarn={latinWarn}
                   nWarn={nWarn}
@@ -670,7 +646,6 @@ export function ReviewSessionPage() {
                       typed={typed}
                       onTypedChange={handleTypedChange}
                       readingWarn={readingWarn}
-                      synonymWarn={synonymWarn}
                       kanjiWarn={kanjiWarn}
                       latinWarn={latinWarn}
                       nWarn={nWarn}

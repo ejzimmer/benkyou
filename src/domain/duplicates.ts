@@ -13,7 +13,6 @@ function vocabularyTextFields(content: VocabularyCardContent): string[] {
     ...Object.values(content.readings ?? {}),
     ...content.definitionsEn,
     ...content.exampleSentences,
-    ...content.synonymsJa,
   ]
 }
 
@@ -23,7 +22,6 @@ function grammarTextFields(content: GrammarCardContent): string[] {
     content.construction,
     content.translationEn,
     ...Object.values(content.readings),
-    ...content.synonymsJa,
   ]
 }
 
