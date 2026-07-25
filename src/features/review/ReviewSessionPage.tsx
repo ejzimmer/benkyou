@@ -510,11 +510,7 @@ export function ReviewSessionPage() {
     const restoredTyped = matchesUndone ? lastTyped.typed : ""
     setTyped(restoredTyped)
     if (matchesUndone) {
-      const key = dueItemKey({
-        card: undone.card,
-        modeId: undone.modeId,
-        due: undone.due,
-      })
+      const key = dueItemKey(undone)
       setWrongKeys((prev) => {
         const has = prev.has(key)
         if (lastTyped.wasWrong === has) return prev
