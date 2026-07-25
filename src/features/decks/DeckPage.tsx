@@ -10,7 +10,7 @@ import { PageHeading } from "../../ui/PageHeading"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { NextReviewBar } from "../../ui/NextReviewBar"
 import { UserMenu } from "../../ui/UserMenu"
-import { SyncEditsButton } from "../../ui/SyncEditsButton"
+import { SyncButton } from "../../ui/SyncButton"
 
 export function DeckPage() {
   const { deckId = "" } = useParams()
@@ -80,7 +80,7 @@ export function DeckPage() {
         </PageHeading>
         <div className="header-actions">
           <UserMenu />
-          <SyncEditsButton />
+          <SyncButton />
         </div>
       </header>
 

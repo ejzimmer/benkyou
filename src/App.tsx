@@ -3,7 +3,6 @@ import { DeckListPage } from "./features/decks/DeckListPage"
 import { DeckPage } from "./features/decks/DeckPage"
 import { CardEditPage } from "./features/cards/CardEditPage"
 import { ReviewSessionPage } from "./features/review/ReviewSessionPage"
-import { SettingsPage } from "./features/settings/SettingsPage"
 import { useAuth } from "./lib/auth/AuthContext"
 import { useEffect } from "react"
 import { SyncIndicator } from "./ui/SyncIndicator"
@@ -45,7 +44,6 @@ export function App() {
         <Route path="/decks/:deckId/cards/:cardId" element={<CardEditPage />} />
         <Route path="/review" element={<ReviewSessionPage />} />
         <Route path="/decks/:deckId/review" element={<ReviewSessionPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

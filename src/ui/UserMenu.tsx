@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { useAuth } from "../lib/auth/AuthContext"
 import { ChevronDownIcon } from "./ChevronDownIcon"
 
 export function UserMenu() {
-  const { user, offlineOnly, signOut } = useAuth()
-  const navigate = useNavigate()
+  const { user, signOut } = useAuth()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -31,7 +29,9 @@ export function UserMenu() {
     }
   }, [open])
 
-  const label = user?.email ?? user?.uid ?? (offlineOnly ? "Offline" : "Guest")
+  if (!user) return null
+
+  const label = user.email ?? user.uid
 
   return (
     <div className="user-menu" ref={rootRef}>
@@ -53,25 +53,12 @@ export function UserMenu() {
             role="menuitem"
             className="user-menu-item"
             onClick={() => {
-              close({ refocus: false })
-              navigate("/settings")
+              close({ refocus: true })
+              void signOut()
             }}
           >
-            設定
+            ログアウト
           </button>
-          {user && (
-            <button
-              type="button"
-              role="menuitem"
-              className="user-menu-item"
-              onClick={() => {
-                close({ refocus: true })
-                void signOut()
-              }}
-            >
-              ログアウト
-            </button>
-          )}
         </div>
       )}
     </div>

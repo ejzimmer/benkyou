@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react"
 import { Link } from "react-router-dom"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
-import { SyncEditsButton } from "../../ui/SyncEditsButton"
+import { SyncButton } from "../../ui/SyncButton"
 import { useSync } from "../../lib/sync/SyncContext"
 
 const CONFETTI_COLORS = [
@@ -68,7 +68,7 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
         </Link>
         <div className="review-header-actions">
           <UserMenu />
-          <SyncEditsButton />
+          <SyncButton />
         </div>
       </header>
 

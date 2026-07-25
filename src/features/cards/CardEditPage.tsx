@@ -39,7 +39,7 @@ import { DuplicateCardsModal } from "./DuplicateCardsModal"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { UserMenu } from "../../ui/UserMenu"
-import { SyncEditsButton } from "../../ui/SyncEditsButton"
+import { SyncButton } from "../../ui/SyncButton"
 import { Switch } from "../../ui/Switch"
 import {
   addMissingKanjiLines,
@@ -436,7 +436,7 @@ export function CardEditPage() {
         </PageHeading>
         <div className="header-actions">
           <UserMenu />
-          <SyncEditsButton />
+          <SyncButton />
         </div>
       </header>
 
