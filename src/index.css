@@ -1690,7 +1690,11 @@ fieldset.plain legend {
   color: var(--on-fluoro);
 }
 
-.reading-answer-diff-missing,
+.reading-answer-diff-missing {
+  background: none;
+  color: #e8e8f0;
+}
+
 .reading-answer-diff-gap {
   background: none;
   color: var(--blue);
