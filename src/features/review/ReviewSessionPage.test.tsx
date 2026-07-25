@@ -84,6 +84,49 @@ describe("ReviewSessionPage", () => {
     expect(screen.getByText("残り2枚")).toBeInTheDocument()
   })
 
+  it("splits the header count into remaining vs needs-correction after an incorrect answer", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat"],
+        images: [],
+        exampleSentences: [],
+      },
+    )
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+    expect(screen.getByText("残り3枚")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /show answer/i }))
+    await user.click(await screen.findByRole("button", { name: /^incorrect$/i }))
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+    })
+    // Still 3 cards left in the queue overall, but one of them now needs a
+    // correcting retry rather than being reviewed for the first time.
+    expect(screen.getByText("残り2枚・やり直し1枚")).toBeInTheDocument()
+  })
+
   it("after incorrect, does not flash next card answer during queue rotation gap", async () => {
     await resetDatabase()
     const user = userEvent.setup()
