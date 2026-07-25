@@ -63,7 +63,7 @@ describe("CardEditPage delete card", () => {
     )
 
     expect(
-      screen.queryByRole("button", { name: /delete card/i }),
+      screen.queryByRole("button", { name: "削除" }),
     ).not.toBeInTheDocument()
   })
 
@@ -75,7 +75,7 @@ describe("CardEditPage delete card", () => {
       expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole("button", { name: /delete card/i }))
+    await user.click(screen.getByRole("button", { name: "削除" }))
     expect(screen.getByText("Delete this card?")).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /^delete$/i }))
 
@@ -94,7 +94,7 @@ describe("CardEditPage delete card", () => {
       expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole("button", { name: /delete card/i }))
+    await user.click(screen.getByRole("button", { name: "削除" }))
     expect(screen.getByText("Delete this card?")).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: /cancel/i }))
 

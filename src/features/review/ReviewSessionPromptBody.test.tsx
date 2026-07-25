@@ -20,7 +20,6 @@ const vocabItem: DueItem = {
       definitionsEn: ["cat"],
       images: [],
       exampleSentences: [],
-      synonymsJa: [],
     },
   },
   modeId: "vocab_type_reading",
@@ -40,7 +39,6 @@ const grammarItem: DueItem = {
       translationEn: "I searched in the dictionary",
       readings: {},
       images: [],
-      synonymsJa: [],
     },
   },
   modeId: "grammar_type_construction",
@@ -88,7 +86,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="answer"
@@ -108,7 +105,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="answer"
@@ -128,7 +124,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -167,7 +162,6 @@ describe("ReviewSessionPromptBody", () => {
           translationEn: "bigger than an apple",
           readings: {},
           images: [],
-          synonymsJa: [],
         },
       },
       modeId: "grammar_oral_meaning",
@@ -180,7 +174,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -209,7 +202,6 @@ describe("ReviewSessionPromptBody", () => {
           definitionsEn: ["cat"],
           images: [],
           exampleSentences: ["猫が大好きです。"],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_oral_en",
@@ -222,7 +214,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -256,7 +247,6 @@ describe("ReviewSessionPromptBody", () => {
           definitionsEn: ["cat"],
           images: [],
           exampleSentences: ["猫が大好きです。"],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_type_reading",
@@ -269,7 +259,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -304,7 +293,6 @@ describe("ReviewSessionPromptBody", () => {
           definitionsEn: ["cat"],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_type_reading",
@@ -317,7 +305,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -363,7 +350,6 @@ describe("ReviewSessionPromptBody", () => {
           definitionsEn: ["to reach a conclusion"],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_oral_en",
@@ -376,7 +362,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -410,7 +395,6 @@ describe("ReviewSessionPromptBody", () => {
           definitionsEn: ["to reach a conclusion"],
           images: [],
           exampleSentences: ["彼は結論に至るのが早い。"],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_type_reading",
@@ -422,7 +406,6 @@ describe("ReviewSessionPromptBody", () => {
       typed: "",
       onTypedChange: vi.fn(),
       readingWarn: false,
-      synonymWarn: false,
       kanjiWarn: false,
       onTypedSubmit: vi.fn(),
     })
@@ -454,7 +437,6 @@ describe("ReviewSessionPromptBody", () => {
           definitionsEn: [],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_type_reading",
@@ -489,7 +471,6 @@ describe("ReviewSessionPromptBody", () => {
           constructionReadingParts: { 結論: "けつろん", 至る: "いたる" },
           readings: {},
           images: [],
-          synonymsJa: [],
         },
       },
       modeId: "grammar_type_reading",
@@ -501,7 +482,6 @@ describe("ReviewSessionPromptBody", () => {
       typed: "",
       onTypedChange: vi.fn(),
       readingWarn: false,
-      synonymWarn: false,
       kanjiWarn: false,
       onTypedSubmit: vi.fn(),
     })
@@ -536,7 +516,6 @@ describe("ReviewSessionPromptBody", () => {
           constructionReadingParts: { 流し: "ながし", 呼ぶ: "よぶ" },
           readings: {},
           images: [],
-          synonymsJa: [],
         },
       },
       modeId: "grammar_type_reading",
@@ -549,7 +528,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -577,7 +555,6 @@ describe("ReviewSessionPromptBody", () => {
           definitionsEn: ["cat"],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_oral_en",
@@ -590,7 +567,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -615,7 +591,6 @@ describe("ReviewSessionPromptBody", () => {
           definitionsEn: ["cat"],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_oral_en",
@@ -628,7 +603,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -653,7 +627,6 @@ describe("ReviewSessionPromptBody", () => {
           definitionsEn: ["reach a conclusion"],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
       modeId: "vocab_oral_en",
@@ -666,7 +639,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -686,7 +658,6 @@ describe("ReviewSessionPromptBody", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -697,25 +668,6 @@ describe("ReviewSessionPromptBody", () => {
     vi.unstubAllGlobals()
   })
 
-  it("shows the synonym warning for an inline-gap construction, in the answer column", () => {
-    render(
-      <ReviewSessionPromptBody
-        item={grammarItem}
-        typed="で"
-        onTypedChange={vi.fn()}
-        readingWarn={false}
-        synonymWarn
-        kanjiWarn={false}
-        onTypedSubmit={vi.fn()}
-        column="answer"
-      />,
-    )
-
-    expect(
-      screen.getByText(/that matches a synonym/i),
-    ).toBeInTheDocument()
-  })
-
   it("shows the kanji validation error for a type-the-word answer missing kanji", () => {
     render(
       <ReviewSessionPromptBody
@@ -723,7 +675,6 @@ describe("ReviewSessionPromptBody", () => {
         typed="ねこ"
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn
         onTypedSubmit={vi.fn()}
         column="answer"
@@ -740,7 +691,6 @@ describe("ReviewSessionPromptBody", () => {
         typed="うねいしゃ"
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         nWarn
         onTypedSubmit={vi.fn()}
@@ -765,7 +715,6 @@ const twoGapItem: DueItem = {
       translationEn: "Call a carriage",
       readings: {},
       images: [],
-      synonymsJa: [],
     },
   },
   modeId: "grammar_type_construction",
@@ -786,7 +735,6 @@ function StatefulPromptBody({
       typed={typed}
       onTypedChange={setTyped}
       readingWarn={false}
-      synonymWarn={false}
       kanjiWarn={false}
       onTypedSubmit={vi.fn()}
       column={column}
@@ -804,7 +752,6 @@ describe("ReviewSessionPromptBody — multiple gaps", () => {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"
@@ -839,7 +786,6 @@ describe("ReviewSessionPromptBody — multiple gaps", () => {
         typed="流し, 呼ぶ"
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         revealed

@@ -83,7 +83,6 @@ function deckWithImages(count: number): BulkImportPayload {
         definitionsEn: ["def"],
         images: [mediaId],
         exampleSentences: [],
-        synonymsJa: [],
       },
     })),
     scheduling: ids.map((_, i) => ({

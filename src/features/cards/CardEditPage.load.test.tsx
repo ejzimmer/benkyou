@@ -97,7 +97,6 @@ describe("CardEditPage load existing", () => {
         translationEn: "student",
         readings: { 学生: "がくせい" },
         images: ["image-1"],
-        synonymsJa: ["生徒"],
       },
       updatedAt: Date.now(),
     })
@@ -128,10 +127,7 @@ describe("CardEditPage load existing", () => {
       "がくせい\n学生=がくせい",
     )
     expect(screen.getByLabelText("意味")).toHaveValue("student")
-    expect(
-      screen.getByLabelText(/example sentences \(one per line\)/i),
-    ).toHaveValue("私は___です")
-    expect(screen.getByLabelText(/synonyms in japanese/i)).toHaveValue("生徒")
+    expect(screen.getByLabelText("例文")).toHaveValue("私は___です")
 
     await user.click(screen.getByRole("button", { name: /save/i }))
 
@@ -144,7 +140,6 @@ describe("CardEditPage load existing", () => {
       expect(card.content.definitionsEn).toEqual(["student"])
       expect(card.content.exampleSentences).toEqual(["私は___です"])
       expect(card.content.images).toEqual(["image-1"])
-      expect(card.content.synonymsJa).toEqual(["生徒"])
     })
   })
 

@@ -88,7 +88,6 @@ function tinyDeckPayload(now = Date.now()): BulkImportPayload {
           definitionsEn: ["cat"],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
     ],

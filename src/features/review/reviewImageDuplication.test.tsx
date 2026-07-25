@@ -42,7 +42,6 @@ function vocabItem(modeId: ReviewModeId, images: string[]): DueItem {
         definitionsEn: ["bird"],
         images,
         exampleSentences: [],
-        synonymsJa: [],
       },
     },
     modeId,
@@ -64,7 +63,6 @@ function grammarItem(modeId: ReviewModeId, images: string[]): DueItem {
         translationEn: "I am a student",
         readings: {},
         images,
-        synonymsJa: [],
       },
     },
     modeId,
@@ -80,7 +78,6 @@ function renderBoth(item: DueItem) {
         typed=""
         onTypedChange={vi.fn()}
         readingWarn={false}
-        synonymWarn={false}
         kanjiWarn={false}
         onTypedSubmit={vi.fn()}
         column="question"

@@ -88,7 +88,6 @@ function manyCardsPayload(): BulkImportPayload {
         definitionsEn: [`definition ${i}`],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     })
     scheduling.push({

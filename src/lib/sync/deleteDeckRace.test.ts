@@ -89,7 +89,6 @@ function twoDeckPayload(): BulkImportPayload {
           definitionsEn: ["cat"],
           images: [],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
     ],

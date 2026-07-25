@@ -23,7 +23,6 @@ function vocabCard(
       definitionsEn: [],
       images: [],
       exampleSentences: [],
-      synonymsJa: [],
       ...patch,
     },
   }

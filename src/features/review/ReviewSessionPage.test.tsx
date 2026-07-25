@@ -55,7 +55,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -97,7 +96,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
     await createVocabularyCard(
@@ -108,7 +106,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: ["dog"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -151,7 +148,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
     const secondCard = await createVocabularyCard(
@@ -162,7 +158,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: ["dog"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -224,7 +219,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: [""],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -269,7 +263,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: [""],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -318,7 +311,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: [""],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -360,7 +352,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: [""],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -411,7 +402,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: [""],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -464,7 +454,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: [""],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -509,7 +498,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: [""],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -549,7 +537,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -593,7 +580,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: ["cat"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -637,7 +623,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: ["T-shirt"],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 
@@ -680,7 +665,6 @@ describe("ReviewSessionPage", () => {
         definitionsEn: [""],
         images: [],
         exampleSentences: [],
-        synonymsJa: [],
       },
     )
 

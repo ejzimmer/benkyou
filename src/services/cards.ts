@@ -161,7 +161,6 @@ function mergeVocabularyContent(
     definitionsEn: [...target.definitionsEn, ...source.definitionsEn],
     images: mergeImages(target.images, source.images),
     exampleSentences: [...target.exampleSentences, ...source.exampleSentences],
-    synonymsJa: [...target.synonymsJa, ...source.synonymsJa],
   }
 }
 
@@ -185,7 +184,6 @@ function mergeGrammarContent(
     translationEn: concatText(target.translationEn, source.translationEn),
     readings: mergeReadings(target.readings, source.readings),
     images: mergeImages(target.images, source.images),
-    synonymsJa: [...target.synonymsJa, ...source.synonymsJa],
     singleSided: isSingleSided(target) || isSingleSided(source),
   }
 }
@@ -275,7 +273,6 @@ export function defaultVocabulary(): VocabularyCardContent {
     definitionsEn: [""],
     images: [],
     exampleSentences: [],
-    synonymsJa: [],
   }
 }
 
@@ -289,7 +286,6 @@ export function defaultGrammar(): GrammarCardContent {
     translationEn: "",
     readings: {},
     images: [],
-    synonymsJa: [],
     singleSided: false,
   }
 }
@@ -321,7 +317,6 @@ export function vocabularyFromGrammarContent(
     definitionsEn: [content.translationEn],
     images: [...content.images],
     exampleSentences: [content.sentenceWithGap],
-    synonymsJa: [...content.synonymsJa],
   }
 }
 
@@ -348,7 +343,6 @@ export function grammarFromVocabularyContent(
     translationEn: content.definitionsEn.filter((s) => s.trim()).join("; "),
     readings: { ...(content.readings ?? {}) },
     images: [...content.images],
-    synonymsJa: [...content.synonymsJa],
   }
 }
 

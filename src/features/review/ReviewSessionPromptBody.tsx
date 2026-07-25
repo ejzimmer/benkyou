@@ -124,7 +124,6 @@ export type ReviewSessionPromptBodyProps = {
   typed: string
   onTypedChange: (value: string) => void
   readingWarn: boolean
-  synonymWarn: boolean
   kanjiWarn: boolean
   /** Typed answer contains Latin/English characters — a validation error,
    * not a graded mistake, for modes expecting a Japanese answer. */
@@ -162,7 +161,6 @@ export function ReviewSessionPromptBody({
   typed,
   onTypedChange,
   readingWarn,
-  synonymWarn,
   kanjiWarn,
   latinWarn = false,
   nWarn = false,
@@ -445,11 +443,6 @@ export function ReviewSessionPromptBody({
               The answer uses kanji — typing the reading isn't enough here.
             </p>
           )}
-          {synonymWarn && (
-            <p className="warn">
-              That matches a synonym — try the main form on the card.
-            </p>
-          )}
         </div>
       </div>
     )
@@ -545,18 +538,12 @@ export function ReviewSessionPromptBody({
 
     // column === "answer": only the rare fallback where the construction has
     // no inline gap gets a standalone input here — an inline gap's input
-    // lives in the question sentence itself. The synonym warning still
-    // belongs here regardless, since it's about what was typed either way.
+    // lives in the question sentence itself.
     if (revealed) return null
     const warnings = (
       <>
         {latinWarn && (
           <p className="error">Type the answer in Japanese, not English.</p>
-        )}
-        {synonymWarn && (
-          <p className="warn">
-            That matches a synonym — try the construction written on the card.
-          </p>
         )}
       </>
     )

@@ -33,7 +33,6 @@ function vocabularyCard(id: string): Card {
       definitionsEn: ["definition"],
       images: [],
       exampleSentences: [],
-      synonymsJa: [],
     },
     updatedAt: 1,
   }

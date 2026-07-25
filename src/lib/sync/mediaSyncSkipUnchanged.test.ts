@@ -82,7 +82,6 @@ function deckWithImagePayload(): BulkImportPayload {
           definitionsEn: ["cat"],
           images: ["media-M"],
           exampleSentences: [],
-          synonymsJa: [],
         },
       },
     ],

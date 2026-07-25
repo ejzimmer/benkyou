@@ -72,7 +72,7 @@ Every mutation writes to Dexie first and is immediately usable offline. Sync to 
 
 `src/domain/` holds card-content-aware logic: `grammarGaps.ts` (parsing/joining comma-or-、-separated multi-gap answers), `vocabularyContent.ts`/`grammarContent.ts` (predicates like `hasVocabularyPronunciation`, reading-segment extraction), `readingsMap.ts` (greedy longest-match tokenizer turning a phrase→reading map into furigana segments — shared by both card kinds and by `ui/KanjiRuby.tsx`'s `<ruby>` rendering).
 
-`src/lib/japanese/` holds lower-level text utilities not tied to the card model: `normalize.ts` (NFKC normalization, hiragana/kanji/katakana detection, `finalizeReadingAnswer` which fixes wanakana's dangling-romaji-"n" IME issue on submit), `synonyms.ts` (accepts alternate correct answers via a card's `synonymsJa` list, and detects "typed the primary word instead of its reading").
+`src/lib/japanese/` holds lower-level text utilities not tied to the card model: `normalize.ts` (NFKC normalization, hiragana/kanji/katakana detection, `finalizeReadingAnswer` which fixes wanakana's dangling-romaji-"n" IME issue on submit), `primaryAnswer.ts` (detects "typed the primary word instead of its reading").
 
 Typed reading answers are converted live via wanakana's `toHiragana` IME mode, then finalized on submit before grading.
 

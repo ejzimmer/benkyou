@@ -13,7 +13,6 @@ const base: VocabularyCardContent = {
   definitionsEn: [],
   images: [],
   exampleSentences: [],
-  synonymsJa: [],
 }
 
 describe("vocabularyContent helpers", () => {

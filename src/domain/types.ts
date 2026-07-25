@@ -42,7 +42,6 @@ export type VocabularyCardContent = {
   definitionsEn: string[]
   images: string[]
   exampleSentences: string[]
-  synonymsJa: string[]
 }
 
 export type GrammarCardContent = {
@@ -68,7 +67,6 @@ export type GrammarCardContent = {
   /** Kanji phrases → hiragana readings shown as furigana in the sentence. */
   readings: Record<string, string>
   images: string[]
-  synonymsJa: string[]
   /**
    * True when the gap tests correct grammatical form (conjugation,
    * particle, etc.) rather than word choice (contrast 霧が消えた, where the
