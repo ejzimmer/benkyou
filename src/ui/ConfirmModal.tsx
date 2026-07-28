@@ -9,7 +9,7 @@ type Props = {
 
 export function ConfirmModal({
   message,
-  confirmLabel = "Delete",
+  confirmLabel = "削除",
   onConfirm,
   onCancel,
 }: Props) {
@@ -23,13 +23,13 @@ export function ConfirmModal({
     >
       <div
         ref={panelRef}
-        className="modal-panel panel"
+        className="modal-panel confirm-modal-panel panel"
         onClick={(e) => e.stopPropagation()}
       >
         <p>{message}</p>
         <div className="toolbar">
           <button type="button" className="btn secondary" onClick={onCancel}>
-            Cancel
+            キャンセル
           </button>
           <button type="button" className="btn primary pink" onClick={onConfirm}>
             {confirmLabel}
