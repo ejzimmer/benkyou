@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Link, useParams, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { toHiragana } from "wanakana"
 import {
   commitJudgement,
@@ -11,12 +11,15 @@ import {
   type DueItem,
   type JudgementSnapshot,
 } from "../../services/review"
+import { deleteCard, markLeech } from "../../services/cards"
 import { useSync } from "../../lib/sync/SyncContext"
 import { finalizeReadingAnswer, hasLatinScript } from "../../lib/japanese/normalize"
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionComplete } from "./ReviewSessionComplete"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import { ReviewFooter } from "./ReviewFooter"
+import { LeechModal } from "./LeechModal"
+import { LeechBadge } from "../../ui/LeechBadge"
 import {
   decrementReviewedCount,
   incrementReviewedCount,
@@ -93,6 +96,7 @@ function prioritizeResumeItem(
 
 export function ReviewSessionPage() {
   const { deckId } = useParams()
+  const navigate = useNavigate()
   const scopeKey = deckId ?? "all"
   useReviewSessionTimerVisibility(scopeKey)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -125,6 +129,18 @@ export function ReviewSessionPage() {
    * a same-session display concern, not persisted state.
    */
   const [wrongKeys, setWrongKeys] = useState<Set<string>>(new Set())
+  /**
+   * Set once an incorrect judgement pushes a scheduling row's lapses past
+   * the leech threshold — blocks the session on `LeechModal` until the user
+   * picks edit/delete/dismiss. `wasWrong`/`key` are carried through so the
+   * dismiss choice can share `advanceAfterIncorrect` with the plain
+   * wrong-answer path.
+   */
+  const [leechPrompt, setLeechPrompt] = useState<{
+    item: DueItem
+    wasWrong: boolean
+    key: string
+  } | null>(null)
   const [phase, setPhase] = useState<Phase>("prompt")
   const [typed, setTyped] = useState("")
   const [readingWarn, setReadingWarn] = useState(false)
@@ -439,6 +455,32 @@ export function ReviewSessionPage() {
     return () => window.removeEventListener("keydown", handler)
   }, [phase, current, pendingIncorrectDelay, loading])
 
+  /** Requeue an incorrectly-judged item for a later retry this session — the
+   *  continuation shared by the plain-wrong path and the leech modal's 除外
+   *  choice (which defers this until the user has decided what to do). */
+  function advanceAfterIncorrect(item: DueItem, wasWrong: boolean, key: string) {
+    if (sessionQueue.length === 0) return
+    const rest = sessionQueue.slice(1)
+
+    const delayMs = rest.length > 0 ? INCORRECT_ADVANCE_DELAY_MS : 0
+    setSessionQueue(requeueAfterIncorrect(rest, item))
+    if (!wasWrong) {
+      setWrongKeys((prev) => new Set(prev).add(key))
+    }
+
+    resetPromptAfterJudgement()
+    setPhase("prompt")
+
+    if (delayMs === 0) return
+
+    setPendingIncorrectDelay(true)
+    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
+    advanceTimerRef.current = setTimeout(() => {
+      advanceTimerRef.current = null
+      setPendingIncorrectDelay(false)
+    }, delayMs)
+  }
+
   async function onJudge(correct: boolean) {
     if (!current || pendingIncorrectDelay) return
     const item = current
@@ -452,7 +494,7 @@ export function ReviewSessionPage() {
       wasWrong,
       wasCorrect: correct,
     })
-    await commitJudgement(
+    const { becameLeech } = await commitJudgement(
       item.card.id,
       item.modeId,
       promptToRevealMs,
@@ -475,26 +517,47 @@ export function ReviewSessionPage() {
       return
     }
 
-    const [first, ...rest] = sessionQueue
-    if (!first) return
-
-    const delayMs = rest.length > 0 ? INCORRECT_ADVANCE_DELAY_MS : 0
-    setSessionQueue(requeueAfterIncorrect(rest, first))
-    if (!wasWrong) {
-      setWrongKeys((prev) => new Set(prev).add(key))
+    if (becameLeech) {
+      setLeechPrompt({ item, wasWrong, key })
+      return
     }
 
+    advanceAfterIncorrect(item, wasWrong, key)
+  }
+
+  function onLeechEdit() {
+    if (!leechPrompt) return
+    const { item } = leechPrompt
+    setLeechPrompt(null)
+    const returnTo = deckId ? `/decks/${deckId}/review` : "/review"
+    navigate(
+      `/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(returnTo)}`,
+    )
+  }
+
+  async function onLeechDelete() {
+    if (!leechPrompt) return
+    const { item } = leechPrompt
+    setLeechPrompt(null)
+    await deleteCard(item.card.id)
+    setSessionQueue((q) => q.filter((it) => it.card.id !== item.card.id))
+    setWrongKeys((prev) => {
+      const next = new Set(prev)
+      for (const k of next) {
+        if (k.startsWith(`${item.card.id}:`)) next.delete(k)
+      }
+      return next
+    })
     resetPromptAfterJudgement()
     setPhase("prompt")
+  }
 
-    if (delayMs === 0) return
-
-    setPendingIncorrectDelay(true)
-    if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
-    advanceTimerRef.current = setTimeout(() => {
-      advanceTimerRef.current = null
-      setPendingIncorrectDelay(false)
-    }, delayMs)
+  async function onLeechDismiss() {
+    if (!leechPrompt) return
+    const { item, wasWrong, key } = leechPrompt
+    setLeechPrompt(null)
+    await markLeech(item.card.id, item.modeId)
+    advanceAfterIncorrect({ ...item, isLeech: true }, wasWrong, key)
   }
 
   async function onUndoAnswer() {
@@ -640,6 +703,7 @@ export function ReviewSessionPage() {
           <ChevronLeftIcon className="back-chevron" />
         </Link>
         <div className="review-header-actions">
+          {item.isLeech && <LeechBadge />}
           <p className="muted small">
             残り{remainingCount}枚
             {wrongCount > 0 && `・やり直し${wrongCount}枚`}
@@ -792,6 +856,14 @@ export function ReviewSessionPage() {
           </div>
         )}
       </section>
+
+      {leechPrompt && (
+        <LeechModal
+          onEdit={onLeechEdit}
+          onDelete={() => void onLeechDelete()}
+          onDismiss={() => void onLeechDismiss()}
+        />
+      )}
     </div>
   )
 }

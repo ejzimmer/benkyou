@@ -412,6 +412,16 @@ export async function unsuspendCard(cardId: string): Promise<void> {
   }
 }
 
+/** Flag a scheduling row as a leech (user chose "除外" on the leech prompt) —
+ * keeps it in normal review rotation, just remembers to badge it going
+ * forward. Unlike `unsuspendCard`, this doesn't touch `due`/`fsrs`. */
+export async function markLeech(cardId: string, modeId: string): Promise<void> {
+  const row = await loadSchedulingRow(cardId, modeId)
+  if (!row) return
+  await updateSchedulingRow({ ...row, isLeech: true, updatedAt: Date.now() })
+  markCardEdited(cardId)
+}
+
 /** Deserialize FSRS card from scheduling row */
 export function fsrsFromRow(row: SchedulingRow) {
   return deserializeFsrs(row.fsrs)

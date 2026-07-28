@@ -29,13 +29,14 @@ const dueItemFor = (word: string): DueItem => ({
   } satisfies Card,
   modeId: "vocab_oral_en",
   due: 0,
+  isLeech: false,
 })
 
 const getDueQueue = vi.fn()
 vi.mock("../../services/review", () => ({
   getDueQueue: (...args: unknown[]) => getDueQueue(...args),
   prepareJudgement: vi.fn(),
-  commitJudgement: vi.fn(),
+  commitJudgement: vi.fn().mockResolvedValue({ becameLeech: false }),
   restoreSchedulingSnapshot: vi.fn(),
   undoLastJudgement: vi.fn(),
 }))
@@ -150,6 +151,7 @@ describe("ReviewSessionPage conflict reload", () => {
         modeId: "vocab_oral_en",
         fsrs: {} as unknown as JudgementSnapshot["schedulingRow"]["fsrs"],
         due: 0,
+        isLeech: false,
         updatedAt: 0,
       },
     }
@@ -223,6 +225,7 @@ describe("ReviewSessionPage conflict reload", () => {
         modeId: "vocab_oral_en",
         fsrs: {} as unknown as JudgementSnapshot["schedulingRow"]["fsrs"],
         due: 0,
+        isLeech: false,
         updatedAt: 0,
       },
     }

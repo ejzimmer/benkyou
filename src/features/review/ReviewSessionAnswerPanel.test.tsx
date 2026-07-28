@@ -30,6 +30,7 @@ function vocabItem(modeId: ReviewModeId): DueItem {
     },
     modeId,
     due: 0,
+    isLeech: false,
   }
 }
 
@@ -147,6 +148,7 @@ function grammarItem(modeId: ReviewModeId): DueItem {
     },
     modeId,
     due: 0,
+    isLeech: false,
   }
 }
 
@@ -280,6 +282,7 @@ describe("ReviewSessionAnswerPanel", () => {
       },
       modeId: "vocab_type_word_from_clue",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = render(
@@ -315,6 +318,7 @@ function twoGapItem(): DueItem {
     },
     modeId: "grammar_type_construction",
     due: 0,
+    isLeech: false,
   }
 }
 
@@ -338,6 +342,7 @@ describe("ReviewSessionAnswerPanel — grammar reading quiz", () => {
       },
       modeId: "grammar_type_reading",
       due: 0,
+      isLeech: false,
     }
   }
 
@@ -434,6 +439,7 @@ describe("ReviewSessionAnswerPanel — multi-gap focus bias", () => {
       },
       modeId: "grammar_type_construction",
       due: 0,
+      isLeech: false,
     }
 
     render(

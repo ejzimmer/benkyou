@@ -46,6 +46,7 @@ function vocabItem(modeId: ReviewModeId, images: string[]): DueItem {
     },
     modeId,
     due: 0,
+    isLeech: false,
   }
 }
 
@@ -67,6 +68,7 @@ function grammarItem(modeId: ReviewModeId, images: string[]): DueItem {
     },
     modeId,
     due: 0,
+    isLeech: false,
   }
 }
 
