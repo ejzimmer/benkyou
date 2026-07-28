@@ -18,6 +18,13 @@ import { ReviewSessionComplete } from "./ReviewSessionComplete"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import { ReviewFooter } from "./ReviewFooter"
 import {
+  decrementReviewedCount,
+  incrementReviewedCount,
+  resumeReviewSessionTimerIfPresent,
+  startReviewSessionTimer,
+  useReviewSessionTimerVisibility,
+} from "./reviewSessionTimer"
+import {
   answerMissingKanji,
   expectedAnswer,
   hasMissingDoubledN,
@@ -86,6 +93,8 @@ function prioritizeResumeItem(
 
 export function ReviewSessionPage() {
   const { deckId } = useParams()
+  const scopeKey = deckId ?? "all"
+  useReviewSessionTimerVisibility(scopeKey)
   const [searchParams, setSearchParams] = useSearchParams()
   /**
    * Captured once per mount so `load` doesn't depend on live `searchParams` —
@@ -141,6 +150,8 @@ export function ReviewSessionPage() {
       typed: string
       /** Was this item already in `wrongKeys` right before this judgement? */
       wasWrong: boolean
+      /** Was this judgement itself graded correct? (undo needs to know whether to undo the reviewed-count bump too.) */
+      wasCorrect: boolean
     }>
   >([])
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
@@ -154,6 +165,13 @@ export function ReviewSessionPage() {
    * `!current` otherwise.
    */
   const hadDueItemsRef = useRef(false)
+  /**
+   * Scope (`scopeKey`) the review-session timer was last started/resumed
+   * for. Guards against re-starting it on every `load()` call within the
+   * same mount (e.g. a mid-session sync-conflict reload) — only a genuine
+   * new scope (fresh mount, or a different deck) should reset it.
+   */
+  const lastTimerScopeRef = useRef<string | null>(null)
   /**
    * Bumped every time the prompt (re-)becomes the active side. The
    * prompt/answer layers stay permanently mounted (so revealing the answer
@@ -183,7 +201,15 @@ export function ReviewSessionPage() {
     const all = await getDueQueue()
     const deckQueue = deckId ? all.filter((x) => x.card.deckId === deckId) : all
     const q = prioritizeResumeItem(deckQueue, resumeCardId, resumeModeId)
-    if (q.length > 0) hadDueItemsRef.current = true
+    if (q.length > 0) {
+      hadDueItemsRef.current = true
+      if (lastTimerScopeRef.current !== scopeKey) {
+        lastTimerScopeRef.current = scopeKey
+        if (!resumeCardId || !resumeReviewSessionTimerIfPresent(scopeKey)) {
+          startReviewSessionTimer(scopeKey)
+        }
+      }
+    }
     setSessionQueue(q)
     setWrongKeys(new Set())
 
@@ -424,6 +450,7 @@ export function ReviewSessionPage() {
       modeId: item.modeId,
       typed,
       wasWrong,
+      wasCorrect: correct,
     })
     await commitJudgement(
       item.card.id,
@@ -435,6 +462,7 @@ export function ReviewSessionPage() {
 
     if (correct) {
       setSessionQueue((q) => q.slice(1))
+      incrementReviewedCount(scopeKey)
       if (wasWrong) {
         setWrongKeys((prev) => {
           const next = new Set(prev)
@@ -510,6 +538,9 @@ export function ReviewSessionPage() {
       lastTyped.modeId === undone.modeId
     const restoredTyped = matchesUndone ? lastTyped.typed : ""
     setTyped(restoredTyped)
+    if (matchesUndone && lastTyped.wasCorrect) {
+      decrementReviewedCount(scopeKey)
+    }
     if (matchesUndone) {
       const key = dueItemKey(undone)
       setWrongKeys((prev) => {
@@ -548,6 +579,7 @@ export function ReviewSessionPage() {
       return (
         <ReviewSessionComplete
           backTo={backTo}
+          scopeKey={scopeKey}
           onUndoLastJudgement={() => void onUndoJudgementFromHeader()}
         />
       )

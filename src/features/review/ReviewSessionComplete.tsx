@@ -1,10 +1,14 @@
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncButton } from "../../ui/SyncButton"
 import { useSync } from "../../lib/sync/SyncContext"
 import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
+import {
+  getReviewedCount,
+  getReviewSessionElapsedMs,
+} from "./reviewSessionTimer"
 
 const CONFETTI_COLORS = [
   "var(--blue)",
@@ -43,12 +47,22 @@ function useConfettiPieces(): ConfettiPiece[] {
 type Props = {
   /** Where the back chevron (top left) exits review to. */
   backTo: string
+  /** Deck id, or "all" for the unscoped review — identifies the session timer to read. */
+  scopeKey: string
   onUndoLastJudgement: () => void
 }
 
-export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
+export function ReviewSessionComplete({ backTo, scopeKey, onUndoLastJudgement }: Props) {
   const pieces = useConfettiPieces()
   const { syncEditsNow } = useSync()
+  // Frozen at the moment this screen first appears, so a later undo (which
+  // resumes the timer and can change the stored values) doesn't retroactively
+  // alter what's already been shown for this appearance of the screen.
+  const [{ elapsedMs, reviewedCount }] = useState(() => ({
+    elapsedMs: getReviewSessionElapsedMs(scopeKey),
+    reviewedCount: getReviewedCount(scopeKey),
+  }))
+  const elapsedMinutes = Math.round(elapsedMs / 60_000)
 
   // Reaching this screen means judgements are sitting locally, pending sync
   // — push them once automatically so a second device doesn't need the user
@@ -93,6 +107,9 @@ export function ReviewSessionComplete({ backTo, onUndoLastJudgement }: Props) {
         </div>
 
         <h1 className="review-complete-message">全カードやり終わった!</h1>
+        <p className="review-complete-duration">
+          {elapsedMinutes}分で{reviewedCount}枚を復習した
+        </p>
 
         <div className="review-complete-actions">
           <Link to="/" className="btn primary">
