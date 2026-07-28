@@ -8,6 +8,7 @@ import {
 } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
 import { applyGrade, deserializeFsrs, serializeFsrs } from "../lib/srs/schedule"
+import { crossedLeechThreshold } from "../lib/srs/leech"
 import { responseTimeToGrade } from "../lib/srs/time-to-rating"
 import { recordTimingSample } from "../lib/srs/timingSamples"
 import { markCardEdited } from "../lib/sync/sessionEdits"
@@ -18,6 +19,8 @@ export type DueItem = {
   card: Card
   modeId: ReviewModeId
   due: number
+  /** Already flagged as a leech (see `lib/srs/leech.ts`) — badge it wherever it shows up. */
+  isLeech: boolean
 }
 
 type RandomSource = () => number
@@ -133,7 +136,7 @@ async function loadDueItems(now: number): Promise<DueItem[]> {
     if (!card) continue
     const allowed = new Set(reviewModesForCard(card))
     if (!allowed.has(r.modeId)) continue
-    list.push({ card, modeId: r.modeId, due: r.due })
+    list.push({ card, modeId: r.modeId, due: r.due, isLeech: r.isLeech === true })
   }
   return list
 }
@@ -175,9 +178,9 @@ export async function commitJudgement(
   promptToRevealMs: number | null,
   selfCorrect: boolean,
   snapshot: JudgementSnapshot | null,
-): Promise<void> {
+): Promise<{ becameLeech: boolean }> {
   const row = await loadSchedulingRow(cardId, modeId)
-  if (!row) return
+  if (!row) return { becameLeech: false }
 
   if (promptToRevealMs != null && promptToRevealMs > 0) {
     await recordTimingSample(modeId, promptToRevealMs, selfCorrect)
@@ -191,6 +194,8 @@ export async function commitJudgement(
   const now = new Date()
   const prevCard = deserializeFsrs(row.fsrs)
   const nextCard = applyGrade(prevCard, now, grade)
+  const becameLeech =
+    !row.isLeech && crossedLeechThreshold(prevCard.lapses, nextCard.lapses)
 
   const updated: SchedulingRow = {
     ...row,
@@ -240,6 +245,8 @@ export async function commitJudgement(
       await db.reviewUndo.put(undo)
     })
   }
+
+  return { becameLeech }
 }
 
 export async function undoLastJudgement(): Promise<DueItem | null> {
@@ -268,6 +275,7 @@ export async function undoLastJudgement(): Promise<DueItem | null> {
     card,
     modeId: restored.modeId,
     due: restored.due,
+    isLeech: restored.isLeech === true,
   }
 }
 

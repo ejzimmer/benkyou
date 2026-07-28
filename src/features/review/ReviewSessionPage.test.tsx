@@ -8,7 +8,13 @@ import { ReviewSessionPage } from "./ReviewSessionPage"
 import { CardEditPage } from "../cards/CardEditPage"
 import { resetDatabase } from "../../test/db"
 import { createDeck } from "../../services/decks"
-import { createVocabularyCard } from "../../services/cards"
+import {
+  createVocabularyCard,
+  loadSchedulingRow,
+  updateSchedulingRow,
+} from "../../services/cards"
+import { deserializeFsrs, serializeFsrs } from "../../lib/srs/schedule"
+import { db } from "../../lib/db/schema"
 
 vi.mock("../../lib/firebase", () => ({
   getFirebaseApp: () => null,
@@ -749,5 +755,119 @@ describe("ReviewSessionPage", () => {
     // but must go back to being non-interactive once the reveal is undone.
     expect(correctButton.closest('[aria-hidden="true"]')).not.toBeNull()
     expect(correctButton.closest("[inert]")).not.toBeNull()
+  })
+})
+
+describe("ReviewSessionPage — leech detection", () => {
+  /** A single-mode (vocab_type_reading) card whose scheduling row is
+   *  pre-seeded just below the leech threshold, so one more incorrect
+   *  answer in the test crosses it. */
+  async function seedCardNearLeechThreshold(deckId: string) {
+    const card = await createVocabularyCard(deckId, {
+      wordJa: "保険",
+      reading: "ほけん",
+      definitionsEn: [],
+      images: [],
+      exampleSentences: [],
+    })
+    const row = await loadSchedulingRow(card.id, "vocab_type_reading")
+    if (!row) throw new Error("expected a scheduling row for the seeded card")
+    const fsrsCard = deserializeFsrs(row.fsrs)
+    fsrsCard.state = 2 // Review — lapses only accrue from this state
+    fsrsCard.lapses = 3
+    fsrsCard.stability = 5
+    fsrsCard.difficulty = 5
+    await updateSchedulingRow({
+      ...row,
+      fsrs: serializeFsrs(fsrsCard),
+      due: Date.now(),
+    })
+    return card
+  }
+
+  async function answerIncorrectlyAndOpenLeechModal(user: ReturnType<typeof userEvent.setup>) {
+    const input = await screen.findByLabelText(/ひらがなで/)
+    await user.type(input, "ちがう{Enter}")
+    await user.click(await screen.findByRole("button", { name: /^incorrect$/i }))
+    expect(await screen.findByText("リーチと判定されました")).toBeInTheDocument()
+  }
+
+  it("marks the row a leech and keeps reviewing it when 除外 is chosen", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    await seedCardNearLeechThreshold(deck.id)
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await answerIncorrectlyAndOpenLeechModal(user)
+    await user.click(screen.getByRole("button", { name: "除外" }))
+
+    expect(screen.queryByText("リーチと判定されました")).not.toBeInTheDocument()
+    expect(await screen.findByText("リーチ")).toBeInTheDocument()
+  })
+
+  it("deletes the card entirely when 削除 is chosen", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    const card = await seedCardNearLeechThreshold(deck.id)
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await answerIncorrectlyAndOpenLeechModal(user)
+    await user.click(screen.getByRole("button", { name: "削除" }))
+
+    expect(screen.queryByText("リーチと判定されました")).not.toBeInTheDocument()
+    expect(await screen.findByText("全カードやり終わった!")).toBeInTheDocument()
+    expect(await db.cards.get(card.id)).toBeUndefined()
+  })
+
+  it("opens the card editor when 編集 is chosen", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    await seedCardNearLeechThreshold(deck.id)
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+              <Route
+                path="/decks/:deckId/cards/:cardId"
+                element={<CardEditPage />}
+              />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await answerIncorrectlyAndOpenLeechModal(user)
+    await user.click(screen.getByRole("button", { name: "編集" }))
+
+    expect(await screen.findByDisplayValue("保険")).toBeInTheDocument()
   })
 })

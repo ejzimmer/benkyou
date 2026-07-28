@@ -11,6 +11,9 @@ export type SchedulingRow = {
   fsrs: SerializedFsrsCard
   due: number
   updatedAt: number
+  /** Set once the user dismisses the leech prompt with "除外" (keep reviewing
+   *  as normal). See `lib/srs/leech.ts`. */
+  isLeech?: boolean
 }
 
 export type SerializedFsrsCard = Omit<

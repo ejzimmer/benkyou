@@ -24,6 +24,7 @@ const vocabItem: DueItem = {
   },
   modeId: "vocab_type_reading",
   due: 0,
+  isLeech: false,
 }
 
 const grammarItem: DueItem = {
@@ -43,6 +44,7 @@ const grammarItem: DueItem = {
   },
   modeId: "grammar_type_construction",
   due: 0,
+  isLeech: false,
 }
 
 function stubTouchPrimaryDevice(matches: boolean) {
@@ -166,6 +168,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "grammar_oral_meaning",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = render(
@@ -206,6 +209,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "vocab_oral_en",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = render(
@@ -251,6 +255,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "vocab_type_reading",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = render(
@@ -297,6 +302,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "vocab_type_reading",
       due: 0,
+      isLeech: false,
     }
 
     render(
@@ -354,6 +360,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "vocab_oral_en",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = render(
@@ -399,6 +406,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "vocab_type_reading",
       due: 0,
+      isLeech: false,
     }
 
     renderBothColumns({
@@ -441,6 +449,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "vocab_type_reading",
       due: 0,
+      isLeech: false,
     }
 
     render(<StatefulPromptBody item={item} column="answer" />)
@@ -475,6 +484,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "grammar_type_reading",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = renderBothColumns({
@@ -520,6 +530,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "grammar_type_reading",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = render(
@@ -559,6 +570,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "vocab_oral_en",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = render(
@@ -595,6 +607,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "vocab_oral_en",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = render(
@@ -631,6 +644,7 @@ describe("ReviewSessionPromptBody", () => {
       },
       modeId: "vocab_oral_en",
       due: 0,
+      isLeech: false,
     }
 
     const { container } = render(
@@ -719,6 +733,7 @@ const twoGapItem: DueItem = {
   },
   modeId: "grammar_type_construction",
   due: 0,
+  isLeech: false,
 }
 
 function StatefulPromptBody({

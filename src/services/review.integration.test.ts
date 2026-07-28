@@ -15,7 +15,7 @@ import {
 } from "./review"
 import { loadSchedulingRow } from "./cards"
 import { db, type SchedulingRow } from "../lib/db/schema"
-import { emptyFsrs, serializeFsrs } from "../lib/srs/schedule"
+import { deserializeFsrs, emptyFsrs, serializeFsrs } from "../lib/srs/schedule"
 import type { Card, ReviewModeId } from "../domain/types"
 import { clearSessionEdits, getSessionEditedCardIds } from "../lib/sync/sessionEdits"
 
@@ -79,7 +79,7 @@ function dueItem(
   modeId: ReviewModeId,
   due: number,
 ): DueItem {
-  return { card, modeId, due }
+  return { card, modeId, due, isLeech: false }
 }
 
 describe("review + scheduling (IndexedDB)", () => {
@@ -232,6 +232,49 @@ describe("review + scheduling (IndexedDB)", () => {
     await commitJudgement(card.id, "vocab_oral_en", 800, true, snap)
 
     expect(getSessionEditedCardIds()).toContain(card.id)
+  })
+
+  it("reports becameLeech only on the judgement that crosses the threshold", async () => {
+    const deck = await createDeck("D")
+    const card = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "保険",
+        reading: "ほけん",
+        definitionsEn: [],
+        images: [],
+        exampleSentences: [],
+      },
+    )
+    const row = (await loadSchedulingRow(card.id, "vocab_type_reading"))!
+    const fsrsCard = deserializeFsrs(row.fsrs)
+    fsrsCard.state = 2 // Review — lapses only accrue from this state
+    fsrsCard.lapses = 3
+    fsrsCard.stability = 5
+    fsrsCard.difficulty = 5
+    await db.scheduling.put({ ...row, fsrs: serializeFsrs(fsrsCard) })
+
+    const snap = await prepareJudgement(card.id, "vocab_type_reading")
+    const result = await commitJudgement(
+      card.id,
+      "vocab_type_reading",
+      null,
+      false,
+      snap,
+    )
+    expect(result).toEqual({ becameLeech: true })
+
+    // Already a leech (well past the threshold now) — grading it wrong
+    // again must not re-report becameLeech.
+    const snap2 = await prepareJudgement(card.id, "vocab_type_reading")
+    const result2 = await commitJudgement(
+      card.id,
+      "vocab_type_reading",
+      null,
+      false,
+      snap2,
+    )
+    expect(result2).toEqual({ becameLeech: false })
   })
 
   it("does not record a timing sample when latency wasn't captured", async () => {

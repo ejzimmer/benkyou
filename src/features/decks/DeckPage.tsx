@@ -9,6 +9,7 @@ import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { NextReviewBar } from "../../ui/NextReviewBar"
+import { LeechBadge } from "../../ui/LeechBadge"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncButton } from "../../ui/SyncButton"
 
@@ -37,6 +38,16 @@ export function DeckPage() {
       if (!current || row.due < current.due) map.set(row.cardId, row)
     }
     return map
+  }, [schedulingRows])
+
+  /** Cards with at least one review mode flagged as a leech — a card can have
+   *  several modes, and the leeched one isn't necessarily the soonest-due row. */
+  const leechCardIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const row of schedulingRows ?? []) {
+      if (row.isLeech) ids.add(row.cardId)
+    }
+    return ids
   }, [schedulingRows])
 
   const cardCount = cards?.length ?? 0
@@ -120,6 +131,7 @@ export function DeckPage() {
                     ? c.content.wordJa
                     : c.content.sentenceWithGap}
                 </Link>
+                {leechCardIds.has(c.id) && <LeechBadge />}
                 <span className="card-schedule">
                   {schedule ? (
                     <>
