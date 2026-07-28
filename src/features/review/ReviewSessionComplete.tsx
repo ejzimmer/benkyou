@@ -108,7 +108,7 @@ export function ReviewSessionComplete({ backTo, scopeKey, onUndoLastJudgement }:
 
         <h1 className="review-complete-message">全カードやり終わった!</h1>
         <p className="review-complete-duration">
-          {elapsedMinutes}分で{reviewedCount}枚を復習した
+          {elapsedMinutes}分で{reviewedCount}枚を復習しました
         </p>
 
         <div className="review-complete-actions">
