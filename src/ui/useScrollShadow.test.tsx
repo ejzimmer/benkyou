@@ -1,5 +1,6 @@
+import { useState } from "react"
 import { describe, expect, it } from "vitest"
-import { render, waitFor } from "@testing-library/react"
+import { fireEvent, render, waitFor } from "@testing-library/react"
 import { useScrollShadow } from "./useScrollShadow"
 
 function TestBox() {
@@ -9,6 +10,26 @@ function TestBox() {
       <div data-testid="disclosure" className="closed">
         content
       </div>
+    </div>
+  )
+}
+
+// Mirrors the review page: a single long-lived component instance that
+// renders a "loading" placeholder first, with the ref'd element only
+// appearing once loading finishes — never remounting the component itself.
+function LoadsThenShowsBox() {
+  const [loaded, setLoaded] = useState(false)
+  const ref = useScrollShadow<HTMLDivElement>()
+  if (!loaded) {
+    return (
+      <button type="button" onClick={() => setLoaded(true)}>
+        finish loading
+      </button>
+    )
+  }
+  return (
+    <div ref={ref} data-testid="box">
+      content
     </div>
   )
 }
@@ -110,6 +131,26 @@ describe("useScrollShadow", () => {
     Object.defineProperty(box, "clientHeight", { configurable: true, value: 100 })
 
     box.dispatchEvent(new Event("transitionend", { bubbles: true }))
+
+    await waitFor(() => expect(box.style.boxShadow).toContain("-8px"))
+  })
+
+  // Reproduces the review page's actual bug: `ReviewSessionPage` renders a
+  // "Loading queue…" placeholder first and only mounts the ref'd content
+  // once loading finishes, all within the same never-remounted component
+  // instance. A `useRef`-backed attach effect only runs once, against
+  // whatever the ref held at that first commit (`null`, since the element
+  // didn't exist yet) — and never revisits it once the real element shows
+  // up, so it silently never gets a scroll listener or shadow at all.
+  it("attaches once the ref'd element appears later in the same component instance", async () => {
+    const { getByRole, getByTestId } = render(<LoadsThenShowsBox />)
+    fireEvent.click(getByRole("button", { name: "finish loading" }))
+
+    const box = getByTestId("box")
+    Object.defineProperty(box, "scrollTop", { configurable: true, value: 0 })
+    Object.defineProperty(box, "scrollHeight", { configurable: true, value: 300 })
+    Object.defineProperty(box, "clientHeight", { configurable: true, value: 100 })
+    box.dispatchEvent(new Event("scroll"))
 
     await waitFor(() => expect(box.style.boxShadow).toContain("-8px"))
   })

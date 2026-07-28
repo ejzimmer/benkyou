@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 // Standard "fade" scroll-shadow recipe: an inset shadow hugging the edge
 // that has more content beyond it, shrunk down (negative spread) so it only
@@ -37,18 +37,25 @@ function boxShadowFor(el: HTMLElement): string {
  * scrolled part way through, and so on. Re-checks on scroll, on the
  * element's own resize, and on DOM/image-load changes to its content, so it
  * needs no dependency list from the caller.
+ *
+ * Returns a callback ref rather than a plain `useRef` object: some callers
+ * (e.g. the review page) mount the ref'd element only after an initial
+ * loading/empty-state render, on a component instance that itself never
+ * remounts. A `useRef`-backed effect only runs once, against whatever
+ * `ref.current` was at that first commit (often still `null`), and never
+ * revisits it — so the element that eventually appears would never get its
+ * listeners attached. Backing the ref with state instead means the attach
+ * effect depends on the actual DOM node, and re-runs whenever it changes.
  */
 export function useScrollShadow<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null)
+  const [el, setEl] = useState<T | null>(null)
 
   const update = useCallback(() => {
-    const el = ref.current
     if (!el) return
     el.style.boxShadow = boxShadowFor(el)
-  }, [])
+  }, [el])
 
   useEffect(() => {
-    const el = ref.current
     if (!el) return
 
     update()
@@ -90,7 +97,7 @@ export function useScrollShadow<T extends HTMLElement>() {
       resizeObserver?.disconnect()
       mutationObserver.disconnect()
     }
-  }, [update])
+  }, [el, update])
 
-  return ref
+  return setEl
 }
