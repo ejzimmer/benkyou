@@ -37,7 +37,7 @@ describe("ReviewSessionComplete", () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByText("3分で12枚を復習した")).toBeInTheDocument()
+    expect(screen.getByText("3分で12枚を復習しました")).toBeInTheDocument()
   })
 
   it("pushes pending judgements automatically once, on reaching the finished screen", () => {
