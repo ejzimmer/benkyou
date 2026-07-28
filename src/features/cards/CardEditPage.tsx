@@ -304,10 +304,14 @@ export function CardEditPage() {
     setConfirmingDelete(true)
   }
 
-  function onConfirmDeleteCard() {
+  async function onConfirmDeleteCard() {
     setConfirmingDelete(false)
-    navigate(returnTo ?? `/decks/${deckId}`)
-    deleteCard(cardId).catch(console.error)
+    try {
+      await deleteCard(cardId)
+      navigate(returnTo ?? `/decks/${deckId}`)
+    } catch (x) {
+      setErr(x instanceof Error ? x.message : "Delete failed")
+    }
   }
 
   async function onFindDuplicates() {
@@ -464,7 +468,7 @@ export function CardEditPage() {
 
       {confirmingDelete && (
         <ConfirmModal
-          message="Delete this card?"
+          message="このカードを削除してもよろしいですか？"
           onConfirm={onConfirmDeleteCard}
           onCancel={() => setConfirmingDelete(false)}
         />

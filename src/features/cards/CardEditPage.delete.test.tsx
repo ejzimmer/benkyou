@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
@@ -76,14 +76,17 @@ describe("CardEditPage delete card", () => {
     })
 
     await user.click(screen.getByRole("button", { name: "削除" }))
-    expect(screen.getByText("Delete this card?")).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: /^delete$/i }))
-
-    expect(await screen.findByText("Deck page")).toBeInTheDocument()
+    const dialog = screen.getByRole("dialog")
+    expect(
+      within(dialog).getByText("このカードを削除してもよろしいですか？"),
+    ).toBeInTheDocument()
+    await user.click(within(dialog).getByRole("button", { name: "削除" }))
 
     await waitFor(async () => {
       expect(await db.cards.get("card-1")).toBeUndefined()
     })
+
+    expect(await screen.findByText("Deck page")).toBeInTheDocument()
   })
 
   it("keeps the card when the confirmation is cancelled", async () => {
@@ -95,8 +98,11 @@ describe("CardEditPage delete card", () => {
     })
 
     await user.click(screen.getByRole("button", { name: "削除" }))
-    expect(screen.getByText("Delete this card?")).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: /cancel/i }))
+    const dialog = screen.getByRole("dialog")
+    expect(
+      within(dialog).getByText("このカードを削除してもよろしいですか？"),
+    ).toBeInTheDocument()
+    await user.click(within(dialog).getByRole("button", { name: "キャンセル" }))
 
     expect(screen.queryByText("Deck page")).not.toBeInTheDocument()
     expect(await db.cards.get("card-1")).toBeDefined()

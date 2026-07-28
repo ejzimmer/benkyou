@@ -1952,6 +1952,21 @@ code {
   overflow-y: auto;
 }
 
+.modal-panel.confirm-modal-panel {
+  width: fit-content;
+  max-width: none;
+  padding: 40px;
+}
+
+.confirm-modal-panel p {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.confirm-modal-panel .toolbar {
+  justify-content: flex-end;
+}
+
 .duplicate-cards-panel {
   max-width: 420px;
 }

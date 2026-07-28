@@ -163,7 +163,7 @@ export function DeckPage() {
 
       {confirmingDelete && (
         <ConfirmModal
-          message="Delete this deck and all its cards?"
+          message="このデッキとすべてのカードを削除してもよろしいですか？"
           onConfirm={onConfirmDeleteDeck}
           onCancel={() => setConfirmingDelete(false)}
         />
