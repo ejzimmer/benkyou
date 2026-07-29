@@ -34,6 +34,8 @@ The cloud project is **`benkyou-c1a8b`** ([Firebase console](https://console.fir
 
 Netlify Functions (`netlify/functions/agent-*.ts`) let an AI agent fetch due cards and grade reviews for translation exercises. See [docs/AGENT_API.md](docs/AGENT_API.md). (Separate from `src/services/agentLocal.ts`, an older local-only helper set.)
 
+[`agent/`](agent/README.md) is a standalone Node/Express web app that runs practice sessions against that API using a locally-hosted LLM — see its README for setup.
+
 ## Cursor: code review skill
 
 The [awesome-skills/code-review-skill](https://github.com/awesome-skills/code-review-skill) bundle lives in [`.cursor/skills/code-review-skill`](.cursor/skills/code-review-skill). In Cursor Agent, invoke **`/code-review-excellence`** or attach that skill from `@`. Details: [`.cursor/skills/README.md`](.cursor/skills/README.md).

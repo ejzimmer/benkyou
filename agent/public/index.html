@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Benkyou practice</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Benkyou practice</h1>
+      <p id="word" class="word"></p>
+      <p id="prompt" class="prompt">Loading…</p>
+      <textarea
+        id="answer"
+        rows="3"
+        placeholder="Type your Japanese translation…"
+        disabled
+      ></textarea>
+      <div class="actions">
+        <button id="submit" disabled>Submit</button>
+        <button id="next">Next card</button>
+      </div>
+      <p id="feedback" class="feedback"></p>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
