@@ -21,6 +21,7 @@ import { ReviewFooter } from "./ReviewFooter"
 import { LeechModal } from "./LeechModal"
 import { LeechBadge } from "../../ui/LeechBadge"
 import {
+  clearReviewSessionTimer,
   decrementReviewedCount,
   incrementReviewedCount,
   resumeReviewSessionTimerIfPresent,
@@ -223,7 +224,13 @@ export function ReviewSessionPage() {
       hadDueItemsRef.current = true
       if (lastTimerScopeRef.current !== scopeKey) {
         lastTimerScopeRef.current = scopeKey
-        if (!resumeCardId || !resumeReviewSessionTimerIfPresent(scopeKey)) {
+        // Picks back up an in-progress session's timer across a browser
+        // refresh (or the resume-from-card-edit remount) rather than
+        // resetting it — only a genuinely new session (nothing stored,
+        // because the last one was explicitly exited or completed) starts
+        // fresh. See the "Exit review" links below and in
+        // `ReviewSessionComplete` for where a session's timer is cleared.
+        if (!resumeReviewSessionTimerIfPresent(scopeKey)) {
           startReviewSessionTimer(scopeKey)
         }
       }
@@ -672,7 +679,12 @@ export function ReviewSessionPage() {
     return (
       <div className="page review">
         <header className="header review-header">
-          <Link to={backTo} className="back-link" aria-label="Exit review">
+          <Link
+            to={backTo}
+            className="back-link"
+            aria-label="Exit review"
+            onClick={() => clearReviewSessionTimer(scopeKey)}
+          >
             <ChevronLeftIcon className="back-chevron" />
           </Link>
           <div className="review-header-actions">
@@ -721,6 +733,7 @@ export function ReviewSessionPage() {
           to={deckId ? `/decks/${deckId}` : "/"}
           className="back-link"
           aria-label="Exit review"
+          onClick={() => clearReviewSessionTimer(scopeKey)}
         >
           <ChevronLeftIcon className="back-chevron" />
         </Link>

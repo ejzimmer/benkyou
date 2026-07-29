@@ -6,6 +6,7 @@ import { SyncButton } from "../../ui/SyncButton"
 import { useSync } from "../../lib/sync/SyncContext"
 import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 import {
+  clearReviewSessionTimer,
   getReviewedCount,
   getReviewSessionElapsedMs,
 } from "./reviewSessionTimer"
@@ -78,7 +79,12 @@ export function ReviewSessionComplete({ backTo, scopeKey, onUndoLastJudgement }:
   return (
     <div className="page review review-complete">
       <header className="header review-header">
-        <Link to={backTo} className="back-link" aria-label="Exit review">
+        <Link
+          to={backTo}
+          className="back-link"
+          aria-label="Exit review"
+          onClick={() => clearReviewSessionTimer(scopeKey)}
+        >
           <ChevronLeftIcon className="back-chevron" />
         </Link>
         <div className="review-header-actions">
@@ -112,7 +118,11 @@ export function ReviewSessionComplete({ backTo, scopeKey, onUndoLastJudgement }:
         </p>
 
         <div className="review-complete-actions">
-          <Link to="/" className="btn primary">
+          <Link
+            to="/"
+            className="btn primary"
+            onClick={() => clearReviewSessionTimer(scopeKey)}
+          >
             ホーム
           </Link>
           <button type="button" className="btn secondary" onClick={onUndoLastJudgement}>

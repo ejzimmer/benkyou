@@ -1,9 +1,11 @@
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { ReviewSessionComplete } from "./ReviewSessionComplete"
 import {
   incrementReviewedCount,
+  resumeReviewSessionTimerIfPresent,
   startReviewSessionTimer,
 } from "./reviewSessionTimer"
 
@@ -38,6 +40,37 @@ describe("ReviewSessionComplete", () => {
     )
 
     expect(screen.getByText("3分で12枚を復習しました")).toBeInTheDocument()
+  })
+
+  it('clears the scope\'s session timer when leaving via the "ホーム" link', async () => {
+    const user = userEvent.setup()
+    startReviewSessionTimer("deck-1")
+    incrementReviewedCount("deck-1")
+    expect(resumeReviewSessionTimerIfPresent("deck-1")).toBe(true)
+
+    render(
+      <MemoryRouter>
+        <ReviewSessionComplete backTo="/" scopeKey="deck-1" onUndoLastJudgement={() => {}} />
+      </MemoryRouter>,
+    )
+    await user.click(screen.getByRole("link", { name: "ホーム" }))
+
+    expect(resumeReviewSessionTimerIfPresent("deck-1")).toBe(false)
+  })
+
+  it('clears the scope\'s session timer when leaving via the back chevron', async () => {
+    const user = userEvent.setup()
+    startReviewSessionTimer("deck-1")
+    incrementReviewedCount("deck-1")
+
+    render(
+      <MemoryRouter>
+        <ReviewSessionComplete backTo="/" scopeKey="deck-1" onUndoLastJudgement={() => {}} />
+      </MemoryRouter>,
+    )
+    await user.click(screen.getByRole("link", { name: "Exit review" }))
+
+    expect(resumeReviewSessionTimerIfPresent("deck-1")).toBe(false)
   })
 
   it("pushes pending judgements automatically once, on reaching the finished screen", () => {

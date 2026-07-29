@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
+  clearReviewSessionTimer,
   decrementReviewedCount,
   getReviewedCount,
   getReviewSessionElapsedMs,
@@ -72,6 +73,33 @@ describe("reviewSessionTimer", () => {
 
     expect(getReviewedCount("all")).toBe(0)
     expect(getReviewSessionElapsedMs("all")).toBe(0)
+  })
+
+  it("resumes a running timer across a simulated page refresh (state persists, no reset call in between)", () => {
+    setNow(0)
+    startReviewSessionTimer("deck-1")
+    incrementReviewedCount("deck-1")
+    setNow(4_000)
+    // Simulates a refresh: nothing runs between the two calls except time
+    // passing — `resumeReviewSessionTimerIfPresent` (what a fresh mount
+    // calls) must find the still-running timer and keep counting from
+    // where it left off, not reset it.
+    expect(resumeReviewSessionTimerIfPresent("deck-1")).toBe(true)
+    expect(getReviewedCount("deck-1")).toBe(1)
+    expect(getReviewSessionElapsedMs("deck-1")).toBe(4_000)
+  })
+
+  it("clearReviewSessionTimer ends the session so a later mount starts fresh instead of resuming", () => {
+    setNow(0)
+    startReviewSessionTimer("deck-1")
+    incrementReviewedCount("deck-1")
+    setNow(5_000)
+
+    clearReviewSessionTimer("deck-1")
+
+    expect(resumeReviewSessionTimerIfPresent("deck-1")).toBe(false)
+    expect(getReviewedCount("deck-1")).toBe(0)
+    expect(getReviewSessionElapsedMs("deck-1")).toBe(0)
   })
 
   it("tracks reviewed count independently per scope, and floors decrements at zero", () => {
