@@ -1,6 +1,7 @@
 /**
- * Local stub for future authenticated HTTP agent API.
- * AI agents can mirror these queries once the server exposes /v1/agent/* routes.
+ * Local (in-browser) heuristics for surfacing due/trouble cards on-device.
+ * The over-the-network agent API (Netlify Functions, for translation
+ * exercises) is separate — see docs/AGENT_API.md and netlify/lib/agentCore.ts.
  */
 
 import type { Card, ReviewModeId } from "../domain/types"

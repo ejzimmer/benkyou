@@ -30,9 +30,9 @@ Copy `.env.example` to `.env.local` and add Firebase keys to enable sign-in and 
 
 The cloud project is **`benkyou-c1a8b`** ([Firebase console](https://console.firebase.google.com/project/benkyou-c1a8b/overview)). Setup steps, env vars, and rule deployment: [docs/FIREBASE.md](docs/FIREBASE.md).
 
-## Agent / bulk import
+## Agent API
 
-See [docs/AGENT_API.md](docs/AGENT_API.md). Local helpers live in `src/services/agentLocal.ts`.
+Netlify Functions (`netlify/functions/agent-*.ts`) let an AI agent fetch due cards and grade reviews for translation exercises. See [docs/AGENT_API.md](docs/AGENT_API.md). (Separate from `src/services/agentLocal.ts`, an older local-only helper set.)
 
 ## Cursor: code review skill
 
