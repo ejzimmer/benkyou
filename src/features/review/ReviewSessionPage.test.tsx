@@ -133,6 +133,70 @@ describe("ReviewSessionPage", () => {
     expect(screen.getByText("残り2枚・やり直し1枚")).toBeInTheDocument()
   })
 
+  it("keeps the needs-correction count across a card-edit round trip", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    for (const [word, reading] of [
+      ["猫", "ねこ"],
+      ["犬", "いぬ"],
+      ["鳥", "とり"],
+    ] as const) {
+      await createVocabularyCard(deck.id, {
+        wordJa: word,
+        reading,
+        definitionsEn: [],
+        images: [],
+        exampleSentences: [],
+      })
+    }
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+              <Route
+                path="/decks/:deckId/cards/:cardId"
+                element={<CardEditPage />}
+              />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    await user.click(screen.getByRole("button", { name: /show answer/i }))
+    await user.click(await screen.findByRole("button", { name: /^incorrect$/i }))
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+    })
+    expect(screen.getByText("残り2枚・やり直し1枚")).toBeInTheDocument()
+
+    // Navigating to edit a card and back remounts the page — the
+    // needs-correction split must survive that, not silently reset.
+    await user.click(screen.getByRole("link", { name: "カード編集" }))
+    await user.click(await screen.findByRole("link", { name: /back/i }))
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+    })
+    expect(screen.getByText("残り2枚・やり直し1枚")).toBeInTheDocument()
+
+    // Correctly answering a card that was never marked wrong should still
+    // decrement 残り, leaving やり直し untouched.
+    await user.click(screen.getByRole("button", { name: /show answer/i }))
+    await user.click(await screen.findByRole("button", { name: /^correct$/i }))
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+    })
+    expect(screen.getByText("残り1枚・やり直し1枚")).toBeInTheDocument()
+  })
+
   it("after incorrect, does not flash next card answer during queue rotation gap", async () => {
     await resetDatabase()
     const user = userEvent.setup()
@@ -485,10 +549,16 @@ describe("ReviewSessionPage", () => {
     )
 
     // The answer screen reopens showing what was entered, not a blank answer.
+    // The answer panel stays permanently mounted (just hidden) behind the
+    // prompt, so `findByText` can resolve before the undo's async state
+    // updates land — assert on the actual diff content via `waitFor` rather
+    // than a synchronous check right after.
     expect(await screen.findByText("Your answer")).toBeInTheDocument()
-    expect(
-      document.querySelector('[data-reading-diff-line="yours"]')?.textContent,
-    ).toContain("ほけ")
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-reading-diff-line="yours"]')?.textContent,
+      ).toContain("ほけ")
+    })
   })
 
   it("reveals the aligned reading diff for an incorrect hiragana answer", async () => {
