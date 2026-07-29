@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
@@ -29,6 +29,14 @@ vi.mock("../../lib/sync/firestoreSync", () => ({
 }))
 
 describe("ReviewSessionPage", () => {
+  // Every test here reviews from the same "/review" (unscoped) route, which
+  // shares one review-session-timer scope ("all") backed by sessionStorage —
+  // clear it so a session left running by one test can't leak its elapsed
+  // time/reviewed count into the next.
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
   it("shows a plain empty state, not the completion screen, when nothing was ever due", async () => {
     await resetDatabase()
     await createDeck("T")
@@ -88,6 +96,61 @@ describe("ReviewSessionPage", () => {
       expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
     })
     expect(screen.getByText("残り2枚")).toBeInTheDocument()
+  })
+
+  it("resumes the session timer and reviewed count across a simulated page refresh", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    for (const [wordJa, reading] of [
+      ["猫", "ねこ"],
+      ["犬", "いぬ"],
+    ]) {
+      await createVocabularyCard(deck.id, {
+        wordJa,
+        reading,
+        definitionsEn: [],
+        images: [],
+        exampleSentences: [],
+      })
+    }
+
+    const renderPage = () =>
+      render(
+        <MemoryRouter initialEntries={["/review"]}>
+          <AuthProvider>
+            <SyncProvider>
+              <Routes>
+                <Route path="/review" element={<ReviewSessionPage />} />
+              </Routes>
+            </SyncProvider>
+          </AuthProvider>
+        </MemoryRouter>,
+      )
+
+    const first = renderPage()
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+    await user.click(screen.getByRole("button", { name: /show answer/i }))
+    await user.click(await screen.findByRole("button", { name: /^correct$/i }))
+    await waitFor(() => {
+      expect(screen.getByText("残り1枚")).toBeInTheDocument()
+    })
+
+    // Simulate a page refresh: tear down and mount a fresh instance — the
+    // timer/count must be picked back up from sessionStorage, not reset.
+    first.unmount()
+    renderPage()
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+    await user.click(screen.getByRole("button", { name: /show answer/i }))
+    await user.click(await screen.findByRole("button", { name: /^correct$/i }))
+
+    expect(await screen.findByText("全カードやり終わった!")).toBeInTheDocument()
+    expect(screen.getByText(/分で2枚を復習しました/)).toBeInTheDocument()
   })
 
   it("splits the header count into remaining vs needs-correction after an incorrect answer", async () => {

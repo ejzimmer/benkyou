@@ -4,9 +4,11 @@ import { useEffect } from "react"
  * Tracks elapsed wall-clock time (paused while the tab is hidden) and a count
  * of cards judged correct for one review session, keyed by `scopeKey`
  * (deckId, or "all" for the unscoped review). Backed by `sessionStorage`
- * rather than component state so it survives the remount that happens when
- * the user navigates away mid-session to edit a card and back
- * (`resumeCardId` flow in `ReviewSessionPage`).
+ * rather than component state so it survives a remount of `ReviewSessionPage`
+ * mid-session — a browser refresh, or navigating away to edit a card and
+ * back. A session's entry is only cleared by an explicit "Exit review"
+ * action (see the callers of `clearReviewSessionTimer`), so a mid-session
+ * remount always finds it and resumes rather than starting over.
  */
 type TimerState = {
   accumulatedMs: number
@@ -106,6 +108,15 @@ export function getReviewSessionElapsedMs(scopeKey: string): number {
 
 export function getReviewedCount(scopeKey: string): number {
   return readState(scopeKey)?.reviewedCount ?? 0
+}
+
+/** Ends this scope's session — the next mount will start a fresh timer instead of resuming this one. */
+export function clearReviewSessionTimer(scopeKey: string) {
+  try {
+    sessionStorage.removeItem(storageKey(scopeKey))
+  } catch {
+    // ignore
+  }
 }
 
 /** Pauses/resumes the named session timer while the tab is hidden/visible. */
