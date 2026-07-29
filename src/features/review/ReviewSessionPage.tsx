@@ -27,6 +27,7 @@ import {
   startReviewSessionTimer,
   useReviewSessionTimerVisibility,
 } from "./reviewSessionTimer"
+import { readWrongKeys, writeWrongKeys } from "./reviewWrongKeys"
 import {
   answerMissingKanji,
   expectedAnswer,
@@ -125,8 +126,9 @@ export function ReviewSessionPage() {
   /**
    * Keys (`dueItemKey`) of items currently in `sessionQueue` that were
    * judged incorrect at least once this session and are waiting on a
-   * correct retry. Reset alongside `sessionQueue` on every `load()` — it's
-   * a same-session display concern, not persisted state.
+   * correct retry. Mirrored to sessionStorage (`reviewWrongKeys.ts`) so it
+   * survives the remount that happens when the user edits a card mid-session
+   * and returns — `load()` restores it there instead of always resetting.
    */
   const [wrongKeys, setWrongKeys] = useState<Set<string>>(new Set())
   /**
@@ -227,7 +229,17 @@ export function ReviewSessionPage() {
       }
     }
     setSessionQueue(q)
-    setWrongKeys(new Set())
+    // Resuming from the edit page (or any other remount mid-session): pick
+    // the redo pile back up from sessionStorage rather than wiping it, and
+    // narrow it to keys still actually present in the reloaded queue (a
+    // card edit can remove the mode that was marked wrong). A genuinely
+    // fresh session (no resumeCardId) always starts empty.
+    const validKeys = new Set(q.map(dueItemKey))
+    const restoredWrongKeys = resumeCardId
+      ? new Set([...readWrongKeys(scopeKey)].filter((k) => validKeys.has(k)))
+      : new Set<string>()
+    setWrongKeys(restoredWrongKeys)
+    writeWrongKeys(scopeKey, restoredWrongKeys)
 
     // Resuming from the edit page: put back the phase/typed answer the user
     // had before navigating away, as long as the same card+mode is still
@@ -370,6 +382,16 @@ export function ReviewSessionPage() {
     }
   }, [phase, current, pendingIncorrectDelay])
 
+  /** Updates `wrongKeys` and mirrors the result to sessionStorage in the same
+   *  step, so the redo pile can't drift out of sync with what's persisted. */
+  function updateWrongKeys(updater: (prev: Set<string>) => Set<string>) {
+    setWrongKeys((prev) => {
+      const next = updater(prev)
+      writeWrongKeys(scopeKey, next)
+      return next
+    })
+  }
+
   function resetPromptAfterJudgement() {
     setTyped("")
     setReadingWarn(false)
@@ -465,7 +487,7 @@ export function ReviewSessionPage() {
     const delayMs = rest.length > 0 ? INCORRECT_ADVANCE_DELAY_MS : 0
     setSessionQueue(requeueAfterIncorrect(rest, item))
     if (!wasWrong) {
-      setWrongKeys((prev) => new Set(prev).add(key))
+      updateWrongKeys((prev) => new Set(prev).add(key))
     }
 
     resetPromptAfterJudgement()
@@ -506,7 +528,7 @@ export function ReviewSessionPage() {
       setSessionQueue((q) => q.slice(1))
       incrementReviewedCount(scopeKey)
       if (wasWrong) {
-        setWrongKeys((prev) => {
+        updateWrongKeys((prev) => {
           const next = new Set(prev)
           next.delete(key)
           return next
@@ -541,7 +563,7 @@ export function ReviewSessionPage() {
     setLeechPrompt(null)
     await deleteCard(item.card.id)
     setSessionQueue((q) => q.filter((it) => it.card.id !== item.card.id))
-    setWrongKeys((prev) => {
+    updateWrongKeys((prev) => {
       const next = new Set(prev)
       for (const k of next) {
         if (k.startsWith(`${item.card.id}:`)) next.delete(k)
@@ -606,7 +628,7 @@ export function ReviewSessionPage() {
     }
     if (matchesUndone) {
       const key = dueItemKey(undone)
-      setWrongKeys((prev) => {
+      updateWrongKeys((prev) => {
         const has = prev.has(key)
         if (lastTyped.wasWrong === has) return prev
         const next = new Set(prev)
