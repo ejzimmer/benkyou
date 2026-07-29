@@ -1,0 +1,57 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+main {
+  width: 100%;
+  max-width: 32rem;
+}
+
+h1 {
+  font-size: 1.25rem;
+}
+
+.word {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.prompt {
+  font-size: 1.4rem;
+  min-height: 3.5rem;
+}
+
+textarea {
+  width: 100%;
+  font-size: 1.2rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  padding: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+button {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}
+
+.feedback {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  min-height: 1.5rem;
+  white-space: pre-wrap;
+}

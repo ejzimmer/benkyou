@@ -19,6 +19,11 @@
 .env.test.local
 .env.production.local
 
+# agent (standalone Node app, see agent/README.md)
+/agent/node_modules
+/agent/dist
+/agent/.env
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
