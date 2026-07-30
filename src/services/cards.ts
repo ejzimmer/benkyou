@@ -161,6 +161,7 @@ function mergeVocabularyContent(
     definitionsEn: [...target.definitionsEn, ...source.definitionsEn],
     images: mergeImages(target.images, source.images),
     exampleSentences: [...target.exampleSentences, ...source.exampleSentences],
+    confusedWith: mergeConfusedWith(target.confusedWith, source.confusedWith),
   }
 }
 
@@ -185,7 +186,16 @@ function mergeGrammarContent(
     readings: mergeReadings(target.readings, source.readings),
     images: mergeImages(target.images, source.images),
     singleSided: isSingleSided(target) || isSingleSided(source),
+    confusedWith: mergeConfusedWith(target.confusedWith, source.confusedWith),
   }
+}
+
+/** Union of both cards' flagged confusable words, deduped. */
+function mergeConfusedWith(
+  target: string[] | undefined,
+  source: string[] | undefined,
+): string[] {
+  return [...new Set([...(target ?? []), ...(source ?? [])])]
 }
 
 /**
@@ -273,6 +283,7 @@ export function defaultVocabulary(): VocabularyCardContent {
     definitionsEn: [""],
     images: [],
     exampleSentences: [],
+    confusedWith: [],
   }
 }
 
@@ -287,6 +298,7 @@ export function defaultGrammar(): GrammarCardContent {
     readings: {},
     images: [],
     singleSided: false,
+    confusedWith: [],
   }
 }
 
@@ -317,6 +329,7 @@ export function vocabularyFromGrammarContent(
     definitionsEn: [content.translationEn],
     images: [...content.images],
     exampleSentences: [content.sentenceWithGap],
+    confusedWith: [...(content.confusedWith ?? [])],
   }
 }
 
@@ -343,6 +356,7 @@ export function grammarFromVocabularyContent(
     translationEn: content.definitionsEn.filter((s) => s.trim()).join("; "),
     readings: { ...(content.readings ?? {}) },
     images: [...content.images],
+    confusedWith: [...(content.confusedWith ?? [])],
   }
 }
 

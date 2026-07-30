@@ -586,6 +586,22 @@ export function CardEditPage() {
             >
               漢字入れる
             </button>
+            <label>
+              紛らわしい言葉
+              <textarea
+                className="input"
+                rows={2}
+                aria-label="Confused words"
+                placeholder="Words you tend to mix this one up with, one per line"
+                value={(vocab.confusedWith ?? []).join("\n")}
+                onChange={(e) =>
+                  setVocab({
+                    ...vocab,
+                    confusedWith: e.target.value.split("\n"),
+                  })
+                }
+              />
+            </label>
             <fieldset className="plain">
               <legend>画像</legend>
               <ImagePreviewList
@@ -701,6 +717,22 @@ export function CardEditPage() {
             >
               漢字入れる
             </button>
+            <label>
+              紛らわしい言葉
+              <textarea
+                className="input"
+                rows={2}
+                aria-label="Confused words"
+                placeholder="Constructions you tend to mix this one up with, one per line"
+                value={(grammar.confusedWith ?? []).join("\n")}
+                onChange={(e) =>
+                  setGrammar({
+                    ...grammar,
+                    confusedWith: e.target.value.split("\n"),
+                  })
+                }
+              />
+            </label>
             <fieldset className="plain">
               <legend>画像</legend>
               <ImagePreviewList
