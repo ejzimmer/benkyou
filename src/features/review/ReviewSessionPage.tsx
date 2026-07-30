@@ -46,7 +46,6 @@ import { UserMenu } from "../../ui/UserMenu"
 import { SyncButton } from "../../ui/SyncButton"
 import { ScrollShadow } from "../../ui/ScrollShadow"
 import { useScrollShadow } from "../../ui/useScrollShadow"
-import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
@@ -350,6 +349,18 @@ export function ReviewSessionPage() {
   }, [])
 
   const current = sessionQueue[0]
+  const backTo = deckId ? `/decks/${deckId}` : "/"
+
+  // Nothing due and nothing was due this mount either — this is a direct
+  // visit to a review URL with an empty queue (including a refresh on the
+  // completion screen, which resets `hadDueItemsRef`), not mid-session
+  // emptying out. There's no completion screen to show for that, so bounce
+  // back to the landing page instead of rendering a dead-end empty state.
+  useEffect(() => {
+    if (!loading && !current && !hadDueItemsRef.current) {
+      navigate(backTo, { replace: true })
+    }
+  }, [loading, current, backTo, navigate])
 
   const wrongCount = useMemo(
     () => sessionQueue.filter((item) => wrongKeys.has(dueItemKey(item))).length,
@@ -454,7 +465,10 @@ export function ReviewSessionPage() {
         return false
       }
     }
-    if (m === "vocab_type_word_from_clue" && typedValue.trim()) {
+    if (
+      (m === "vocab_type_word_from_clue" || m === "grammar_type_construction") &&
+      typedValue.trim()
+    ) {
       if (answerMissingKanji(typedValue, expectedAnswer(c, m))) {
         setKanjiWarn(true)
         return false
@@ -686,7 +700,6 @@ export function ReviewSessionPage() {
   if (loading) return <div className="page review">Loading queue…</div>
 
   if (!current) {
-    const backTo = deckId ? `/decks/${deckId}` : "/"
     if (hadDueItemsRef.current) {
       return (
         <ReviewSessionComplete
@@ -696,43 +709,8 @@ export function ReviewSessionPage() {
         />
       )
     }
-    return (
-      <div className="page review">
-        <header className="header review-header">
-          <Link
-            to={backTo}
-            className="back-link"
-            aria-label="Exit review"
-            onClick={() => clearReviewSessionTimer(scopeKey)}
-          >
-            <ChevronLeftIcon className="back-chevron" />
-          </Link>
-          <div className="review-header-actions">
-            <UserMenu />
-            <SyncButton />
-          </div>
-        </header>
-        <p className="muted">Nothing due right now.</p>
-        <div className="toolbar">
-          <button
-            type="button"
-            className="btn secondary white"
-            onClick={() => void onUndoJudgementFromHeader()}
-          >
-            取り消す
-          </button>
-        </div>
-
-        <footer className="build-footer">
-          <p
-            className="muted small"
-            title="If this time is older than the latest GitHub deploy, hard-refresh or clear site data."
-          >
-            {BUILD_LABEL_LOCAL}
-          </p>
-        </footer>
-      </div>
-    )
+    // Redirect effect above is about to navigate away.
+    return null
   }
 
   const item = current

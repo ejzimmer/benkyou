@@ -114,12 +114,20 @@ export function hasMissingDoubledN(typed: string, expected: string): boolean {
 }
 
 /**
- * True when a "type the Japanese word" answer is missing kanji the correct
- * answer requires — almost always means the reading was typed instead of
- * the word itself, so it's flagged as a validation error rather than graded.
+ * True when a "type the Japanese word/construction" answer is missing kanji
+ * the correct answer requires — almost always means the reading was typed
+ * instead of the word/construction itself, so it's flagged as a validation
+ * error rather than graded. Checked per gap segment (positionally) so a
+ * multi-gap construction answer is still caught even when only one gap's
+ * kanji got replaced with its reading.
  */
 export function answerMissingKanji(typed: string, expected: string): boolean {
-  return containsKanji(expected) && !containsKanji(typed)
+  const typedParts = splitGapAnswers(typed)
+  const expectedParts = splitGapAnswers(expected)
+  if (typedParts.length !== expectedParts.length) return false
+  return expectedParts.some(
+    (part, i) => containsKanji(part) && !containsKanji(typedParts[i]),
+  )
 }
 
 /**

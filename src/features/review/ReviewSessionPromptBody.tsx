@@ -556,6 +556,11 @@ export function ReviewSessionPromptBody({
         {latinWarn && (
           <p className="error">Type the answer in Japanese, not English.</p>
         )}
+        {kanjiWarn && (
+          <p className="error">
+            The answer uses kanji — typing the reading isn't enough here.
+          </p>
+        )}
         {confusedMatch && (
           <p className="error">
             That&apos;s {confusedMatch}, which you&apos;ve flagged as easy to
