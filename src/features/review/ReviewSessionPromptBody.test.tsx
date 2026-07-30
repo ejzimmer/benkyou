@@ -698,6 +698,40 @@ describe("ReviewSessionPromptBody", () => {
     expect(screen.getByText(/answer uses kanji/i)).toBeInTheDocument()
   })
 
+  it("shows the kanji validation error for a fill-in-the-gap construction answer missing kanji", () => {
+    const noInlineGapItem: DueItem = {
+      ...grammarItem,
+      card: {
+        id: "card-3",
+        deckId: "deck-1",
+        kind: "grammar",
+        updatedAt: 0,
+        content: {
+          sentenceWithGap: "そこで探しました",
+          gapMarker: "___",
+          construction: "辞書",
+          translationEn: "",
+          readings: {},
+          images: [],
+        },
+      },
+    }
+
+    render(
+      <ReviewSessionPromptBody
+        item={noInlineGapItem}
+        typed="じしょ"
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        kanjiWarn
+        onTypedSubmit={vi.fn()}
+        column="answer"
+      />,
+    )
+
+    expect(screen.getByText(/answer uses kanji/i)).toBeInTheDocument()
+  })
+
   it("shows the missed-doubled-n validation error for a reading answer", () => {
     render(
       <ReviewSessionPromptBody

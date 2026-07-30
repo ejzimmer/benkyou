@@ -436,7 +436,10 @@ export function ReviewSessionPage() {
       setLatinWarn(true)
       return false
     }
-    if (m === "vocab_type_word_from_clue" && typedValue.trim()) {
+    if (
+      (m === "vocab_type_word_from_clue" || m === "grammar_type_construction") &&
+      typedValue.trim()
+    ) {
       if (answerMissingKanji(typedValue, expectedAnswer(c, m))) {
         setKanjiWarn(true)
         return false
