@@ -37,7 +37,7 @@ describe("ReviewSessionPage", () => {
     sessionStorage.clear()
   })
 
-  it("shows a plain empty state, not the completion screen, when nothing was ever due", async () => {
+  it("redirects to the landing page, not the completion screen, when nothing was ever due", async () => {
     await resetDatabase()
     await createDeck("T")
 
@@ -47,13 +47,14 @@ describe("ReviewSessionPage", () => {
           <SyncProvider>
             <Routes>
               <Route path="/review" element={<ReviewSessionPage />} />
+              <Route path="/" element={<p>Landing page</p>} />
             </Routes>
           </SyncProvider>
         </AuthProvider>
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText(/nothing due right now/i)).toBeInTheDocument()
+    expect(await screen.findByText("Landing page")).toBeInTheDocument()
     expect(screen.queryByText("全カードやり終わった!")).not.toBeInTheDocument()
   })
 
