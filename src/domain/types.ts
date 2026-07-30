@@ -42,6 +42,14 @@ export type VocabularyCardContent = {
   definitionsEn: string[]
   images: string[]
   exampleSentences: string[]
+  /**
+   * Other Japanese words the author habitually mixes this one up with (e.g.
+   * 痩せる flagged on the 細い card). Checked against a typed "word" answer
+   * before grading — a match blocks the reveal for an inline retry instead
+   * of being marked wrong, since it's a mix-up, not evidence this card's
+   * answer wasn't recalled.
+   */
+  confusedWith?: string[]
 }
 
 export type GrammarCardContent = {
@@ -75,6 +83,9 @@ export type GrammarCardContent = {
    * mode (no separate reading or meaning drill).
    */
   singleSided?: boolean
+  /** Other Japanese constructions the author habitually mixes this one up
+   * with — see `VocabularyCardContent.confusedWith`. */
+  confusedWith?: string[]
 }
 
 export type Card =

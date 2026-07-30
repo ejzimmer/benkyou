@@ -62,4 +62,26 @@ describe("CardEditPage create flow", () => {
     expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue("")
     expect(screen.getByLabelText("意味")).toHaveValue("")
   })
+
+  it("saves confused words entered one per line", async () => {
+    const user = userEvent.setup()
+    renderNewCardPage()
+
+    await user.type(screen.getByLabelText("日本語で"), "細い")
+    await user.type(screen.getByLabelText("意味"), "thin")
+    await user.type(
+      screen.getByLabelText("Confused words"),
+      "痩せる{Enter}やせる",
+    )
+    await user.click(screen.getByRole("button", { name: "保存" }))
+
+    await waitFor(async () => {
+      expect(await db.cards.count()).toBe(1)
+    })
+    const [card] = await db.cards.toArray()
+    if (!card || card.kind !== "vocabulary") {
+      throw new Error("Expected a saved vocabulary card")
+    }
+    expect(card.content.confusedWith).toEqual(["痩せる", "やせる"])
+  })
 })

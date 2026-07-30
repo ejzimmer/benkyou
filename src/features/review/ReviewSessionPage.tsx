@@ -14,6 +14,7 @@ import {
 import { deleteCard, markLeech } from "../../services/cards"
 import { useSync } from "../../lib/sync/SyncContext"
 import { finalizeReadingAnswer, hasLatinScript } from "../../lib/japanese/normalize"
+import { matchesConfusedWord } from "../../lib/japanese/confusedWords"
 import { ReviewSessionAnswerPanel } from "./ReviewSessionAnswerPanel"
 import { ReviewSessionComplete } from "./ReviewSessionComplete"
 import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
@@ -31,6 +32,7 @@ import {
 import { readWrongKeys, writeWrongKeys } from "./reviewWrongKeys"
 import {
   answerMissingKanji,
+  appliesConfusedWordCheck,
   expectedAnswer,
   hasMissingDoubledN,
   hasNonHiraganaReadingAnswer,
@@ -149,6 +151,11 @@ export function ReviewSessionPage() {
   const [kanjiWarn, setKanjiWarn] = useState(false)
   const [latinWarn, setLatinWarn] = useState(false)
   const [nWarn, setNWarn] = useState(false)
+  /** Typed answer matches a word this card's author flagged as easy to
+   * confuse with the actual answer (`confusedWith`) — holds the matched
+   * word so the message can name it; a validation error, not a graded
+   * mistake. */
+  const [confusedMatch, setConfusedMatch] = useState<string | null>(null)
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [snapshot, setSnapshot] = useState<JudgementSnapshot | null>(null)
   /** Prompt shown → “Show answer” (FSRS latency heuristic); cleared after grading */
@@ -267,6 +274,7 @@ export function ReviewSessionPage() {
     setKanjiWarn(false)
     setLatinWarn(false)
     setNWarn(false)
+    setConfusedMatch(null)
     setStartedAt(null)
     setPromptToRevealMs(null)
     setPendingIncorrectDelay(false)
@@ -369,6 +377,7 @@ export function ReviewSessionPage() {
       setReadingWarn(false)
       setKanjiWarn(false)
       setLatinWarn(false)
+      setConfusedMatch(null)
       if (current && isReadingTypingMode(current.modeId)) {
         setTyped(toHiragana(value, { IMEMode: true }))
       } else {
@@ -416,6 +425,7 @@ export function ReviewSessionPage() {
     setKanjiWarn(false)
     setLatinWarn(false)
     setNWarn(false)
+    setConfusedMatch(null)
     setStartedAt(null)
     setSnapshot(null)
     setPromptToRevealMs(null)
@@ -439,6 +449,7 @@ export function ReviewSessionPage() {
     setKanjiWarn(false)
     setLatinWarn(false)
     setNWarn(false)
+    setConfusedMatch(null)
     if (
       (m === "vocab_type_word_from_clue" || m === "grammar_type_construction") &&
       hasLatinScript(typedValue) &&
@@ -446,6 +457,13 @@ export function ReviewSessionPage() {
     ) {
       setLatinWarn(true)
       return false
+    }
+    if (appliesConfusedWordCheck(m) && typedValue.trim()) {
+      const match = matchesConfusedWord(c, typedValue)
+      if (match) {
+        setConfusedMatch(match)
+        return false
+      }
     }
     if (
       (m === "vocab_type_word_from_clue" || m === "grammar_type_construction") &&
@@ -612,6 +630,7 @@ export function ReviewSessionPage() {
     setKanjiWarn(false)
     setLatinWarn(false)
     setNWarn(false)
+    setConfusedMatch(null)
   }
 
   async function onUndoJudgementFromHeader() {
@@ -665,6 +684,7 @@ export function ReviewSessionPage() {
     setKanjiWarn(false)
     setLatinWarn(false)
     setNWarn(false)
+    setConfusedMatch(null)
     if (!snap) {
       setSnapshot(null)
       setPhase("prompt")
@@ -758,6 +778,7 @@ export function ReviewSessionPage() {
                   kanjiWarn={kanjiWarn}
                   latinWarn={latinWarn}
                   nWarn={nWarn}
+                  confusedMatch={confusedMatch}
                   onTypedSubmit={() => tryShowAnswerRef.current()}
                   revealed={phase === "answer"}
                   column="question"
@@ -821,6 +842,7 @@ export function ReviewSessionPage() {
                       kanjiWarn={kanjiWarn}
                       latinWarn={latinWarn}
                       nWarn={nWarn}
+                      confusedMatch={confusedMatch}
                       onTypedSubmit={() => tryShowAnswerRef.current()}
                       column="answer"
                       promptFocusToken={promptFocusToken}

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   answerMissingKanji,
   answersMatch,
+  appliesConfusedWordCheck,
   expectedAnswer,
   hasMissingDoubledN,
   hasNonHiraganaReadingAnswer,
@@ -29,6 +30,15 @@ describe("reviewFlowHelpers", () => {
   it("requiresTyping matches typed modes only", () => {
     expect(requiresTyping("vocab_oral_en")).toBe(false)
     expect(requiresTyping("vocab_type_reading")).toBe(true)
+  })
+
+  it("appliesConfusedWordCheck matches only word/construction typing modes", () => {
+    expect(appliesConfusedWordCheck("vocab_type_word_from_clue")).toBe(true)
+    expect(appliesConfusedWordCheck("grammar_type_construction")).toBe(true)
+    expect(appliesConfusedWordCheck("vocab_type_reading")).toBe(false)
+    expect(appliesConfusedWordCheck("vocab_oral_en")).toBe(false)
+    expect(appliesConfusedWordCheck("grammar_type_reading")).toBe(false)
+    expect(appliesConfusedWordCheck("grammar_oral_meaning")).toBe(false)
   })
 
   it("expectedAnswer returns primary strings", () => {

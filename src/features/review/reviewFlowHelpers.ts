@@ -181,6 +181,14 @@ export function showAnswerOnQuestionSide(card: Card, mode: ReviewModeId): boolea
   return false
 }
 
+/** Modes where the typed answer is the Japanese word/construction itself —
+ * the only place a card's flagged `confusedWith` words are worth checking,
+ * since a reading or an English meaning isn't the kind of answer that gets
+ * mixed up with a whole other word the way the word itself does. */
+export function appliesConfusedWordCheck(mode: ReviewModeId): boolean {
+  return mode === "vocab_type_word_from_clue" || mode === "grammar_type_construction"
+}
+
 export function requiresTyping(mode: ReviewModeId): boolean {
   return (
     mode === "vocab_type_reading" ||

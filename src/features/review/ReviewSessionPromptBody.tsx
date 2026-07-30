@@ -132,6 +132,10 @@ export type ReviewSessionPromptBodyProps = {
    * vowel/や行 mora (e.g. typing "unei" instead of "unnei" for うんえい) —
    * a validation error, not a graded mistake. */
   nWarn?: boolean
+  /** Typed answer matches a word the card author flagged (`confusedWith`) as
+   * easy to mix up with the actual answer — the matched word itself, so the
+   * message can name it. A validation error, not a graded mistake. */
+  confusedMatch?: string | null
   /** Called when user presses Enter in a typing field */
   onTypedSubmit: () => void
   /** Answer is visible — show the prompt only, not typing inputs or warnings */
@@ -164,6 +168,7 @@ export function ReviewSessionPromptBody({
   kanjiWarn,
   latinWarn = false,
   nWarn = false,
+  confusedMatch = null,
   onTypedSubmit,
   revealed = false,
   column,
@@ -443,6 +448,12 @@ export function ReviewSessionPromptBody({
               The answer uses kanji — typing the reading isn't enough here.
             </p>
           )}
+          {confusedMatch && (
+            <p className="error">
+              That&apos;s {confusedMatch}, which you&apos;ve flagged as easy
+              to mix up with this card&apos;s answer.
+            </p>
+          )}
         </div>
       </div>
     )
@@ -548,6 +559,12 @@ export function ReviewSessionPromptBody({
         {kanjiWarn && (
           <p className="error">
             The answer uses kanji — typing the reading isn't enough here.
+          </p>
+        )}
+        {confusedMatch && (
+          <p className="error">
+            That&apos;s {confusedMatch}, which you&apos;ve flagged as easy to
+            mix up with this card&apos;s answer.
           </p>
         )}
       </>

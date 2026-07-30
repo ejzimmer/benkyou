@@ -752,6 +752,50 @@ describe("ReviewSessionPage", () => {
     expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
   })
 
+  it("blocks submitting a word flagged as confusable, instead of grading it", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    const card = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "細い",
+        reading: "ほそい",
+        definitionsEn: ["thin"],
+        images: [],
+        exampleSentences: [],
+        confusedWith: ["痩せる"],
+      },
+    )
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          `/review?resumeCardId=${card.id}&resumeModeId=vocab_type_word_from_clue`,
+        ]}
+      >
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const input = await screen.findByLabelText("日本語で")
+    await user.type(input, "痩せる{Enter}")
+
+    expect(
+      await screen.findByText(/you've flagged as easy to mix up/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /^correct$/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+  })
+
   it("blocks submitting a kana-only answer for a fill-in-the-gap construction whose answer has kanji", async () => {
     await resetDatabase()
     const user = userEvent.setup()

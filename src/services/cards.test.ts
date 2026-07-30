@@ -233,6 +233,7 @@ describe("card type conversions", () => {
       definitionsEn: ["student"],
       images: ["image-1"],
       exampleSentences: ["私は___です"],
+      confusedWith: [],
     })
   })
 
@@ -254,6 +255,7 @@ describe("card type conversions", () => {
       translationEn: "cat; feline",
       readings: {},
       images: ["image-1"],
+      confusedWith: [],
     })
   })
 
@@ -374,6 +376,7 @@ describe("mergeCardContent", () => {
       definitionsEn: ["cat", "feline"],
       images: ["img-a", "img-b"],
       exampleSentences: ["猫がいます"],
+      confusedWith: [],
     })
   })
 
