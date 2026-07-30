@@ -147,6 +147,15 @@ describe("reviewFlowHelpers", () => {
     expect(answerMissingKanji("ねこ", "ねこ")).toBe(false)
   })
 
+  it("answerMissingKanji flags a multi-gap construction answer with a kana-only gap", () => {
+    expect(answerMissingKanji("そのけつろん、至る", "その結論、至る")).toBe(true)
+    expect(answerMissingKanji("その結論、至る", "その結論、至る")).toBe(false)
+  })
+
+  it("answerMissingKanji does not flag when gap counts differ", () => {
+    expect(answerMissingKanji("けつろん", "結論、至る")).toBe(false)
+  })
+
   it("hasMissingDoubledN flags a single-segment reading missing a doubled n", () => {
     expect(hasMissingDoubledN("うねいしゃ", "うんえいしゃ")).toBe(true)
   })

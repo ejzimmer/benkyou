@@ -9,6 +9,7 @@ import { CardEditPage } from "../cards/CardEditPage"
 import { resetDatabase } from "../../test/db"
 import { createDeck } from "../../services/decks"
 import {
+  createGrammarCard,
   createVocabularyCard,
   loadSchedulingRow,
   updateSchedulingRow,
@@ -740,6 +741,47 @@ describe("ReviewSessionPage", () => {
 
     const input = await screen.findByLabelText("日本語で")
     await user.type(input, "ねこ{Enter}")
+
+    expect(
+      await screen.findByText(/answer uses kanji/i),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: /^correct$/i }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+  })
+
+  it("blocks submitting a kana-only answer for a fill-in-the-gap construction whose answer has kanji", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    const card = await createGrammarCard(deck.id, {
+      sentenceWithGap: "その___に至った",
+      gapMarker: "___",
+      construction: "結論",
+      translationEn: "reached that conclusion",
+      readings: {},
+      images: [],
+    })
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          `/review?resumeCardId=${card.id}&resumeModeId=grammar_type_construction`,
+        ]}
+      >
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    const input = await screen.findByLabelText("Construction gap 1")
+    await user.type(input, "けつろん{Enter}")
 
     expect(
       await screen.findByText(/answer uses kanji/i),
