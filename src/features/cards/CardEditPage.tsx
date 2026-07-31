@@ -15,6 +15,10 @@ import { CARD_KIND_LABELS } from "../../domain/types"
 import { countGaps, detectGapMarker } from "../../domain/grammarGaps"
 import { isKanaOnly } from "../../domain/vocabularyContent"
 import { isSingleSided } from "../../domain/grammarContent"
+import type {
+  GrammarValidationField,
+  VocabularyValidationField,
+} from "../../services/cards"
 import {
   createGrammarCard,
   createVocabularyCard,
@@ -105,6 +109,20 @@ function ImagePreviewList({
   )
 }
 
+type FormErrorField = VocabularyValidationField | GrammarValidationField
+type FormError = { field: FormErrorField | null; message: string }
+
+function FieldError({
+  err,
+  field,
+}: {
+  err: FormError | null
+  field: FormErrorField
+}) {
+  if (err?.field !== field) return null
+  return <p className="error">{err.message}</p>
+}
+
 export function CardEditPage() {
   const { deckId = "", cardId: cardIdParam = "" } = useParams()
   const [searchParams] = useSearchParams()
@@ -135,7 +153,7 @@ export function CardEditPage() {
   const [furiganaDraft, setFuriganaDraft] = useState("")
   const formRef = useRef<HTMLFormElement | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
-  const [err, setErr] = useState<string | null>(null)
+  const [err, setErr] = useState<FormError | null>(null)
   const [imageUploadCount, setImageUploadCount] = useState(0)
   const isUploadingImages = imageUploadCount > 0
 
@@ -213,7 +231,7 @@ export function CardEditPage() {
     }
     setLoading(false)
     if (!loadedCard || loadedCard.deckId !== deckId) {
-      setErr("Card not found")
+      setErr({ field: null, message: "Card not found" })
       return
     }
     setErr(null)
@@ -245,6 +263,12 @@ export function CardEditPage() {
       : { id: cardId, deckId, kind: "grammar", content: grammar, updatedAt: Date.now() }
   }
 
+  // Clears the currently shown error once the field(s) it was about get
+  // edited, rather than leaving it stuck until the next submit attempt.
+  function clearFieldErr(...fields: FormErrorField[]) {
+    setErr((prev) => (prev && fields.includes(prev.field as FormErrorField) ? null : prev))
+  }
+
   function onKindChange(nextKind: "vocabulary" | "grammar") {
     if (nextKind === kind) return
 
@@ -267,8 +291,11 @@ export function CardEditPage() {
     setErr(null)
     try {
       if (kind === "vocabulary") {
-        const emsg = validateVocabulary(vocab)
-        if (emsg) throw new Error(emsg)
+        const validationErr = validateVocabulary(vocab)
+        if (validationErr) {
+          setErr(validationErr)
+          return
+        }
         if (isNew) {
           await createVocabularyCard(deckId, vocab)
           resetNewCardForm()
@@ -278,8 +305,11 @@ export function CardEditPage() {
         }
       } else {
         const normalizedGrammar = normalizeGrammarContent(grammar)
-        const emsg = validateGrammar(normalizedGrammar)
-        if (emsg) throw new Error(emsg)
+        const validationErr = validateGrammar(normalizedGrammar)
+        if (validationErr) {
+          setErr(validationErr)
+          return
+        }
         if (isNew) {
           await createGrammarCard(deckId, normalizedGrammar)
           resetNewCardForm()
@@ -296,7 +326,7 @@ export function CardEditPage() {
       }
       navigate(returnTo ?? `/decks/${deckId}`)
     } catch (x) {
-      setErr(x instanceof Error ? x.message : "Save failed")
+      setErr({ field: null, message: x instanceof Error ? x.message : "Save failed" })
     }
   }
 
@@ -310,7 +340,7 @@ export function CardEditPage() {
       await deleteCard(cardId)
       navigate(returnTo ?? `/decks/${deckId}`)
     } catch (x) {
-      setErr(x instanceof Error ? x.message : "Delete failed")
+      setErr({ field: null, message: x instanceof Error ? x.message : "Delete failed" })
     }
   }
 
@@ -352,7 +382,10 @@ export function CardEditPage() {
         ids.push(await saveImageBlob(file))
       }
     } catch (x) {
-      setErr(x instanceof Error ? x.message : "Image upload failed")
+      setErr({
+        field: null,
+        message: x instanceof Error ? x.message : "Image upload failed",
+      })
     } finally {
       setImageUploadCount((count) => Math.max(0, count - files.length))
     }
@@ -412,7 +445,10 @@ export function CardEditPage() {
         await deleteImageBlob(id)
       }
     } catch (x) {
-      setErr(x instanceof Error ? x.message : "Failed to remove image")
+      setErr({
+        field: null,
+        message: x instanceof Error ? x.message : "Failed to remove image",
+      })
     }
   }
 
@@ -505,11 +541,12 @@ export function CardEditPage() {
                   const reading = kanaOnly ? undefined : vocab.reading
                   const readingParts = kanaOnly ? {} : vocab.readingParts
                   setVocab((v) => ({ ...v, wordJa, reading, readingParts }))
-                  setErr(null)
+                  clearFieldErr("wordJa")
                 }}
                 required
               />
             </label>
+            <FieldError err={err} field="wordJa" />
             {duplicateJapaneseWarning && (
               <p className="warn small" role="status">
                 {duplicateJapaneseWarning}
@@ -525,10 +562,11 @@ export function CardEditPage() {
                     ...vocab,
                     definitionsEn: e.target.value.split("; "),
                   })
-                  setErr(null)
+                  clearFieldErr("definitionsEn")
                 }}
               />
             </label>
+            <FieldError err={err} field="definitionsEn" />
             <label>
               ひらがなで
               <input
@@ -542,10 +580,11 @@ export function CardEditPage() {
                     reading: reading || undefined,
                     readingParts: {},
                   }))
-                  setErr(null)
+                  clearFieldErr("reading", "definitionsEn")
                 }}
               />
             </label>
+            <FieldError err={err} field="reading" />
             <label>
               例文
               <textarea
@@ -626,10 +665,11 @@ export function CardEditPage() {
                     sentenceWithGap: e.target.value,
                     gapMarker: detectGapMarker(e.target.value),
                   })
-                  setErr(null)
+                  clearFieldErr("sentenceWithGap", "construction")
                 }}
               />
             </label>
+            <FieldError err={err} field="sentenceWithGap" />
             <label>
               答え
               <input
@@ -637,10 +677,11 @@ export function CardEditPage() {
                 value={grammar.construction}
                 onChange={(e) => {
                   setGrammar({ ...grammar, construction: e.target.value })
-                  setErr(null)
+                  clearFieldErr("construction")
                 }}
               />
             </label>
+            <FieldError err={err} field="construction" />
             {countGaps(grammar.sentenceWithGap, grammar.gapMarker) > 1 && (
               <p className="muted small">
                 This sentence has{" "}
@@ -766,7 +807,7 @@ export function CardEditPage() {
               : `Adding ${imageUploadCount} images…`}
           </p>
         )}
-        {err && <p className="error">{err}</p>}
+        {err?.field === null && <p className="error">{err.message}</p>}
         <button
           type="submit"
           className="btn primary blue align-end"

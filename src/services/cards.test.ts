@@ -11,14 +11,14 @@ import type { Card } from "../domain/types"
 
 describe("validateVocabulary", () => {
   it("requires a word", () => {
-    expect(
-      validateVocabulary({
-        wordJa: "   ",
-        definitionsEn: ["x"],
-        images: [],
-        exampleSentences: [],
-      }),
-    ).toMatch(/required/)
+    const err = validateVocabulary({
+      wordJa: "   ",
+      definitionsEn: ["x"],
+      images: [],
+      exampleSentences: [],
+    })
+    expect(err?.field).toBe("wordJa")
+    expect(err?.message).toMatch(/required/)
   })
 
   it("allows kanji word with English only (no reading)", () => {
@@ -45,15 +45,15 @@ describe("validateVocabulary", () => {
   })
 
   it("rejects reading on kana-only word", () => {
-    expect(
-      validateVocabulary({
-        wordJa: "ねこ",
-        reading: "ねこ",
-        definitionsEn: ["cat"],
-        images: [],
-        exampleSentences: [],
-      }),
-    ).toMatch(/Pronunciation/)
+    const err = validateVocabulary({
+      wordJa: "ねこ",
+      reading: "ねこ",
+      definitionsEn: ["cat"],
+      images: [],
+      exampleSentences: [],
+    })
+    expect(err?.field).toBe("reading")
+    expect(err?.message).toMatch(/Pronunciation/)
   })
 
   it("allows kana-only word without reading field", () => {
@@ -68,14 +68,14 @@ describe("validateVocabulary", () => {
   })
 
   it("requires definition or image", () => {
-    expect(
-      validateVocabulary({
-        wordJa: "ねこ",
-        definitionsEn: ["", ""],
-        images: [],
-        exampleSentences: [],
-      }),
-    ).toMatch(/pronunciation|English|image/i)
+    const err = validateVocabulary({
+      wordJa: "ねこ",
+      definitionsEn: ["", ""],
+      images: [],
+      exampleSentences: [],
+    })
+    expect(err?.field).toBe("definitionsEn")
+    expect(err?.message).toMatch(/pronunciation|English|image/i)
   })
 
   it("accepts image-only card", () => {
@@ -92,16 +92,16 @@ describe("validateVocabulary", () => {
 
 describe("validateGrammar", () => {
   it("requires gap marker in sentence", () => {
-    expect(
-      validateGrammar({
-        sentenceWithGap: "テスト",
-        gapMarker: "___",
-        construction: "x",
-        translationEn: "y",
-        readings: {},
-        images: [],
-      }),
-    ).toMatch(/gap marker/)
+    const err = validateGrammar({
+      sentenceWithGap: "テスト",
+      gapMarker: "___",
+      construction: "x",
+      translationEn: "y",
+      readings: {},
+      images: [],
+    })
+    expect(err?.field).toBe("sentenceWithGap")
+    expect(err?.message).toMatch(/gap marker/)
   })
 
   it("accepts valid grammar card", () => {
@@ -144,29 +144,29 @@ describe("validateGrammar", () => {
   })
 
   it("rejects a construction with fewer answers than gaps", () => {
-    expect(
-      validateGrammar({
-        sentenceWithGap: "___を___",
-        gapMarker: "___",
-        construction: "流し",
-        translationEn: "Call a carriage",
-        readings: {},
-        images: [],
-      }),
-    ).toMatch(/2 gaps/)
+    const err = validateGrammar({
+      sentenceWithGap: "___を___",
+      gapMarker: "___",
+      construction: "流し",
+      translationEn: "Call a carriage",
+      readings: {},
+      images: [],
+    })
+    expect(err?.field).toBe("construction")
+    expect(err?.message).toMatch(/2 gaps/)
   })
 
   it("rejects a construction with more answers than gaps", () => {
-    expect(
-      validateGrammar({
-        sentenceWithGap: "___を___",
-        gapMarker: "___",
-        construction: "流し, 呼ぶ, 走る",
-        translationEn: "Call a carriage",
-        readings: {},
-        images: [],
-      }),
-    ).toMatch(/2 gaps/)
+    const err = validateGrammar({
+      sentenceWithGap: "___を___",
+      gapMarker: "___",
+      construction: "流し, 呼ぶ, 走る",
+      translationEn: "Call a carriage",
+      readings: {},
+      images: [],
+    })
+    expect(err?.field).toBe("construction")
+    expect(err?.message).toMatch(/2 gaps/)
   })
 })
 
