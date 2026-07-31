@@ -26,7 +26,7 @@ export function DeckListPage() {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) {
-      setErr("Deck name can't be empty")
+      setErr("デッキ名を入力してください。")
       return
     }
     setErr(null)

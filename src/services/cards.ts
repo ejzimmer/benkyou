@@ -40,18 +40,18 @@ export function validateVocabulary(
   content: VocabularyCardContent,
 ): FieldValidationError<VocabularyValidationField> | null {
   if (!content.wordJa.trim()) {
-    return { field: "wordJa", message: "Japanese word is required" }
+    return { field: "wordJa", message: "日本語の単語を入力してください。" }
   }
   if (isKanaOnly(content.wordJa) && content.reading?.trim()) {
     return {
       field: "reading",
-      message: "Pronunciation (reading) is only for words that contain kanji",
+      message: "読み方は、漢字を含む単語のみに適用されます。",
     }
   }
   if (content.reading?.trim() && !containsKanji(content.wordJa)) {
     return {
       field: "reading",
-      message: "Pronunciation (reading) is only for words that contain kanji",
+      message: "読み方は、漢字を含む単語のみに適用されます。",
     }
   }
   const hasPronunciation = hasVocabularyPronunciation(content)
@@ -60,7 +60,7 @@ export function validateVocabulary(
   if (!hasPronunciation && !hasEnglish && !hasImg) {
     return {
       field: "definitionsEn",
-      message: "Add at least one pronunciation (reading), meaning, or image",
+      message: "少なくとも、読み方、意味、または画像を入力してください。",
     }
   }
   return null
@@ -70,10 +70,10 @@ export function validateGrammar(
   content: GrammarCardContent,
 ): FieldValidationError<GrammarValidationField> | null {
   if (!content.sentenceWithGap.trim()) {
-    return { field: "sentenceWithGap", message: "Sentence is required" }
+    return { field: "sentenceWithGap", message: "文を入力してください。" }
   }
   if (!content.construction.trim()) {
-    return { field: "construction", message: "Construction is required" }
+    return { field: "construction", message: "解答を入力してください。" }
   }
   // A translation/image isn't required — a sentence + construction is
   // already a complete fill-in-the-gap drill; not every card needs English.
@@ -81,7 +81,7 @@ export function validateGrammar(
   if (!content.sentenceWithGap.includes(gap)) {
     return {
       field: "sentenceWithGap",
-      message: `Sentence must contain the gap marker (${gap})`,
+      message: `文には、ギャップマーカー（${gap}）が含まれている必要があります。`,
     }
   }
   const gapCount = countGaps(content.sentenceWithGap, gap)
@@ -90,7 +90,7 @@ export function validateGrammar(
     if (answerCount !== gapCount) {
       return {
         field: "construction",
-        message: `This sentence has ${gapCount} gaps — provide ${gapCount} answers separated by a comma (, or 、)`,
+        message: `この文には ${gapCount} 個のギャップがあります。${gapCount} 個の解答を、カンマ (、) で区切って入力してください。`,
       }
     }
   }

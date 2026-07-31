@@ -18,7 +18,7 @@ describe("validateVocabulary", () => {
       exampleSentences: [],
     })
     expect(err?.field).toBe("wordJa")
-    expect(err?.message).toMatch(/required/)
+    expect(err?.message).toContain("日本語の単語を入力してください")
   })
 
   it("allows kanji word with English only (no reading)", () => {
@@ -53,7 +53,7 @@ describe("validateVocabulary", () => {
       exampleSentences: [],
     })
     expect(err?.field).toBe("reading")
-    expect(err?.message).toMatch(/Pronunciation/)
+    expect(err?.message).toContain("読み方は、漢字を含む単語のみに適用されます")
   })
 
   it("allows kana-only word without reading field", () => {
@@ -75,7 +75,7 @@ describe("validateVocabulary", () => {
       exampleSentences: [],
     })
     expect(err?.field).toBe("definitionsEn")
-    expect(err?.message).toMatch(/pronunciation|English|image/i)
+    expect(err?.message).toContain("少なくとも、読み方、意味、または画像を入力してください")
   })
 
   it("accepts image-only card", () => {
@@ -101,7 +101,7 @@ describe("validateGrammar", () => {
       images: [],
     })
     expect(err?.field).toBe("sentenceWithGap")
-    expect(err?.message).toMatch(/gap marker/)
+    expect(err?.message).toContain("ギャップマーカー")
   })
 
   it("accepts valid grammar card", () => {
@@ -153,7 +153,7 @@ describe("validateGrammar", () => {
       images: [],
     })
     expect(err?.field).toBe("construction")
-    expect(err?.message).toMatch(/2 gaps/)
+    expect(err?.message).toContain("2 個のギャップ")
   })
 
   it("rejects a construction with more answers than gaps", () => {
@@ -166,7 +166,7 @@ describe("validateGrammar", () => {
       images: [],
     })
     expect(err?.field).toBe("construction")
-    expect(err?.message).toMatch(/2 gaps/)
+    expect(err?.message).toContain("2 個のギャップ")
   })
 })
 
