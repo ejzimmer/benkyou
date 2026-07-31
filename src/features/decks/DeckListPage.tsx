@@ -105,7 +105,10 @@ export function DeckListPage() {
             <form onSubmit={onCreate} className="row">
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  setErr(null)
+                }}
                 aria-label="New deck name"
                 className="input"
               />

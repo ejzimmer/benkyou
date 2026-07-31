@@ -505,6 +505,7 @@ export function CardEditPage() {
                   const reading = kanaOnly ? undefined : vocab.reading
                   const readingParts = kanaOnly ? {} : vocab.readingParts
                   setVocab((v) => ({ ...v, wordJa, reading, readingParts }))
+                  setErr(null)
                 }}
                 required
               />
@@ -519,12 +520,13 @@ export function CardEditPage() {
               <input
                 className="input"
                 value={vocab.definitionsEn.join("; ")}
-                onChange={(e) =>
+                onChange={(e) => {
                   setVocab({
                     ...vocab,
                     definitionsEn: e.target.value.split("; "),
                   })
-                }
+                  setErr(null)
+                }}
               />
             </label>
             <label>
@@ -540,6 +542,7 @@ export function CardEditPage() {
                     reading: reading || undefined,
                     readingParts: {},
                   }))
+                  setErr(null)
                 }}
               />
             </label>
@@ -592,7 +595,6 @@ export function CardEditPage() {
                 className="input"
                 rows={2}
                 aria-label="Confused words"
-                placeholder="Words you tend to mix this one up with, one per line"
                 value={(vocab.confusedWith ?? []).join("\n")}
                 onChange={(e) =>
                   setVocab({
@@ -618,13 +620,14 @@ export function CardEditPage() {
               <input
                 className="input"
                 value={grammar.sentenceWithGap}
-                onChange={(e) =>
+                onChange={(e) => {
                   setGrammar({
                     ...grammar,
                     sentenceWithGap: e.target.value,
                     gapMarker: detectGapMarker(e.target.value),
                   })
-                }
+                  setErr(null)
+                }}
               />
             </label>
             <label>
@@ -632,9 +635,10 @@ export function CardEditPage() {
               <input
                 className="input"
                 value={grammar.construction}
-                onChange={(e) =>
+                onChange={(e) => {
                   setGrammar({ ...grammar, construction: e.target.value })
-                }
+                  setErr(null)
+                }}
               />
             </label>
             {countGaps(grammar.sentenceWithGap, grammar.gapMarker) > 1 && (
@@ -723,7 +727,6 @@ export function CardEditPage() {
                 className="input"
                 rows={2}
                 aria-label="Confused words"
-                placeholder="Constructions you tend to mix this one up with, one per line"
                 value={(grammar.confusedWith ?? []).join("\n")}
                 onChange={(e) =>
                   setGrammar({
