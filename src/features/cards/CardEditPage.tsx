@@ -269,6 +269,10 @@ export function CardEditPage() {
     setErr((prev) => (prev && fields.includes(prev.field as FormErrorField) ? null : prev))
   }
 
+  function inputClass(field: FormErrorField) {
+    return err?.field === field ? "input error" : "input"
+  }
+
   function onKindChange(nextKind: "vocabulary" | "grammar") {
     if (nextKind === kind) return
 
@@ -516,6 +520,7 @@ export function CardEditPage() {
         onPaste={onPaste}
         className="panel stack card-edit-form"
         aria-label="Card editor"
+        noValidate
       >
         <Switch
           legend="Type"
@@ -533,7 +538,7 @@ export function CardEditPage() {
             <label>
               日本語で
               <input
-                className="input"
+                className={inputClass("wordJa")}
                 value={vocab.wordJa}
                 onChange={(e) => {
                   const wordJa = e.target.value
@@ -555,7 +560,7 @@ export function CardEditPage() {
             <label>
               意味
               <input
-                className="input"
+                className={inputClass("definitionsEn")}
                 value={vocab.definitionsEn.join("; ")}
                 onChange={(e) => {
                   setVocab({
@@ -570,7 +575,7 @@ export function CardEditPage() {
             <label>
               ひらがなで
               <input
-                className="input"
+                className={inputClass("reading")}
                 aria-label="Reading"
                 value={vocab.reading ?? ""}
                 onChange={(e) => {
@@ -657,7 +662,7 @@ export function CardEditPage() {
             <label>
               問題文
               <input
-                className="input"
+                className={inputClass("sentenceWithGap")}
                 value={grammar.sentenceWithGap}
                 onChange={(e) => {
                   setGrammar({
@@ -673,7 +678,7 @@ export function CardEditPage() {
             <label>
               答え
               <input
-                className="input"
+                className={inputClass("construction")}
                 value={grammar.construction}
                 onChange={(e) => {
                   setGrammar({ ...grammar, construction: e.target.value })
