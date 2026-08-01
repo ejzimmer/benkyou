@@ -33,7 +33,6 @@ export type SyncPhase = "idle" | "running" | "conflict"
 type SyncState = {
   syncing: boolean
   syncPhase: SyncPhase
-  syncStatusLabel: string
   syncProgress: SyncProgress | null
   syncLog: readonly SyncLogEntry[]
   lastError: string | null
@@ -286,23 +285,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     return operationInFlightRef.current
   }, [offlineOnly, user])
 
-  const syncStatusLabel = useMemo(() => {
-    if (syncPhase === "conflict") {
-      return "Choose a version in the dialog above"
-    }
-    if (syncing) {
-      const last = syncLogEntries[syncLogEntries.length - 1]
-      if (last) return last.step.replace(/ → (start|done|error)$/, "")
-      return "Syncing…"
-    }
-    return ""
-  }, [syncPhase, syncing, syncLogEntries])
-
   const value = useMemo(
     () => ({
       syncing,
       syncPhase,
-      syncStatusLabel,
       syncProgress,
       syncLog: syncLogEntries,
       lastError,
@@ -316,7 +302,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     [
       syncing,
       syncPhase,
-      syncStatusLabel,
       syncProgress,
       syncLogEntries,
       lastError,

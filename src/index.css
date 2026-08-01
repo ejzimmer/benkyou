@@ -286,7 +286,7 @@ a:hover {
 .card-edit-form input.input {
   width: 75%;
   border: none;
-  border-radius: 0;
+  border-radius: 8px 8px 0 0;
   border-bottom: 2px solid #fff;
   padding: 0.5rem 0.65rem 0;
 }
@@ -2090,36 +2090,6 @@ code {
   background: #252538;
   border-radius: 4px;
   padding: 0.15rem 0.4rem;
-}
-
-.sync-indicator {
-  display: grid;
-  place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  color: #9898b0;
-}
-
-/* Rendered once in App.tsx so it's visible on every page, regardless of
-   that page's own header layout — fixed to the viewport rather than the
-   in-flow header-actions slot it used to occupy on a couple of pages.
-   Anchored to the bottom-right corner: nothing in the app is pinned to the
-   bottom, so that corner is safe, and every page's own header already has
-   its own user menu/sync button pair up top. */
-.sync-indicator-global {
-  position: fixed;
-  bottom: 0.75rem;
-  right: 0.75rem;
-  z-index: 30;
-  background: #1a1a2b;
-  border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-}
-
-.sync-indicator .import-spinner {
-  margin-right: 0;
-  width: 1em;
-  height: 1em;
 }
 
 .sync-inline {

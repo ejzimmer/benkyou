@@ -28,36 +28,70 @@ import {
 import { recordTombstone } from "../lib/sync/tombstones"
 import { markCardEdited, removeSessionEditedCardIds } from "../lib/sync/sessionEdits"
 
-export function validateVocabulary(content: VocabularyCardContent): string | null {
-  if (!content.wordJa.trim()) return "Japanese word is required"
+export type VocabularyValidationField = "wordJa" | "reading" | "definitionsEn"
+export type GrammarValidationField = "sentenceWithGap" | "construction"
+
+export interface FieldValidationError<Field extends string> {
+  field: Field
+  message: string
+}
+
+export function validateVocabulary(
+  content: VocabularyCardContent,
+): FieldValidationError<VocabularyValidationField> | null {
+  if (!content.wordJa.trim()) {
+    return { field: "wordJa", message: "日本語の単語を入力してください。" }
+  }
   if (isKanaOnly(content.wordJa) && content.reading?.trim()) {
-    return "Pronunciation (reading) is only for words that contain kanji"
+    return {
+      field: "reading",
+      message: "読み方は、漢字を含む単語のみに適用されます。",
+    }
   }
   if (content.reading?.trim() && !containsKanji(content.wordJa)) {
-    return "Pronunciation (reading) is only for words that contain kanji"
+    return {
+      field: "reading",
+      message: "読み方は、漢字を含む単語のみに適用されます。",
+    }
   }
   const hasPronunciation = hasVocabularyPronunciation(content)
   const hasEnglish = hasVocabularyEnglishDefinition(content)
   const hasImg = hasVocabularyImage(content)
   if (!hasPronunciation && !hasEnglish && !hasImg) {
-    return "Add at least one pronunciation (reading), meaning, or image"
+    return {
+      field: "definitionsEn",
+      message: "少なくとも、読み方、意味、または画像を入力してください。",
+    }
   }
   return null
 }
 
-export function validateGrammar(content: GrammarCardContent): string | null {
-  if (!content.sentenceWithGap.trim()) return "Sentence is required"
-  if (!content.construction.trim()) return "Construction is required"
+export function validateGrammar(
+  content: GrammarCardContent,
+): FieldValidationError<GrammarValidationField> | null {
+  if (!content.sentenceWithGap.trim()) {
+    return { field: "sentenceWithGap", message: "文を入力してください。" }
+  }
+  if (!content.construction.trim()) {
+    return { field: "construction", message: "解答を入力してください。" }
+  }
   // A translation/image isn't required — a sentence + construction is
   // already a complete fill-in-the-gap drill; not every card needs English.
   const gap = content.gapMarker.trim() || "___"
-  if (!content.sentenceWithGap.includes(gap))
-    return `Sentence must contain the gap marker (${gap})`
+  if (!content.sentenceWithGap.includes(gap)) {
+    return {
+      field: "sentenceWithGap",
+      message: `文には、ギャップマーカー（${gap}）が含まれている必要があります。`,
+    }
+  }
   const gapCount = countGaps(content.sentenceWithGap, gap)
   if (gapCount > 1) {
     const answerCount = splitGapAnswers(content.construction).length
     if (answerCount !== gapCount) {
-      return `This sentence has ${gapCount} gaps — provide ${gapCount} answers separated by a comma (, or 、)`
+      return {
+        field: "construction",
+        message: `この文には ${gapCount} 個のギャップがあります。${gapCount} 個の解答を、カンマ (、) で区切って入力してください。`,
+      }
     }
   }
   return null
@@ -365,7 +399,7 @@ export async function createVocabularyCard(
   content: VocabularyCardContent,
 ): Promise<Card> {
   const err = validateVocabulary(content)
-  if (err) throw new Error(err)
+  if (err) throw new Error(err.message)
   const now = Date.now()
   const card: Card = {
     id: newId(),
@@ -384,7 +418,7 @@ export async function createGrammarCard(
 ): Promise<Card> {
   const normalized = normalizeGrammarContent(content)
   const err = validateGrammar(normalized)
-  if (err) throw new Error(err)
+  if (err) throw new Error(err.message)
   const now = Date.now()
   const card: Card = {
     id: newId(),

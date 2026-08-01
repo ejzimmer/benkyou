@@ -26,7 +26,7 @@ export function DeckListPage() {
     e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) {
-      setErr("Deck name can't be empty")
+      setErr("デッキ名を入力してください。")
       return
     }
     setErr(null)
@@ -105,7 +105,10 @@ export function DeckListPage() {
             <form onSubmit={onCreate} className="row">
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  setErr(null)
+                }}
                 aria-label="New deck name"
                 className="input"
               />
@@ -128,12 +131,7 @@ export function DeckListPage() {
       )}
 
       <footer className="build-footer">
-        <p
-          className="muted small"
-          title="If this time is older than the latest GitHub deploy, hard-refresh or clear site data."
-        >
-          {BUILD_LABEL_LOCAL}
-        </p>
+        <p className="muted small">{BUILD_LABEL_LOCAL}</p>
       </footer>
     </div>
   )

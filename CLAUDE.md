@@ -76,6 +76,10 @@ Every mutation writes to Dexie first and is immediately usable offline. Sync to 
 
 Typed reading answers are converted live via wanakana's `toHiragana` IME mode, then finalized on submit before grading.
 
+## UI conventions
+
+- Never use placeholder text in form fields (the greyed-out text inside an empty input). It disappears the moment the user types, is invisible to screen readers by default, and gets mistaken for a filled-in value. Use a `<label>`, help text below the field, or a tooltip instead.
+
 ## Configuration
 
 Firebase is optional — copy `.env.example` to `.env.local` to enable sign-in and cloud sync (see `docs/FIREBASE.md`). Cloud project: `benkyou-c1a8b`. Without it the app runs offline-only against IndexedDB.

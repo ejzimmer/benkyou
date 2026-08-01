@@ -132,12 +132,7 @@ export function ReviewSessionComplete({ backTo, scopeKey, onUndoLastJudgement }:
       </div>
 
       <footer className="build-footer">
-        <p
-          className="muted small"
-          title="If this time is older than the latest GitHub deploy, hard-refresh or clear site data."
-        >
-          {BUILD_LABEL_LOCAL}
-        </p>
+        <p className="muted small">{BUILD_LABEL_LOCAL}</p>
       </footer>
     </div>
   )

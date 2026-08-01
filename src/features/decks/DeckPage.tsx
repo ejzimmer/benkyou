@@ -16,7 +16,10 @@ import { SyncButton } from "../../ui/SyncButton"
 export function DeckPage() {
   const { deckId = "" } = useParams()
   const navigate = useNavigate()
-  const deck = useLiveQuery(() => db.decks.get(deckId), [deckId])
+  const deck = useLiveQuery(
+    () => db.decks.get(deckId).then((d) => d ?? null),
+    [deckId],
+  )
   const cards = useLiveQuery(
     () => db.cards.where("deckId").equals(deckId).toArray(),
     [deckId],
