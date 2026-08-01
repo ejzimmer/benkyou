@@ -21,7 +21,7 @@ export function NextReviewBar({ due, className }: Props) {
   // Floor the fill at HEIGHT so the smallest non-zero amount is a clean
   // circle instead.
   const fillWidth = fraction > 0 ? Math.max(HEIGHT, TRACK_WIDTH * fraction) : 0
-  const label = `Next review: ${new Date(due).toLocaleDateString()}`
+  const label = `次回の復習: ${new Date(due).toLocaleDateString()}`
 
   return (
     <span

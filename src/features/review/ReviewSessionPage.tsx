@@ -698,7 +698,7 @@ export function ReviewSessionPage() {
     setStartedAt(null)
   }
 
-  if (loading) return <div className="page review">Loading queue…</div>
+  if (loading) return <div className="page review">読み込み中…</div>
 
   if (!current) {
     if (hadDueItemsRef.current) {

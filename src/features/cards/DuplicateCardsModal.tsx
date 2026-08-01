@@ -34,7 +34,7 @@ export function DuplicateCardsModal({
         <h2>重複カード</h2>
 
         {matches.length === 0 ? (
-          <p className="muted small">No other cards contain this word.</p>
+          <p className="muted small">この単語を含む他のカードはありません。</p>
         ) : (
           <ul className="card-list">
             {matches.map((match) => (
@@ -55,7 +55,7 @@ export function DuplicateCardsModal({
                   disabled={mergingId === match.id}
                   onClick={() => onMerge(match)}
                 >
-                  {mergingId === match.id ? "Merging…" : "統合"}
+                  {mergingId === match.id ? "統合中…" : "統合"}
                 </button>
               </li>
             ))}
