@@ -66,7 +66,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     () => getSyncLogEntries(),
   )
   const conflictNumberRef = useRef(0)
-  const [conflictNumber, setConflictNumber] = useState(0)
   const [conflictResolutionVersion, setConflictResolutionVersion] = useState(0)
 
   useEffect(() => {
@@ -93,7 +92,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         entityId: conflict.entityId,
       })
       conflictNumberRef.current += 1
-      setConflictNumber(conflictNumberRef.current)
       resolveRef.current = resolve
       setActiveConflict(conflict)
       setSyncPhase("conflict")
@@ -150,7 +148,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setSyncProgress(null)
       setLastError(null)
       conflictNumberRef.current = 0
-      setConflictNumber(0)
       applyAllChoiceRef.current = null
       try {
         await runFullSync({
@@ -177,7 +174,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setSyncProgress(null)
         setActiveConflict(null)
         conflictNumberRef.current = 0
-        setConflictNumber(0)
         // Conflict resolution can overwrite the card/scheduling row an active
         // review session is holding — bump so it knows to reload its queue.
         if (hadConflict) setConflictResolutionVersion((v) => v + 1)
@@ -320,7 +316,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       {activeConflict && (
         <SyncConflictModal
           conflict={activeConflict}
-          conflictNumber={conflictNumber}
           onChoose={handleConflictChoice}
         />
       )}

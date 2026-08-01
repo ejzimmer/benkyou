@@ -39,14 +39,14 @@ describe("DeckPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Kanji deck")).toBeInTheDocument()
     })
-    expect(screen.queryByText(/deck not found/i)).toBeNull()
+    expect(screen.queryByText(/デッキが見つかりません/)).toBeNull()
   })
 
   it("shows a not-found message for a deck id that doesn't exist, instead of loading forever", async () => {
     renderDeckPage("missing-deck-id")
 
     await waitFor(() => {
-      expect(screen.getByText(/deck not found/i)).toBeInTheDocument()
+      expect(screen.getByText(/デッキが見つかりません/)).toBeInTheDocument()
     })
   })
 })

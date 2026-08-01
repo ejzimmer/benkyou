@@ -82,7 +82,7 @@ describe("CardEditPage duplicate finder / merge", () => {
       ).not.toBeInTheDocument()
     })
     expect(
-      within(dialog).getByText(/no other cards contain this word/i),
+      within(dialog).getByText(/この単語を含む他のカードはありません/),
     ).toBeInTheDocument()
 
     expect(screen.getByLabelText("意味")).toHaveValue(
@@ -187,7 +187,7 @@ describe("CardEditPage duplicate finder / merge", () => {
     )
 
     expect(
-      await screen.findByText(/no other cards contain this word/i),
+      await screen.findByText(/この単語を含む他のカードはありません/),
     ).toBeInTheDocument()
   })
 })

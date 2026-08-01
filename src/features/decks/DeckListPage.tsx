@@ -35,7 +35,7 @@ export function DeckListPage() {
       setName("")
       navigate(`/decks/${deck.id}`)
     } catch (x) {
-      setErr(x instanceof Error ? x.message : "Failed")
+      setErr(x instanceof Error ? x.message : "エラーが発生しました。")
     }
   }
 
@@ -57,7 +57,7 @@ export function DeckListPage() {
       {needsSignIn ? (
         <section className="centred">
           <button type="button" className="btn primary" onClick={signInGoogle}>
-            Sign in with Google
+            Googleでサインイン
           </button>
         </section>
       ) : (
@@ -100,7 +100,7 @@ export function DeckListPage() {
                 )
               })}
             </ul>
-            {(decks?.length ?? 0) === 0 && <p className="muted">No decks yet.</p>}
+            {(decks?.length ?? 0) === 0 && <p className="muted">デッキがありません。</p>}
             {err && <p className="error">{err}</p>}
             <form onSubmit={onCreate} className="row">
               <input

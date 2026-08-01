@@ -330,7 +330,7 @@ export function CardEditPage() {
       }
       navigate(returnTo ?? `/decks/${deckId}`)
     } catch (x) {
-      setErr({ field: null, message: x instanceof Error ? x.message : "Save failed" })
+      setErr({ field: null, message: x instanceof Error ? x.message : "保存に失敗しました。" })
     }
   }
 
@@ -344,7 +344,7 @@ export function CardEditPage() {
       await deleteCard(cardId)
       navigate(returnTo ?? `/decks/${deckId}`)
     } catch (x) {
-      setErr({ field: null, message: x instanceof Error ? x.message : "Delete failed" })
+      setErr({ field: null, message: x instanceof Error ? x.message : "削除に失敗しました。" })
     }
   }
 
@@ -369,7 +369,7 @@ export function CardEditPage() {
       }
       setDuplicateMatches((matches) => matches.filter((c) => c.id !== match.id))
     } catch (x) {
-      setMergeErr(x instanceof Error ? x.message : "Merge failed")
+      setMergeErr(x instanceof Error ? x.message : "統合に失敗しました。")
     } finally {
       setMergingId(null)
     }
@@ -451,7 +451,7 @@ export function CardEditPage() {
     } catch (x) {
       setErr({
         field: null,
-        message: x instanceof Error ? x.message : "Failed to remove image",
+        message: x instanceof Error ? x.message : "画像の削除に失敗しました。",
       })
     }
   }
@@ -808,8 +808,8 @@ export function CardEditPage() {
         {isUploadingImages && (
           <p className="muted small" aria-live="polite">
             {imageUploadCount === 1
-              ? "Adding image…"
-              : `Adding ${imageUploadCount} images…`}
+              ? "画像を追加中…"
+              : `${imageUploadCount}枚の画像を追加中…`}
           </p>
         )}
         {err?.field === null && <p className="error">{err.message}</p>}

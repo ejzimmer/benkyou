@@ -84,7 +84,7 @@ export function DeckPage() {
   }
 
   if (deck === undefined) return <div className="page">読み込み中</div>
-  if (deck === null) return <div className="page">Deck not found.</div>
+  if (deck === null) return <div className="page">デッキが見つかりません。</div>
 
   return (
     <div className="page">
@@ -161,7 +161,7 @@ export function DeckPage() {
             )
           })}
         </ul>
-        {filtered.length === 0 && <p className="muted">No matching cards.</p>}
+        {filtered.length === 0 && <p className="muted">重複カードはありません。</p>}
       </section>
 
       {confirmingDelete && (

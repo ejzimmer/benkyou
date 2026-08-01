@@ -8,7 +8,6 @@ import { useScrollShadow } from "../../ui/useScrollShadow"
 
 type Props = {
   conflict: SyncConflict
-  conflictNumber: number
   onChoose: (choice: SyncConflictChoice, applyToAllRemaining: boolean) => void
 }
 
@@ -63,7 +62,6 @@ function renderDifference(diff: string) {
 
 export function SyncConflictModal({
   conflict,
-  conflictNumber,
   onChoose,
 }: Props) {
   const title =
@@ -87,14 +85,13 @@ export function SyncConflictModal({
         <h2>{title}</h2>
         {conflict.contextLabel && (
           <p className="small">
-            Card: <strong>{conflict.contextLabel}</strong>
+            <strong>{conflict.contextLabel}</strong>
           </p>
         )}
         <p className="muted small">
-          Conflict #{conflictNumber} — both sides were edited since the last sync.
           {looksSame
-            ? " The text below looks the same; you can keep either copy or apply one choice to all remaining conflicts."
-            : " Which version should we keep?"}
+            ? "The text below looks the same; you can keep either copy or apply one choice to all remaining conflicts."
+            : "Which version should we keep?"}
         </p>
 
         {conflict.differences && conflict.differences.length > 0 && (

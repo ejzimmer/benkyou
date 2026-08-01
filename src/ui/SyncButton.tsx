@@ -26,7 +26,7 @@ export function SyncButton() {
     try {
       await syncNow()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to sync")
+      setError(e instanceof Error ? e.message : "同期に失敗しました。")
     }
   }
 
@@ -40,7 +40,7 @@ export function SyncButton() {
         onClick={() => void onClick()}
         disabled={syncing || conflictActive}
         aria-label={label}
-        title={lastSyncedAt ? `Last synced: ${new Date(lastSyncedAt).toLocaleString()}` : undefined}
+        title={lastSyncedAt ? `最終同期: ${new Date(lastSyncedAt).toLocaleString()}` : undefined}
       >
         {syncing ? (
           <span className="import-spinner" aria-hidden="true" />
