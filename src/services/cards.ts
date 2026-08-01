@@ -127,6 +127,10 @@ export async function ensureSchedulingForCard(card: Card): Promise<void> {
   for (const r of existingRows) {
     if (!modes.has(r.modeId)) {
       await db.scheduling.delete(r.id)
+    } else if (r.isLeech) {
+      // Editing the card is the user's intervention on a leech — clear the
+      // flag so it doesn't keep showing the badge indefinitely.
+      await db.scheduling.update(r.id, { isLeech: false, updatedAt: now })
     }
   }
   for (const modeId of modes) {
