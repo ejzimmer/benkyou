@@ -2,6 +2,7 @@ import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
 import { summariesLookIdentical } from "./syncCompare"
 import { useScrollShadow } from "../../ui/useScrollShadow"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
+import { REVIEW_MODE_LABELS } from "../../features/review/reviewFlowHelpers"
 
 type Props = {
   conflict: SyncConflict
@@ -13,7 +14,7 @@ const MONTH_ABBR = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ]
 
-/** dd Mmm yyyy, HH:mm — unambiguous regardless of the reader's locale,
+/** HH:mm, dd Mmm yyyy — unambiguous regardless of the reader's locale,
  *  unlike `toLocaleString()` (which renders MM/DD/YYYY for US-locale users). */
 function formatConflictDate(epochMs: number | undefined): string {
   if (epochMs == null) return "—"
@@ -22,7 +23,7 @@ function formatConflictDate(epochMs: number | undefined): string {
   const month = MONTH_ABBR[d.getMonth()]
   const hours = String(d.getHours()).padStart(2, "0")
   const minutes = String(d.getMinutes()).padStart(2, "0")
-  return `${day} ${month} ${d.getFullYear()}, ${hours}:${minutes}`
+  return `${hours}:${minutes}, ${day} ${month} ${d.getFullYear()}`
 }
 
 type RowKind = "text" | "date" | "stage" | "integer" | "decimal" | "image"
@@ -112,6 +113,7 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
 
   const rows = buildRows(conflict)
   const panelRef = useScrollShadow<HTMLDivElement>()
+  const localIsNewer = conflict.localUpdatedAt >= conflict.remoteUpdatedAt
 
   return (
     <div className="sync-conflict-backdrop" role="dialog" aria-modal="true">
@@ -120,14 +122,16 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
         {conflict.contextLabel && (
           <p className="small">
             <strong>{conflict.contextLabel}</strong>
-            {conflict.entityType === "scheduling" && ` · ${conflict.local.modeId}`}
+            {conflict.entityType === "scheduling" &&
+              ` · ${REVIEW_MODE_LABELS[conflict.local.modeId]}`}
           </p>
         )}
-        <p className="muted small">
-          {looksSame
-            ? "The text below looks the same; you can keep either copy or apply one choice to all remaining conflicts."
-            : "Which version should we keep?"}
-        </p>
+        {looksSame && (
+          <p className="muted small">
+            The text below looks the same; you can keep either copy or apply
+            one choice to all remaining conflicts.
+          </p>
+        )}
 
         <div className="sync-conflict-table-scroll">
           <table className="sync-conflict-table">
@@ -158,14 +162,14 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
           <div className="stack">
             <button
               type="button"
-              className="btn primary"
+              className={localIsNewer ? "btn primary blue" : "btn secondary"}
               onClick={() => onChoose("local", false)}
             >
               Keep this device
             </button>
             <button
               type="button"
-              className="btn secondary"
+              className="btn secondary white"
               onClick={() => onChoose("local", true)}
             >
               Keep this device for all remaining
@@ -174,14 +178,14 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
           <div className="stack">
             <button
               type="button"
-              className="btn primary"
+              className={localIsNewer ? "btn secondary" : "btn primary blue"}
               onClick={() => onChoose("remote", false)}
             >
               Keep cloud
             </button>
             <button
               type="button"
-              className="btn secondary"
+              className="btn secondary white"
               onClick={() => onChoose("remote", true)}
             >
               Keep cloud for all remaining
