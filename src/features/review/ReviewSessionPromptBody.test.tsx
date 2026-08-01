@@ -695,7 +695,7 @@ describe("ReviewSessionPromptBody", () => {
       />,
     )
 
-    expect(screen.getByText(/answer uses kanji/i)).toBeInTheDocument()
+    expect(screen.getByText(/漢字が必要/)).toBeInTheDocument()
   })
 
   it("shows the kanji validation error for a fill-in-the-gap construction answer missing kanji", () => {
@@ -729,7 +729,7 @@ describe("ReviewSessionPromptBody", () => {
       />,
     )
 
-    expect(screen.getByText(/answer uses kanji/i)).toBeInTheDocument()
+    expect(screen.getByText(/漢字が必要/)).toBeInTheDocument()
   })
 
   it("shows the missed-doubled-n validation error for a reading answer", () => {
@@ -746,7 +746,7 @@ describe("ReviewSessionPromptBody", () => {
       />,
     )
 
-    expect(screen.getByText(/missed ん/i)).toBeInTheDocument()
+    expect(screen.getByText(/抜けているようです/)).toBeInTheDocument()
   })
 })
 

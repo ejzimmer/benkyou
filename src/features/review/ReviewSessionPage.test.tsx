@@ -701,7 +701,7 @@ describe("ReviewSessionPage", () => {
     await user.type(input, "猫{Enter}")
 
     expect(
-      await screen.findByText(/use hiragana only for readings/i),
+      await screen.findByText(/ひらがなのみを使用/),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole("button", { name: /^correct$/i }),
@@ -744,7 +744,7 @@ describe("ReviewSessionPage", () => {
     await user.type(input, "ねこ{Enter}")
 
     expect(
-      await screen.findByText(/answer uses kanji/i),
+      await screen.findByText(/漢字が必要/),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole("button", { name: /^correct$/i }),
@@ -788,7 +788,7 @@ describe("ReviewSessionPage", () => {
     await user.type(input, "痩せる{Enter}")
 
     expect(
-      await screen.findByText(/you've flagged as easy to mix up/i),
+      await screen.findByText(/このカードの解答と似ています/),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole("button", { name: /^correct$/i }),
@@ -829,7 +829,7 @@ describe("ReviewSessionPage", () => {
     await user.type(input, "けつろん{Enter}")
 
     expect(
-      await screen.findByText(/answer uses kanji/i),
+      await screen.findByText(/漢字が必要/),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole("button", { name: /^correct$/i }),
@@ -872,7 +872,7 @@ describe("ReviewSessionPage", () => {
     await user.type(input, "cat{Enter}")
 
     expect(
-      await screen.findByText(/type the answer in japanese/i),
+      await screen.findByText(/解答は日本語で入力してください/),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole("button", { name: /^correct$/i }),
@@ -952,7 +952,7 @@ describe("ReviewSessionPage", () => {
     const input = await screen.findByLabelText(/ひらがなで/)
     await user.type(input, "猫{Enter}")
     expect(
-      await screen.findByText(/use hiragana only for readings/i),
+      await screen.findByText(/ひらがなのみを使用/),
     ).toBeInTheDocument()
 
     await user.clear(input)
@@ -960,7 +960,7 @@ describe("ReviewSessionPage", () => {
 
     const correctButton = await screen.findByRole("button", { name: /^correct$/i })
     expect(
-      screen.queryByText(/use hiragana only for readings/i),
+      screen.queryByText(/ひらがなのみを使用/),
     ).not.toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: /undo answer/i }))
@@ -969,7 +969,7 @@ describe("ReviewSessionPage", () => {
     expect(reopenedInput).toHaveValue("ねこ")
     expect(reopenedInput).toHaveFocus()
     expect(
-      screen.queryByText(/use hiragana only for readings/i),
+      screen.queryByText(/ひらがなのみを使用/),
     ).not.toBeInTheDocument()
     // The answer panel stays mounted (so revealing never resizes the card)
     // but must go back to being non-interactive once the reveal is undone.

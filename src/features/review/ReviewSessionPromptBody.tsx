@@ -383,13 +383,12 @@ export function ReviewSessionPromptBody({
           )}
           {readingWarn && (
             <p className="error">
-              Use hiragana only for readings (no kanji or katakana).
+              読み方には、ひらがなのみを使用してください。
             </p>
           )}
           {nWarn && (
             <p className="error">
-              Looks like a missed ん — try doubling the &quot;n&quot; before a
-              vowel or や/ゆ/よ (e.g. &quot;nn&quot; instead of &quot;n&quot;).
+              「ん」が抜けているようです。母音の前や「や/ゆ/よ」の前では、「nn」と入力してみてください。
             </p>
           )}
         </div>
@@ -441,17 +440,14 @@ export function ReviewSessionPromptBody({
             />
           </label>
           {latinWarn && (
-            <p className="error">Type the answer in Japanese, not English.</p>
+            <p className="error">解答は日本語で入力してください。</p>
           )}
           {kanjiWarn && (
-            <p className="error">
-              The answer uses kanji — typing the reading isn't enough here.
-            </p>
+            <p className="error">この解答には漢字が必要です。</p>
           )}
           {confusedMatch && (
             <p className="error">
-              That&apos;s {confusedMatch}, which you&apos;ve flagged as easy
-              to mix up with this card&apos;s answer.
+              「{confusedMatch}」は、このカードの解答と似ています。
             </p>
           )}
         </div>
@@ -554,17 +550,14 @@ export function ReviewSessionPromptBody({
     const warnings = (
       <>
         {latinWarn && (
-          <p className="error">Type the answer in Japanese, not English.</p>
+          <p className="error">解答は日本語で入力してください。</p>
         )}
         {kanjiWarn && (
-          <p className="error">
-            The answer uses kanji — typing the reading isn't enough here.
-          </p>
+          <p className="error">この解答には漢字が必要です。</p>
         )}
         {confusedMatch && (
           <p className="error">
-            That&apos;s {confusedMatch}, which you&apos;ve flagged as easy to
-            mix up with this card&apos;s answer.
+            「{confusedMatch}」は、このカードの解答と似ています。
           </p>
         )}
       </>
@@ -703,13 +696,12 @@ export function ReviewSessionPromptBody({
           )}
           {readingWarn && (
             <p className="error">
-              Use hiragana only for readings (no kanji or katakana).
+              読み方には、ひらがなのみを使用してください。
             </p>
           )}
           {nWarn && (
             <p className="error">
-              Looks like a missed ん — try doubling the &quot;n&quot; before a
-              vowel or や/ゆ/よ (e.g. &quot;nn&quot; instead of &quot;n&quot;).
+              「ん」が抜けているようです。母音の前や「や/ゆ/よ」の前では、「nn」と入力してみてください。
             </p>
           )}
         </div>
