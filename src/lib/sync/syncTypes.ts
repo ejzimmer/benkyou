@@ -1,5 +1,6 @@
 import type { Card, Deck } from "../../domain/types"
 import type { MediaRow, SchedulingRow } from "../db/schema"
+import type { SchedulingDiffRow } from "./syncCompare"
 
 export type SyncEntityType = "deck" | "card" | "scheduling" | "media"
 
@@ -16,8 +17,6 @@ export type SyncConflictBase = {
   /** Human-readable label identifying what the conflicting row belongs to,
    *  e.g. the card a scheduling conflict's review schedule is for. */
   contextLabel?: string
-  /** Human-readable description of what differs between local and remote. */
-  differences?: string[]
 }
 
 export type DeckSyncConflict = SyncConflictBase & {
@@ -36,6 +35,9 @@ export type SchedulingSyncConflict = SyncConflictBase & {
   entityType: "scheduling"
   local: SchedulingRow
   remote: SchedulingRow
+  /** Per-field breakdown of what differs between the two scheduling rows,
+   *  for the conflict modal's table — only fields that actually differ. */
+  diffRows: SchedulingDiffRow[]
 }
 
 export type MediaSyncConflict = SyncConflictBase & {

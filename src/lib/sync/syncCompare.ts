@@ -108,14 +108,8 @@ export function schedulingSummary(row: SchedulingRow): string {
 /** FSRS card states, in the order a card progresses through them. */
 export const FSRS_STATE_ORDER = ["New", "Learning", "Review", "Relearning"]
 
-export const REVIEW_STAGE_LABEL = "Review stage"
-
 export function fsrsStateLabel(state: number): string {
   return FSRS_STATE_ORDER[state] ?? `State ${state}`
-}
-
-function fsrsDateLabel(epochMs: number | undefined): string {
-  return epochMs == null ? "never" : new Date(epochMs).toLocaleString()
 }
 
 /** Two decimal places is enough precision to describe FSRS drift to a user. */
@@ -123,64 +117,99 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
-/** Human-readable list of what differs between two scheduling rows, for
- *  showing the user what a review-schedule conflict actually consists of. */
-export function schedulingDiffDetails(
+export type SchedulingDiffKind = "date" | "stage" | "integer" | "decimal"
+
+export type SchedulingDiffRow = {
+  label: string
+  kind: SchedulingDiffKind
+  local: number | undefined
+  remote: number | undefined
+}
+
+/** Per-field breakdown of what differs between two scheduling rows, for the
+ *  conflict modal's table — only fields that actually differ, so the table
+ *  doesn't repeat values both sides already agree on. */
+export function schedulingDiffRows(
   local: SchedulingRow,
   remote: SchedulingRow,
-): string[] {
-  const diffs: string[] = []
+): SchedulingDiffRow[] {
+  const rows: SchedulingDiffRow[] = []
   if (local.due !== remote.due) {
-    diffs.push(
-      `Due date — this device: ${new Date(local.due).toLocaleString()}, cloud: ${new Date(remote.due).toLocaleString()}`,
-    )
+    rows.push({ label: "Due date", kind: "date", local: local.due, remote: remote.due })
   }
   if (local.fsrs.state !== remote.fsrs.state) {
-    diffs.push(
-      `${REVIEW_STAGE_LABEL} — this device: ${fsrsStateLabel(local.fsrs.state)}, cloud: ${fsrsStateLabel(remote.fsrs.state)}`,
-    )
+    rows.push({
+      label: "Review stage",
+      kind: "stage",
+      local: local.fsrs.state,
+      remote: remote.fsrs.state,
+    })
   }
   if (local.fsrs.reps !== remote.fsrs.reps) {
-    diffs.push(
-      `Reviews completed — this device: ${local.fsrs.reps}, cloud: ${remote.fsrs.reps}`,
-    )
+    rows.push({
+      label: "Reviews completed",
+      kind: "integer",
+      local: local.fsrs.reps,
+      remote: remote.fsrs.reps,
+    })
   }
   if (local.fsrs.lapses !== remote.fsrs.lapses) {
-    diffs.push(
-      `Lapses — this device: ${local.fsrs.lapses}, cloud: ${remote.fsrs.lapses}`,
-    )
+    rows.push({
+      label: "Lapses",
+      kind: "integer",
+      local: local.fsrs.lapses,
+      remote: remote.fsrs.lapses,
+    })
   }
   if (round2(local.fsrs.stability) !== round2(remote.fsrs.stability)) {
-    diffs.push(
-      `Stability — this device: ${local.fsrs.stability.toFixed(2)}, cloud: ${remote.fsrs.stability.toFixed(2)}`,
-    )
+    rows.push({
+      label: "Stability",
+      kind: "decimal",
+      local: local.fsrs.stability,
+      remote: remote.fsrs.stability,
+    })
   }
   if (round2(local.fsrs.difficulty) !== round2(remote.fsrs.difficulty)) {
-    diffs.push(
-      `Difficulty — this device: ${local.fsrs.difficulty.toFixed(2)}, cloud: ${remote.fsrs.difficulty.toFixed(2)}`,
-    )
+    rows.push({
+      label: "Difficulty",
+      kind: "decimal",
+      local: local.fsrs.difficulty,
+      remote: remote.fsrs.difficulty,
+    })
   }
   if (local.fsrs.last_review !== remote.fsrs.last_review) {
-    diffs.push(
-      `Last reviewed — this device: ${fsrsDateLabel(local.fsrs.last_review)}, cloud: ${fsrsDateLabel(remote.fsrs.last_review)}`,
-    )
+    rows.push({
+      label: "Last reviewed",
+      kind: "date",
+      local: local.fsrs.last_review,
+      remote: remote.fsrs.last_review,
+    })
   }
   if (local.fsrs.learning_steps !== remote.fsrs.learning_steps) {
-    diffs.push(
-      `Learning steps — this device: ${local.fsrs.learning_steps}, cloud: ${remote.fsrs.learning_steps}`,
-    )
+    rows.push({
+      label: "Learning steps",
+      kind: "integer",
+      local: local.fsrs.learning_steps,
+      remote: remote.fsrs.learning_steps,
+    })
   }
   if (round2(local.fsrs.elapsed_days) !== round2(remote.fsrs.elapsed_days)) {
-    diffs.push(
-      `Elapsed days — this device: ${local.fsrs.elapsed_days}, cloud: ${remote.fsrs.elapsed_days}`,
-    )
+    rows.push({
+      label: "Elapsed days",
+      kind: "decimal",
+      local: local.fsrs.elapsed_days,
+      remote: remote.fsrs.elapsed_days,
+    })
   }
   if (round2(local.fsrs.scheduled_days) !== round2(remote.fsrs.scheduled_days)) {
-    diffs.push(
-      `Scheduled days — this device: ${local.fsrs.scheduled_days}, cloud: ${remote.fsrs.scheduled_days}`,
-    )
+    rows.push({
+      label: "Scheduled days",
+      kind: "decimal",
+      local: local.fsrs.scheduled_days,
+      remote: remote.fsrs.scheduled_days,
+    })
   }
-  return diffs
+  return rows
 }
 
 export function mediaSummary(meta: { mimeType: string; updatedAt: number }): string {
