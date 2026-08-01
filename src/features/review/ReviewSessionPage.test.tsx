@@ -385,6 +385,82 @@ describe("ReviewSessionPage", () => {
     expect(editLinkAfter.getAttribute("href")).toBe(hrefBefore)
   })
 
+  it("marks the stacked layout as a flip card for a mode answered on the question side", async () => {
+    await resetDatabase()
+    const deck = await createDeck("T")
+    const card = await createVocabularyCard(deck.id, {
+      wordJa: "猫",
+      reading: "ねこ",
+      definitionsEn: ["cat"],
+      images: [],
+      exampleSentences: [],
+    })
+
+    const { container } = render(
+      <MemoryRouter
+        initialEntries={[
+          `/review?resumeCardId=${card.id}&resumeModeId=vocab_oral_en`,
+        ]}
+      >
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    expect(container.querySelector(".review-columns")).toHaveClass("flip-card")
+    expect(container.querySelector(".review-columns")).not.toHaveClass(
+      "answer-typed",
+    )
+  })
+
+  it("marks the stacked layout as answer-typed for a mode answered on the answer side", async () => {
+    await resetDatabase()
+    const deck = await createDeck("T")
+    const card = await createVocabularyCard(deck.id, {
+      wordJa: "猫",
+      reading: "ねこ",
+      definitionsEn: ["cat"],
+      images: [],
+      exampleSentences: [],
+    })
+
+    const { container } = render(
+      <MemoryRouter
+        initialEntries={[
+          `/review?resumeCardId=${card.id}&resumeModeId=vocab_type_reading`,
+        ]}
+      >
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+    })
+
+    expect(container.querySelector(".review-columns")).toHaveClass(
+      "answer-typed",
+    )
+    expect(container.querySelector(".review-columns")).not.toHaveClass(
+      "flip-card",
+    )
+  })
+
   it("keeps a typed but unrevealed answer after returning from card edit", async () => {
     await resetDatabase()
     const user = userEvent.setup()
