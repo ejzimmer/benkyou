@@ -3,27 +3,11 @@ import { summariesLookIdentical } from "./syncCompare"
 import { useScrollShadow } from "../../ui/useScrollShadow"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { REVIEW_MODE_LABELS } from "../../features/review/reviewFlowHelpers"
+import { formatDateTimeJa } from "../formatDate"
 
 type Props = {
   conflict: SyncConflict
   onChoose: (choice: SyncConflictChoice, applyToAllRemaining: boolean) => void
-}
-
-const MONTH_ABBR = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-]
-
-/** HH:mm, dd Mmm yyyy — unambiguous regardless of the reader's locale,
- *  unlike `toLocaleString()` (which renders MM/DD/YYYY for US-locale users). */
-function formatConflictDate(epochMs: number | undefined): string {
-  if (epochMs == null) return "—"
-  const d = new Date(epochMs)
-  const day = String(d.getDate()).padStart(2, "0")
-  const month = MONTH_ABBR[d.getMonth()]
-  const hours = String(d.getHours()).padStart(2, "0")
-  const minutes = String(d.getMinutes()).padStart(2, "0")
-  return `${hours}:${minutes}, ${day} ${month} ${d.getFullYear()}`
 }
 
 type RowKind = "text" | "date" | "stage" | "integer" | "decimal" | "image"
@@ -52,13 +36,6 @@ function buildRows(conflict: SyncConflict): Row[] {
       local: conflict.local.name,
       remote: conflict.remote.name,
     })
-  } else if (conflict.entityType === "card") {
-    rows.push({
-      label: "Content",
-      kind: "text",
-      local: conflict.localSummary,
-      remote: conflict.remoteSummary,
-    })
   } else if (conflict.entityType === "media") {
     rows.push(
       {
@@ -84,7 +61,7 @@ function buildRows(conflict: SyncConflict): Row[] {
 function RowValue({ kind, value }: { kind: RowKind; value: string | number | undefined }) {
   switch (kind) {
     case "date":
-      return <>{formatConflictDate(value as number | undefined)}</>
+      return <>{formatDateTimeJa(value as number | undefined)}</>
     case "stage":
       return <SrsStageDiagram state={value as number} />
     case "decimal":
@@ -107,7 +84,7 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
           : "Image conflict"
 
   const looksSame =
-    conflict.entityType === "scheduling"
+    conflict.entityType === "card" || conflict.entityType === "scheduling"
       ? conflict.diffRows.length === 0
       : summariesLookIdentical(conflict.localSummary, conflict.remoteSummary)
 
@@ -143,17 +120,20 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.label}>
-                  <th scope="row">{row.label}</th>
-                  <td>
-                    <RowValue kind={row.kind} value={row.local} />
-                  </td>
-                  <td>
-                    <RowValue kind={row.kind} value={row.remote} />
-                  </td>
-                </tr>
-              ))}
+              {rows.map((row) => {
+                const nowrap = row.kind !== "text" && row.kind !== "image"
+                return (
+                  <tr key={row.label}>
+                    <th scope="row">{row.label}</th>
+                    <td className={nowrap ? "sync-conflict-nowrap" : undefined}>
+                      <RowValue kind={row.kind} value={row.local} />
+                    </td>
+                    <td className={nowrap ? "sync-conflict-nowrap" : undefined}>
+                      <RowValue kind={row.kind} value={row.remote} />
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

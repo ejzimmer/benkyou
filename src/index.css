@@ -2146,6 +2146,14 @@ code {
   padding: 0.5rem 0.75rem;
   text-align: left;
   border-bottom: 1px solid #252538;
+}
+
+.sync-conflict-table thead th,
+.sync-conflict-table tbody th {
+  white-space: nowrap;
+}
+
+.sync-conflict-nowrap {
   white-space: nowrap;
 }
 

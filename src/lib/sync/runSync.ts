@@ -4,6 +4,7 @@ import type { Card, Deck } from "../../domain/types"
 import { db, type MediaRow, type SchedulingRow } from "../db/schema"
 import {
   cardChanged,
+  cardDiffRows,
   cardSummary,
   deckChanged,
   deckSummary,
@@ -359,6 +360,8 @@ async function collectEntityConflicts(
           remoteUpdatedAt: remoteCard.updatedAt,
           localSummary: cardSummary(local),
           remoteSummary: cardSummary(remoteCard),
+          contextLabel: cardSummary(local),
+          diffRows: cardDiffRows(local, remoteCard),
           local,
           remote: remoteCard,
         },

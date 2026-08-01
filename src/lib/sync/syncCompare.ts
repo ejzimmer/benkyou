@@ -117,13 +117,13 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
-export type SchedulingDiffKind = "date" | "stage" | "integer" | "decimal"
+export type DiffKind = "text" | "date" | "stage" | "integer" | "decimal"
 
-export type SchedulingDiffRow = {
+export type DiffRow = {
   label: string
-  kind: SchedulingDiffKind
-  local: number | undefined
-  remote: number | undefined
+  kind: DiffKind
+  local: string | number | undefined
+  remote: string | number | undefined
 }
 
 /** Per-field breakdown of what differs between two scheduling rows, for the
@@ -132,8 +132,8 @@ export type SchedulingDiffRow = {
 export function schedulingDiffRows(
   local: SchedulingRow,
   remote: SchedulingRow,
-): SchedulingDiffRow[] {
-  const rows: SchedulingDiffRow[] = []
+): DiffRow[] {
+  const rows: DiffRow[] = []
   if (local.due !== remote.due) {
     rows.push({ label: "Due date", kind: "date", local: local.due, remote: remote.due })
   }
@@ -209,6 +209,181 @@ export function schedulingDiffRows(
       remote: remote.fsrs.scheduled_days,
     })
   }
+  return rows
+}
+
+function arraysEqual(a: string[] = [], b: string[] = []): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i])
+}
+
+function mapsEqual(
+  a: Record<string, string> = {},
+  b: Record<string, string> = {},
+): boolean {
+  const aKeys = Object.keys(a)
+  const bKeys = Object.keys(b)
+  return aKeys.length === bKeys.length && aKeys.every((k) => a[k] === b[k])
+}
+
+function formatList(items: string[] = []): string {
+  const list = items.filter((s) => s.trim())
+  return list.length ? list.join("; ") : "—"
+}
+
+function formatMap(map: Record<string, string> = {}): string {
+  const entries = Object.entries(map)
+  return entries.length ? entries.map(([k, v]) => `${k}=${v}`).join(", ") : "—"
+}
+
+/** Per-field breakdown of what differs between two cards, for the conflict
+ *  modal's table — only fields that actually differ, so the table doesn't
+ *  repeat values both sides already agree on. Falls back to the coarse
+ *  summary in the (very rare) case a card's `kind` itself differs between
+ *  local and remote, since there's no shared field set to diff in that case. */
+export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
+  const rows: DiffRow[] = []
+
+  if (local.kind === "vocabulary" && remote.kind === "vocabulary") {
+    const l = local.content
+    const r = remote.content
+    if (l.wordJa !== r.wordJa) {
+      rows.push({ label: "Word", kind: "text", local: l.wordJa, remote: r.wordJa })
+    }
+    if ((l.reading ?? "") !== (r.reading ?? "")) {
+      rows.push({
+        label: "Reading",
+        kind: "text",
+        local: l.reading || "—",
+        remote: r.reading || "—",
+      })
+    }
+    if (!mapsEqual(l.readingParts, r.readingParts)) {
+      rows.push({
+        label: "Reading parts",
+        kind: "text",
+        local: formatMap(l.readingParts),
+        remote: formatMap(r.readingParts),
+      })
+    }
+    if (!mapsEqual(l.readings, r.readings)) {
+      rows.push({
+        label: "Furigana",
+        kind: "text",
+        local: formatMap(l.readings),
+        remote: formatMap(r.readings),
+      })
+    }
+    if (!arraysEqual(l.definitionsEn, r.definitionsEn)) {
+      rows.push({
+        label: "Meaning",
+        kind: "text",
+        local: formatList(l.definitionsEn),
+        remote: formatList(r.definitionsEn),
+      })
+    }
+    if (!arraysEqual(l.exampleSentences, r.exampleSentences)) {
+      rows.push({
+        label: "Example sentences",
+        kind: "text",
+        local: formatList(l.exampleSentences),
+        remote: formatList(r.exampleSentences),
+      })
+    }
+    if (!arraysEqual(l.images, r.images)) {
+      rows.push({
+        label: "Images",
+        kind: "text",
+        local: `${l.images.length}枚`,
+        remote: `${r.images.length}枚`,
+      })
+    }
+    if (!arraysEqual(l.confusedWith, r.confusedWith)) {
+      rows.push({
+        label: "Confused with",
+        kind: "text",
+        local: formatList(l.confusedWith),
+        remote: formatList(r.confusedWith),
+      })
+    }
+  } else if (local.kind === "grammar" && remote.kind === "grammar") {
+    const l = local.content
+    const r = remote.content
+    if (l.sentenceWithGap !== r.sentenceWithGap) {
+      rows.push({
+        label: "Sentence",
+        kind: "text",
+        local: l.sentenceWithGap,
+        remote: r.sentenceWithGap,
+      })
+    }
+    if (l.construction !== r.construction) {
+      rows.push({
+        label: "Construction",
+        kind: "text",
+        local: l.construction,
+        remote: r.construction,
+      })
+    }
+    if ((l.constructionReading ?? "") !== (r.constructionReading ?? "")) {
+      rows.push({
+        label: "Reading",
+        kind: "text",
+        local: l.constructionReading || "—",
+        remote: r.constructionReading || "—",
+      })
+    }
+    if (!mapsEqual(l.constructionReadingParts, r.constructionReadingParts)) {
+      rows.push({
+        label: "Reading parts",
+        kind: "text",
+        local: formatMap(l.constructionReadingParts),
+        remote: formatMap(r.constructionReadingParts),
+      })
+    }
+    if (l.translationEn !== r.translationEn) {
+      rows.push({
+        label: "Meaning",
+        kind: "text",
+        local: l.translationEn || "—",
+        remote: r.translationEn || "—",
+      })
+    }
+    if (!mapsEqual(l.readings, r.readings)) {
+      rows.push({
+        label: "Furigana",
+        kind: "text",
+        local: formatMap(l.readings),
+        remote: formatMap(r.readings),
+      })
+    }
+    if (!arraysEqual(l.images, r.images)) {
+      rows.push({
+        label: "Images",
+        kind: "text",
+        local: `${l.images.length}枚`,
+        remote: `${r.images.length}枚`,
+      })
+    }
+    if (Boolean(l.singleSided) !== Boolean(r.singleSided)) {
+      rows.push({
+        label: "Sides",
+        kind: "text",
+        local: l.singleSided ? "One-sided" : "Both sides",
+        remote: r.singleSided ? "One-sided" : "Both sides",
+      })
+    }
+    if (!arraysEqual(l.confusedWith, r.confusedWith)) {
+      rows.push({
+        label: "Confused with",
+        kind: "text",
+        local: formatList(l.confusedWith),
+        remote: formatList(r.confusedWith),
+      })
+    }
+  } else {
+    rows.push({ label: "Content", kind: "text", local: cardSummary(local), remote: cardSummary(remote) })
+  }
+
   return rows
 }
 

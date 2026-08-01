@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useAuth } from "../lib/auth/AuthContext"
 import { useSync } from "../lib/sync/SyncContext"
 import { useSessionEditedCardIds } from "../lib/sync/sessionEdits"
+import { formatDateTimeJa } from "../lib/formatDate"
 import { RefreshIcon } from "./RefreshIcon"
 
 /**
@@ -40,7 +41,7 @@ export function SyncButton() {
         onClick={() => void onClick()}
         disabled={syncing || conflictActive}
         aria-label={label}
-        title={lastSyncedAt ? `最終同期: ${new Date(lastSyncedAt).toLocaleString()}` : undefined}
+        title={lastSyncedAt ? `最終同期: ${formatDateTimeJa(lastSyncedAt)}` : undefined}
       >
         {syncing ? (
           <span className="import-spinner" aria-hidden="true" />

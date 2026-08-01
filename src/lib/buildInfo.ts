@@ -1,3 +1,5 @@
+import { formatDateTimeJa } from "./formatDate"
+
 /** Set at build time in vite.config.ts — use to confirm prod has the latest deploy. */
 export const BUILD_LABEL: string =
   typeof __BUILD_LABEL__ !== "undefined" ? __BUILD_LABEL__ : "dev"
@@ -9,7 +11,7 @@ export const BUILD_LABEL: string =
 export function formatBuildLabel(label: string): string {
   const date = new Date(label)
   if (Number.isNaN(date.getTime())) return label
-  return date.toLocaleString(undefined, { timeZoneName: "short" })
+  return formatDateTimeJa(date.getTime())
 }
 
 /** Build label formatted in the local timezone, for display. */
