@@ -87,7 +87,7 @@ export function SyncConflictModal({
         <h2>{title}</h2>
         {conflict.contextLabel && (
           <p className="small">
-            Card: <strong>{conflict.contextLabel}</strong>
+            <strong>{conflict.contextLabel}</strong>
           </p>
         )}
         <p className="muted small">
