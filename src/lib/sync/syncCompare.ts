@@ -106,7 +106,7 @@ export function schedulingSummary(row: SchedulingRow): string {
 }
 
 /** FSRS card states, in the order a card progresses through them. */
-export const FSRS_STATE_ORDER = ["New", "Learning", "Review", "Relearning"]
+export const FSRS_STATE_ORDER = ["新規", "学習中", "復習中", "再学習中"]
 
 export function fsrsStateLabel(state: number): string {
   return FSRS_STATE_ORDER[state] ?? `State ${state}`
@@ -135,11 +135,11 @@ export function schedulingDiffRows(
 ): DiffRow[] {
   const rows: DiffRow[] = []
   if (local.due !== remote.due) {
-    rows.push({ label: "Due date", kind: "date", local: local.due, remote: remote.due })
+    rows.push({ label: "期日", kind: "date", local: local.due, remote: remote.due })
   }
   if (local.fsrs.state !== remote.fsrs.state) {
     rows.push({
-      label: "Review stage",
+      label: "復習段階",
       kind: "stage",
       local: local.fsrs.state,
       remote: remote.fsrs.state,
@@ -147,7 +147,7 @@ export function schedulingDiffRows(
   }
   if (local.fsrs.reps !== remote.fsrs.reps) {
     rows.push({
-      label: "Reviews completed",
+      label: "完了レビュー数",
       kind: "integer",
       local: local.fsrs.reps,
       remote: remote.fsrs.reps,
@@ -155,7 +155,7 @@ export function schedulingDiffRows(
   }
   if (local.fsrs.lapses !== remote.fsrs.lapses) {
     rows.push({
-      label: "Lapses",
+      label: "間違い数",
       kind: "integer",
       local: local.fsrs.lapses,
       remote: remote.fsrs.lapses,
@@ -163,7 +163,7 @@ export function schedulingDiffRows(
   }
   if (round2(local.fsrs.stability) !== round2(remote.fsrs.stability)) {
     rows.push({
-      label: "Stability",
+      label: "定着度",
       kind: "decimal",
       local: local.fsrs.stability,
       remote: remote.fsrs.stability,
@@ -171,7 +171,7 @@ export function schedulingDiffRows(
   }
   if (round2(local.fsrs.difficulty) !== round2(remote.fsrs.difficulty)) {
     rows.push({
-      label: "Difficulty",
+      label: "難易度",
       kind: "decimal",
       local: local.fsrs.difficulty,
       remote: remote.fsrs.difficulty,
@@ -179,7 +179,7 @@ export function schedulingDiffRows(
   }
   if (local.fsrs.last_review !== remote.fsrs.last_review) {
     rows.push({
-      label: "Last reviewed",
+      label: "最終復習日",
       kind: "date",
       local: local.fsrs.last_review,
       remote: remote.fsrs.last_review,
@@ -187,7 +187,7 @@ export function schedulingDiffRows(
   }
   if (local.fsrs.learning_steps !== remote.fsrs.learning_steps) {
     rows.push({
-      label: "Learning steps",
+      label: "学習ステップ",
       kind: "integer",
       local: local.fsrs.learning_steps,
       remote: remote.fsrs.learning_steps,
@@ -195,7 +195,7 @@ export function schedulingDiffRows(
   }
   if (round2(local.fsrs.elapsed_days) !== round2(remote.fsrs.elapsed_days)) {
     rows.push({
-      label: "Elapsed days",
+      label: "経過日数",
       kind: "decimal",
       local: local.fsrs.elapsed_days,
       remote: remote.fsrs.elapsed_days,
@@ -203,7 +203,7 @@ export function schedulingDiffRows(
   }
   if (round2(local.fsrs.scheduled_days) !== round2(remote.fsrs.scheduled_days)) {
     rows.push({
-      label: "Scheduled days",
+      label: "予定日数",
       kind: "decimal",
       local: local.fsrs.scheduled_days,
       remote: remote.fsrs.scheduled_days,

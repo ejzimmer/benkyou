@@ -67,12 +67,12 @@ export function vocabExampleReadings(
 }
 
 export const REVIEW_MODE_LABELS: Record<ReviewModeId, string> = {
-  vocab_oral_en: "Say the meaning",
-  vocab_type_reading: "Type the reading (hiragana)",
-  vocab_type_word_from_clue: "Type the Japanese word",
-  grammar_type_construction: "Type the construction",
-  grammar_type_reading: "Type the reading of the construction (hiragana)",
-  grammar_oral_meaning: "Say the meaning of the construction",
+  vocab_oral_en: "意味を言う",
+  vocab_type_reading: "読み方を入力",
+  vocab_type_word_from_clue: "日本語の単語を入力",
+  grammar_type_construction: "解答を入力",
+  grammar_type_reading: "解答の読み方を入力",
+  grammar_oral_meaning: "解答の意味を言う",
 }
 
 /** Modes that test a hiragana reading — the IME conversion, non-hiragana

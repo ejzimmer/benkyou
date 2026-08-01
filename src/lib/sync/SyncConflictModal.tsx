@@ -22,7 +22,7 @@ type Row = {
 function buildRows(conflict: SyncConflict): Row[] {
   const rows: Row[] = [
     {
-      label: "Updated",
+      label: "最終更新日時",
       kind: "date",
       local: conflict.localUpdatedAt,
       remote: conflict.remoteUpdatedAt,
@@ -31,7 +31,7 @@ function buildRows(conflict: SyncConflict): Row[] {
 
   if (conflict.entityType === "deck") {
     rows.push({
-      label: "Name",
+      label: "名前",
       kind: "text",
       local: conflict.local.name,
       remote: conflict.remote.name,
@@ -39,13 +39,13 @@ function buildRows(conflict: SyncConflict): Row[] {
   } else if (conflict.entityType === "media") {
     rows.push(
       {
-        label: "Type",
+        label: "ファイル形式",
         kind: "text",
         local: conflict.local.mimeType,
         remote: conflict.remote.mimeType,
       },
       {
-        label: "Preview",
+        label: "プレビュー",
         kind: "image",
         local: conflict.localPreviewUrl,
         remote: conflict.remotePreviewUrl,
@@ -76,12 +76,12 @@ function RowValue({ kind, value }: { kind: RowKind; value: string | number | und
 export function SyncConflictModal({ conflict, onChoose }: Props) {
   const title =
     conflict.entityType === "deck"
-      ? "Deck conflict"
+      ? "デッキの競合"
       : conflict.entityType === "card"
-        ? "Card conflict"
+        ? "カードの競合"
         : conflict.entityType === "scheduling"
-          ? "Review schedule conflict"
-          : "Image conflict"
+          ? "復習スケジュールの競合"
+          : "画像の競合"
 
   const looksSame =
     conflict.entityType === "card" || conflict.entityType === "scheduling"
@@ -115,8 +115,8 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
             <thead>
               <tr>
                 <th scope="col"></th>
-                <th scope="col">This device</th>
-                <th scope="col">Cloud / other device</th>
+                <th scope="col">この端末</th>
+                <th scope="col">クラウド</th>
               </tr>
             </thead>
             <tbody>
