@@ -5,7 +5,6 @@ import { CardEditPage } from "./features/cards/CardEditPage"
 import { ReviewSessionPage } from "./features/review/ReviewSessionPage"
 import { useAuth } from "./lib/auth/AuthContext"
 import { useEffect } from "react"
-import { SyncIndicator } from "./ui/SyncIndicator"
 
 export function App() {
   const { loading } = useAuth()
@@ -36,7 +35,6 @@ export function App() {
 
   return (
     <div className="app-shell">
-      <SyncIndicator className="sync-indicator-global" />
       <Routes>
         <Route path="/" element={<DeckListPage />} />
         <Route path="/decks/:deckId" element={<DeckPage />} />
