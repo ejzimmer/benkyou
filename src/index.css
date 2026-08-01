@@ -1127,10 +1127,125 @@ fieldset.plain legend {
   margin-left: auto;
 }
 
+.control-text-short {
+  display: none;
+}
+
+.control-icon {
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: middle;
+}
+
+@media (max-width: 560px) {
+  .review-header-actions .control-text-full {
+    display: none;
+  }
+
+  .review-header-actions .control-text-short {
+    display: inline;
+  }
+
+  .review-header-actions .control-icon {
+    display: inline-block;
+  }
+}
+
 .review-columns {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+/* Below the desktop breakpoint the two review cards stack vertically instead
+   of sitting side by side (see the `min-width: 760px` grid override further
+   down), so they need their own mobile-specific sizing — split by whether
+   the mode's "Show answer" button (and any typing) lives on the question
+   side or the answer side (`showAnswerOnQuestionSide`). */
+@media (max-width: 759.98px) {
+  /* Typing happens on the answer (second) card: it only needs to fit its
+     label/input/buttons, so it shrinks to that instead of the usual 50vh
+     floor, and the question (first) card expands to fill what's left of the
+     viewport, scrolling its own content instead of the whole page. Needs the
+     ancestor chain up to `.app-shell` bounded to the viewport height —
+     mirrors the desktop treatment below, scoped here via `:has()` so it
+     only kicks in for this mode rather than every mobile review layout. */
+  .app-shell:has(.review-columns.answer-typed) {
+    display: flex;
+    flex-direction: column;
+    height: var(--vvh, 100dvh);
+  }
+
+  .page.review:has(.review-columns.answer-typed) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .page.review .panel.prompt:has(.review-columns.answer-typed) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .review-columns.answer-typed {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .review-columns.answer-typed .review-question {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .review-columns.answer-typed .review-answer {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+
+  /* Typing happens on the question (first) card, or not at all (oral
+     modes): the two cards act as opposite faces of one flip card instead of
+     being shown at once — "Show answer" flips it over, and the answer
+     card's "やり直す" button (now shown for oral modes too, see
+     `showFlipBack` on `ReviewSessionAnswerPanel`) flips it back. */
+  .review-columns.flip-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    perspective: 1600px;
+  }
+
+  .review-columns.flip-card .review-question,
+  .review-columns.flip-card .review-answer {
+    grid-column: 1;
+    grid-row: 1;
+    backface-visibility: hidden;
+    transition: transform 0.6s ease;
+  }
+
+  .review-columns.flip-card .review-question {
+    transform: rotateY(0deg);
+  }
+
+  .review-columns.flip-card .review-answer {
+    transform: rotateY(-180deg);
+  }
+
+  .review-columns.flip-card.is-flipped .review-question {
+    transform: rotateY(180deg);
+  }
+
+  .review-columns.flip-card.is-flipped .review-answer {
+    transform: rotateY(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-columns.flip-card .review-question,
+  .review-columns.flip-card .review-answer {
+    transition: none;
+  }
 }
 
 .review-complete-body {

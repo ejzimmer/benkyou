@@ -28,6 +28,14 @@ export type ReviewSessionAnswerPanelProps = {
   onJudge: (correct: boolean) => void
   onUndoAnswer: () => void
   /**
+   * Whether "Show answer" lives on the question side for this mode (oral
+   * modes, or a construction gap typed inline in the question sentence —
+   * see `showAnswerOnQuestionSide`). On the stacked mobile layout these
+   * modes flip the question card over to reveal this panel, so it needs
+   * its own way back even when there's no typed answer to retry.
+   */
+  showFlipBack?: boolean
+  /**
    * Whether the answer is actually revealed right now. The panel stays
    * mounted (opacity-hidden + inert) even while still on the prompt side, so
    * this must gate the focus effect below — otherwise it'd steal focus onto
@@ -46,6 +54,7 @@ export function ReviewSessionAnswerPanel({
   pendingIncorrectDelay,
   onJudge,
   onUndoAnswer,
+  showFlipBack = false,
   active = true,
 }: ReviewSessionAnswerPanelProps) {
   const { card, modeId: m } = item
@@ -135,7 +144,7 @@ export function ReviewSessionAnswerPanel({
       >
         <span className="cross-mark" aria-hidden="true" />
       </button>
-      {typingMode && (
+      {(typingMode || showFlipBack) && (
         <button
           type="button"
           className="btn secondary"
