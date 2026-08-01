@@ -42,6 +42,7 @@ import {
   showAnswerOnQuestionSide,
 } from "./reviewFlowHelpers"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
+import { UndoIcon } from "../../ui/UndoIcon"
 import { UserMenu } from "../../ui/UserMenu"
 import { SyncButton } from "../../ui/SyncButton"
 import { ScrollShadow } from "../../ui/ScrollShadow"
@@ -746,15 +747,19 @@ export function ReviewSessionPage() {
               reviewReturnTo,
             )}`}
             className="btn secondary white"
+            aria-label="カード編集"
           >
-            カード編集
+            <span className="control-text-full">カード編集</span>
+            <span className="control-text-short">編集</span>
           </Link>
           <button
             type="button"
             className="btn secondary white"
+            aria-label="取り消す"
             onClick={() => void onUndoJudgementFromHeader()}
           >
-            取り消す
+            <span className="control-text-full">取り消す</span>
+            <UndoIcon className="control-text-short control-icon" />
           </button>
           <UserMenu />
           <SyncButton />
@@ -767,7 +772,11 @@ export function ReviewSessionPage() {
         {pendingIncorrectDelay ? (
           <p className="muted small">次。。。</p>
         ) : (
-          <div className="review-columns">
+          <div
+            className={`review-columns ${buttonOnQuestionSide ? "flip-card" : "answer-typed"}${
+              buttonOnQuestionSide && phase === "answer" ? " is-flipped" : ""
+            }`}
+          >
             <div className="review-question">
               <div className="review-question-content" ref={questionContentRef}>
                 <ReviewSessionPromptBody
@@ -884,6 +893,7 @@ export function ReviewSessionPage() {
                     onJudge={(correct) => void onJudge(correct)}
                     onUndoAnswer={() => void onUndoAnswer()}
                     active={phase === "answer"}
+                    showFlipBack={buttonOnQuestionSide}
                   />
                 </div>
               </div>

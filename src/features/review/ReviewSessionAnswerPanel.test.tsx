@@ -229,6 +229,32 @@ describe("ReviewSessionAnswerPanel", () => {
     expectBefore(meaning, image)
     expectBefore(image, correctButton)
   })
+
+  it("has no way back to the question for an oral mode by default", () => {
+    renderRevealedReview(vocabItem("vocab_oral_en"))
+
+    expect(
+      screen.queryByRole("button", { name: "Undo answer" }),
+    ).not.toBeInTheDocument()
+  })
+
+  it("shows a way back to the question for an oral mode when flip-back is requested", () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={vocabItem("vocab_oral_en")}
+        typed=""
+        expected=""
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+        showFlipBack
+      />,
+    )
+
+    expect(
+      screen.getByRole("button", { name: "Undo answer" }),
+    ).toBeInTheDocument()
+  })
 })
 
 function renderAnswerPanel(typed: string) {
