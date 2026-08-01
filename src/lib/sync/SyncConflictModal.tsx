@@ -1,5 +1,4 @@
 import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
-import { summariesLookIdentical } from "./syncCompare"
 import { useScrollShadow } from "../../ui/useScrollShadow"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { REVIEW_MODE_LABELS } from "../../features/review/reviewFlowHelpers"
@@ -83,11 +82,6 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
           ? "復習スケジュールの競合"
           : "画像の競合"
 
-  const looksSame =
-    conflict.entityType === "card" || conflict.entityType === "scheduling"
-      ? conflict.diffRows.length === 0
-      : summariesLookIdentical(conflict.localSummary, conflict.remoteSummary)
-
   const rows = buildRows(conflict)
   const panelRef = useScrollShadow<HTMLDivElement>()
   const localIsNewer = conflict.localUpdatedAt >= conflict.remoteUpdatedAt
@@ -103,13 +97,6 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
               ` · ${REVIEW_MODE_LABELS[conflict.local.modeId]}`}
           </p>
         )}
-        {looksSame && (
-          <p className="muted small">
-            The text below looks the same; you can keep either copy or apply
-            one choice to all remaining conflicts.
-          </p>
-        )}
-
         <div className="sync-conflict-table-scroll">
           <table className="sync-conflict-table">
             <thead>

@@ -11,7 +11,7 @@ import {
   hasVocabularyImage,
   hasVocabularyPronunciation,
 } from "./vocabularyContent"
-import { hasConstructionReading, isSingleSided } from "./grammarContent"
+import { hasConstructionReading, hasInlineGap, isSingleSided } from "./grammarContent"
 
 export { containsKanji }
 
@@ -136,6 +136,7 @@ export function reviewModesForCard(card: Card): ReviewModeId[] {
     }
     return modes
   }
+  if (!hasInlineGap(card.content)) return []
   const modes: ReviewModeId[] = ["grammar_type_construction"]
   if (isSingleSided(card.content)) return modes
   if (hasConstructionReading(card.content)) {
