@@ -12,7 +12,8 @@ export type SchedulingRow = {
   due: number
   updatedAt: number
   /** Set once the user dismisses the leech prompt with "除外" (keep reviewing
-   *  as normal). See `lib/srs/leech.ts`. */
+   *  as normal). See `lib/srs/leech.ts`. Cleared when the card is next edited
+   *  (`ensureSchedulingForCard`), since editing is the user's intervention. */
   isLeech?: boolean
 }
 
