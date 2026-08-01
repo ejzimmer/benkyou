@@ -145,14 +145,14 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
               className={localIsNewer ? "btn primary blue" : "btn secondary"}
               onClick={() => onChoose("local", false)}
             >
-              Keep this device
+              デバイス優先
             </button>
             <button
               type="button"
               className="btn secondary white"
               onClick={() => onChoose("local", true)}
             >
-              Keep this device for all remaining
+              すべてデバイス優先
             </button>
           </div>
           <div className="stack">
@@ -161,14 +161,14 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
               className={localIsNewer ? "btn secondary" : "btn primary blue"}
               onClick={() => onChoose("remote", false)}
             >
-              Keep cloud
+              クラウド優先
             </button>
             <button
               type="button"
               className="btn secondary white"
               onClick={() => onChoose("remote", true)}
             >
-              Keep cloud for all remaining
+              すべてクラウド優先
             </button>
           </div>
         </div>
