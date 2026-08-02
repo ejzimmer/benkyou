@@ -231,7 +231,7 @@ export function CardEditPage() {
     }
     setLoading(false)
     if (!loadedCard || loadedCard.deckId !== deckId) {
-      setErr({ field: null, message: "Card not found" })
+      setErr({ field: null, message: "カードが見つかりません。" })
       return
     }
     setErr(null)
@@ -388,7 +388,7 @@ export function CardEditPage() {
     } catch (x) {
       setErr({
         field: null,
-        message: x instanceof Error ? x.message : "Image upload failed",
+        message: x instanceof Error ? x.message : "画像のアップロードに失敗しました。",
       })
     } finally {
       setImageUploadCount((count) => Math.max(0, count - files.length))
