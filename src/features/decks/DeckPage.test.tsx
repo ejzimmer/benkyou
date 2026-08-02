@@ -1,10 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
 import { SyncProvider } from "../../lib/sync/SyncContext"
 import { DeckPage } from "./DeckPage"
 import { resetDatabase } from "../../test/db"
+import * as decksService from "../../services/decks"
 import { createDeck } from "../../services/decks"
 
 vi.mock("../../lib/firebase", () => ({
@@ -48,5 +50,28 @@ describe("DeckPage", () => {
     await waitFor(() => {
       expect(screen.getByText(/デッキが見つかりません/)).toBeInTheDocument()
     })
+  })
+
+  it("shows an error and stays on the page when deleting the deck fails", async () => {
+    const deck = await createDeck("Kanji deck")
+    const user = userEvent.setup()
+    const deleteSpy = vi
+      .spyOn(decksService, "deleteDeck")
+      .mockRejectedValueOnce(new Error("削除に失敗しました。"))
+
+    renderDeckPage(deck.id)
+    await waitFor(() => {
+      expect(screen.getByText("Kanji deck")).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole("button", { name: "デッキを削除" }))
+    await user.click(screen.getByRole("button", { name: "削除" }))
+
+    await waitFor(() => {
+      expect(screen.getByText("削除に失敗しました。")).toBeInTheDocument()
+    })
+    expect(screen.getByText("Kanji deck")).toBeInTheDocument()
+
+    deleteSpy.mockRestore()
   })
 })
