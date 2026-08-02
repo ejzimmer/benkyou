@@ -30,8 +30,8 @@ export function CardImage({ mediaId }: { mediaId: string }) {
     return (
       <span className="muted">
         {user && !offlineOnly
-          ? "Image unavailable (try Sync in the header)"
-          : "Image unavailable"}
+          ? "画像が見つかりません（同期を試してください）"
+          : "画像が見つかりません"}
       </span>
     )
   }
