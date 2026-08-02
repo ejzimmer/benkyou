@@ -106,16 +106,10 @@ export function schedulingSummary(row: SchedulingRow): string {
 }
 
 /** FSRS card states, in the order a card progresses through them. */
-export const FSRS_STATE_ORDER = ["New", "Learning", "Review", "Relearning"]
-
-export const REVIEW_STAGE_LABEL = "Review stage"
+export const FSRS_STATE_ORDER = ["新規", "学習中", "復習中", "再学習中"]
 
 export function fsrsStateLabel(state: number): string {
   return FSRS_STATE_ORDER[state] ?? `State ${state}`
-}
-
-function fsrsDateLabel(epochMs: number | undefined): string {
-  return epochMs == null ? "never" : new Date(epochMs).toLocaleString()
 }
 
 /** Two decimal places is enough precision to describe FSRS drift to a user. */
@@ -123,64 +117,274 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
-/** Human-readable list of what differs between two scheduling rows, for
- *  showing the user what a review-schedule conflict actually consists of. */
-export function schedulingDiffDetails(
+export type DiffKind = "text" | "date" | "stage" | "integer" | "decimal"
+
+export type DiffRow = {
+  label: string
+  kind: DiffKind
+  local: string | number | undefined
+  remote: string | number | undefined
+}
+
+/** Per-field breakdown of what differs between two scheduling rows, for the
+ *  conflict modal's table — only fields that actually differ, so the table
+ *  doesn't repeat values both sides already agree on. */
+export function schedulingDiffRows(
   local: SchedulingRow,
   remote: SchedulingRow,
-): string[] {
-  const diffs: string[] = []
+): DiffRow[] {
+  const rows: DiffRow[] = []
   if (local.due !== remote.due) {
-    diffs.push(
-      `Due date — this device: ${new Date(local.due).toLocaleString()}, cloud: ${new Date(remote.due).toLocaleString()}`,
-    )
+    rows.push({ label: "期日", kind: "date", local: local.due, remote: remote.due })
   }
   if (local.fsrs.state !== remote.fsrs.state) {
-    diffs.push(
-      `${REVIEW_STAGE_LABEL} — this device: ${fsrsStateLabel(local.fsrs.state)}, cloud: ${fsrsStateLabel(remote.fsrs.state)}`,
-    )
+    rows.push({
+      label: "復習段階",
+      kind: "stage",
+      local: local.fsrs.state,
+      remote: remote.fsrs.state,
+    })
   }
   if (local.fsrs.reps !== remote.fsrs.reps) {
-    diffs.push(
-      `Reviews completed — this device: ${local.fsrs.reps}, cloud: ${remote.fsrs.reps}`,
-    )
+    rows.push({
+      label: "完了レビュー数",
+      kind: "integer",
+      local: local.fsrs.reps,
+      remote: remote.fsrs.reps,
+    })
   }
   if (local.fsrs.lapses !== remote.fsrs.lapses) {
-    diffs.push(
-      `Lapses — this device: ${local.fsrs.lapses}, cloud: ${remote.fsrs.lapses}`,
-    )
+    rows.push({
+      label: "間違い数",
+      kind: "integer",
+      local: local.fsrs.lapses,
+      remote: remote.fsrs.lapses,
+    })
   }
   if (round2(local.fsrs.stability) !== round2(remote.fsrs.stability)) {
-    diffs.push(
-      `Stability — this device: ${local.fsrs.stability.toFixed(2)}, cloud: ${remote.fsrs.stability.toFixed(2)}`,
-    )
+    rows.push({
+      label: "定着度",
+      kind: "decimal",
+      local: local.fsrs.stability,
+      remote: remote.fsrs.stability,
+    })
   }
   if (round2(local.fsrs.difficulty) !== round2(remote.fsrs.difficulty)) {
-    diffs.push(
-      `Difficulty — this device: ${local.fsrs.difficulty.toFixed(2)}, cloud: ${remote.fsrs.difficulty.toFixed(2)}`,
-    )
+    rows.push({
+      label: "難易度",
+      kind: "decimal",
+      local: local.fsrs.difficulty,
+      remote: remote.fsrs.difficulty,
+    })
   }
   if (local.fsrs.last_review !== remote.fsrs.last_review) {
-    diffs.push(
-      `Last reviewed — this device: ${fsrsDateLabel(local.fsrs.last_review)}, cloud: ${fsrsDateLabel(remote.fsrs.last_review)}`,
-    )
+    rows.push({
+      label: "最終復習日",
+      kind: "date",
+      local: local.fsrs.last_review,
+      remote: remote.fsrs.last_review,
+    })
   }
   if (local.fsrs.learning_steps !== remote.fsrs.learning_steps) {
-    diffs.push(
-      `Learning steps — this device: ${local.fsrs.learning_steps}, cloud: ${remote.fsrs.learning_steps}`,
-    )
+    rows.push({
+      label: "学習ステップ",
+      kind: "integer",
+      local: local.fsrs.learning_steps,
+      remote: remote.fsrs.learning_steps,
+    })
   }
   if (round2(local.fsrs.elapsed_days) !== round2(remote.fsrs.elapsed_days)) {
-    diffs.push(
-      `Elapsed days — this device: ${local.fsrs.elapsed_days}, cloud: ${remote.fsrs.elapsed_days}`,
-    )
+    rows.push({
+      label: "経過日数",
+      kind: "decimal",
+      local: local.fsrs.elapsed_days,
+      remote: remote.fsrs.elapsed_days,
+    })
   }
   if (round2(local.fsrs.scheduled_days) !== round2(remote.fsrs.scheduled_days)) {
-    diffs.push(
-      `Scheduled days — this device: ${local.fsrs.scheduled_days}, cloud: ${remote.fsrs.scheduled_days}`,
-    )
+    rows.push({
+      label: "予定日数",
+      kind: "decimal",
+      local: local.fsrs.scheduled_days,
+      remote: remote.fsrs.scheduled_days,
+    })
   }
-  return diffs
+  return rows
+}
+
+function arraysEqual(a: string[] = [], b: string[] = []): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i])
+}
+
+function mapsEqual(
+  a: Record<string, string> = {},
+  b: Record<string, string> = {},
+): boolean {
+  const aKeys = Object.keys(a)
+  const bKeys = Object.keys(b)
+  return aKeys.length === bKeys.length && aKeys.every((k) => a[k] === b[k])
+}
+
+function formatList(items: string[] = []): string {
+  const list = items.filter((s) => s.trim())
+  return list.length ? list.join("; ") : "—"
+}
+
+function formatMap(map: Record<string, string> = {}): string {
+  const entries = Object.entries(map)
+  return entries.length ? entries.map(([k, v]) => `${k}=${v}`).join(", ") : "—"
+}
+
+/** Per-field breakdown of what differs between two cards, for the conflict
+ *  modal's table — only fields that actually differ, so the table doesn't
+ *  repeat values both sides already agree on. Falls back to the coarse
+ *  summary in the (very rare) case a card's `kind` itself differs between
+ *  local and remote, since there's no shared field set to diff in that case. */
+export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
+  const rows: DiffRow[] = []
+
+  if (local.kind === "vocabulary" && remote.kind === "vocabulary") {
+    const l = local.content
+    const r = remote.content
+    if (l.wordJa !== r.wordJa) {
+      rows.push({ label: "Word", kind: "text", local: l.wordJa, remote: r.wordJa })
+    }
+    if ((l.reading ?? "") !== (r.reading ?? "")) {
+      rows.push({
+        label: "Reading",
+        kind: "text",
+        local: l.reading || "—",
+        remote: r.reading || "—",
+      })
+    }
+    if (!mapsEqual(l.readingParts, r.readingParts)) {
+      rows.push({
+        label: "Reading parts",
+        kind: "text",
+        local: formatMap(l.readingParts),
+        remote: formatMap(r.readingParts),
+      })
+    }
+    if (!mapsEqual(l.readings, r.readings)) {
+      rows.push({
+        label: "Furigana",
+        kind: "text",
+        local: formatMap(l.readings),
+        remote: formatMap(r.readings),
+      })
+    }
+    if (!arraysEqual(l.definitionsEn, r.definitionsEn)) {
+      rows.push({
+        label: "Meaning",
+        kind: "text",
+        local: formatList(l.definitionsEn),
+        remote: formatList(r.definitionsEn),
+      })
+    }
+    if (!arraysEqual(l.exampleSentences, r.exampleSentences)) {
+      rows.push({
+        label: "Example sentences",
+        kind: "text",
+        local: formatList(l.exampleSentences),
+        remote: formatList(r.exampleSentences),
+      })
+    }
+    if (!arraysEqual(l.images, r.images)) {
+      rows.push({
+        label: "Images",
+        kind: "text",
+        local: `${l.images.length}枚`,
+        remote: `${r.images.length}枚`,
+      })
+    }
+    if (!arraysEqual(l.confusedWith, r.confusedWith)) {
+      rows.push({
+        label: "Confused with",
+        kind: "text",
+        local: formatList(l.confusedWith),
+        remote: formatList(r.confusedWith),
+      })
+    }
+  } else if (local.kind === "grammar" && remote.kind === "grammar") {
+    const l = local.content
+    const r = remote.content
+    if (l.sentenceWithGap !== r.sentenceWithGap) {
+      rows.push({
+        label: "Sentence",
+        kind: "text",
+        local: l.sentenceWithGap,
+        remote: r.sentenceWithGap,
+      })
+    }
+    if (l.construction !== r.construction) {
+      rows.push({
+        label: "Construction",
+        kind: "text",
+        local: l.construction,
+        remote: r.construction,
+      })
+    }
+    if ((l.constructionReading ?? "") !== (r.constructionReading ?? "")) {
+      rows.push({
+        label: "Reading",
+        kind: "text",
+        local: l.constructionReading || "—",
+        remote: r.constructionReading || "—",
+      })
+    }
+    if (!mapsEqual(l.constructionReadingParts, r.constructionReadingParts)) {
+      rows.push({
+        label: "Reading parts",
+        kind: "text",
+        local: formatMap(l.constructionReadingParts),
+        remote: formatMap(r.constructionReadingParts),
+      })
+    }
+    if (l.translationEn !== r.translationEn) {
+      rows.push({
+        label: "Meaning",
+        kind: "text",
+        local: l.translationEn || "—",
+        remote: r.translationEn || "—",
+      })
+    }
+    if (!mapsEqual(l.readings, r.readings)) {
+      rows.push({
+        label: "Furigana",
+        kind: "text",
+        local: formatMap(l.readings),
+        remote: formatMap(r.readings),
+      })
+    }
+    if (!arraysEqual(l.images, r.images)) {
+      rows.push({
+        label: "Images",
+        kind: "text",
+        local: `${l.images.length}枚`,
+        remote: `${r.images.length}枚`,
+      })
+    }
+    if (Boolean(l.singleSided) !== Boolean(r.singleSided)) {
+      rows.push({
+        label: "Sides",
+        kind: "text",
+        local: l.singleSided ? "One-sided" : "Both sides",
+        remote: r.singleSided ? "One-sided" : "Both sides",
+      })
+    }
+    if (!arraysEqual(l.confusedWith, r.confusedWith)) {
+      rows.push({
+        label: "Confused with",
+        kind: "text",
+        local: formatList(l.confusedWith),
+        remote: formatList(r.confusedWith),
+      })
+    }
+  } else {
+    rows.push({ label: "Content", kind: "text", local: cardSummary(local), remote: cardSummary(remote) })
+  }
+
+  return rows
 }
 
 export function mediaSummary(meta: { mimeType: string; updatedAt: number }): string {

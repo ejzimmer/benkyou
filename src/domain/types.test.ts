@@ -178,6 +178,28 @@ describe("reviewModesForCard", () => {
     expect(reviewModesForCard(card)).toEqual(["grammar_type_construction"])
   })
 
+  it("grammar with no working gap marker gets no review modes at all", () => {
+    // A grammar card is fundamentally a fill-in-the-gap drill — one missing
+    // a real gap (e.g. from a bulk import that skipped validation) isn't a
+    // valid fill-in-the-gap card, so it shouldn't surface for review rather
+    // than showing a degraded fallback.
+    const card: Card = {
+      id: "1",
+      deckId: "d",
+      kind: "grammar",
+      updatedAt: 1,
+      content: {
+        sentenceWithGap: "そこで探しました",
+        gapMarker: "___",
+        construction: "辞書",
+        translationEn: "I searched in the dictionary",
+        readings: {},
+        images: [],
+      },
+    }
+    expect(reviewModesForCard(card)).toEqual([])
+  })
+
   it("vocabulary phrase word gets a reading mode from readingParts", () => {
     const card: Card = {
       id: "1",

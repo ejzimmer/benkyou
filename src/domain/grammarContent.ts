@@ -1,5 +1,6 @@
 import type { GrammarCardContent } from "./types"
 import type { ReadingSegment } from "./readingsMap"
+import { countGaps } from "./grammarGaps"
 
 /**
  * Ordered per-cluster readings for a grammar card's construction, from the
@@ -43,4 +44,15 @@ export function isSingleSided(content: GrammarCardContent): boolean {
   if (content.singleSided !== undefined) return content.singleSided
   const legacyGrammarPoint = (content as { grammarPoint?: string }).grammarPoint
   return Boolean(legacyGrammarPoint?.trim())
+}
+
+/**
+ * True when the sentence actually contains its own gap marker. A grammar
+ * card is fundamentally a fill-in-the-gap drill — one that's missing a
+ * working gap (e.g. from a bulk import that skipped validation) isn't a
+ * valid fill-in-the-gap card, so it gets no review modes rather than a
+ * degraded fallback UI.
+ */
+export function hasInlineGap(content: GrammarCardContent): boolean {
+  return countGaps(content.sentenceWithGap, content.gapMarker) > 0
 }

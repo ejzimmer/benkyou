@@ -456,14 +456,11 @@ export function ReviewSessionPromptBody({
   }
 
   if (m === "grammar_type_construction" && card.kind === "grammar") {
-    const gapMarker = card.content.gapMarker.trim()
-    const hasInlineGap =
-      Boolean(gapMarker) && card.content.sentenceWithGap.includes(gapMarker)
-
     if (column === "question") {
-      const gapCount = hasInlineGap
-        ? countGaps(card.content.sentenceWithGap, gapMarker)
-        : 0
+      const gapCount = countGaps(
+        card.content.sentenceWithGap,
+        card.content.gapMarker,
+      )
       // Only split into one input per gap when the construction already has a
       // matching number of comma-separated answers — otherwise fall back to a
       // single shared input at every gap (e.g. while the card is still being
@@ -503,8 +500,13 @@ export function ReviewSessionPromptBody({
               gapMarker={card.content.gapMarker}
               readings={card.content.readings}
               renderGap={
-                !revealed && hasInlineGap
-                  ? (gapIndex) => {
+                revealed
+                  ? (gapIndex) => (
+                      <span className="gap-filled">
+                        {gapInputValue(gapIndex) || "—"}
+                      </span>
+                    )
+                  : (gapIndex) => {
                       const answerText = gapAnswerText(gapIndex)
                       return (
                         <TypingAnswerInput
@@ -525,13 +527,6 @@ export function ReviewSessionPromptBody({
                         />
                       )
                     }
-                  : revealed
-                    ? (gapIndex) => (
-                        <span className="gap-filled">
-                          {gapInputValue(gapIndex) || "—"}
-                        </span>
-                      )
-                    : undefined
               }
             />
           </div>
@@ -543,12 +538,12 @@ export function ReviewSessionPromptBody({
       )
     }
 
-    // column === "answer": only the rare fallback where the construction has
-    // no inline gap gets a standalone input here — an inline gap's input
-    // lives in the question sentence itself.
+    // The gap's input lives inline in the question sentence, so the answer
+    // column only ever needs to show validation warnings, with no input of
+    // its own to anchor them against.
     if (revealed) return null
-    const warnings = (
-      <>
+    return (
+      <div className="stack">
         {latinWarn && (
           <p className="error">解答は日本語で入力してください。</p>
         )}
@@ -560,30 +555,6 @@ export function ReviewSessionPromptBody({
             「{confusedMatch}」は、このカードの解答と似ています。
           </p>
         )}
-      </>
-    )
-    return (
-      <div className="stack">
-        {hasInlineGap ? (
-          // No input rendered on this side (it's inline in the question
-          // sentence instead), so there's nothing here for a warning to
-          // shift — no need for the anchor/absolute-position treatment
-          // below, which requires an anchored input to measure against.
-          warnings
-        ) : (
-          <div className="answer-input-anchor">
-            <label>
-              <span className="input-label-text">Construction</span>
-              <TypingAnswerInput
-                value={typed}
-                onChange={onTypedChange}
-                onSubmit={onTypedSubmit}
-                focusKey={focusKey}
-              />
-            </label>
-            {warnings}
-          </div>
-        )}
       </div>
     )
   }
@@ -592,14 +563,12 @@ export function ReviewSessionPromptBody({
   // plain kanji (no ruby — that would give away the answer), and the
   // meaning/images hide behind an expander like the vocab reading quiz.
   if (m === "grammar_type_reading" && card.kind === "grammar") {
-    const gapMarker = card.content.gapMarker.trim()
     const sentence = card.content.sentenceWithGap
     const construction = card.content.construction
-    const hasInlineGap = Boolean(gapMarker) && sentence.includes(gapMarker)
     // For a multi-gap sentence with one comma-separated answer per gap, fill
     // each gap with its own answer rather than the whole comma-joined
     // construction — mirroring grammar_oral_meaning's fillFor below.
-    const gapCount = hasInlineGap ? countGaps(sentence, gapMarker) : 0
+    const gapCount = countGaps(sentence, card.content.gapMarker)
     const constructionParts = splitGapAnswers(construction)
     const fillFor = (gapIndex: number) =>
       constructionParts.length === gapCount
@@ -617,18 +586,14 @@ export function ReviewSessionPromptBody({
         <div className="stack prompt-extras-anchor">
           <div className="prompt-extras-row">
             <p className="prompt-main grammar-gap-sentence">
-              {hasInlineGap ? (
-                <RubySentence
-                  sentence={sentence}
-                  gapMarker={card.content.gapMarker}
-                  readings={card.content.readings}
-                  renderGap={(gapIndex) => (
-                    <span className="construction-fill">{fillFor(gapIndex)}</span>
-                  )}
-                />
-              ) : (
-                construction
-              )}
+              <RubySentence
+                sentence={sentence}
+                gapMarker={card.content.gapMarker}
+                readings={card.content.readings}
+                renderGap={(gapIndex) => (
+                  <span className="construction-fill">{fillFor(gapIndex)}</span>
+                )}
+              />
             </p>
             {hasHidden && renderExtrasToggle("Show meaning & images")}
           </div>
@@ -711,57 +676,39 @@ export function ReviewSessionPromptBody({
 
   if (m === "grammar_oral_meaning" && card.kind === "grammar") {
     if (column === "answer") return null
-    const gapMarker = card.content.gapMarker.trim()
     const sentence = card.content.sentenceWithGap
     const construction = card.content.construction
-    const hasInlineGap = Boolean(gapMarker) && sentence.includes(gapMarker)
 
-    if (hasInlineGap) {
-      // Fill the gap(s) with the construction so the whole sentence is asked,
-      // with the construction highlighted. When the construction has as many
-      // comma-separated answers (using either "," or "、") as there are gaps,
-      // map one answer per gap.
-      const gapCount = countGaps(sentence, gapMarker)
-      const parts = splitGapAnswers(construction)
-      const fillFor = (gapIndex: number) =>
-        parts.length === gapCount ? parts[gapIndex] ?? construction : construction
-
-      return (
-        <div className="stack">
-          <p className="prompt-main grammar-gap-sentence">
-            <RubySentence
-              sentence={sentence}
-              gapMarker={card.content.gapMarker}
-              readings={card.content.readings}
-              renderGap={(gapIndex) => {
-                const fill = fillFor(gapIndex)
-                return (
-                  <span className="construction-fill">
-                    <RubyWord
-                      surface={fill}
-                      reading={readingForConstruction(
-                        fill,
-                        card.content.readings,
-                      )}
-                    />
-                  </span>
-                )
-              }}
-            />
-          </p>
-        </div>
-      )
-    }
+    // Fill the gap(s) with the construction so the whole sentence is asked,
+    // with the construction highlighted. When the construction has as many
+    // comma-separated answers (using either "," or "、") as there are gaps,
+    // map one answer per gap.
+    const gapCount = countGaps(sentence, card.content.gapMarker)
+    const parts = splitGapAnswers(construction)
+    const fillFor = (gapIndex: number) =>
+      parts.length === gapCount ? parts[gapIndex] ?? construction : construction
 
     return (
       <div className="stack">
-        <p className="prompt-main">
-          <RubyWord
-            surface={construction}
-            reading={readingForConstruction(
-              construction,
-              card.content.readings,
-            )}
+        <p className="prompt-main grammar-gap-sentence">
+          <RubySentence
+            sentence={sentence}
+            gapMarker={card.content.gapMarker}
+            readings={card.content.readings}
+            renderGap={(gapIndex) => {
+              const fill = fillFor(gapIndex)
+              return (
+                <span className="construction-fill">
+                  <RubyWord
+                    surface={fill}
+                    reading={readingForConstruction(
+                      fill,
+                      card.content.readings,
+                    )}
+                  />
+                </span>
+              )
+            }}
           />
         </p>
       </div>

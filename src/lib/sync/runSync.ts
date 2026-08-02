@@ -4,6 +4,7 @@ import type { Card, Deck } from "../../domain/types"
 import { db, type MediaRow, type SchedulingRow } from "../db/schema"
 import {
   cardChanged,
+  cardDiffRows,
   cardSummary,
   deckChanged,
   deckSummary,
@@ -11,7 +12,7 @@ import {
   mediaSummary,
   resolveEntityMerge,
   schedulingChanged,
-  schedulingDiffDetails,
+  schedulingDiffRows,
   schedulingSummary,
   summariesLookIdentical,
   mediaBlobDigest,
@@ -45,12 +46,36 @@ import {
 import { syncLog, syncLogTimed } from "./syncLog"
 import { yieldPeriodically } from "../yieldToMain"
 
+/**
+ * True when there's nothing meaningful to show the user for this conflict —
+ * safe to auto-resolve by timestamp without prompting. Reaching this
+ * function at all already means the full underlying payload differs (each
+ * call site checks that beforehand), so this has to be judged against the
+ * same comparison the modal itself would show, not the coarser one-line
+ * summary — text that "looks the same" isn't proof the data does:
+ *  - deck: the summary *is* the full payload (just the name), so comparing
+ *    it is exactly as accurate as comparing the payload.
+ *  - card/scheduling: diffRows is the same per-field diff the modal renders,
+ *    so "no rows" here means the modal would show nothing either.
+ *  - media: reaching a conflict for media always means the content digest
+ *    differs (that's the only way in), so there's never a safe auto-resolve
+ *    — any match here would be the one-line summary (mime type + a
+ *    timestamp) coincidentally matching text while the bytes still differ.
+ */
+export function nothingToCompare(conflict: SyncConflict): boolean {
+  if (conflict.entityType === "card" || conflict.entityType === "scheduling") {
+    return conflict.diffRows.length === 0
+  }
+  if (conflict.entityType === "media") return false
+  return summariesLookIdentical(conflict.localSummary, conflict.remoteSummary)
+}
+
 async function resolveConflictChoice(
   conflict: SyncConflict,
   onConflict: (c: SyncConflict) => Promise<SyncConflictChoice>,
 ): Promise<SyncConflictChoice> {
-  if (summariesLookIdentical(conflict.localSummary, conflict.remoteSummary)) {
-    syncLog("auto-resolved conflict (identical summary)", {
+  if (nothingToCompare(conflict)) {
+    syncLog("auto-resolved conflict (nothing to compare)", {
       entityType: conflict.entityType,
       entityId: conflict.entityId,
     })
@@ -359,6 +384,8 @@ async function collectEntityConflicts(
           remoteUpdatedAt: remoteCard.updatedAt,
           localSummary: cardSummary(local),
           remoteSummary: cardSummary(remoteCard),
+          contextLabel: cardSummary(local),
+          diffRows: cardDiffRows(local, remoteCard),
           local,
           remote: remoteCard,
         },
@@ -431,7 +458,7 @@ async function collectEntityConflicts(
           localSummary: schedulingSummary(local),
           remoteSummary: schedulingSummary(remoteRow),
           contextLabel: card ? cardSummary(card) : undefined,
-          differences: schedulingDiffDetails(local, remoteRow),
+          diffRows: schedulingDiffRows(local, remoteRow),
           local,
           remote: remoteRow,
         },
