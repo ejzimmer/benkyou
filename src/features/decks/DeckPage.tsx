@@ -26,6 +26,7 @@ export function DeckPage() {
   )
   const [q, setQ] = useState("")
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleteErr, setDeleteErr] = useState<string | null>(null)
 
   const schedulingRows = useLiveQuery(async () => {
     const cardIds = (cards ?? []).map((c) => c.id)
@@ -74,13 +75,18 @@ export function DeckPage() {
   }, [cards, q])
 
   function onDeleteDeck() {
+    setDeleteErr(null)
     setConfirmingDelete(true)
   }
 
-  function onConfirmDeleteDeck() {
+  async function onConfirmDeleteDeck() {
     setConfirmingDelete(false)
-    navigate("/")
-    deleteDeck(deckId).catch(console.error)
+    try {
+      await deleteDeck(deckId)
+      navigate("/")
+    } catch (x) {
+      setDeleteErr(x instanceof Error ? x.message : "削除に失敗しました。")
+    }
   }
 
   if (deck === undefined) return <div className="page">読み込み中</div>
@@ -114,6 +120,8 @@ export function DeckPage() {
           カードを作る
         </Link>
       </div>
+
+      {deleteErr && <p className="error">{deleteErr}</p>}
 
       <section className="panel">
         <input
