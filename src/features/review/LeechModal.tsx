@@ -1,4 +1,4 @@
-import { useScrollShadow } from "../../ui/useScrollShadow"
+import { useModalPanelRef } from "../../ui/useModalPanelRef"
 
 type Props = {
   onEdit: () => void
@@ -7,7 +7,7 @@ type Props = {
 }
 
 export function LeechModal({ onEdit, onDelete, onDismiss }: Props) {
-  const panelRef = useScrollShadow<HTMLDivElement>()
+  const panelRef = useModalPanelRef<HTMLDivElement>()
   return (
     <div
       className="modal-backdrop"
@@ -17,7 +17,7 @@ export function LeechModal({ onEdit, onDelete, onDismiss }: Props) {
     >
       <div
         ref={panelRef}
-        className="modal-panel panel"
+        className="modal-panel panel leech-modal-panel"
         onClick={(e) => e.stopPropagation()}
       >
         <h2>リーチと判定されました</h2>

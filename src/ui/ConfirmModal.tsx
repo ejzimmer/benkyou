@@ -1,4 +1,4 @@
-import { useScrollShadow } from "./useScrollShadow"
+import { useModalPanelRef } from "./useModalPanelRef"
 
 type Props = {
   message: string
@@ -13,7 +13,7 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: Props) {
-  const panelRef = useScrollShadow<HTMLDivElement>()
+  const panelRef = useModalPanelRef<HTMLDivElement>()
   return (
     <div
       className="modal-backdrop"
