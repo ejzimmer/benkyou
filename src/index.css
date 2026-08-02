@@ -2114,6 +2114,15 @@ code {
   justify-content: flex-end;
 }
 
+.modal-panel.leech-modal-panel {
+  width: fit-content;
+  max-width: none;
+}
+
+.leech-modal-panel h2 {
+  white-space: nowrap;
+}
+
 .leech-modal-footer {
   justify-content: flex-end;
 }

@@ -1,5 +1,5 @@
 import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
-import { useScrollShadow } from "../../ui/useScrollShadow"
+import { useModalPanelRef } from "../../ui/useModalPanelRef"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { REVIEW_MODE_LABELS } from "../../features/review/reviewFlowHelpers"
 import { formatDateTimeJa } from "../formatDate"
@@ -83,7 +83,7 @@ export function SyncConflictModal({ conflict, onChoose }: Props) {
           : "画像の競合"
 
   const rows = buildRows(conflict)
-  const panelRef = useScrollShadow<HTMLDivElement>()
+  const panelRef = useModalPanelRef<HTMLDivElement>()
   const localIsNewer = conflict.localUpdatedAt >= conflict.remoteUpdatedAt
 
   return (

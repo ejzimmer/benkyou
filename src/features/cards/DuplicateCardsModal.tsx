@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { CARD_KIND_LABELS, type Card } from "../../domain/types"
 import { japaneseWordForCard } from "../../domain/duplicates"
-import { useScrollShadow } from "../../ui/useScrollShadow"
+import { useModalPanelRef } from "../../ui/useModalPanelRef"
 
 type Props = {
   matches: Card[]
@@ -18,7 +18,7 @@ export function DuplicateCardsModal({
   onMerge,
   onClose,
 }: Props) {
-  const panelRef = useScrollShadow<HTMLDivElement>()
+  const panelRef = useModalPanelRef<HTMLDivElement>()
   return (
     <div
       className="modal-backdrop"
