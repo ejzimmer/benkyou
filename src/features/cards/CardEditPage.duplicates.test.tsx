@@ -36,6 +36,7 @@ describe("CardEditPage duplicate warning", () => {
   })
 
   it("warns about duplicate Japanese text across decks without blocking save", async () => {
+    await db.decks.put({ id: "deck-2", name: "Other deck", updatedAt: Date.now() })
     await db.cards.put({
       id: "existing-card",
       deckId: "deck-2",
@@ -50,10 +51,14 @@ describe("CardEditPage duplicate warning", () => {
     await user.type(screen.getByLabelText("日本語で"), "猫")
 
     expect(
-      await screen.findByText(
-        /same Japanese word, including in another deck.*still save/i,
-      ),
+      await screen.findByText("この単語を含むカードが、既に出席しています。"),
     ).toBeInTheDocument()
+    const cardLink = screen.getByRole("link", { name: /猫 - cat/ })
+    expect(cardLink).toHaveAttribute("href", "/decks/deck-2/cards/existing-card")
+    expect(cardLink).toHaveAttribute("target", "_blank")
+    const deckLink = screen.getByRole("link", { name: /Other deck/ })
+    expect(deckLink).toHaveAttribute("href", "/decks/deck-2")
+    expect(deckLink).toHaveAttribute("target", "_blank")
 
     await user.type(screen.getByLabelText("意味"), "cat")
     await user.click(screen.getByRole("button", { name: "保存" }))
