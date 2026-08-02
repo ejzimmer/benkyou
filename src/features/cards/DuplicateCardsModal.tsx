@@ -65,7 +65,11 @@ export function DuplicateCardsModal({
         {error && <p className="error">{error}</p>}
 
         <div className="toolbar duplicate-cards-footer">
-          <button type="button" className="btn primary" onClick={onClose}>
+          <button
+            type="button"
+            className="btn secondary white"
+            onClick={onClose}
+          >
             閉じる
           </button>
         </div>
