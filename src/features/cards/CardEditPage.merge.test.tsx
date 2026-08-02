@@ -148,7 +148,7 @@ describe("CardEditPage duplicate finder / merge", () => {
 
     // The whole-word reading survived the merge and shows in the Reading
     // field...
-    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue(
+    expect(screen.getByRole("textbox", { name: /^読み方$/ })).toHaveValue(
       "けつろんにいたる",
     )
 

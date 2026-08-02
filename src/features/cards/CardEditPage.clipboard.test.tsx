@@ -45,7 +45,7 @@ describe("CardEditPage clipboard images", () => {
     const user = userEvent.setup()
     renderNewCardPage()
 
-    const form = screen.getByRole("form", { name: /card editor/i })
+    const form = screen.getByRole("form", { name: /カード編集フォーム/ })
     const image = new File(["image-bytes"], "clipboard.png", {
       type: "image/png",
     })

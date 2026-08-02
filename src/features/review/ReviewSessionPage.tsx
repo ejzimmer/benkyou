@@ -731,7 +731,7 @@ export function ReviewSessionPage() {
         <Link
           to={deckId ? `/decks/${deckId}` : "/"}
           className="back-link"
-          aria-label="Exit review"
+          aria-label="復習を終了"
           onClick={() => clearReviewSessionTimer(scopeKey)}
         >
           <ChevronLeftIcon className="back-chevron" />
@@ -813,7 +813,7 @@ export function ReviewSessionPage() {
                     ref={showAnswerBtnRef}
                     type="button"
                     className="btn primary"
-                    aria-label="Show answer"
+                    aria-label="答えを見る"
                     onClick={() => tryShowAnswerRef.current()}
                     {...inertWhen(phase === "answer")}
                   >
@@ -871,7 +871,7 @@ export function ReviewSessionPage() {
                         ref={showAnswerBtnRef}
                         type="button"
                         className="btn primary"
-                        aria-label="Show answer"
+                        aria-label="答えを見る"
                         onClick={() => tryShowAnswerRef.current()}
                       >
                         答えを見る

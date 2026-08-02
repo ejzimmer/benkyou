@@ -264,11 +264,11 @@ export function AnswerComparison({
     <div
       className="reading-answer-comparison"
       role="group"
-      aria-label={isCorrect ? "Answer" : "Answer comparison"}
+      aria-label={isCorrect ? "答え" : "答えの比較"}
     >
       <div className="reading-answer-row">
         <span id={correctId} className="answer-grid-label sr-only">
-          Correct answer
+          正解
         </span>
         <span
           className={
@@ -278,18 +278,18 @@ export function AnswerComparison({
         >
           {correctAnswer}
           <span className="maru-mark" aria-hidden="true" />
-          {isCorrect && <span className="sr-only">Correct</span>}
+          {isCorrect && <span className="sr-only">正解です</span>}
         </span>
       </div>
       {diff && (
         <div className="reading-answer-row">
           <span id={yoursId} className="answer-grid-label sr-only">
-            Your answer
+            あなたの答え
           </span>
           <span className="answer-incorrect-row">
             <DiffLine cells={diff.yours} labelId={yoursId} line="yours" />
             <span className="cross-mark" aria-hidden="true" />
-            <span className="sr-only">Incorrect</span>
+            <span className="sr-only">不正解です</span>
           </span>
         </div>
       )}

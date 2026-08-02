@@ -57,8 +57,8 @@ export function CardImage({ mediaId }: { mediaId: string }) {
             className="btn secondary white sync-btn"
             onClick={() => void onSyncClick()}
             disabled={syncing}
-            aria-label="Sync this image"
-            title="Sync this image"
+            aria-label="画像を同期"
+            title="画像を同期"
           >
             {syncing ? (
               <span className="import-spinner" aria-hidden="true" />

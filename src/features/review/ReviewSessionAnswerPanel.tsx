@@ -128,7 +128,7 @@ export function ReviewSessionAnswerPanel({
         ref={correctBtnRef}
         type="button"
         className="btn good"
-        aria-label="Correct"
+        aria-label="正解"
         disabled={pendingIncorrectDelay}
         onClick={() => onJudge(true)}
       >
@@ -138,7 +138,7 @@ export function ReviewSessionAnswerPanel({
         ref={incorrectBtnRef}
         type="button"
         className="btn bad"
-        aria-label="Incorrect"
+        aria-label="不正解"
         disabled={pendingIncorrectDelay}
         onClick={() => onJudge(false)}
       >
@@ -148,7 +148,7 @@ export function ReviewSessionAnswerPanel({
         <button
           type="button"
           className="btn secondary"
-          aria-label="Undo answer"
+          aria-label="やり直す"
           disabled={pendingIncorrectDelay}
           onClick={() => onUndoAnswer()}
         >
@@ -186,7 +186,7 @@ export function ReviewSessionAnswerPanel({
               <div
                 className="word-from-clue-correct"
                 role="group"
-                aria-label="Answer"
+                aria-label="答え"
               >
                 {wordFromClueShowRuby ? (
                   <span
@@ -218,7 +218,7 @@ export function ReviewSessionAnswerPanel({
                   </span>
                 )}
                 <span className="maru-mark" aria-hidden="true" />
-                <span className="sr-only">Correct</span>
+                <span className="sr-only">正解です</span>
               </div>
             ) : (
               <AnswerComparison

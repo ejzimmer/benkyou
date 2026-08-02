@@ -37,10 +37,10 @@ describe("CardEditPage vocab Reading / Furigana fields", () => {
     render(wrapVocab())
 
     expect(
-      screen.getByRole("textbox", { name: /^reading$/i }),
+      screen.getByRole("textbox", { name: /^読み方$/ }),
     ).toBeInTheDocument()
     expect(
-      screen.getByRole("textbox", { name: /^furigana$/i }),
+      screen.getByRole("textbox", { name: /^ふりがな$/ }),
     ).toBeInTheDocument()
     expect(screen.queryByRole("textbox", { name: /^readings$/i })).toBeNull()
   })
@@ -50,10 +50,10 @@ describe("CardEditPage vocab Reading / Furigana fields", () => {
     render(wrapVocab())
 
     await user.type(screen.getByLabelText("日本語で"), "猫")
-    await user.type(screen.getByRole("textbox", { name: /^reading$/i }), "ねこ")
+    await user.type(screen.getByRole("textbox", { name: /^読み方$/ }), "ねこ")
 
-    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue("ねこ")
-    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue("")
+    expect(screen.getByRole("textbox", { name: /^読み方$/ })).toHaveValue("ねこ")
+    expect(screen.getByRole("textbox", { name: /^ふりがな$/ })).toHaveValue("")
   })
 
   it("treats kanjiPhrase=reading lines in Furigana as separate from the tested reading", async () => {
@@ -62,15 +62,15 @@ describe("CardEditPage vocab Reading / Furigana fields", () => {
 
     await user.type(screen.getByLabelText("日本語で"), "結論に至る")
     await user.type(
-      screen.getByRole("textbox", { name: /^reading$/i }),
+      screen.getByRole("textbox", { name: /^読み方$/ }),
       "けつろんにいたる",
     )
-    await user.type(screen.getByRole("textbox", { name: /^furigana$/i }), "至=いた")
+    await user.type(screen.getByRole("textbox", { name: /^ふりがな$/ }), "至=いた")
 
-    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue(
+    expect(screen.getByRole("textbox", { name: /^読み方$/ })).toHaveValue(
       "けつろんにいたる",
     )
-    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue("至=いた")
+    expect(screen.getByRole("textbox", { name: /^ふりがな$/ })).toHaveValue("至=いた")
   })
 
   it("clears the Reading field when the word becomes kana-only, keeping furigana entries", async () => {
@@ -79,8 +79,8 @@ describe("CardEditPage vocab Reading / Furigana fields", () => {
 
     const wordInput = screen.getByLabelText("日本語で")
     await user.type(wordInput, "猫")
-    await user.type(screen.getByRole("textbox", { name: /^reading$/i }), "ねこ")
-    await user.type(screen.getByRole("textbox", { name: /^furigana$/i }), "猫=ねこ")
+    await user.type(screen.getByRole("textbox", { name: /^読み方$/ }), "ねこ")
+    await user.type(screen.getByRole("textbox", { name: /^ふりがな$/ }), "猫=ねこ")
 
     await user.clear(wordInput)
     await user.type(wordInput, "ねこちゃん")
@@ -89,7 +89,7 @@ describe("CardEditPage vocab Reading / Furigana fields", () => {
     // the furigana entry for 猫 is stale too (猫 isn't in the word anymore)
     // but that's left to the author to clean up, same as any unrelated hand
     // authored furigana entry.
-    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue("")
-    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue("猫=ねこ")
+    expect(screen.getByRole("textbox", { name: /^読み方$/ })).toHaveValue("")
+    expect(screen.getByRole("textbox", { name: /^ふりがな$/ })).toHaveValue("猫=ねこ")
   })
 })

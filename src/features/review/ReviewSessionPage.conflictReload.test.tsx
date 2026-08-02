@@ -113,9 +113,9 @@ describe("ReviewSessionPage conflict reload", () => {
     await screen.findByText("猫")
     expect(getDueQueue).toHaveBeenCalledTimes(1)
 
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
     expect(
-      await screen.findByRole("button", { name: /^correct$/i }),
+      await screen.findByRole("button", { name: /^正解$/ }),
     ).toBeInTheDocument()
 
     // A conflict resolves in the background while the answer is on screen —
@@ -137,7 +137,7 @@ describe("ReviewSessionPage conflict reload", () => {
 
     // Judging the card returns to the prompt phase, which flushes the
     // deferred reload.
-    await user.click(screen.getByRole("button", { name: /^correct$/i }))
+    await user.click(screen.getByRole("button", { name: /^正解$/ }))
 
     await waitFor(() => expect(getDueQueue).toHaveBeenCalledTimes(2))
     expect(await screen.findByText("犬")).toBeInTheDocument()
@@ -176,11 +176,11 @@ describe("ReviewSessionPage conflict reload", () => {
 
     // Resumes straight into the answer phase, as intended.
     expect(
-      await screen.findByRole("button", { name: /^correct$/i }),
+      await screen.findByRole("button", { name: /^正解$/ }),
     ).toBeInTheDocument()
 
     // Grade it: queue empties and phase returns to "prompt".
-    await user.click(screen.getByRole("button", { name: /^correct$/i }))
+    await user.click(screen.getByRole("button", { name: /^正解$/ }))
     await screen.findByText("全カードやり終わった!")
 
     // A later mid-session conflict reload happens to find the same card+mode
@@ -204,10 +204,10 @@ describe("ReviewSessionPage conflict reload", () => {
 
     await waitFor(() => expect(getDueQueue).toHaveBeenCalledTimes(2))
     expect(
-      screen.getByRole("button", { name: /show answer/i }),
+      screen.getByRole("button", { name: /答えを見る/ }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole("button", { name: /^correct$/i }),
+      screen.queryByRole("button", { name: /^正解$/ }),
     ).not.toBeInTheDocument()
   })
 
@@ -256,7 +256,7 @@ describe("ReviewSessionPage conflict reload", () => {
 
     // Resumes straight into the answer phase, as intended.
     expect(
-      await screen.findByRole("button", { name: /^correct$/i }),
+      await screen.findByRole("button", { name: /^正解$/ }),
     ).toBeInTheDocument()
 
     // Once applied, the resume params must be gone from the URL — otherwise

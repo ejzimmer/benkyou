@@ -75,15 +75,15 @@ describe("CardEditPage remove image", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /remove image/i }),
+        screen.getByRole("button", { name: /画像を削除/ }),
       ).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole("button", { name: /remove image/i }))
+    await user.click(screen.getByRole("button", { name: /画像を削除/ }))
 
     await waitFor(() => {
       expect(
-        screen.queryByRole("button", { name: /remove image/i }),
+        screen.queryByRole("button", { name: /画像を削除/ }),
       ).not.toBeInTheDocument()
     })
 
@@ -119,7 +119,7 @@ describe("CardEditPage remove image", () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
     })
-    await user.click(screen.getByRole("button", { name: /remove image/i }))
+    await user.click(screen.getByRole("button", { name: /画像を削除/ }))
 
     await waitFor(async () => {
       const savedCard = await db.cards.get("card-1")

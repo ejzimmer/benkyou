@@ -51,7 +51,7 @@ describe("CardEditPage duplicate warning", () => {
 
     expect(
       await screen.findByText(
-        /same Japanese word, including in another deck.*still save/i,
+        /日本語の単語を持つカードが既に1件あります（他のデッキも含む）.*重複カードとして保存/,
       ),
     ).toBeInTheDocument()
 

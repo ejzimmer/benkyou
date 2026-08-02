@@ -53,9 +53,9 @@ describe("CardEditPage Fill in kanji", () => {
 
     await user.type(screen.getByLabelText("日本語で"), "結論に至る")
     await user.type(screen.getByLabelText("例文"), "彼は結論に至った")
-    await user.click(screen.getByRole("button", { name: /fill in kanji/i }))
+    await user.click(screen.getByRole("button", { name: /漢字入れる/ }))
 
-    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue(
+    expect(screen.getByRole("textbox", { name: /^ふりがな$/ })).toHaveValue(
       "結=\n論=\n至=\n彼=",
     )
   })
@@ -65,10 +65,10 @@ describe("CardEditPage Fill in kanji", () => {
     render(wrapVocab())
 
     await user.type(screen.getByLabelText("日本語で"), "結論に至る")
-    await user.type(screen.getByRole("textbox", { name: /^furigana$/i }), "結論=けつろん")
-    await user.click(screen.getByRole("button", { name: /fill in kanji/i }))
+    await user.type(screen.getByRole("textbox", { name: /^ふりがな$/ }), "結論=けつろん")
+    await user.click(screen.getByRole("button", { name: /漢字入れる/ }))
 
-    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue(
+    expect(screen.getByRole("textbox", { name: /^ふりがな$/ })).toHaveValue(
       "結論=けつろん\n至=",
     )
   })
@@ -82,9 +82,9 @@ describe("CardEditPage Fill in kanji", () => {
       "彼は___に至った",
     )
     await user.type(screen.getByLabelText("答え"), "結論")
-    await user.click(screen.getByRole("button", { name: /fill in kanji/i }))
+    await user.click(screen.getByRole("button", { name: /漢字入れる/ }))
 
-    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue(
+    expect(screen.getByRole("textbox", { name: /^ふりがな$/ })).toHaveValue(
       "結=\n論=\n彼=\n至=",
     )
   })

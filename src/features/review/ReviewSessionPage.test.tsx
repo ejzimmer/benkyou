@@ -87,15 +87,15 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
-    expect(await screen.findByRole("button", { name: /^correct$/i })).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: /^correct$/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
+    expect(await screen.findByRole("button", { name: /^正解$/ })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /^正解$/ }))
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
     })
     expect(screen.getByText("残り2枚")).toBeInTheDocument()
   })
@@ -132,10 +132,10 @@ describe("ReviewSessionPage", () => {
 
     const first = renderPage()
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
-    await user.click(await screen.findByRole("button", { name: /^correct$/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
+    await user.click(await screen.findByRole("button", { name: /^正解$/ }))
     await waitFor(() => {
       expect(screen.getByText("残り1枚")).toBeInTheDocument()
     })
@@ -146,10 +146,10 @@ describe("ReviewSessionPage", () => {
     renderPage()
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
-    await user.click(await screen.findByRole("button", { name: /^correct$/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
+    await user.click(await screen.findByRole("button", { name: /^正解$/ }))
 
     expect(await screen.findByText("全カードやり終わった!")).toBeInTheDocument()
     expect(screen.getByText(/分で2枚を復習しました/)).toBeInTheDocument()
@@ -183,15 +183,15 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
     expect(screen.getByText("残り3枚")).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
-    await user.click(await screen.findByRole("button", { name: /^incorrect$/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
+    await user.click(await screen.findByRole("button", { name: /^不正解$/ }))
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
     })
     // Still 3 cards left in the queue overall, but one of them now needs a
     // correcting retry rather than being reviewed for the first time.
@@ -233,31 +233,31 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
-    await user.click(await screen.findByRole("button", { name: /^incorrect$/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
+    await user.click(await screen.findByRole("button", { name: /^不正解$/ }))
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
     })
     expect(screen.getByText("残り2枚・やり直し1枚")).toBeInTheDocument()
 
     // Navigating to edit a card and back remounts the page — the
     // needs-correction split must survive that, not silently reset.
     await user.click(screen.getByRole("link", { name: "カード編集" }))
-    await user.click(await screen.findByRole("link", { name: /back/i }))
+    await user.click(await screen.findByRole("link", { name: /戻る/ }))
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
     })
     expect(screen.getByText("残り2枚・やり直し1枚")).toBeInTheDocument()
 
     // Correctly answering a card that was never marked wrong should still
     // decrement 残り, leaving やり直し untouched.
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
-    await user.click(await screen.findByRole("button", { name: /^correct$/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
+    await user.click(await screen.findByRole("button", { name: /^正解$/ }))
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
     })
     expect(screen.getByText("残り1枚・やり直し1枚")).toBeInTheDocument()
   })
@@ -300,11 +300,11 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
-    await user.click(screen.getByRole("button", { name: /^incorrect$/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
+    await user.click(screen.getByRole("button", { name: /^不正解$/ }))
 
     await waitFor(() => {
       expect(screen.getByText("次。。。")).toBeInTheDocument()
@@ -360,7 +360,7 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
     const editLinkBefore = screen.getByRole("link", { name: "カード編集" })
@@ -375,10 +375,10 @@ describe("ReviewSessionPage", () => {
     const hrefBefore = editLinkBefore.getAttribute("href")
 
     await user.click(editLinkBefore)
-    await user.click(await screen.findByRole("link", { name: /back/i }))
+    await user.click(await screen.findByRole("link", { name: /戻る/ }))
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
     const editLinkAfter = screen.getByRole("link", { name: "カード編集" })
@@ -413,7 +413,7 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
     expect(container.querySelector(".review-columns")).toHaveClass("flip-card")
@@ -450,7 +450,7 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
     expect(container.querySelector(".review-columns")).toHaveClass(
@@ -496,12 +496,12 @@ describe("ReviewSessionPage", () => {
     await user.type(input, "ほけ")
 
     await user.click(screen.getByRole("link", { name: "カード編集" }))
-    await user.click(await screen.findByRole("link", { name: /back/i }))
+    await user.click(await screen.findByRole("link", { name: /戻る/ }))
 
     const restoredInput = await screen.findByLabelText(/ひらがなで/)
     expect(restoredInput).toHaveValue("ほけ")
     expect(
-      screen.queryByRole("button", { name: /^correct$/i }),
+      screen.queryByRole("button", { name: /^正解$/ }),
     ).not.toBeInTheDocument()
   })
 
@@ -539,14 +539,14 @@ describe("ReviewSessionPage", () => {
     const input = await screen.findByLabelText(/ひらがなで/)
     await user.type(input, "ほけ{Enter}")
     expect(
-      await screen.findByRole("button", { name: /^correct$/i }),
+      await screen.findByRole("button", { name: /^正解$/ }),
     ).toBeInTheDocument()
 
     await user.click(screen.getByRole("link", { name: "カード編集" }))
-    await user.click(await screen.findByRole("link", { name: /back/i }))
+    await user.click(await screen.findByRole("link", { name: /戻る/ }))
 
     expect(
-      await screen.findByRole("button", { name: /^correct$/i }),
+      await screen.findByRole("button", { name: /^正解$/ }),
     ).toBeInTheDocument()
     expect(
       document.querySelector('[data-reading-diff-line="yours"]')?.textContent,
@@ -581,13 +581,13 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
     expect(screen.getByText("猫")).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
 
-    expect(await screen.findByRole("button", { name: /^correct$/i })).toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: /^正解$/ })).toBeInTheDocument()
     expect(screen.getByText("猫")).toBeInTheDocument()
     expect(
       document.querySelector('[data-reading-diff-line="correct"]'),
@@ -622,11 +622,11 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
-    await user.click(screen.getByRole("button", { name: /show answer/i }))
-    await user.click(screen.getByRole("button", { name: /^correct$/i }))
+    await user.click(screen.getByRole("button", { name: /答えを見る/ }))
+    await user.click(screen.getByRole("button", { name: /^正解$/ }))
 
     // Grading is async (it writes the undo record before the queue empties).
     // Wait for the queue to empty so the undo record is committed before we
@@ -636,7 +636,7 @@ describe("ReviewSessionPage", () => {
     await user.click(screen.getByRole("button", { name: "取り消す" }))
 
     expect(
-      await screen.findByRole("button", { name: /^correct$/i }),
+      await screen.findByRole("button", { name: /^正解$/ }),
     ).toBeInTheDocument()
     expect(screen.getByText("猫")).toBeInTheDocument()
     expect(
@@ -672,18 +672,18 @@ describe("ReviewSessionPage", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /show answer/i })).toBeEnabled()
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
 
     // Enter a wrong reading (missing ん), reveal, and mark it incorrect.
     const input = screen.getByRole("textbox")
     fireEvent.change(input, { target: { value: "ほけ" } })
     fireEvent.keyDown(input, { key: "Enter" })
-    await user.click(await screen.findByRole("button", { name: /^incorrect$/i }))
+    await user.click(await screen.findByRole("button", { name: /^不正解$/ }))
 
     // Wait for the grade to land (the prompt returns) so the undo record is
     // committed before we undo — otherwise undo can race the grade.
-    await screen.findByRole("button", { name: /show answer/i })
+    await screen.findByRole("button", { name: /答えを見る/ })
 
     await user.click(
       screen.getByRole("button", { name: "取り消す" }),
@@ -694,7 +694,7 @@ describe("ReviewSessionPage", () => {
     // prompt, so `findByText` can resolve before the undo's async state
     // updates land — assert on the actual diff content via `waitFor` rather
     // than a synchronous check right after.
-    expect(await screen.findByText("Your answer")).toBeInTheDocument()
+    expect(await screen.findByText("あなたの答え")).toBeInTheDocument()
     await waitFor(() => {
       expect(
         document.querySelector('[data-reading-diff-line="yours"]')?.textContent,
@@ -733,7 +733,7 @@ describe("ReviewSessionPage", () => {
     await user.type(input, "しゅかん{Enter}")
 
     const comparison = await screen.findByRole("group", {
-      name: /answer comparison/i,
+      name: /答えの比較/,
     })
     const correctLine = comparison.querySelector(
       '[data-reading-diff-line="correct"]',
@@ -743,7 +743,7 @@ describe("ReviewSessionPage", () => {
     expect(screen.getByText("瞬間")).toBeInTheDocument()
     expect(correctLine).toHaveTextContent("しゅんかん")
     expect(typedLine).toHaveTextContent("しゅ-かん")
-    expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
+    expect(screen.getByRole("button", { name: /^不正解$/ })).toHaveFocus()
   })
 
   it("blocks submitting a reading answer that contains kanji, instead of grading it", async () => {
@@ -780,9 +780,9 @@ describe("ReviewSessionPage", () => {
       await screen.findByText(/ひらがなのみを使用/),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole("button", { name: /^correct$/i }),
+      screen.queryByRole("button", { name: /^正解$/ }),
     ).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
   })
 
   it("blocks submitting a kana-only answer for a type-the-word question whose answer has kanji", async () => {
@@ -823,9 +823,9 @@ describe("ReviewSessionPage", () => {
       await screen.findByText(/漢字が必要/),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole("button", { name: /^correct$/i }),
+      screen.queryByRole("button", { name: /^正解$/ }),
     ).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
   })
 
   it("blocks submitting a word flagged as confusable, instead of grading it", async () => {
@@ -867,9 +867,9 @@ describe("ReviewSessionPage", () => {
       await screen.findByText(/このカードの解答と似ています/),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole("button", { name: /^correct$/i }),
+      screen.queryByRole("button", { name: /^正解$/ }),
     ).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
   })
 
   it("blocks submitting a kana-only answer for a fill-in-the-gap construction whose answer has kanji", async () => {
@@ -901,16 +901,16 @@ describe("ReviewSessionPage", () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText("Construction gap 1")
+    const input = await screen.findByLabelText("空欄1")
     await user.type(input, "けつろん{Enter}")
 
     expect(
       await screen.findByText(/漢字が必要/),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole("button", { name: /^correct$/i }),
+      screen.queryByRole("button", { name: /^正解$/ }),
     ).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
   })
 
   it("blocks submitting an English answer for a type-the-word question, instead of grading it", async () => {
@@ -951,9 +951,9 @@ describe("ReviewSessionPage", () => {
       await screen.findByText(/解答は日本語で入力してください/),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole("button", { name: /^correct$/i }),
+      screen.queryByRole("button", { name: /^正解$/ }),
     ).not.toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /show answer/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
   })
 
   it("allows a correct answer that legitimately contains Latin script, e.g. a loanword", async () => {
@@ -994,7 +994,7 @@ describe("ReviewSessionPage", () => {
       screen.queryByText(/type the answer in japanese/i),
     ).not.toBeInTheDocument()
     expect(
-      await screen.findByRole("button", { name: /^correct$/i }),
+      await screen.findByRole("button", { name: /^正解$/ }),
     ).toBeInTheDocument()
   })
 
@@ -1034,12 +1034,12 @@ describe("ReviewSessionPage", () => {
     await user.clear(input)
     await user.type(input, "ねこ{Enter}")
 
-    const correctButton = await screen.findByRole("button", { name: /^correct$/i })
+    const correctButton = await screen.findByRole("button", { name: /^正解$/ })
     expect(
       screen.queryByText(/ひらがなのみを使用/),
     ).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: /undo answer/i }))
+    await user.click(screen.getByRole("button", { name: /やり直す/ }))
 
     const reopenedInput = await screen.findByLabelText(/ひらがなで/)
     expect(reopenedInput).toHaveValue("ねこ")
@@ -1084,7 +1084,7 @@ describe("ReviewSessionPage — leech detection", () => {
   async function answerIncorrectlyAndOpenLeechModal(user: ReturnType<typeof userEvent.setup>) {
     const input = await screen.findByLabelText(/ひらがなで/)
     await user.type(input, "ちがう{Enter}")
-    await user.click(await screen.findByRole("button", { name: /^incorrect$/i }))
+    await user.click(await screen.findByRole("button", { name: /^不正解$/ }))
     expect(await screen.findByText("リーチと判定されました")).toBeInTheDocument()
   }
 

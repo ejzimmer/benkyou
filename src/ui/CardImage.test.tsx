@@ -32,7 +32,7 @@ describe("CardImage", () => {
     await waitFor(() => {
       expect(screen.getByText("画像が見つかりません")).toBeInTheDocument()
     })
-    expect(screen.getByRole("button", { name: "Sync this image" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "画像を同期" })).toBeInTheDocument()
   })
 
   it("omits the sync button when offline-only", async () => {
@@ -43,7 +43,7 @@ describe("CardImage", () => {
     await waitFor(() => {
       expect(screen.getByText("画像が見つかりません")).toBeInTheDocument()
     })
-    expect(screen.queryByRole("button", { name: "Sync this image" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "画像を同期" })).not.toBeInTheDocument()
   })
 
   it("retries fetching just this image and shows it once the sync succeeds", async () => {
@@ -51,7 +51,7 @@ describe("CardImage", () => {
     getImageUrl.mockResolvedValueOnce(null)
     const { container } = render(<CardImage mediaId="m1" />)
 
-    const button = await screen.findByRole("button", { name: "Sync this image" })
+    const button = await screen.findByRole("button", { name: "画像を同期" })
 
     getImageUrl.mockResolvedValueOnce("blob:found")
     await user.click(button)

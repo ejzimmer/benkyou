@@ -132,7 +132,7 @@ describe("ReviewSessionPromptBody", () => {
       />,
     )
 
-    const input = screen.getByLabelText("Construction gap 1")
+    const input = screen.getByLabelText("空欄1")
     const sentence = input.closest(".ruby-sentence")
     expect(sentence).not.toBeNull()
 
@@ -318,7 +318,7 @@ describe("ReviewSessionPromptBody", () => {
     )
 
     const toggle = screen.getByRole("button", {
-      name: /show meaning, examples/i,
+      name: /意味・例文・画像/,
     })
     const content = document.getElementById(
       toggle.getAttribute("aria-controls") ?? "",
@@ -418,12 +418,12 @@ describe("ReviewSessionPromptBody", () => {
       onTypedSubmit: vi.fn(),
     })
 
-    expect(screen.getByLabelText("Reading for 結論")).toBeInTheDocument()
-    expect(screen.getByLabelText("Reading for 至る")).toBeInTheDocument()
+    expect(screen.getByLabelText("結論の読み方")).toBeInTheDocument()
+    expect(screen.getByLabelText("至るの読み方")).toBeInTheDocument()
     expect(screen.getAllByRole("textbox")).toHaveLength(2)
 
     const toggle = screen.getByRole("button", {
-      name: /show meaning, examples/i,
+      name: /意味・例文・画像/,
     })
     const content = document.getElementById(
       toggle.getAttribute("aria-controls") ?? "",
@@ -454,14 +454,14 @@ describe("ReviewSessionPromptBody", () => {
 
     render(<StatefulPromptBody item={item} column="answer" />)
 
-    await user.type(screen.getByLabelText("Reading for 結論"), "けつろん")
-    await user.type(screen.getByLabelText("Reading for 至る"), "いたる")
+    await user.type(screen.getByLabelText("結論の読み方"), "けつろん")
+    await user.type(screen.getByLabelText("至るの読み方"), "いたる")
 
     expect(
-      screen.getByLabelText<HTMLInputElement>("Reading for 結論").value,
+      screen.getByLabelText<HTMLInputElement>("結論の読み方").value,
     ).toBe("けつろん")
     expect(
-      screen.getByLabelText<HTMLInputElement>("Reading for 至る").value,
+      screen.getByLabelText<HTMLInputElement>("至るの読み方").value,
     ).toBe("いたる")
   })
 
@@ -499,10 +499,10 @@ describe("ReviewSessionPromptBody", () => {
     const fill = container.querySelector(".construction-fill")
     expect(fill?.textContent).toBe("結論に至る")
     expect(fill?.querySelector("ruby")).toBeNull()
-    expect(screen.getByLabelText("Reading for 結論")).toBeInTheDocument()
-    expect(screen.getByLabelText("Reading for 至る")).toBeInTheDocument()
+    expect(screen.getByLabelText("結論の読み方")).toBeInTheDocument()
+    expect(screen.getByLabelText("至るの読み方")).toBeInTheDocument()
     // The meaning sits behind the collapsed expander, not shown up front.
-    const toggle = screen.getByRole("button", { name: /show meaning/i })
+    const toggle = screen.getByRole("button", { name: /意味/ })
     expect(toggle).toHaveAttribute("aria-expanded", "false")
     const content = document.getElementById(
       toggle.getAttribute("aria-controls") ?? "",
@@ -678,7 +678,7 @@ describe("ReviewSessionPromptBody", () => {
       />,
     )
 
-    expect(screen.getByLabelText("Construction gap 1")).not.toHaveFocus()
+    expect(screen.getByLabelText("空欄1")).not.toHaveFocus()
     vi.unstubAllGlobals()
   })
 
@@ -807,8 +807,8 @@ describe("ReviewSessionPromptBody — multiple gaps", () => {
       />,
     )
 
-    expect(screen.getByLabelText("Construction gap 1")).toBeInTheDocument()
-    expect(screen.getByLabelText("Construction gap 2")).toBeInTheDocument()
+    expect(screen.getByLabelText("空欄1")).toBeInTheDocument()
+    expect(screen.getByLabelText("空欄2")).toBeInTheDocument()
     expect(screen.getAllByRole("textbox")).toHaveLength(2)
     vi.unstubAllGlobals()
   })
@@ -817,14 +817,14 @@ describe("ReviewSessionPromptBody — multiple gaps", () => {
     const user = userEvent.setup()
     render(<StatefulPromptBody item={twoGapItem} column="question" />)
 
-    await user.type(screen.getByLabelText("Construction gap 1"), "流し")
-    await user.type(screen.getByLabelText("Construction gap 2"), "呼ぶ")
+    await user.type(screen.getByLabelText("空欄1"), "流し")
+    await user.type(screen.getByLabelText("空欄2"), "呼ぶ")
 
     expect(
-      screen.getByLabelText<HTMLInputElement>("Construction gap 1").value,
+      screen.getByLabelText<HTMLInputElement>("空欄1").value,
     ).toBe("流し")
     expect(
-      screen.getByLabelText<HTMLInputElement>("Construction gap 2").value,
+      screen.getByLabelText<HTMLInputElement>("空欄2").value,
     ).toBe("呼ぶ")
   })
 
