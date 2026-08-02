@@ -50,7 +50,7 @@ describe("CardEditPage load existing", () => {
     await waitFor(() => {
       expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
     })
-    expect(screen.queryByText(/card not found/i)).toBeNull()
+    expect(screen.queryByText(/カードが見つかりません/)).toBeNull()
   })
 
   it("shows not found when card belongs to another deck", async () => {
@@ -79,7 +79,7 @@ describe("CardEditPage load existing", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText(/card not found/i)).toBeInTheDocument()
+      expect(screen.getByText(/カードが見つかりません/)).toBeInTheDocument()
     })
   })
 

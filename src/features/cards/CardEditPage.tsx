@@ -231,7 +231,7 @@ export function CardEditPage() {
     }
     setLoading(false)
     if (!loadedCard || loadedCard.deckId !== deckId) {
-      setErr({ field: null, message: "Card not found" })
+      setErr({ field: null, message: "カードが見つかりません。" })
       return
     }
     setErr(null)
