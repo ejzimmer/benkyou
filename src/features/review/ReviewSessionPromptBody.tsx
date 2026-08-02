@@ -251,7 +251,7 @@ export function ReviewSessionPromptBody({
               <RubyWord surface={card.content.wordJa} reading={card.content.reading} />
             )}
           </p>
-          {hasHidden && renderExtrasToggle("Show example sentences")}
+          {hasHidden && renderExtrasToggle("例文を表示")}
         </div>
         {hasHidden &&
           renderExtrasContent(
@@ -308,7 +308,7 @@ export function ReviewSessionPromptBody({
         <div className="stack prompt-extras-anchor">
           <div className="prompt-extras-row">
             <p className="prompt-main">{card.content.wordJa}</p>
-            {hasHidden && renderExtrasToggle("Show meaning, examples & images")}
+            {hasHidden && renderExtrasToggle("意味・例文・画像を表示")}
           </div>
           {hasHidden &&
             renderExtrasContent(
@@ -364,7 +364,7 @@ export function ReviewSessionPromptBody({
                     focusKey={focusKey}
                     autoComplete="off"
                     autoFocus={i === 0}
-                    ariaLabel={`Reading for ${seg.text}`}
+                    ariaLabel={`${seg.text}の読み方`}
                   />
                 </label>
               ))}
@@ -522,7 +522,7 @@ export function ReviewSessionPromptBody({
                               card.content.readings,
                             ),
                           )}
-                          ariaLabel={`Construction gap ${gapIndex + 1}`}
+                          ariaLabel={`空欄${gapIndex + 1}`}
                           autoFocus={gapIndex === 0}
                         />
                       )
@@ -595,7 +595,7 @@ export function ReviewSessionPromptBody({
                 )}
               />
             </p>
-            {hasHidden && renderExtrasToggle("Show meaning & images")}
+            {hasHidden && renderExtrasToggle("意味・画像を表示")}
           </div>
           {hasHidden &&
             renderExtrasContent(
@@ -642,7 +642,7 @@ export function ReviewSessionPromptBody({
                     focusKey={focusKey}
                     autoComplete="off"
                     autoFocus={i === 0}
-                    ariaLabel={`Reading for ${seg.text}`}
+                    ariaLabel={`${seg.text}の読み方`}
                   />
                 </label>
               ))}

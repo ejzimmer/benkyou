@@ -31,7 +31,7 @@ export function SyncButton() {
     }
   }
 
-  const label = conflictActive ? "Resolve conflict…" : syncing ? "Syncing…" : "Sync"
+  const label = conflictActive ? "競合を解決…" : syncing ? "同期中…" : "同期"
 
   return (
     <span className="sync-inline">

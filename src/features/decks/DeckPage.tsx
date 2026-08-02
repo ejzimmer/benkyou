@@ -95,7 +95,7 @@ export function DeckPage() {
   return (
     <div className="page">
       <header className="header app-header">
-        <PageHeading backTo="/" backLabel="Back to decks">
+        <PageHeading backTo="/" backLabel="デッキ一覧に戻る">
           {deck.name}
         </PageHeading>
         <div className="header-actions">
@@ -151,8 +151,8 @@ export function DeckPage() {
                         <button
                           type="button"
                           className="btn secondary unsuspend-btn"
-                          title="Resume reviewing this card"
-                          aria-label="Resume reviewing this card"
+                          title="このカードの復習を再開"
+                          aria-label="このカードの復習を再開"
                           onClick={() => unsuspendCard(c.id).catch(console.error)}
                         >
                           再開
