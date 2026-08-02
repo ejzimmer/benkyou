@@ -68,7 +68,7 @@ describe("ReviewSessionComplete", () => {
         <ReviewSessionComplete backTo="/" scopeKey="deck-1" onUndoLastJudgement={() => {}} />
       </MemoryRouter>,
     )
-    await user.click(screen.getByRole("link", { name: "Exit review" }))
+    await user.click(screen.getByRole("link", { name: "復習を終了" }))
 
     expect(resumeReviewSessionTimerIfPresent("deck-1")).toBe(false)
   })

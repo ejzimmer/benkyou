@@ -5,15 +5,16 @@ import { AnswerComparison } from "./AnswerComparison"
 describe("AnswerComparison", () => {
   it("shows only the correct answer when right", () => {
     render(<AnswerComparison typed="ねこ" expected="ねこ" />)
-    const group = screen.getByRole("group", { name: "Answer" })
-    expect(within(group).getByText("Correct answer")).toBeInTheDocument()
-    expect(within(group).queryByText("Your answer")).not.toBeInTheDocument()
+    const group = screen.getByRole("group", { name: "答え" })
+    expect(within(group).getByText("正解")).toBeInTheDocument()
+    expect(within(group).getByText("正解です")).toBeInTheDocument()
+    expect(within(group).queryByText("あなたの答え")).not.toBeInTheDocument()
     expect(within(group).getByText("ねこ")).toBeInTheDocument()
   })
 
   it("stacks correct over yours with aligned, highlighted diffs when wrong", () => {
     render(<AnswerComparison typed="しゅかん" expected="しゅんかん" />)
-    const group = screen.getByRole("group", { name: "Answer comparison" })
+    const group = screen.getByRole("group", { name: "答えの比較" })
     const correct = group.querySelector('[data-reading-diff-line="correct"]')!
     const yours = group.querySelector('[data-reading-diff-line="yours"]')!
 
@@ -40,7 +41,7 @@ describe("AnswerComparison", () => {
     const { container } = render(
       <AnswerComparison typed="犬" expected="猫" reading="ねこ" />,
     )
-    expect(screen.getByText("Your answer")).toBeInTheDocument()
+    expect(screen.getByText("あなたの答え")).toBeInTheDocument()
     expect(container.querySelector("rt")?.textContent).toBe("ねこ")
   })
 

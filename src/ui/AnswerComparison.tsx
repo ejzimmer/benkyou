@@ -278,7 +278,7 @@ export function AnswerComparison({
         >
           {correctAnswer}
           <span className="maru-mark" aria-hidden="true" />
-          {isCorrect && <span className="sr-only">正解</span>}
+          {isCorrect && <span className="sr-only">正解です</span>}
         </span>
       </div>
       {diff && (
@@ -289,7 +289,7 @@ export function AnswerComparison({
           <span className="answer-incorrect-row">
             <DiffLine cells={diff.yours} labelId={yoursId} line="yours" />
             <span className="cross-mark" aria-hidden="true" />
-            <span className="sr-only">不正解</span>
+            <span className="sr-only">不正解です</span>
           </span>
         </div>
       )}

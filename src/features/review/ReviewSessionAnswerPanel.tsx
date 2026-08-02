@@ -218,7 +218,7 @@ export function ReviewSessionAnswerPanel({
                   </span>
                 )}
                 <span className="maru-mark" aria-hidden="true" />
-                <span className="sr-only">正解</span>
+                <span className="sr-only">正解です</span>
               </div>
             ) : (
               <AnswerComparison
