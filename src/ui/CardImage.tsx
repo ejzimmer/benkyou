@@ -30,7 +30,7 @@ export function CardImage({ mediaId }: { mediaId: string }) {
     return (
       <span className="muted">
         {user && !offlineOnly
-          ? "Image unavailable (try Sync now in Settings)"
+          ? "Image unavailable (try Sync in the header)"
           : "Image unavailable"}
       </span>
     )
