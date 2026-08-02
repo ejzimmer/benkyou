@@ -89,7 +89,7 @@ function ImagePreviewList({
           <button
             type="button"
             className="image-preview-remove"
-            aria-label="Remove image"
+            aria-label="画像を削除"
             onClick={() => onRemove(id)}
           >
             ✕
@@ -100,7 +100,7 @@ function ImagePreviewList({
         type="button"
         className="image-preview-add"
         onClick={onAdd}
-        aria-label="Add image"
+        aria-label="画像を追加"
       >
         <span
           className="btn secondary icon add-card-btn image-preview-add-icon"
@@ -470,7 +470,7 @@ export function CardEditPage() {
   return (
     <div className="page">
       <header className="header app-header">
-        <PageHeading backTo={backTo} backLabel={returnTo ? "Back" : "Back to deck"}>
+        <PageHeading backTo={backTo} backLabel={returnTo ? "戻る" : "デッキに戻る"}>
           {isNew ? "新規カード" : "カード編集"}
         </PageHeading>
         <div className="header-actions">
@@ -513,11 +513,11 @@ export function CardEditPage() {
         onSubmit={onSubmit}
         onPaste={onPaste}
         className="panel stack card-edit-form"
-        aria-label="Card editor"
+        aria-label="カード編集フォーム"
         noValidate
       >
         <Switch
-          legend="Type"
+          legend="カードの種類"
           name="card-kind"
           value={kind}
           onChange={onKindChange}
@@ -566,7 +566,7 @@ export function CardEditPage() {
               ひらがなで
               <input
                 className={inputClass("reading")}
-                aria-label="Reading"
+                aria-label="読み方"
                 value={vocab.reading ?? ""}
                 onChange={(e) => {
                   const reading = e.target.value
@@ -599,7 +599,7 @@ export function CardEditPage() {
               <textarea
                 className="input"
                 rows={4}
-                aria-label="Furigana"
+                aria-label="ふりがな"
                 value={furiganaDraft}
                 onChange={(e) => {
                   const text = e.target.value
@@ -611,7 +611,7 @@ export function CardEditPage() {
             <button
               type="button"
               className="btn secondary align-end"
-              aria-label="Fill in kanji"
+              aria-label="漢字入れる"
               onClick={() => {
                 const next = addMissingKanjiLines(furiganaDraft, [
                   vocab.wordJa,
@@ -628,7 +628,7 @@ export function CardEditPage() {
               <textarea
                 className="input"
                 rows={2}
-                aria-label="Confused words"
+                aria-label="紛らわしい言葉"
                 value={(vocab.confusedWith ?? []).join("\n")}
                 onChange={(e) =>
                   setVocab({
@@ -687,7 +687,7 @@ export function CardEditPage() {
             )}
             <DuplicateJapaneseWarning matches={duplicateJapaneseMatches} />
             <LabeledToggle
-              legend="Testing"
+              legend="テスト"
               name="grammar-sides"
               value={grammar.singleSided ? "one" : "both"}
               onChange={(sides) =>
@@ -712,7 +712,7 @@ export function CardEditPage() {
               ひらがなで
               <input
                 className="input"
-                aria-label="Reading"
+                aria-label="読み方"
                 value={grammar.constructionReading ?? ""}
                 onChange={(e) => {
                   const reading = e.target.value
@@ -729,7 +729,7 @@ export function CardEditPage() {
               <textarea
                 className="input"
                 rows={4}
-                aria-label="Furigana"
+                aria-label="ふりがな"
                 value={furiganaDraft}
                 onChange={(e) => {
                   const text = e.target.value
@@ -741,7 +741,7 @@ export function CardEditPage() {
             <button
               type="button"
               className="btn secondary align-end"
-              aria-label="Fill in kanji"
+              aria-label="漢字入れる"
               onClick={() => {
                 const next = addMissingKanjiLines(furiganaDraft, [
                   grammar.construction,
@@ -758,7 +758,7 @@ export function CardEditPage() {
               <textarea
                 className="input"
                 rows={2}
-                aria-label="Confused words"
+                aria-label="紛らわしい言葉"
                 value={(grammar.confusedWith ?? []).join("\n")}
                 onChange={(e) =>
                   setGrammar({

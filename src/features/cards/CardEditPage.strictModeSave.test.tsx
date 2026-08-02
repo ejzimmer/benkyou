@@ -36,10 +36,10 @@ describe("CardEditPage under StrictMode", () => {
     const wordInput = await screen.findByLabelText("日本語で")
     await user.type(wordInput, "猫")
 
-    const readingInput = screen.getByRole("textbox", { name: /^reading$/i })
+    const readingInput = screen.getByRole("textbox", { name: /^読み方$/ })
     await user.type(readingInput, "ねこ")
 
-    const furiganaTa = screen.getByRole("textbox", { name: /^furigana$/i })
+    const furiganaTa = screen.getByRole("textbox", { name: /^ふりがな$/ })
     await user.type(furiganaTa, "猫=ねこ")
 
     await waitFor(() => {

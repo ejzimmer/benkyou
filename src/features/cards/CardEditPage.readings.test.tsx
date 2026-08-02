@@ -37,7 +37,7 @@ describe("CardEditPage grammar furigana draft", () => {
     const user = userEvent.setup()
     render(wrap(<CardEditPage />))
 
-    const ta = screen.getByRole("textbox", { name: /^furigana$/i })
+    const ta = screen.getByRole("textbox", { name: /^ふりがな$/ })
     await user.type(ta, "私")
     expect(ta).toHaveValue("私")
     await user.type(ta, "=")
@@ -62,7 +62,7 @@ describe("CardEditPage vocabulary furigana draft", () => {
       </MemoryRouter>,
     )
 
-    const ta = screen.getByRole("textbox", { name: /^furigana$/i })
+    const ta = screen.getByRole("textbox", { name: /^ふりがな$/ })
     await user.type(ta, "大好き")
     expect(ta).toHaveValue("大好き")
     await user.type(ta, "=")

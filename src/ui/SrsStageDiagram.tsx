@@ -30,7 +30,7 @@ export function SrsStageDiagram({ state, className }: Props) {
     <span
       className={className ? `srs-stage-diagram ${className}` : "srs-stage-diagram"}
       role="img"
-      aria-label={`SRS stage: ${fsrsStateLabel(state)}`}
+      aria-label={`復習ステージ: ${fsrsStateLabel(state)}`}
     >
       <svg viewBox={`0 0 ${width} 16`} width={width} height={16} aria-hidden="true">
         {DISPLAY_ORDER.slice(1).map((_, i) => (

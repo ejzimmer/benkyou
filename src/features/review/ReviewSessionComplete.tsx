@@ -82,7 +82,7 @@ export function ReviewSessionComplete({ backTo, scopeKey, onUndoLastJudgement }:
         <Link
           to={backTo}
           className="back-link"
-          aria-label="Exit review"
+          aria-label="復習を終了"
           onClick={() => clearReviewSessionTimer(scopeKey)}
         >
           <ChevronLeftIcon className="back-chevron" />

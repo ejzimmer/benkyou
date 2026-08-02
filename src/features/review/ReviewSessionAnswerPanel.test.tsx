@@ -51,23 +51,23 @@ describe("ReviewSessionAnswerPanel", () => {
     )
 
     const answer = screen.getByRole("group", {
-      name: "Answer",
+      name: "答え",
     })
-    const correctLabel = within(answer).getByText("Correct answer")
+    const correctLabel = within(answer).getByText("正解")
     const correctValue = within(answer).getByText("ねこ")
 
     expect(correctLabel.compareDocumentPosition(correctValue)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     )
     expect(correctValue).toHaveClass("reading-answer-value")
-    expect(within(answer).queryByText("Your answer")).not.toBeInTheDocument()
+    expect(within(answer).queryByText("あなたの答え")).not.toBeInTheDocument()
     expect(within(answer).getAllByText("ねこ")).toHaveLength(1)
     expect(
       answer.querySelector(".reading-answer-diff-cell"),
     ).not.toBeInTheDocument()
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
+      expect(screen.getByRole("button", { name: /^正解$/ })).toHaveFocus()
     })
   })
 
@@ -84,10 +84,10 @@ describe("ReviewSessionAnswerPanel", () => {
     )
 
     const comparison = screen.getByRole("group", {
-      name: /answer comparison/i,
+      name: /答えの比較/,
     })
-    const correctLabel = within(comparison).getByText("Correct answer")
-    const typedLabel = within(comparison).getByText("Your answer")
+    const correctLabel = within(comparison).getByText("正解")
+    const typedLabel = within(comparison).getByText("あなたの答え")
     const correctLine = comparison.querySelector(
       '[data-reading-diff-line="correct"]',
     )
@@ -125,7 +125,7 @@ describe("ReviewSessionAnswerPanel", () => {
     ).toHaveClass("reading-answer-diff-gap")
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
+      expect(screen.getByRole("button", { name: /^不正解$/ })).toHaveFocus()
     })
   })
 })
@@ -199,7 +199,7 @@ describe("ReviewSessionAnswerPanel", () => {
 
     const prompt = container.querySelector(".prompt-main")
     const example = container.querySelector(".ruby-sentence")
-    const correctButton = screen.getByRole("button", { name: /^correct$/i })
+    const correctButton = screen.getByRole("button", { name: /^正解$/ })
     const meaning = screen.getByText("cat")
     const image = screen.getByTestId("card-image")
 
@@ -219,7 +219,7 @@ describe("ReviewSessionAnswerPanel", () => {
     )
 
     const prompts = container.querySelectorAll(".prompt-main")
-    const correctButton = screen.getByRole("button", { name: /^correct$/i })
+    const correctButton = screen.getByRole("button", { name: /^正解$/ })
     const meaning = screen.getByText("I searched in the dictionary")
     const image = screen.getByTestId("card-image")
 
@@ -234,7 +234,7 @@ describe("ReviewSessionAnswerPanel", () => {
     renderRevealedReview(vocabItem("vocab_oral_en"))
 
     expect(
-      screen.queryByRole("button", { name: "Undo answer" }),
+      screen.queryByRole("button", { name: "やり直す" }),
     ).not.toBeInTheDocument()
   })
 
@@ -252,7 +252,7 @@ describe("ReviewSessionAnswerPanel", () => {
     )
 
     expect(
-      screen.getByRole("button", { name: "Undo answer" }),
+      screen.getByRole("button", { name: "やり直す" }),
     ).toBeInTheDocument()
   })
 })
@@ -274,7 +274,7 @@ describe("ReviewSessionAnswerPanel", () => {
   it("shows only the furigana card answer after a correct Japanese word entry", () => {
     const { container } = renderAnswerPanel("猫")
 
-    expect(screen.queryByText("Your answer")).toBeNull()
+    expect(screen.queryByText("あなたの答え")).toBeNull()
     // The correct answer carries its reading as furigana.
     expect(container.querySelector("ruby")?.textContent).toBe("猫ねこ")
   })
@@ -283,10 +283,10 @@ describe("ReviewSessionAnswerPanel", () => {
     const { container } = renderAnswerPanel("犬")
 
     expect(
-      screen.getByRole("group", { name: /answer comparison/i }),
+      screen.getByRole("group", { name: /答えの比較/ }),
     ).toBeInTheDocument()
-    expect(screen.getByText("Correct answer")).toBeInTheDocument()
-    expect(screen.getByText("Your answer")).toBeInTheDocument()
+    expect(screen.getByText("正解")).toBeInTheDocument()
+    expect(screen.getByText("あなたの答え")).toBeInTheDocument()
     // The correct answer still shows its furigana reading on hover.
     expect(container.querySelector("rt")?.textContent).toBe("ねこ")
   })
@@ -384,10 +384,10 @@ describe("ReviewSessionAnswerPanel — grammar reading quiz", () => {
       />,
     )
 
-    expect(screen.getByText("Correct answer")).toBeInTheDocument()
-    expect(screen.queryByText("Your answer")).not.toBeInTheDocument()
+    expect(screen.getByText("正解")).toBeInTheDocument()
+    expect(screen.queryByText("あなたの答え")).not.toBeInTheDocument()
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
+      expect(screen.getByRole("button", { name: /^正解$/ })).toHaveFocus()
     })
   })
 
@@ -404,7 +404,7 @@ describe("ReviewSessionAnswerPanel — grammar reading quiz", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
+      expect(screen.getByRole("button", { name: /^不正解$/ })).toHaveFocus()
     })
   })
 })
@@ -423,7 +423,7 @@ describe("ReviewSessionAnswerPanel — multi-gap focus bias", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^incorrect$/i })).toHaveFocus()
+      expect(screen.getByRole("button", { name: /^不正解$/ })).toHaveFocus()
     })
   })
 
@@ -440,7 +440,7 @@ describe("ReviewSessionAnswerPanel — multi-gap focus bias", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
+      expect(screen.getByRole("button", { name: /^正解$/ })).toHaveFocus()
     })
   })
 
@@ -480,7 +480,7 @@ describe("ReviewSessionAnswerPanel — multi-gap focus bias", () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^correct$/i })).toHaveFocus()
+      expect(screen.getByRole("button", { name: /^正解$/ })).toHaveFocus()
     })
   })
 })

@@ -123,8 +123,8 @@ describe("CardEditPage load existing", () => {
     await user.click(screen.getByRole("radio", { name: CARD_KIND_LABELS.vocabulary }))
 
     expect(screen.getByLabelText("日本語で")).toHaveValue("学生")
-    expect(screen.getByRole("textbox", { name: /^reading$/i })).toHaveValue("がくせい")
-    expect(screen.getByRole("textbox", { name: /^furigana$/i })).toHaveValue(
+    expect(screen.getByRole("textbox", { name: /^読み方$/ })).toHaveValue("がくせい")
+    expect(screen.getByRole("textbox", { name: /^ふりがな$/ })).toHaveValue(
       "学生=がくせい",
     )
     expect(screen.getByLabelText("意味")).toHaveValue("student")
@@ -185,7 +185,7 @@ describe("CardEditPage load existing", () => {
     // concept, not furigana, so it isn't surfaced in the Furigana field —
     // that field stays empty and editable rather than getting stuck with
     // stray content leaked in from a different field.
-    const furiganaField = screen.getByRole("textbox", { name: /^furigana$/i })
+    const furiganaField = screen.getByRole("textbox", { name: /^ふりがな$/ })
     expect(furiganaField).toHaveValue("")
     expect(furiganaField).toBeEnabled()
     await user.type(furiganaField, "でも=でも")

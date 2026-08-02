@@ -30,7 +30,7 @@ describe("SyncButton", () => {
 
   it("shows a plain 'Sync' button", () => {
     render(<SyncButton />)
-    const button = screen.getByRole("button", { name: /^sync$/i })
+    const button = screen.getByRole("button", { name: /^同期$/ })
     expect(button).toBeInTheDocument()
     expect(button).not.toBeDisabled()
   })
@@ -50,7 +50,7 @@ describe("SyncButton", () => {
   it("is disabled and shows a spinner while syncing", () => {
     mockSync = { syncing: true, conflictActive: false, lastSyncedAt: null }
     render(<SyncButton />)
-    const button = screen.getByRole("button", { name: /syncing/i })
+    const button = screen.getByRole("button", { name: /同期中/ })
     expect(button).toBeDisabled()
     expect(button.querySelector(".import-spinner")).toBeInTheDocument()
   })
@@ -58,7 +58,7 @@ describe("SyncButton", () => {
   it("is disabled and labelled to resolve a conflict when one is active", () => {
     mockSync = { syncing: false, conflictActive: true, lastSyncedAt: null }
     render(<SyncButton />)
-    const button = screen.getByRole("button", { name: /resolve conflict/i })
+    const button = screen.getByRole("button", { name: /競合を解決/ })
     expect(button).toBeDisabled()
   })
 
@@ -66,7 +66,7 @@ describe("SyncButton", () => {
     const user = userEvent.setup()
     render(<SyncButton />)
 
-    await user.click(screen.getByRole("button", { name: /^sync$/i }))
+    await user.click(screen.getByRole("button", { name: /^同期$/ }))
 
     expect(syncNow).toHaveBeenCalledTimes(1)
   })
@@ -76,7 +76,7 @@ describe("SyncButton", () => {
     const user = userEvent.setup()
     render(<SyncButton />)
 
-    await user.click(screen.getByRole("button", { name: /^sync$/i }))
+    await user.click(screen.getByRole("button", { name: /^同期$/ }))
 
     expect(await screen.findByText("network down")).toBeInTheDocument()
   })
