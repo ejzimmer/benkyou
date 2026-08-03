@@ -8,6 +8,7 @@ import { DeckPage } from "./DeckPage"
 import { resetDatabase } from "../../test/db"
 import * as decksService from "../../services/decks"
 import { createDeck } from "../../services/decks"
+import { createVocabularyCard, loadSchedulingRow, markLeech } from "../../services/cards"
 
 vi.mock("../../lib/firebase", () => ({
   getFirebaseApp: () => null,
@@ -73,5 +74,32 @@ describe("DeckPage", () => {
     expect(screen.getByText("Kanji deck")).toBeInTheDocument()
 
     deleteSpy.mockRestore()
+  })
+
+  it("clears a card's leech flag when its badge is clicked", async () => {
+    const deck = await createDeck("Kanji deck")
+    const card = await createVocabularyCard(deck.id, {
+      wordJa: "保険",
+      reading: "ほけん",
+      definitionsEn: [],
+      images: [],
+      exampleSentences: [],
+    })
+    await markLeech(card.id, "vocab_type_reading")
+    const user = userEvent.setup()
+
+    renderDeckPage(deck.id)
+    const badge = await screen.findByRole("button", { name: "リーチを解除" })
+
+    await user.click(badge)
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("button", { name: "リーチを解除" }),
+      ).not.toBeInTheDocument()
+    })
+    expect(
+      (await loadSchedulingRow(card.id, "vocab_type_reading"))?.isLeech,
+    ).toBe(false)
   })
 })

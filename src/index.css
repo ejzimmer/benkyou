@@ -2101,6 +2101,19 @@ code {
   white-space: nowrap;
 }
 
+button.leech-badge-clear {
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button.leech-badge-clear:hover,
+button.leech-badge-clear:focus-visible {
+  box-shadow:
+    0 0 8px var(--pink),
+    0 0 20px var(--pink);
+}
+
 .sync-conflict-table-scroll {
   overflow-x: auto;
   margin-top: 1rem;

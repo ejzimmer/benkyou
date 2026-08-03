@@ -11,7 +11,7 @@ import {
   type DueItem,
   type JudgementSnapshot,
 } from "../../services/review"
-import { deleteCard, markLeech } from "../../services/cards"
+import { clearLeech, deleteCard, markLeech } from "../../services/cards"
 import { useSync } from "../../lib/sync/SyncContext"
 import { finalizeReadingAnswer, hasLatinScript } from "../../lib/japanese/normalize"
 import { matchesConfusedWord } from "../../lib/japanese/confusedWords"
@@ -622,6 +622,19 @@ export function ReviewSessionPage() {
     advanceAfterIncorrect({ ...item, isLeech: true }, wasWrong, key)
   }
 
+  async function onClearLeech() {
+    if (!current) return
+    const { card, modeId } = current
+    await clearLeech(card.id, modeId)
+    setSessionQueue((q) =>
+      q.map((it) =>
+        it.card.id === card.id && it.modeId === modeId
+          ? { ...it, isLeech: false }
+          : it,
+      ),
+    )
+  }
+
   async function onUndoAnswer() {
     if (snapshot) await restoreSchedulingSnapshot(snapshot)
     setPhase("prompt")
@@ -737,7 +750,7 @@ export function ReviewSessionPage() {
           <ChevronLeftIcon className="back-chevron" />
         </Link>
         <div className="review-header-actions">
-          {item.isLeech && <LeechBadge />}
+          {item.isLeech && <LeechBadge onClear={() => void onClearLeech()} />}
           <p className="muted small">
             残り{remainingCount}枚
             {wrongCount > 0 && `・やり直し${wrongCount}枚`}

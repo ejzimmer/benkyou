@@ -2,7 +2,7 @@ import { useLiveQuery } from "dexie-react-hooks"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { db, type SchedulingRow } from "../../lib/db/schema"
 import { deleteDeck } from "../../services/decks"
-import { unsuspendCard } from "../../services/cards"
+import { clearLeech, unsuspendCard } from "../../services/cards"
 import { isSuspendedDue } from "../../lib/srs/schedule"
 import { useMemo, useState } from "react"
 import { ConfirmModal } from "../../ui/ConfirmModal"
@@ -142,7 +142,9 @@ export function DeckPage() {
                     ? c.content.wordJa
                     : c.content.sentenceWithGap}
                 </Link>
-                {leechCardIds.has(c.id) && <LeechBadge />}
+                {leechCardIds.has(c.id) && (
+                  <LeechBadge onClear={() => clearLeech(c.id).catch(console.error)} />
+                )}
                 <span className="card-schedule">
                   {schedule ? (
                     <>
