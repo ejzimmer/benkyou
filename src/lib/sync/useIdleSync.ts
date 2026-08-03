@@ -35,13 +35,15 @@ export function useIdleSync(
 
     reset()
     for (const event of ACTIVITY_EVENTS) {
-      window.addEventListener(event, reset, { passive: true })
+      // capture: true because "scroll" doesn't bubble — without it,
+      // scrolling inside a nested list wouldn't reach this listener.
+      window.addEventListener(event, reset, { passive: true, capture: true })
     }
 
     return () => {
       clearTimeout(timer)
       for (const event of ACTIVITY_EVENTS) {
-        window.removeEventListener(event, reset)
+        window.removeEventListener(event, reset, { capture: true })
       }
     }
   }, [enabled, timeoutMs])
