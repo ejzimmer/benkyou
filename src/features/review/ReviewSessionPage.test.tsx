@@ -1166,4 +1166,34 @@ describe("ReviewSessionPage — leech detection", () => {
 
     expect(await screen.findByDisplayValue("保険")).toBeInTheDocument()
   })
+
+  it("clears the leech flag when the badge is clicked", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    const card = await seedCardNearLeechThreshold(deck.id)
+
+    render(
+      <MemoryRouter initialEntries={["/review"]}>
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+
+    await answerIncorrectlyAndOpenLeechModal(user)
+    await user.click(screen.getByRole("button", { name: "除外" }))
+    const badge = await screen.findByRole("button", { name: "リーチを解除" })
+
+    await user.click(badge)
+
+    expect(screen.queryByRole("button", { name: "リーチを解除" })).not.toBeInTheDocument()
+    expect(
+      (await loadSchedulingRow(card.id, "vocab_type_reading"))?.isLeech,
+    ).toBe(false)
+  })
 })

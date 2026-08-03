@@ -474,6 +474,26 @@ export async function markLeech(cardId: string, modeId: string): Promise<void> {
   markCardEdited(cardId)
 }
 
+/** Clear a leech flag directly (clicking the badge), without requiring a
+ *  full card edit. Clears one row when `modeId` is given; otherwise every
+ *  leeched row for the card, since a badge shown outside review (e.g.
+ *  DeckPage's) represents "any mode", not a specific one. */
+export async function clearLeech(cardId: string, modeId?: string): Promise<void> {
+  const rows = modeId
+    ? [await loadSchedulingRow(cardId, modeId)].filter(
+        (r): r is SchedulingRow => r !== undefined,
+      )
+    : await db.scheduling.where("cardId").equals(cardId).toArray()
+  const now = Date.now()
+  let cleared = false
+  for (const row of rows) {
+    if (!row.isLeech) continue
+    await updateSchedulingRow({ ...row, isLeech: false, updatedAt: now })
+    cleared = true
+  }
+  if (cleared) markCardEdited(cardId)
+}
+
 /** Deserialize FSRS card from scheduling row */
 export function fsrsFromRow(row: SchedulingRow) {
   return deserializeFsrs(row.fsrs)
