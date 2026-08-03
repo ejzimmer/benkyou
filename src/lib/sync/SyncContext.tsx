@@ -26,9 +26,12 @@ import {
 } from "./syncLog"
 import { clearSessionEdits } from "./sessionEdits"
 import { pushSessionEditsNow } from "../../services/decks"
+import { useIdleSync } from "./useIdleSync"
 import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
 
 export type SyncPhase = "idle" | "running" | "conflict"
+
+const IDLE_SYNC_TIMEOUT_MS = 5 * 60 * 1000
 
 type SyncState = {
   syncing: boolean
@@ -185,6 +188,20 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     })
     return operationInFlightRef.current
   }, [offlineOnly, user, onConflict])
+
+  // Kick off a full sync after 5 minutes with no input activity, so devices
+  // stay roughly in step even if the user never presses the sync button.
+  useIdleSync(
+    !offlineOnly && Boolean(user),
+    useCallback(() => {
+      syncLog("idle sync triggered")
+      syncNow().catch(() => {
+        // Failure is already recorded on lastError by syncNow itself;
+        // nothing else is listening for this background attempt.
+      })
+    }, [syncNow]),
+    IDLE_SYNC_TIMEOUT_MS,
+  )
 
   const pushNow = useCallback(async () => {
     if (offlineOnly || !user) {
