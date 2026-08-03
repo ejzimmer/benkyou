@@ -40,6 +40,10 @@ import { CardImage } from "../../ui/CardImage"
 import { normalizeJapanese } from "../../lib/japanese/normalize"
 import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates"
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
+import {
+  DuplicateJapaneseWarning,
+  type DuplicateJapaneseMatch,
+} from "./DuplicateJapaneseWarning"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { UserMenu } from "../../ui/UserMenu"
@@ -175,40 +179,32 @@ export function CardEditPage() {
   const duplicateJapaneseCheck = useLiveQuery(
     async () => {
       if (!isNew || !normalizedCurrentJapanese) {
-        return { forWord: normalizedCurrentJapanese, cards: [] as Card[] }
+        return { forWord: normalizedCurrentJapanese, matches: [] as DuplicateJapaneseMatch[] }
       }
       const cards = await db.cards.toArray()
+      const matchingCards = cards.filter(
+        (card) =>
+          normalizeJapanese(japaneseWordForCard(card)) ===
+          normalizedCurrentJapanese,
+      )
+      const deckIds = [...new Set(matchingCards.map((c) => c.deckId))]
+      const decks = await db.decks.bulkGet(deckIds)
+      const deckNameById = new Map(deckIds.map((id, i) => [id, decks[i]?.name ?? ""]))
       return {
         forWord: normalizedCurrentJapanese,
-        cards: cards.filter(
-          (card) =>
-            normalizeJapanese(japaneseWordForCard(card)) ===
-            normalizedCurrentJapanese,
-        ),
+        matches: matchingCards.map((card) => ({
+          card,
+          deckName: deckNameById.get(card.deckId) ?? "",
+        })),
       }
     },
     [isNew, normalizedCurrentJapanese],
   )
 
-  const duplicateJapaneseCards =
+  const duplicateJapaneseMatches =
     duplicateJapaneseCheck?.forWord === normalizedCurrentJapanese
-      ? duplicateJapaneseCheck.cards
-      : undefined
-
-  const duplicateJapaneseWarning =
-    isNew && normalizedCurrentJapanese && duplicateJapaneseCards?.length
-      ? (() => {
-          const count = duplicateJapaneseCards.length
-          const fieldName =
-            kind === "vocabulary" ? "日本語の単語" : "解答"
-          const deckScope = duplicateJapaneseCards.some(
-            (card) => card.deckId !== deckId,
-          )
-            ? "他のデッキも含む"
-            : "このデッキ内"
-          return `警告: 同じ${fieldName}を持つカードが既に${count}件あります（${deckScope}）。このまま重複カードとして保存することもできます。`
-        })()
-      : null
+      ? duplicateJapaneseCheck.matches
+      : []
 
   // Tracks which cardId the form has already been hydrated from, so that
   // live-query emissions caused by unrelated writes to this row (e.g. a
@@ -550,11 +546,7 @@ export function CardEditPage() {
               />
             </label>
             <FieldError err={err} field="wordJa" />
-            {duplicateJapaneseWarning && (
-              <p className="warn small" role="status">
-                {duplicateJapaneseWarning}
-              </p>
-            )}
+            <DuplicateJapaneseWarning matches={duplicateJapaneseMatches} />
             <label>
               意味
               <input
@@ -693,11 +685,7 @@ export function CardEditPage() {
                 “が, の”.
               </p>
             )}
-            {duplicateJapaneseWarning && (
-              <p className="warn small" role="status">
-                {duplicateJapaneseWarning}
-              </p>
-            )}
+            <DuplicateJapaneseWarning matches={duplicateJapaneseMatches} />
             <LabeledToggle
               legend="テスト"
               name="grammar-sides"

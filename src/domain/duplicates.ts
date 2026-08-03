@@ -6,6 +6,25 @@ export function japaneseWordForCard(card: Card): string {
   return card.kind === "vocabulary" ? card.content.wordJa : card.content.construction
 }
 
+/**
+ * Word + meaning to display for a duplicate-match card: the gap-fill answer
+ * and the full sentence (not the English translation) for grammar cards,
+ * since the sentence is what actually disambiguates a bare construction
+ * fragment like "が" or "の".
+ */
+export function duplicateCardLabel(card: Card): { word: string; meaning: string } {
+  if (card.kind === "vocabulary") {
+    return {
+      word: card.content.wordJa,
+      meaning: card.content.definitionsEn.filter(Boolean).join("; "),
+    }
+  }
+  return {
+    word: card.content.construction,
+    meaning: card.content.sentenceWithGap,
+  }
+}
+
 function vocabularyTextFields(content: VocabularyCardContent): string[] {
   return [
     content.wordJa,
