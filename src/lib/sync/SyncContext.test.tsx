@@ -128,6 +128,36 @@ describe("SyncContext syncEditsNow", () => {
   })
 })
 
+describe("SyncContext idle sync", () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it("triggers a full sync after 5 minutes with no activity", async () => {
+    renderHook(() => useSync(), { wrapper })
+
+    await act(async () => {
+      vi.advanceTimersByTime(5 * 60 * 1000)
+    })
+
+    expect(runFullSync).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not fire before the idle timeout elapses", async () => {
+    renderHook(() => useSync(), { wrapper })
+
+    await act(async () => {
+      vi.advanceTimersByTime(5 * 60 * 1000 - 1)
+    })
+
+    expect(runFullSync).not.toHaveBeenCalled()
+  })
+})
+
 describe("SyncContext clears session edits only once a sync/push actually succeeds", () => {
   it("syncNow clears session edits after a successful full sync", async () => {
     markCardEdited("card-1")
