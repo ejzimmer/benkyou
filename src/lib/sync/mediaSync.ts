@@ -203,7 +203,6 @@ export async function pushLocalMediaToRemote(
  */
 export async function hydrateReferencedMedia(
   uid: string,
-  onProgress?: (current: number, total: number) => void,
 ): Promise<{ total: number; pulled: number; alreadyLocal: number; failed: number }> {
   const cards = await db.cards.toArray()
   const ids = new Set<string>()
@@ -224,8 +223,6 @@ export async function hydrateReferencedMedia(
 
   let pulled = 0
   let failed = 0
-  let processed = alreadyLocal
-  if (onProgress && total > 0) onProgress(processed, total)
 
   await runWithConcurrency(missing, 4, async (id) => {
     try {
@@ -244,11 +241,6 @@ export async function hydrateReferencedMedia(
       }
     } catch {
       failed++
-    } finally {
-      processed += 1
-      if (onProgress && (processed % 3 === 0 || processed === total)) {
-        onProgress(processed, total)
-      }
     }
   })
 
