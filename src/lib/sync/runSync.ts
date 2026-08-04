@@ -10,6 +10,7 @@ import {
   deckSummary,
   mediaChanged,
   mediaSummary,
+  preferNonEmptyCard,
   resolveEntityMerge,
   schedulingChanged,
   schedulingDiffRows,
@@ -74,6 +75,16 @@ async function resolveConflictChoice(
   conflict: SyncConflict,
   onConflict: (c: SyncConflict) => Promise<SyncConflictChoice>,
 ): Promise<SyncConflictChoice> {
+  if (conflict.entityType === "card") {
+    const preferred = preferNonEmptyCard(conflict.local, conflict.remote)
+    if (preferred) {
+      syncLog("auto-resolved conflict (other side has an empty word)", {
+        entityType: conflict.entityType,
+        entityId: conflict.entityId,
+      })
+      return preferred
+    }
+  }
   if (nothingToCompare(conflict)) {
     syncLog("auto-resolved conflict (nothing to compare)", {
       entityType: conflict.entityType,
