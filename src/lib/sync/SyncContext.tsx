@@ -11,12 +11,7 @@ import {
 import { useAuth } from "../auth/AuthContext"
 import { getFirestoreDb, getFirebaseStorage } from "../firebase"
 import { SyncConflictModal } from "./SyncConflictModal"
-import {
-  readLastSyncedAt,
-  runFullSync,
-  runPushOnly,
-  type SyncProgress,
-} from "./runSync"
+import { readLastSyncedAt, runFullSync, runPushOnly } from "./runSync"
 import {
   clearSyncLog,
   getSyncLogEntries,
@@ -36,7 +31,6 @@ const IDLE_SYNC_TIMEOUT_MS = 5 * 60 * 1000
 type SyncState = {
   syncing: boolean
   syncPhase: SyncPhase
-  syncProgress: SyncProgress | null
   syncLog: readonly SyncLogEntry[]
   lastError: string | null
   lastSyncedAt: number | null
@@ -61,7 +55,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const { user, offlineOnly } = useAuth()
   const [syncing, setSyncing] = useState(false)
   const [syncPhase, setSyncPhase] = useState<SyncPhase>("idle")
-  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null)
   const [lastError, setLastError] = useState<string | null>(null)
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null)
   const [activeConflict, setActiveConflict] = useState<SyncConflict | null>(null)
@@ -148,7 +141,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       }
       setSyncing(true)
       setSyncPhase("running")
-      setSyncProgress(null)
       setLastError(null)
       conflictNumberRef.current = 0
       applyAllChoiceRef.current = null
@@ -158,7 +150,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           storage,
           uid: user.uid,
           onConflict,
-          onProgress: setSyncProgress,
         })
         setLastSyncedAt(Date.now())
         // A full sync pushes every local-only/local-newer card, so nothing
@@ -174,7 +165,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         const hadConflict = conflictNumberRef.current > 0
         setSyncing(false)
         setSyncPhase("idle")
-        setSyncProgress(null)
         setActiveConflict(null)
         conflictNumberRef.current = 0
         // Conflict resolution can overwrite the card/scheduling row an active
@@ -302,7 +292,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     () => ({
       syncing,
       syncPhase,
-      syncProgress,
       syncLog: syncLogEntries,
       lastError,
       lastSyncedAt,
@@ -315,7 +304,6 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     [
       syncing,
       syncPhase,
-      syncProgress,
       syncLogEntries,
       lastError,
       lastSyncedAt,
