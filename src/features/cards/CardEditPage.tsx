@@ -12,7 +12,7 @@ import type {
   VocabularyCardContent,
 } from "../../domain/types"
 import { CARD_KIND_LABELS } from "../../domain/types"
-import { countGaps, detectGapMarker } from "../../domain/grammarGaps"
+import { detectGapMarker } from "../../domain/grammarGaps"
 import { isKanaOnly } from "../../domain/vocabularyContent"
 import { isSingleSided } from "../../domain/grammarContent"
 import type {
@@ -713,14 +713,6 @@ export function CardEditPage() {
               />
             </label>
             <FieldError err={err} field="construction" />
-            {countGaps(grammar.sentenceWithGap, grammar.gapMarker) > 1 && (
-              <p className="muted small">
-                This sentence has{" "}
-                {countGaps(grammar.sentenceWithGap, grammar.gapMarker)} gaps —
-                separate the answers with a comma (, or 、), in order, e.g.
-                “が, の”.
-              </p>
-            )}
             {duplicateJapaneseWarning && (
               <p className="warn small" role="status">
                 {duplicateJapaneseWarning}
