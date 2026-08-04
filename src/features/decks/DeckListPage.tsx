@@ -49,6 +49,9 @@ export function DeckListPage() {
           <span className="brand-name">Benkyou</span>
         </Link>
         <div className="header-actions">
+          <Link to="/stats" className="btn secondary small" aria-label="解答時間の統計を見る">
+            統計
+          </Link>
           <UserMenu />
           <SyncButton />
         </div>
