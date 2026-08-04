@@ -12,15 +12,15 @@ export type RevealThresholdsSec = {
 export const REVEAL_THRESHOLDS_SEC: Record<ReviewModeId, RevealThresholdsSec> = {
   /** Oral recall — usually quicker than typing */
   vocab_oral_en: { easyBelow: 4, goodBelow: 18 },
-  grammar_oral_meaning: { easyBelow: 5, goodBelow: 22 },
+  grammar_oral_meaning: { easyBelow: 5, goodBelow: 28 },
   /** Short hiragana typing */
-  vocab_type_reading: { easyBelow: 6, goodBelow: 25 },
+  vocab_type_reading: { easyBelow: 6, goodBelow: 10 },
   /** Recall Japanese word from clues */
-  vocab_type_word_from_clue: { easyBelow: 12, goodBelow: 45 },
+  vocab_type_word_from_clue: { easyBelow: 12, goodBelow: 15 },
   /** Typed construction — typically slowest */
-  grammar_type_construction: { easyBelow: 20, goodBelow: 55 },
+  grammar_type_construction: { easyBelow: 20, goodBelow: 30 },
   /** Short hiragana typing, same pacing as the vocab reading quiz */
-  grammar_type_reading: { easyBelow: 6, goodBelow: 25 },
+  grammar_type_reading: { easyBelow: 6, goodBelow: 10 },
 }
 
 /**
