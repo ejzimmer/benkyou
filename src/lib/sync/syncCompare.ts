@@ -128,7 +128,7 @@ export function schedulingSummary(row: SchedulingRow): string {
 export const FSRS_STATE_ORDER = ["新規", "学習中", "復習中", "再学習中"]
 
 export function fsrsStateLabel(state: number): string {
-  return FSRS_STATE_ORDER[state] ?? `State ${state}`
+  return FSRS_STATE_ORDER[state]
 }
 
 /** Two decimal places is enough precision to describe FSRS drift to a user. */
