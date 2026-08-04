@@ -247,11 +247,11 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     const l = local.content
     const r = remote.content
     if (l.wordJa !== r.wordJa) {
-      rows.push({ label: "Word", kind: "text", local: l.wordJa, remote: r.wordJa })
+      rows.push({ label: "日本語で", kind: "text", local: l.wordJa, remote: r.wordJa })
     }
     if ((l.reading ?? "") !== (r.reading ?? "")) {
       rows.push({
-        label: "Reading",
+        label: "ひらがなで",
         kind: "text",
         local: l.reading || "—",
         remote: r.reading || "—",
@@ -259,7 +259,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (!mapsEqual(l.readingParts, r.readingParts)) {
       rows.push({
-        label: "Reading parts",
+        label: "読み方（内訳）",
         kind: "text",
         local: formatMap(l.readingParts),
         remote: formatMap(r.readingParts),
@@ -267,7 +267,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (!mapsEqual(l.readings, r.readings)) {
       rows.push({
-        label: "Furigana",
+        label: "ふりがな",
         kind: "text",
         local: formatMap(l.readings),
         remote: formatMap(r.readings),
@@ -275,7 +275,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (!arraysEqual(l.definitionsEn, r.definitionsEn)) {
       rows.push({
-        label: "Meaning",
+        label: "意味",
         kind: "text",
         local: formatList(l.definitionsEn),
         remote: formatList(r.definitionsEn),
@@ -283,7 +283,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (!arraysEqual(l.exampleSentences, r.exampleSentences)) {
       rows.push({
-        label: "Example sentences",
+        label: "例文",
         kind: "text",
         local: formatList(l.exampleSentences),
         remote: formatList(r.exampleSentences),
@@ -291,7 +291,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (!arraysEqual(l.images, r.images)) {
       rows.push({
-        label: "Images",
+        label: "画像",
         kind: "text",
         local: `${l.images.length}枚`,
         remote: `${r.images.length}枚`,
@@ -299,7 +299,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (!arraysEqual(l.confusedWith, r.confusedWith)) {
       rows.push({
-        label: "Confused with",
+        label: "紛らわしい言葉",
         kind: "text",
         local: formatList(l.confusedWith),
         remote: formatList(r.confusedWith),
@@ -310,7 +310,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     const r = remote.content
     if (l.sentenceWithGap !== r.sentenceWithGap) {
       rows.push({
-        label: "Sentence",
+        label: "問題文",
         kind: "text",
         local: l.sentenceWithGap,
         remote: r.sentenceWithGap,
@@ -318,7 +318,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (l.construction !== r.construction) {
       rows.push({
-        label: "Construction",
+        label: "答え",
         kind: "text",
         local: l.construction,
         remote: r.construction,
@@ -326,7 +326,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if ((l.constructionReading ?? "") !== (r.constructionReading ?? "")) {
       rows.push({
-        label: "Reading",
+        label: "ひらがなで",
         kind: "text",
         local: l.constructionReading || "—",
         remote: r.constructionReading || "—",
@@ -334,7 +334,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (!mapsEqual(l.constructionReadingParts, r.constructionReadingParts)) {
       rows.push({
-        label: "Reading parts",
+        label: "読み方（内訳）",
         kind: "text",
         local: formatMap(l.constructionReadingParts),
         remote: formatMap(r.constructionReadingParts),
@@ -342,7 +342,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (l.translationEn !== r.translationEn) {
       rows.push({
-        label: "Meaning",
+        label: "意味",
         kind: "text",
         local: l.translationEn || "—",
         remote: r.translationEn || "—",
@@ -350,7 +350,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (!mapsEqual(l.readings, r.readings)) {
       rows.push({
-        label: "Furigana",
+        label: "ふりがな",
         kind: "text",
         local: formatMap(l.readings),
         remote: formatMap(r.readings),
@@ -358,7 +358,7 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (!arraysEqual(l.images, r.images)) {
       rows.push({
-        label: "Images",
+        label: "画像",
         kind: "text",
         local: `${l.images.length}枚`,
         remote: `${r.images.length}枚`,
@@ -366,22 +366,22 @@ export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
     }
     if (Boolean(l.singleSided) !== Boolean(r.singleSided)) {
       rows.push({
-        label: "Sides",
+        label: "テスト",
         kind: "text",
-        local: l.singleSided ? "One-sided" : "Both sides",
-        remote: r.singleSided ? "One-sided" : "Both sides",
+        local: l.singleSided ? "片面" : "両面",
+        remote: r.singleSided ? "片面" : "両面",
       })
     }
     if (!arraysEqual(l.confusedWith, r.confusedWith)) {
       rows.push({
-        label: "Confused with",
+        label: "紛らわしい言葉",
         kind: "text",
         local: formatList(l.confusedWith),
         remote: formatList(r.confusedWith),
       })
     }
   } else {
-    rows.push({ label: "Content", kind: "text", local: cardSummary(local), remote: cardSummary(remote) })
+    rows.push({ label: "内容", kind: "text", local: cardSummary(local), remote: cardSummary(remote) })
   }
 
   return rows
