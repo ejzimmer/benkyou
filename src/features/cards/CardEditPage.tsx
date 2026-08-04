@@ -159,7 +159,6 @@ export function CardEditPage() {
 
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [duplicateMatches, setDuplicateMatches] = useState<Card[]>([])
   const [mergingId, setMergingId] = useState<string | null>(null)
   const [mergeErr, setMergeErr] = useState<string | null>(null)
 
@@ -194,6 +193,30 @@ export function CardEditPage() {
     duplicateJapaneseCheck?.forWord === normalizedCurrentJapanese
       ? duplicateJapaneseCheck.cards
       : undefined
+
+  // Runs automatically whenever an existing card's edit page opens (rather
+  // than behind a manual "search" button). It's a Dexie live query over the
+  // whole cards table, so it also refreshes for free after a merge removes
+  // a match. Keyed off `loadedCard` rather than the in-progress form fields
+  // — it reflects the saved card, not each keystroke.
+  const existingCardDuplicateCheck = useLiveQuery(
+    async () => {
+      if (isNew || !loadedCard) return null
+      const allCards = await db.cards.toArray()
+      return {
+        forCardId: loadedCard.id,
+        matches: findDuplicateCards(loadedCard, allCards),
+      }
+    },
+    [isNew, loadedCard],
+  )
+
+  const duplicateCheckResult =
+    !isNew && existingCardDuplicateCheck?.forCardId === cardId
+      ? existingCardDuplicateCheck
+      : null
+  const duplicateMatches = duplicateCheckResult?.matches ?? []
+  const duplicateCheckLoading = !isNew && !duplicateCheckResult
 
   const duplicateJapaneseWarning =
     isNew && normalizedCurrentJapanese && duplicateJapaneseCards?.length
@@ -346,13 +369,6 @@ export function CardEditPage() {
     }
   }
 
-  async function onFindDuplicates() {
-    setMergeErr(null)
-    const allCards = await db.cards.toArray()
-    setDuplicateMatches(findDuplicateCards(currentCardDraft(), allCards))
-    setShowDuplicatesModal(true)
-  }
-
   async function onMergeDuplicate(match: Card) {
     setMergeErr(null)
     setMergingId(match.id)
@@ -365,7 +381,6 @@ export function CardEditPage() {
         setGrammar(merged.content)
         setFuriganaDraft(readingsMapToText(merged.content.readings))
       }
-      setDuplicateMatches((matches) => matches.filter((c) => c.id !== match.id))
     } catch (x) {
       setMergeErr(x instanceof Error ? x.message : "統合に失敗しました。")
     } finally {
@@ -485,9 +500,22 @@ export function CardEditPage() {
 
       {!isNew && (
         <div className="toolbar card-edit-toolbar">
-          <button type="button" className="btn secondary" onClick={onFindDuplicates}>
-            重複カード検索
-          </button>
+          {duplicateCheckLoading ? (
+            <span className="muted small" role="status">
+              <span className="import-spinner" aria-hidden="true" />
+              重複カードを確認中…
+            </span>
+          ) : duplicateMatches.length > 0 ? (
+            <button
+              type="button"
+              className="btn secondary"
+              onClick={() => setShowDuplicatesModal(true)}
+            >
+              重複カード見せる
+            </button>
+          ) : (
+            <p className="muted small">重複カードがありません</p>
+          )}
           <button type="button" className="btn primary pink" onClick={onDeleteCard}>
             削除
           </button>

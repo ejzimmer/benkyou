@@ -66,7 +66,7 @@ describe("CardEditPage duplicate finder / merge", () => {
     })
 
     await user.click(
-      screen.getByRole("button", { name: "重複カード検索" }),
+      await screen.findByRole("button", { name: "重複カード見せる" }),
     )
 
     const dialog = await screen.findByRole("dialog")
@@ -85,9 +85,11 @@ describe("CardEditPage duplicate finder / merge", () => {
       within(dialog).getByText(/この単語を含む他のカードはありません/),
     ).toBeInTheDocument()
 
-    expect(screen.getByLabelText("意味")).toHaveValue(
-      "cat; kitten (contains 猫)",
-    )
+    await waitFor(() => {
+      expect(screen.getByLabelText("意味")).toHaveValue(
+        "cat; kitten (contains 猫)",
+      )
+    })
 
     await waitFor(async () => {
       expect(await db.cards.get("card-2")).toBeUndefined()
@@ -135,7 +137,7 @@ describe("CardEditPage duplicate finder / merge", () => {
     })
 
     await user.click(
-      screen.getByRole("button", { name: "重複カード検索" }),
+      await screen.findByRole("button", { name: "重複カード見せる" }),
     )
     const dialog = await screen.findByRole("dialog")
     await user.click(
@@ -175,19 +177,15 @@ describe("CardEditPage duplicate finder / merge", () => {
       updatedAt: Date.now(),
     })
 
-    const user = userEvent.setup()
     renderEditPage("deck-1", "card-1")
 
     await waitFor(() => {
       expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
     })
 
-    await user.click(
-      screen.getByRole("button", { name: "重複カード検索" }),
-    )
-
+    expect(await screen.findByText("重複カードがありません")).toBeInTheDocument()
     expect(
-      await screen.findByText(/この単語を含む他のカードはありません/),
-    ).toBeInTheDocument()
+      screen.queryByRole("button", { name: "重複カード見せる" }),
+    ).not.toBeInTheDocument()
   })
 })
