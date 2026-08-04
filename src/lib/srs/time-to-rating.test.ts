@@ -15,10 +15,10 @@ describe("responseTimeToGrade", () => {
   })
 
   it("grammar typing tolerates longer reveal than oral for same FSRS tier", () => {
-    expect(responseTimeToGrade("grammar_type_construction", 30_000, true)).toBe(
+    expect(responseTimeToGrade("grammar_type_construction", 25_000, true)).toBe(
       Rating.Good,
     )
-    expect(responseTimeToGrade("vocab_oral_en", 30_000, true)).toBe(Rating.Hard)
+    expect(responseTimeToGrade("vocab_oral_en", 25_000, true)).toBe(Rating.Hard)
   })
 
   it("null timing → Good when correct", () => {
