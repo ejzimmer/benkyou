@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 import type { Card, Deck } from "../../domain/types"
-import { cardChanged, resolveByTimestamp, resolveEntityMerge } from "./syncCompare"
+import {
+  cardChanged,
+  preferNonEmptyCard,
+  resolveByTimestamp,
+  resolveEntityMerge,
+} from "./syncCompare"
 
 describe("resolveByTimestamp", () => {
   const deck = (updatedAt: number): Deck => ({
@@ -62,5 +67,59 @@ describe("cardChanged", () => {
     }
     const b = { ...base }
     expect(cardChanged(a, b)).toBe(false)
+  })
+})
+
+describe("preferNonEmptyCard", () => {
+  const vocab = (wordJa: string): Card => ({
+    id: "c1",
+    deckId: "d1",
+    kind: "vocabulary",
+    updatedAt: 1,
+    content: {
+      wordJa,
+      definitionsEn: ["cat"],
+      images: [],
+      exampleSentences: [],
+    },
+  })
+
+  const grammar: Card = {
+    id: "c2",
+    deckId: "d1",
+    kind: "grammar",
+    updatedAt: 1,
+    content: {
+      sentenceWithGap: "___です",
+      gapMarker: "___",
+      construction: "猫",
+      translationEn: "cat",
+      images: [],
+      readings: {},
+    },
+  }
+
+  it("picks remote when only local's word is blank", () => {
+    expect(preferNonEmptyCard(vocab(""), vocab("猫"))).toBe("remote")
+  })
+
+  it("picks remote when local's word is whitespace-only", () => {
+    expect(preferNonEmptyCard(vocab("   "), vocab("猫"))).toBe("remote")
+  })
+
+  it("picks local when only remote's word is blank", () => {
+    expect(preferNonEmptyCard(vocab("猫"), vocab(""))).toBe("local")
+  })
+
+  it("returns null when neither word is blank", () => {
+    expect(preferNonEmptyCard(vocab("猫"), vocab("犬"))).toBeNull()
+  })
+
+  it("returns null when both words are blank", () => {
+    expect(preferNonEmptyCard(vocab(""), vocab(""))).toBeNull()
+  })
+
+  it("does not apply to grammar cards", () => {
+    expect(preferNonEmptyCard(grammar, grammar)).toBeNull()
   })
 })

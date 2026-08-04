@@ -100,6 +100,25 @@ export function cardSummary(card: Card): string {
   return card.content.construction || card.content.sentenceWithGap
 }
 
+/** A vocabulary card with a blank Japanese word can't have come from a
+ *  completed save — `validateVocabulary` blocks that at the form. Reaching
+ *  one here means a stale/partial write, not a real edit worth asking the
+ *  user to arbitrate. */
+function isEmptyVocabularyCard(card: Card): boolean {
+  return card.kind === "vocabulary" && !card.content.wordJa.trim()
+}
+
+/** When exactly one side of a card conflict is an empty vocabulary card,
+ *  the other side is the only one that can possibly be right — auto-resolve
+ *  to it instead of asking the user to choose. Returns `null` when both
+ *  sides are equally (in)valid, so the normal conflict flow still applies. */
+export function preferNonEmptyCard(local: Card, remote: Card): SyncConflictChoice | null {
+  const localEmpty = isEmptyVocabularyCard(local)
+  const remoteEmpty = isEmptyVocabularyCard(remote)
+  if (localEmpty === remoteEmpty) return null
+  return localEmpty ? "remote" : "local"
+}
+
 export function schedulingSummary(row: SchedulingRow): string {
   const due = new Date(row.due).toLocaleString()
   return `Review mode ${row.modeId} · due ${due}`
