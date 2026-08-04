@@ -70,6 +70,6 @@ export function CardImage({ mediaId }: { mediaId: string }) {
       </span>
     )
   }
-  if (!url) return <span className="muted">Loading image…</span>
+  if (!url) return <span className="muted">読み込み中…</span>
   return <img src={url} alt="" className="card-image" />
 }
