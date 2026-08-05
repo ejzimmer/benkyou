@@ -2216,26 +2216,3 @@ button.leech-badge-clear:focus-visible {
     animation: none;
   }
 }
-
-.table-scroll {
-  overflow-x: auto;
-}
-
-.stats-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 0.75rem;
-  white-space: nowrap;
-}
-
-.stats-table th,
-.stats-table td {
-  text-align: left;
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #2a2a3c;
-}
-
-.stats-table th {
-  color: #9898b0;
-  font-weight: 500;
-}
