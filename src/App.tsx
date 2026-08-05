@@ -3,7 +3,6 @@ import { DeckListPage } from "./features/decks/DeckListPage"
 import { DeckPage } from "./features/decks/DeckPage"
 import { CardEditPage } from "./features/cards/CardEditPage"
 import { ReviewSessionPage } from "./features/review/ReviewSessionPage"
-import { StatsPage } from "./features/stats/StatsPage"
 import { useAuth } from "./lib/auth/AuthContext"
 import { useEffect } from "react"
 
@@ -43,7 +42,6 @@ export function App() {
         <Route path="/decks/:deckId/cards/:cardId" element={<CardEditPage />} />
         <Route path="/review" element={<ReviewSessionPage />} />
         <Route path="/decks/:deckId/review" element={<ReviewSessionPage />} />
-        <Route path="/stats" element={<StatsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
