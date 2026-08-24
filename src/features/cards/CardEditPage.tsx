@@ -152,6 +152,7 @@ export function CardEditPage() {
    * keystroke — shared by both card kinds' Furigana field. */
   const [furiganaDraft, setFuriganaDraft] = useState("")
   const formRef = useRef<HTMLFormElement | null>(null)
+  const firstFieldRef = useRef<HTMLInputElement | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const [err, setErr] = useState<FormError | null>(null)
   const [imageUploadCount, setImageUploadCount] = useState(0)
@@ -276,6 +277,7 @@ export function CardEditPage() {
     setGrammar(defaultGrammar())
     setFuriganaDraft("")
     formRef.current?.reset()
+    firstFieldRef.current?.focus()
   }
 
   function currentCardDraft(): Card {
@@ -564,6 +566,7 @@ export function CardEditPage() {
             <label>
               日本語で
               <input
+                ref={firstFieldRef}
                 className={inputClass("wordJa")}
                 value={vocab.wordJa}
                 onChange={(e) => {
@@ -688,6 +691,7 @@ export function CardEditPage() {
             <label>
               問題文
               <input
+                ref={firstFieldRef}
                 className={inputClass("sentenceWithGap")}
                 value={grammar.sentenceWithGap}
                 onChange={(e) => {

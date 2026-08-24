@@ -61,6 +61,7 @@ describe("CardEditPage create flow", () => {
     })
     expect(screen.getByRole("textbox", { name: /^読み方$/ })).toHaveValue("")
     expect(screen.getByLabelText("意味")).toHaveValue("")
+    expect(screen.getByLabelText("日本語で")).toHaveFocus()
   })
 
   it("saves confused words entered one per line", async () => {

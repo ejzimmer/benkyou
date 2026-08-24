@@ -1311,10 +1311,9 @@ fieldset.plain legend {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* "safe" falls back to top-aligned once content (e.g. an opened
-     `.prompt-extras` disclosure, which overlays below its anchor without
-     growing this box) doesn't fit, so it scrolls from the start instead of
-     clipping it. */
+  /* "safe" falls back to top-aligned once content (e.g. this card grown as
+     tall as its `max-height` allows by an opened `.prompt-extras` disclosure)
+     still doesn't fit, so it scrolls from the start instead of clipping it. */
   justify-content: safe center;
   text-align: center;
   overflow-y: auto;
@@ -1470,13 +1469,13 @@ fieldset.plain legend {
   justify-content: center;
 }
 
-/* Anchors the error/warn message below (mirrors `.prompt-extras-anchor`
-   above the fold-out extras): the input's row must stay exactly as tall as
-   the input itself, with the message absolutely positioned outside that
-   flow. Otherwise a validation message appearing/disappearing changes the
-   row's height, and since the row sits in a `justify-content: safe center`
-   (or, for word-from-clue, unconditionally centered) stack, that recenters
-   the stack and visibly shifts the input itself. */
+/* Anchors the error/warn message below: the input's row must stay exactly
+   as tall as the input itself, with the message absolutely positioned
+   outside that flow. Otherwise a validation message appearing/disappearing
+   changes the row's height, and since the row sits in a
+   `justify-content: safe center` (or, for word-from-clue, unconditionally
+   centered) stack, that recenters the stack and visibly shifts the input
+   itself. */
 .answer-input-anchor {
   position: relative;
 }
@@ -1862,27 +1861,19 @@ fieldset.plain legend {
   transform: rotate(180deg);
 }
 
-/* Positioned relative to `.prompt-extras-anchor` below, so the always-visible
-   row (word/sentence + toggle) never contributes the disclosure's height to
-   its own centering — opening it grows downward in place instead of
-   recentering (and shifting) the row above it. Full width (rather than
-   shrink-wrapped to the row) so the absolutely positioned disclosure below
+/* Full width (rather than shrink-wrapped to the row) so the disclosure below
    has the whole card to lay out in, not just the row's own narrow width. */
 .prompt-extras-anchor {
-  position: relative;
   width: 100%;
 }
 
 /* Animates open/closed via the grid-rows trick: a 0fr/1fr track transition
    collapses/expands the (overflow-hidden) content row smoothly, which a
    plain height or max-height transition can't do for content of unknown
-   height. Absolutely positioned so it overlays below the anchor row rather
-   than pushing it — see `.prompt-extras-anchor` above. */
+   height. Left in normal flow (rather than overlaid) so opening it grows the
+   card itself to fit — it only starts scrolling once the card has hit its
+   own max-height (see `.review-question-content` / `.review-answer`). */
 .prompt-extras {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.25s ease;
