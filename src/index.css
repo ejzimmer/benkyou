@@ -1862,9 +1862,15 @@ fieldset.plain legend {
 }
 
 /* Full width (rather than shrink-wrapped to the row) so the disclosure below
-   has the whole card to lay out in, not just the row's own narrow width. */
+   has the whole card to lay out in, not just the row's own narrow width.
+   Overrides `.stack`'s gap: now that `.prompt-extras` sits in normal flow
+   (see below) it's a flex sibling of the toggle row here, and the spacing
+   between them is already provided by `.prompt-extras-content`'s own
+   padding-top — a stack gap on top of that would double it, and would also
+   apply even while the disclosure is closed. */
 .prompt-extras-anchor {
   width: 100%;
+  gap: 0;
 }
 
 /* Animates open/closed via the grid-rows trick: a 0fr/1fr track transition
@@ -1883,8 +1889,18 @@ fieldset.plain legend {
   grid-template-rows: 1fr;
 }
 
+/* The gap above the disclosure's content lives in `padding-top` rather than
+   the anchor's `.stack` gap (zeroed out above) so it only appears once the
+   disclosure is actually open — a `0fr` row track collapses this item's own
+   height, but not a fixed padding on it, so an unconditional padding-top
+   here would leave a few pixels of dead space even while closed. */
 .prompt-extras-content {
   overflow: hidden;
+  padding-top: 0;
+  transition: padding-top 0.25s ease;
+}
+
+.prompt-extras.is-open .prompt-extras-content {
   padding-top: 0.75rem;
 }
 
@@ -1896,6 +1912,7 @@ fieldset.plain legend {
 
 @media (prefers-reduced-motion: reduce) {
   .prompt-extras,
+  .prompt-extras-content,
   .prompt-extras-chevron {
     transition: none;
   }
