@@ -85,6 +85,46 @@ describe("AnswerComparison", () => {
     expect(rubies[1]?.querySelector("rt")?.textContent).toBe("かぜ")
   })
 
+  it("annotates from the readings map alone when there is no whole-word reading", () => {
+    const { container } = render(
+      <AnswerComparison
+        typed="特殊な製法"
+        expected="特殊な製法"
+        readings={{ 特殊: "とくしゅ", 製法: "せいほう" }}
+      />,
+    )
+    const rubies = container.querySelectorAll("ruby")
+    expect(rubies).toHaveLength(2)
+    expect(rubies[0]?.textContent).toBe("特殊とくしゅ")
+    expect(rubies[1]?.textContent).toBe("製法せいほう")
+  })
+
+  it("announces the flattened readings-map reading to screen readers when wrong", () => {
+    const { container } = render(
+      <AnswerComparison
+        typed="特殊な方法"
+        expected="特殊な製法"
+        readings={{ 特殊: "とくしゅ", 製法: "せいほう" }}
+      />,
+    )
+    const correct = container.querySelector(
+      '[data-reading-diff-line="correct"]',
+    )!
+    expect(
+      correct.querySelectorAll(".reading-answer-diff-furigana"),
+    ).toHaveLength(2)
+    expect(correct.querySelector(".sr-only")?.textContent).toBe(
+      "とくしゅなせいほう",
+    )
+  })
+
+  it("adds no furigana when neither a reading nor a covering map is given", () => {
+    const { container } = render(
+      <AnswerComparison typed="方法" expected="製法" readings={{ 特殊: "とくしゅ" }} />,
+    )
+    expect(container.querySelector("rt")).toBeNull()
+  })
+
   it("falls back to a single flat reading when the map doesn't fully cover the answer", () => {
     const { container } = render(
       <AnswerComparison

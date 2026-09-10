@@ -46,6 +46,19 @@ export function fullyCoveredSegments(
   return hasUncoveredKanji ? undefined : segments
 }
 
+/**
+ * Flatten covered segments into a single reading string for the whole text —
+ * each segment's reading, with any unannotated characters between them (e.g.
+ * the な in 特殊な製法) kept as-is. Returns undefined when no segment carries
+ * a reading, since the surface text is not its own reading.
+ */
+export function joinSegmentReadings(
+  segments: ReadingSegment[] | undefined,
+): string | undefined {
+  if (!segments?.some((s) => s.reading?.trim())) return undefined
+  return segments.map((s) => s.reading?.trim() || s.text).join("")
+}
+
 export type LabeledReading = { label: string; reading: string }
 
 /**
