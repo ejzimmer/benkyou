@@ -1,6 +1,10 @@
 import { diffChars } from "diff"
 import { useId } from "react"
-import { fullyCoveredSegments, type ReadingSegment } from "../domain/readingsMap"
+import {
+  fullyCoveredSegments,
+  joinSegmentReadings,
+  type ReadingSegment,
+} from "../domain/readingsMap"
 
 export type AnswerComparisonProps = {
   /** What the user typed. */
@@ -199,11 +203,18 @@ export function AnswerComparison({
   const correctId = useId()
   const yoursId = useId()
   const isCorrect = answeredCorrectly ?? typed === expected
-  const showRuby = Boolean(reading?.trim()) && KANJI.test(expected)
+  const hasKanji = KANJI.test(expected)
   const segments =
-    showRuby && readings && Object.keys(readings).length > 0
+    hasKanji && readings && Object.keys(readings).length > 0
       ? fullyCoveredSegments(expected, readings)
       : undefined
+  // A card can carry a furigana map without any whole-word reading — e.g.
+  // 特殊な製法 with 特殊/製法 mapped but no pronunciation field, which has no
+  // reading mode and so never fills `reading`. Flatten the covered segments
+  // into one string so those cards still get furigana here, and so screen
+  // readers still hear the whole reading.
+  const flatReading = reading?.trim() ? reading : joinSegmentReadings(segments)
+  const showRuby = hasKanji && Boolean(flatReading?.trim())
   const diff = isCorrect ? null : buildAlignedDiff(expected, typed)
   // Mirrors DiffLine's own hasFurigana check for the correct line: when it
   // reserves margin-top for a floating furigana annotation, the maru beside
@@ -212,7 +223,7 @@ export function AnswerComparison({
   // not on the kanji plus the reserved furigana space above it.
   const correctLineHasFurigana =
     diff !== null &&
-    furiganaGroups(diff.correct, showRuby ? reading : undefined, segments)
+    furiganaGroups(diff.correct, showRuby ? flatReading : undefined, segments)
       .length > 0
 
   const correctBody = diff ? (
@@ -220,7 +231,7 @@ export function AnswerComparison({
       cells={diff.correct}
       labelId={correctId}
       line="correct"
-      reading={showRuby ? reading : undefined}
+      reading={showRuby ? flatReading : undefined}
       segments={segments}
     />
   ) : (
@@ -252,7 +263,7 @@ export function AnswerComparison({
         ) : (
           <ruby>
             {correctBody}
-            <rt>{reading}</rt>
+            <rt>{flatReading}</rt>
           </ruby>
         )}
       </span>

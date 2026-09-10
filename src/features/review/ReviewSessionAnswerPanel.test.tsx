@@ -324,6 +324,66 @@ describe("ReviewSessionAnswerPanel", () => {
 
     expect(container.querySelector("rt")?.textContent).toBe("けつろんにいたる")
   })
+
+  function furiganaOnlyItem(): DueItem {
+    return {
+      card: {
+        id: "card-furigana-only",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "特殊な製法",
+          definitionsEn: ["Manufactured by a special process"],
+          images: [],
+          exampleSentences: [],
+          readings: { 特殊: "とくしゅ", 製法: "せいほう" },
+        },
+      },
+      modeId: "vocab_type_word_from_clue",
+      due: 0,
+      isLeech: false,
+    }
+  }
+
+  it("shows furigana from the readings map when the card has no reading field", () => {
+    const { container } = render(
+      <ReviewSessionAnswerPanel
+        item={furiganaOnlyItem()}
+        typed="特殊な製法"
+        expected="特殊な製法"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    const rubies = container.querySelectorAll("ruby")
+    expect(rubies).toHaveLength(2)
+    expect(rubies[0]?.textContent).toBe("特殊とくしゅ")
+    expect(rubies[1]?.textContent).toBe("製法せいほう")
+  })
+
+  it("shows readings-map furigana on the correct line after a wrong answer", () => {
+    const { container } = render(
+      <ReviewSessionAnswerPanel
+        item={furiganaOnlyItem()}
+        typed="特殊な方法"
+        expected="特殊な製法"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    const correct = container.querySelector(
+      '[data-reading-diff-line="correct"]',
+    )!
+    const rubies = correct.querySelectorAll(".reading-answer-diff-furigana")
+    expect(rubies).toHaveLength(2)
+    expect(rubies[0]?.querySelector("rt")?.textContent).toBe("とくしゅ")
+    expect(rubies[1]?.querySelector("rt")?.textContent).toBe("せいほう")
+  })
 })
 
 function twoGapItem(): DueItem {

@@ -72,12 +72,18 @@ export function ReviewSessionAnswerPanel({
     m === "vocab_type_word_from_clue" && card.kind === "vocabulary"
       ? wordJaReading(card.content)
       : undefined
-  const wordFromClueShowRuby =
-    Boolean(wordFromClueReading?.trim()) && containsKanji(displayExpected)
+  // The furigana map alone is enough to annotate the word — a card with no
+  // pronunciation field (e.g. 特殊な製法, furigana 特殊/製法) has no
+  // whole-word reading at all, but its kanji are still fully covered.
   const wordFromClueSegments =
-    wordFromClueShowRuby && card.kind === "vocabulary"
+    m === "vocab_type_word_from_clue" &&
+    card.kind === "vocabulary" &&
+    containsKanji(displayExpected)
       ? fullyCoveredSegments(displayExpected, card.content.readings ?? {})
       : undefined
+  const wordFromClueShowRuby =
+    containsKanji(displayExpected) &&
+    (Boolean(wordFromClueReading?.trim()) || Boolean(wordFromClueSegments))
   // When the card structurally has multiple answer parts (a multi-gap
   // construction, or a phrase word/construction reading quizzed segment by
   // segment), the comma between them is meaningful content (a part
