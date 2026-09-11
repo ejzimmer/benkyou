@@ -364,6 +364,31 @@ describe("ReviewSessionAnswerPanel", () => {
     expect(rubies[1]?.textContent).toBe("製法せいほう")
   })
 
+  it("shows the furigana entries the map has when it covers only some kanji", () => {
+    const item = furiganaOnlyItem()
+    if (item.card.kind === "vocabulary") {
+      item.card.content.readings = { 特殊: "とくしゅ" }
+    }
+
+    const { container } = render(
+      <ReviewSessionAnswerPanel
+        item={item}
+        typed="特殊な製法"
+        expected="特殊な製法"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    const rubies = container.querySelectorAll("ruby")
+    expect(rubies).toHaveLength(1)
+    expect(rubies[0]?.textContent).toBe("特殊とくしゅ")
+    expect(
+      screen.getByRole("group", { name: "答え" }).textContent,
+    ).toContain("製法")
+  })
+
   it("shows readings-map furigana on the correct line after a wrong answer", () => {
     const { container } = render(
       <ReviewSessionAnswerPanel

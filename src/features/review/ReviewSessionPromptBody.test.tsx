@@ -388,6 +388,44 @@ describe("ReviewSessionPromptBody", () => {
     expect(prompt?.textContent).toBe("結論けつろんに至るいたる")
   })
 
+  it("annotates the kanji the map covers and leaves the rest bare", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-7b",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "結論に至る",
+          readings: { 結論: "けつろん" },
+          definitionsEn: ["to reach a conclusion"],
+          images: [],
+          exampleSentences: [],
+        },
+      },
+      modeId: "vocab_oral_en",
+      due: 0,
+      isLeech: false,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        kanjiWarn={false}
+        onTypedSubmit={vi.fn()}
+        column="question"
+      />,
+    )
+
+    const prompt = container.querySelector(".prompt-main")
+    const rubies = Array.from(prompt?.querySelectorAll("ruby") ?? [])
+    expect(rubies.map((r) => r.firstChild?.textContent)).toEqual(["結論"])
+    expect(prompt?.textContent).toBe("結論けつろんに至る")
+  })
+
   it("asks for a phrase word's reading segment by segment, hiding both from example furigana", () => {
     const item: DueItem = {
       card: {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   addMissingKanjiLines,
   deriveFurigana,
+  annotatedSegments,
   fullyCoveredSegments,
   kanjiOnlyEntry,
   parseReadingsMapText,
@@ -119,6 +120,26 @@ describe("fullyCoveredSegments", () => {
 
   it("returns undefined for an uncovered kanji word with no map entries", () => {
     expect(fullyCoveredSegments("学生", {})).toBeUndefined()
+  })
+})
+
+describe("annotatedSegments", () => {
+  it("returns every entry the map matches, leaving the rest bare", () => {
+    expect(annotatedSegments("結論に至る", { 結論: "けつろん" })).toEqual([
+      { text: "結論", reading: "けつろん" },
+      { text: "に" },
+      { text: "至" },
+      { text: "る" },
+    ])
+  })
+
+  it("returns undefined when the map annotates nothing in the text", () => {
+    expect(annotatedSegments("学生", { 結論: "けつろん" })).toBeUndefined()
+    expect(annotatedSegments("学生", {})).toBeUndefined()
+  })
+
+  it("ignores entries with a blank reading", () => {
+    expect(annotatedSegments("学生", { 学生: "  " })).toBeUndefined()
   })
 })
 

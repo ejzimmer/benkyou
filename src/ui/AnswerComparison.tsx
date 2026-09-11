@@ -1,7 +1,7 @@
 import { diffChars } from "diff"
 import { useId } from "react"
 import {
-  fullyCoveredSegments,
+  annotatedSegments,
   joinSegmentReadings,
   type ReadingSegment,
 } from "../domain/readingsMap"
@@ -18,10 +18,11 @@ export type AnswerComparisonProps = {
   reading?: string
   /**
    * Kanji phrase → reading map for `expected` (e.g. a card's furigana
-   * `readings` field). When it fully covers every kanji cluster in
-   * `expected`, each cluster gets its own furigana annotation (matching how
-   * the same map renders elsewhere, e.g. `RubySegment`) instead of `reading`
-   * being shown as a single span over the whole answer.
+   * `readings` field). Every entry that matches is shown as furigana over
+   * its own cluster (matching how the same map renders elsewhere, e.g.
+   * `RubySegment`), in preference to `reading` being shown as a single span
+   * over the whole answer. `reading` is used only when the map annotates
+   * nothing here.
    */
   readings?: Record<string, string>
   /**
@@ -206,7 +207,7 @@ export function AnswerComparison({
   const hasKanji = KANJI.test(expected)
   const segments =
     hasKanji && readings && Object.keys(readings).length > 0
-      ? fullyCoveredSegments(expected, readings)
+      ? annotatedSegments(expected, readings)
       : undefined
   // A card can carry a furigana map without any whole-word reading — e.g.
   // 特殊な製法 with 特殊/製法 mapped but no pronunciation field, which has no

@@ -19,7 +19,7 @@ import { constructionReadingSegments } from "../../domain/grammarContent"
 import { containsKanji } from "../../domain/types"
 import {
   deriveFurigana,
-  fullyCoveredSegments,
+  annotatedSegments,
   type LabeledReading,
 } from "../../domain/readingsMap"
 
@@ -223,7 +223,7 @@ export function ReviewSessionPromptBody({
     if (column === "answer") return null
     const examples = card.content.exampleSentences.filter((s) => s.trim())
     const exampleReadings = vocabExampleReadings(card.content)
-    const wordSegments = fullyCoveredSegments(
+    const wordSegments = annotatedSegments(
       card.content.wordJa,
       card.content.readings ?? {},
     )
@@ -233,9 +233,10 @@ export function ReviewSessionPromptBody({
         <div className="prompt-extras-row">
           <p className="prompt-main">
             {wordSegments ? (
-              // The furigana map fully accounts for every kanji in the word —
-              // honor the author's own per-kanji breakdown (e.g. narrowed to
-              // leave okurigana un-annotated) instead of one flat ruby.
+              // The furigana map has something to say about this word — honor
+              // the author's own per-kanji breakdown (e.g. narrowed to leave
+              // okurigana un-annotated) instead of one flat ruby, showing
+              // every entry they wrote and leaving the rest bare.
               wordSegments.map((s, i) =>
                 s.reading?.trim() ? (
                   <RubyWord key={i} surface={s.text} reading={s.reading} />
@@ -244,10 +245,9 @@ export function ReviewSessionPromptBody({
                 ),
               )
             ) : (
-              // The map doesn't (yet) cover the whole word — e.g. a card
-              // whose furigana was never authored — so fall back to the
-              // authoritative whole-word reading rather than showing
-              // partial/no furigana.
+              // The map says nothing about this word — e.g. a card whose
+              // furigana was never authored — so fall back to the
+              // whole-word reading rather than showing none.
               <RubyWord surface={card.content.wordJa} reading={card.content.reading} />
             )}
           </p>

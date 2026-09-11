@@ -125,13 +125,28 @@ describe("AnswerComparison", () => {
     expect(container.querySelector("rt")).toBeNull()
   })
 
-  it("falls back to a single flat reading when the map doesn't fully cover the answer", () => {
+  it("annotates the clusters the map covers and leaves the rest bare", () => {
     const { container } = render(
       <AnswerComparison
         typed="緩やかな風"
         expected="緩やかな風"
         reading="ゆるやかなかぜ"
         readings={{ 緩: "ゆる" }}
+      />,
+    )
+    const rubies = container.querySelectorAll("ruby")
+    expect(rubies).toHaveLength(1)
+    expect(rubies[0]?.textContent).toBe("緩ゆる")
+    expect(container.textContent).toContain("風")
+  })
+
+  it("falls back to the whole-word reading when the map annotates nothing", () => {
+    const { container } = render(
+      <AnswerComparison
+        typed="緩やかな風"
+        expected="緩やかな風"
+        reading="ゆるやかなかぜ"
+        readings={{ 結論: "けつろん" }}
       />,
     )
     const rubies = container.querySelectorAll("ruby")

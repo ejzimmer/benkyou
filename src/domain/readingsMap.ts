@@ -30,6 +30,22 @@ export function segmentText(
 }
 
 /**
+ * `segmentText`, but only returned when the map actually annotates something
+ * in `text` — every entry that matches is shown as furigana, and kanji the
+ * author hasn't given a reading for simply stay bare (the same way
+ * `RubySegment` already renders example sentences). Undefined means the map
+ * says nothing about this text, so the caller should fall back to a
+ * whole-string reading if it has one.
+ */
+export function annotatedSegments(
+  text: string,
+  readings: Record<string, string>,
+): ReadingSegment[] | undefined {
+  const segments = segmentText(text, readings)
+  return segments.some((s) => s.reading?.trim()) ? segments : undefined
+}
+
+/**
  * `segmentText`, but only returned when every kanji character in `text` ends
  * up inside a matched (read) segment — otherwise the caller should fall back
  * to a single whole-string reading (or none), since a partial breakdown
