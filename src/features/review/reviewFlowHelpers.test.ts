@@ -7,6 +7,7 @@ import {
   hasMissingDoubledN,
   hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
+  readingForConstruction,
   requiresTyping,
   vocabExampleReadings,
 } from "./reviewFlowHelpers"
@@ -193,6 +194,22 @@ describe("reviewFlowHelpers", () => {
     expect(hasMissingDoubledN("ねほん, さない", "にほん, さんあい")).toBe(
       false,
     )
+  })
+
+  it("readingForConstruction joins the map when it covers every kanji", () => {
+    expect(
+      readingForConstruction("結論に至る", {
+        結論: "けつろん",
+        至る: "いたる",
+      }),
+    ).toBe("けつろんにいたる")
+  })
+
+  it("readingForConstruction gives no whole-phrase reading from a partial map", () => {
+    // "けつろん" is not the reading of 結論に至る — the phrase is annotated
+    // cluster by cluster instead.
+    expect(readingForConstruction("結論に至る", { 結論: "けつろん" })).toBeUndefined()
+    expect(readingForConstruction("結論に至る", {})).toBeUndefined()
   })
 
   it("requiresTyping and isReadingTypingMode cover grammar_type_reading", () => {

@@ -10,7 +10,8 @@ import {
   splitGapAnswers,
 } from "../../domain/grammarGaps"
 import {
-  fullyCoveredSegments,
+  joinSegmentReadings,
+  segmentText,
   withWordReadingFallback,
 } from "../../domain/readingsMap"
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
@@ -149,19 +150,12 @@ export function readingForConstruction(
   construction: string,
   readings: Record<string, string>,
 ): string | undefined {
-  // When the map fully covers the construction (e.g. a multi-cluster phrase
-  // like 結論に至る with both 結論 and 至る mapped), concatenate the whole
-  // reading rather than surfacing just whichever cluster happens to match —
-  // returning only "けつろん" for "結論に至る" would be a wrong reading, not
-  // a partial one.
-  const segments = fullyCoveredSegments(construction, readings)
-  if (segments) return segments.map((s) => s.reading ?? s.text).join("")
-
-  const keys = Object.keys(readings).sort((a, b) => b.length - a.length)
-  for (const k of keys) {
-    if (construction.includes(k) && readings[k]?.trim()) return readings[k]
-  }
-  return undefined
+  // Only when the map accounts for every kanji (e.g. a multi-cluster phrase
+  // like 結論に至る with both 結論 and 至る mapped): surfacing whichever
+  // cluster happens to match — "けつろん" for "結論に至る" — would be a wrong
+  // reading for the phrase, not a partial one. A map that covers only part of
+  // it is rendered cluster by cluster instead, via `furiganaSegments`.
+  return joinSegmentReadings(segmentText(construction, readings))
 }
 
 /**

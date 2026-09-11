@@ -364,6 +364,31 @@ describe("ReviewSessionAnswerPanel", () => {
     expect(rubies[1]?.textContent).toBe("製法せいほう")
   })
 
+  it("shows the furigana entries the map has when it covers only some kanji", () => {
+    const item = furiganaOnlyItem()
+    if (item.card.kind === "vocabulary") {
+      item.card.content.readings = { 特殊: "とくしゅ" }
+    }
+
+    const { container } = render(
+      <ReviewSessionAnswerPanel
+        item={item}
+        typed="特殊な製法"
+        expected="特殊な製法"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    const rubies = container.querySelectorAll("ruby")
+    expect(rubies).toHaveLength(1)
+    expect(rubies[0]?.textContent).toBe("特殊とくしゅ")
+    expect(
+      screen.getByRole("group", { name: "答え" }).textContent,
+    ).toContain("製法")
+  })
+
   it("shows readings-map furigana on the correct line after a wrong answer", () => {
     const { container } = render(
       <ReviewSessionAnswerPanel
@@ -383,6 +408,46 @@ describe("ReviewSessionAnswerPanel", () => {
     expect(rubies).toHaveLength(2)
     expect(rubies[0]?.querySelector("rt")?.textContent).toBe("とくしゅ")
     expect(rubies[1]?.querySelector("rt")?.textContent).toBe("せいほう")
+  })
+})
+
+describe("ReviewSessionAnswerPanel — construction furigana", () => {
+  it("annotates a construction cluster by cluster instead of stretching one entry", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-construction-partial",
+        deckId: "deck-1",
+        kind: "grammar",
+        updatedAt: 0,
+        content: {
+          sentenceWithGap: "彼は___",
+          gapMarker: "___",
+          construction: "結論に至る",
+          translationEn: "he came to a conclusion",
+          readings: { 結論: "けつろん" },
+          images: [],
+        },
+      },
+      modeId: "grammar_type_construction",
+      due: 0,
+      isLeech: false,
+    }
+
+    const { container } = render(
+      <ReviewSessionAnswerPanel
+        item={item}
+        typed="結論に至る"
+        expected="結論に至る"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    const rubies = container.querySelectorAll("ruby")
+    expect(rubies).toHaveLength(1)
+    // けつろん over 結論 only — never stretched over the whole phrase.
+    expect(rubies[0]?.textContent).toBe("結論けつろん")
   })
 })
 

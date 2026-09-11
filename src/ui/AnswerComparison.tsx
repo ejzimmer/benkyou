@@ -1,7 +1,7 @@
 import { diffChars } from "diff"
 import { useId } from "react"
 import {
-  fullyCoveredSegments,
+  furiganaSegments,
   joinSegmentReadings,
   type ReadingSegment,
 } from "../domain/readingsMap"
@@ -18,10 +18,11 @@ export type AnswerComparisonProps = {
   reading?: string
   /**
    * Kanji phrase → reading map for `expected` (e.g. a card's furigana
-   * `readings` field). When it fully covers every kanji cluster in
-   * `expected`, each cluster gets its own furigana annotation (matching how
-   * the same map renders elsewhere, e.g. `RubySegment`) instead of `reading`
-   * being shown as a single span over the whole answer.
+   * `readings` field). Every entry that matches is shown as furigana over
+   * its own cluster (matching how the same map renders elsewhere, e.g.
+   * `RubySegment`), in preference to `reading` being shown as a single span
+   * over the whole answer. `reading` is used only when the map annotates
+   * nothing here.
    */
   readings?: Record<string, string>
   /**
@@ -141,6 +142,10 @@ function DiffLine({
   const columns = Math.max(cells.length, 1)
   const groups = furiganaGroups(cells, reading, segments)
   const hasFurigana = groups.length > 0
+  // Only when there's a reading for the answer as a whole — a map covering
+  // just some of the kanji has no such string, and the per-cluster <rt>s are
+  // announced on their own.
+  const description = reading?.trim()
   return (
     <span
       className={
@@ -149,16 +154,16 @@ function DiffLine({
       }
       lang="ja"
       aria-labelledby={labelId}
-      aria-describedby={hasFurigana ? descId : undefined}
+      aria-describedby={description ? descId : undefined}
       data-reading-diff-line={line}
       tabIndex={hasFurigana ? 0 : undefined}
       style={{
         gridTemplateColumns: `repeat(${columns}, 1.4em)`,
       }}
     >
-      {hasFurigana && (
+      {description && (
         <span id={descId} className="sr-only">
-          {reading?.trim()}
+          {description}
         </span>
       )}
       {groups.map((group, i) => (
@@ -206,15 +211,16 @@ export function AnswerComparison({
   const hasKanji = KANJI.test(expected)
   const segments =
     hasKanji && readings && Object.keys(readings).length > 0
-      ? fullyCoveredSegments(expected, readings)
+      ? furiganaSegments(expected, readings, reading)
       : undefined
   // A card can carry a furigana map without any whole-word reading — e.g.
   // 特殊な製法 with 特殊/製法 mapped but no pronunciation field, which has no
-  // reading mode and so never fills `reading`. Flatten the covered segments
-  // into one string so those cards still get furigana here, and so screen
-  // readers still hear the whole reading.
-  const flatReading = reading?.trim() ? reading : joinSegmentReadings(segments)
-  const showRuby = hasKanji && Boolean(flatReading?.trim())
+  // reading mode and so never fills `reading`. Flattening the segments gives
+  // those cards a whole-word reading for the screen-reader description; it
+  // comes back undefined for a map that annotates only part of the answer,
+  // which is exactly when there is no whole-word reading to announce.
+  const flatReading = reading?.trim() || joinSegmentReadings(segments)
+  const showRuby = hasKanji && Boolean(segments || flatReading?.trim())
   const diff = isCorrect ? null : buildAlignedDiff(expected, typed)
   // Mirrors DiffLine's own hasFurigana check for the correct line: when it
   // reserves margin-top for a floating furigana annotation, the maru beside

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { AnswerComparison } from "../../ui/AnswerComparison"
 import { CardImageRow } from "../../ui/CardImageRow"
-import { fullyCoveredSegments } from "../../domain/readingsMap"
+import { furiganaSegments } from "../../domain/readingsMap"
 import { useScrollShadow } from "../../ui/useScrollShadow"
 import { ReviewFooter } from "./ReviewFooter"
 import {
@@ -74,12 +74,17 @@ export function ReviewSessionAnswerPanel({
       : undefined
   // The furigana map alone is enough to annotate the word — a card with no
   // pronunciation field (e.g. 特殊な製法, furigana 特殊/製法) has no
-  // whole-word reading at all, but its kanji are still fully covered.
+  // whole-word reading at all, and one that only annotates some of its kanji
+  // still has furigana worth showing over those.
   const wordFromClueSegments =
     m === "vocab_type_word_from_clue" &&
     card.kind === "vocabulary" &&
     containsKanji(displayExpected)
-      ? fullyCoveredSegments(displayExpected, card.content.readings ?? {})
+      ? furiganaSegments(
+          displayExpected,
+          card.content.readings,
+          wordFromClueReading,
+        )
       : undefined
   const wordFromClueShowRuby =
     containsKanji(displayExpected) &&

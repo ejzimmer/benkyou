@@ -1,5 +1,9 @@
 import type { VocabularyCardContent } from "./types"
-import { segmentText, type ReadingSegment } from "./readingsMap"
+import {
+  joinSegmentReadings,
+  segmentText,
+  type ReadingSegment,
+} from "./readingsMap"
 
 export const PLACEHOLDER_DEFINITION = "[translation pending]"
 
@@ -96,6 +100,10 @@ export function hasVocabularyPronunciation(
  * the connecting に in 結論に至る) — for views that can only show one flat
  * `<ruby>` over the whole word (e.g. a character-diffed answer comparison)
  * rather than one ruby per segment.
+ *
+ * Undefined when re-matching leaves any kanji unread — a conjugated form
+ * (結論に至った against a 至る part) would otherwise produce "けつろんに至った",
+ * a mixture of reading and surface text that is not this word's reading.
  */
 export function wordJaReading(
   content: VocabularyCardContent,
@@ -106,7 +114,5 @@ export function wordJaReading(
   const byLabel = Object.fromEntries(
     segments.map((s) => [s.text, s.reading ?? ""]),
   )
-  return segmentText(content.wordJa, byLabel)
-    .map((s) => s.reading ?? s.text)
-    .join("")
+  return joinSegmentReadings(segmentText(content.wordJa, byLabel))
 }

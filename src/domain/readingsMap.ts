@@ -30,33 +30,63 @@ export function segmentText(
 }
 
 /**
- * `segmentText`, but only returned when every kanji character in `text` ends
- * up inside a matched (read) segment — otherwise the caller should fall back
- * to a single whole-string reading (or none), since a partial breakdown
- * would silently drop part of the pronunciation.
+ * `segmentText`, but only returned when the map actually annotates something
+ * in `text` — every entry that matches is shown as furigana, and kanji the
+ * author hasn't given a reading for simply stay bare (the same way
+ * `RubySegment` already renders example sentences). Undefined means the map
+ * says nothing about this text, so the caller should fall back to a
+ * whole-string reading if it has one.
  */
-export function fullyCoveredSegments(
+export function annotatedSegments(
   text: string,
   readings: Record<string, string>,
 ): ReadingSegment[] | undefined {
   const segments = segmentText(text, readings)
-  const hasUncoveredKanji = segments.some(
-    (s) => !s.reading?.trim() && containsKanji(s.text),
-  )
-  return hasUncoveredKanji ? undefined : segments
+  return segments.some((s) => s.reading?.trim()) ? segments : undefined
 }
 
 /**
- * Flatten covered segments into a single reading string for the whole text —
- * each segment's reading, with any unannotated characters between them (e.g.
- * the な in 特殊な製法) kept as-is. Returns undefined when no segment carries
- * a reading, since the surface text is not its own reading.
+ * Flatten segments into a single reading string for the whole text — each
+ * segment's reading, with any unannotated characters between them (e.g. the
+ * な in 特殊な製法) kept as-is. Returns undefined unless the segments account
+ * for every kanji: with an unread kanji left in, the result would be a
+ * mixture of reading and surface text, not a reading (and passing that off as
+ * one would have a screen reader announce raw kanji as the pronunciation).
  */
 export function joinSegmentReadings(
   segments: ReadingSegment[] | undefined,
 ): string | undefined {
   if (!segments?.some((s) => s.reading?.trim())) return undefined
+  if (segments.some((s) => !s.reading?.trim() && containsKanji(s.text))) {
+    return undefined
+  }
   return segments.map((s) => s.reading?.trim() || s.text).join("")
+}
+
+/**
+ * How to annotate `text`, given a card's furigana map and its whole-word
+ * `reading`: the author's own per-cluster breakdown when it accounts for
+ * every kanji; otherwise the whole-word reading, when there is one, since a
+ * partial map must not override a complete reading — an entry the author
+ * wrote for an example sentence (人=ひと) would otherwise hijack a word it
+ * happens to appear in (大人 = おとな) and show a reading that's wrong there.
+ * Failing both, whatever the map does annotate, so furigana the author wrote
+ * is never simply dropped — with no reading to show instead, a card's own
+ * entries are the best (and only) thing there is to show, even where a
+ * single-kanji entry reads differently inside this particular compound.
+ *
+ * Undefined means the caller should fall back to a single whole-word ruby
+ * from `reading` (or show none, when there isn't one).
+ */
+export function furiganaSegments(
+  text: string,
+  readings: Record<string, string> | undefined,
+  reading: string | undefined,
+): ReadingSegment[] | undefined {
+  const segments = readings ? annotatedSegments(text, readings) : undefined
+  if (!segments) return undefined
+  if (joinSegmentReadings(segments)) return segments
+  return reading?.trim() ? undefined : segments
 }
 
 export type LabeledReading = { label: string; reading: string }

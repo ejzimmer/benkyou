@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react"
 import type { DueItem } from "../../services/review"
-import { RubySentence, RubyWord } from "../../ui/KanjiRuby"
+import { RubySegment, RubySentence, RubyWord } from "../../ui/KanjiRuby"
 import { CardImageRow } from "../../ui/CardImageRow"
 import { ChevronDownIcon } from "../../ui/ChevronDownIcon"
 import {
@@ -14,12 +14,15 @@ import {
   splitGapAnswers,
   typedGapValues,
 } from "../../domain/grammarGaps"
-import { phraseReadingSegments } from "../../domain/vocabularyContent"
+import {
+  phraseReadingSegments,
+  wordJaReading,
+} from "../../domain/vocabularyContent"
 import { constructionReadingSegments } from "../../domain/grammarContent"
 import { containsKanji } from "../../domain/types"
 import {
   deriveFurigana,
-  fullyCoveredSegments,
+  furiganaSegments,
   type LabeledReading,
 } from "../../domain/readingsMap"
 
@@ -223,9 +226,14 @@ export function ReviewSessionPromptBody({
     if (column === "answer") return null
     const examples = card.content.exampleSentences.filter((s) => s.trim())
     const exampleReadings = vocabExampleReadings(card.content)
-    const wordSegments = fullyCoveredSegments(
+    // `wordJaReading`, not the raw `reading` field: a phrase word keeps its
+    // whole-word reading in `readingParts`, and that reading outranks a
+    // partial map just the same.
+    const wordReading = wordJaReading(card.content)
+    const wordSegments = furiganaSegments(
       card.content.wordJa,
-      card.content.readings ?? {},
+      card.content.readings,
+      wordReading,
     )
     const hasHidden = examples.length > 0
     return (
@@ -233,9 +241,10 @@ export function ReviewSessionPromptBody({
         <div className="prompt-extras-row">
           <p className="prompt-main">
             {wordSegments ? (
-              // The furigana map fully accounts for every kanji in the word —
-              // honor the author's own per-kanji breakdown (e.g. narrowed to
-              // leave okurigana un-annotated) instead of one flat ruby.
+              // The furigana map is what to show for this word — honor the
+              // author's own per-kanji breakdown (e.g. narrowed to leave
+              // okurigana un-annotated) instead of one flat ruby, showing
+              // every entry they wrote and leaving the rest bare.
               wordSegments.map((s, i) =>
                 s.reading?.trim() ? (
                   <RubyWord key={i} surface={s.text} reading={s.reading} />
@@ -244,11 +253,10 @@ export function ReviewSessionPromptBody({
                 ),
               )
             ) : (
-              // The map doesn't (yet) cover the whole word — e.g. a card
-              // whose furigana was never authored — so fall back to the
-              // authoritative whole-word reading rather than showing
-              // partial/no furigana.
-              <RubyWord surface={card.content.wordJa} reading={card.content.reading} />
+              // The map says nothing about this word — or annotates only
+              // part of it while a whole-word reading exists — so fall back
+              // to that reading rather than showing partial/no furigana.
+              <RubyWord surface={card.content.wordJa} reading={wordReading} />
             )}
           </p>
           {hasHidden && renderExtrasToggle("例文を表示")}
@@ -699,13 +707,10 @@ export function ReviewSessionPromptBody({
               const fill = fillFor(gapIndex)
               return (
                 <span className="construction-fill">
-                  <RubyWord
-                    surface={fill}
-                    reading={readingForConstruction(
-                      fill,
-                      card.content.readings,
-                    )}
-                  />
+                  {/* Per cluster, like the sentence around it: a map that
+                      annotates only part of the answer must not have one of
+                      its entries stretched over the whole thing. */}
+                  <RubySegment segment={fill} readings={card.content.readings} />
                 </span>
               )
             }}

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest"
 import {
   addMissingKanjiLines,
   deriveFurigana,
-  fullyCoveredSegments,
+  annotatedSegments,
+  furiganaSegments,
+  joinSegmentReadings,
   kanjiOnlyEntry,
   parseReadingsMapText,
   readingsMapToText,
@@ -100,10 +102,62 @@ describe("segmentText", () => {
   })
 })
 
-describe("fullyCoveredSegments", () => {
-  it("returns the segments when every kanji character is covered", () => {
+describe("annotatedSegments", () => {
+  it("returns every entry the map matches, leaving the rest bare", () => {
+    expect(annotatedSegments("結論に至る", { 結論: "けつろん" })).toEqual([
+      { text: "結論", reading: "けつろん" },
+      { text: "に" },
+      { text: "至" },
+      { text: "る" },
+    ])
+  })
+
+  it("returns undefined when the map annotates nothing in the text", () => {
+    expect(annotatedSegments("学生", { 結論: "けつろん" })).toBeUndefined()
+    expect(annotatedSegments("学生", {})).toBeUndefined()
+  })
+
+  it("ignores entries with a blank reading", () => {
+    expect(annotatedSegments("学生", { 学生: "  " })).toBeUndefined()
+  })
+})
+
+describe("joinSegmentReadings", () => {
+  it("joins readings with the unannotated kana between them", () => {
     expect(
-      fullyCoveredSegments("結論に至る", { 結論: "けつろん", 至る: "いたる" }),
+      joinSegmentReadings([
+        { text: "結論", reading: "けつろん" },
+        { text: "に" },
+        { text: "至る", reading: "いたる" },
+      ]),
+    ).toBe("けつろんにいたる")
+  })
+
+  it("returns undefined when an unannotated segment still has kanji", () => {
+    expect(
+      joinSegmentReadings([
+        { text: "特殊", reading: "とくしゅ" },
+        { text: "な" },
+        { text: "製" },
+        { text: "法" },
+      ]),
+    ).toBeUndefined()
+  })
+
+  it("returns undefined when nothing is annotated", () => {
+    expect(joinSegmentReadings([{ text: "学生" }])).toBeUndefined()
+    expect(joinSegmentReadings(undefined)).toBeUndefined()
+  })
+})
+
+describe("furiganaSegments", () => {
+  it("uses the map when it accounts for every kanji, over the whole-word reading", () => {
+    expect(
+      furiganaSegments(
+        "結論に至る",
+        { 結論: "けつろん", 至る: "いたる" },
+        "けつろんにいたる",
+      ),
     ).toEqual([
       { text: "結論", reading: "けつろん" },
       { text: "に" },
@@ -111,14 +165,25 @@ describe("fullyCoveredSegments", () => {
     ])
   })
 
-  it("returns undefined when a kanji cluster is missing from the map", () => {
-    expect(
-      fullyCoveredSegments("結論に至る", { 結論: "けつろん" }),
-    ).toBeUndefined()
+  it("keeps a partial map when there is no whole-word reading", () => {
+    expect(furiganaSegments("特殊な製法", { 特殊: "とくしゅ" }, undefined)).toEqual(
+      [
+        { text: "特殊", reading: "とくしゅ" },
+        { text: "な" },
+        { text: "製" },
+        { text: "法" },
+      ],
+    )
   })
 
-  it("returns undefined for an uncovered kanji word with no map entries", () => {
-    expect(fullyCoveredSegments("学生", {})).toBeUndefined()
+  it("defers to the whole-word reading when the map covers only part", () => {
+    // 人=ひと, written for an example sentence, must not override 大人=おとな.
+    expect(furiganaSegments("大人", { 人: "ひと" }, "おとな")).toBeUndefined()
+  })
+
+  it("returns undefined when the map annotates nothing", () => {
+    expect(furiganaSegments("大人", { 猫: "ねこ" }, "おとな")).toBeUndefined()
+    expect(furiganaSegments("大人", undefined, "おとな")).toBeUndefined()
   })
 })
 

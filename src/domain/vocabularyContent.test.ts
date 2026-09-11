@@ -141,4 +141,16 @@ describe("wordJaReading", () => {
   it("is undefined when neither a reading field nor 2+ reading parts are available", () => {
     expect(wordJaReading(base)).toBeUndefined()
   })
+
+  it("is undefined when re-matching the parts leaves kanji unread", () => {
+    // 至る doesn't match the conjugated 至った, so the flat string would be
+    // "けつろんに至った" — surface kanji passed off as a reading.
+    expect(
+      wordJaReading({
+        ...base,
+        wordJa: "結論に至った",
+        readingParts: { 結論: "けつろん", 至る: "いたる" },
+      }),
+    ).toBeUndefined()
+  })
 })
