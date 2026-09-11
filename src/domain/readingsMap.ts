@@ -71,7 +71,9 @@ export function joinSegmentReadings(
  * wrote for an example sentence (人=ひと) would otherwise hijack a word it
  * happens to appear in (大人 = おとな) and show a reading that's wrong there.
  * Failing both, whatever the map does annotate, so furigana the author wrote
- * is never simply dropped.
+ * is never simply dropped — with no reading to show instead, a card's own
+ * entries are the best (and only) thing there is to show, even where a
+ * single-kanji entry reads differently inside this particular compound.
  *
  * Undefined means the caller should fall back to a single whole-word ruby
  * from `reading` (or show none, when there isn't one).
