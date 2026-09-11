@@ -125,19 +125,28 @@ describe("AnswerComparison", () => {
     expect(container.querySelector("rt")).toBeNull()
   })
 
-  it("annotates the clusters the map covers and leaves the rest bare", () => {
+  it("annotates the clusters the map covers when there's no whole-word reading", () => {
     const { container } = render(
       <AnswerComparison
-        typed="緩やかな風"
-        expected="緩やかな風"
-        reading="ゆるやかなかぜ"
-        readings={{ 緩: "ゆる" }}
+        typed="特殊な製法"
+        expected="特殊な製法"
+        readings={{ 特殊: "とくしゅ" }}
       />,
     )
     const rubies = container.querySelectorAll("ruby")
     expect(rubies).toHaveLength(1)
-    expect(rubies[0]?.textContent).toBe("緩ゆる")
-    expect(container.textContent).toContain("風")
+    expect(rubies[0]?.textContent).toBe("特殊とくしゅ")
+    expect(container.textContent).toContain("製法")
+  })
+
+  it("keeps the whole-word reading when the map covers only part of the answer", () => {
+    // 人=ひと (written for an example sentence) must not override 大人=おとな.
+    const { container } = render(
+      <AnswerComparison typed="大人" expected="大人" reading="おとな" readings={{ 人: "ひと" }} />,
+    )
+    const rubies = container.querySelectorAll("ruby")
+    expect(rubies).toHaveLength(1)
+    expect(rubies[0]?.textContent).toBe("大人おとな")
   })
 
   it("falls back to the whole-word reading when the map annotates nothing", () => {
@@ -152,5 +161,36 @@ describe("AnswerComparison", () => {
     const rubies = container.querySelectorAll("ruby")
     expect(rubies).toHaveLength(1)
     expect(rubies[0]?.textContent).toBe("緩やかな風ゆるやかなかぜ")
+  })
+
+  it("describes the answer to screen readers only when a whole-word reading exists", () => {
+    const covered = render(
+      <AnswerComparison
+        typed="特殊な方法"
+        expected="特殊な製法"
+        readings={{ 特殊: "とくしゅ", 製法: "せいほう" }}
+      />,
+    )
+    const coveredLine = covered.container.querySelector(
+      '[data-reading-diff-line="correct"]',
+    )!
+    expect(coveredLine).toHaveAttribute("aria-describedby")
+
+    const partial = render(
+      <AnswerComparison
+        typed="特殊な方法"
+        expected="特殊な製法"
+        readings={{ 特殊: "とくしゅ" }}
+      />,
+    )
+    const partialLine = partial.container.querySelector(
+      '[data-reading-diff-line="correct"]',
+    )!
+    // No reading for the answer as a whole — announcing "とくしゅな製法" as
+    // one would read raw kanji out as the pronunciation.
+    expect(partialLine).not.toHaveAttribute("aria-describedby")
+    expect(
+      partialLine.querySelectorAll(".reading-answer-diff-furigana"),
+    ).toHaveLength(1)
   })
 })

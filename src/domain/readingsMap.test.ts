@@ -4,6 +4,8 @@ import {
   deriveFurigana,
   annotatedSegments,
   fullyCoveredSegments,
+  furiganaSegments,
+  joinSegmentReadings,
   kanjiOnlyEntry,
   parseReadingsMapText,
   readingsMapToText,
@@ -140,6 +142,71 @@ describe("annotatedSegments", () => {
 
   it("ignores entries with a blank reading", () => {
     expect(annotatedSegments("学生", { 学生: "  " })).toBeUndefined()
+  })
+})
+
+describe("joinSegmentReadings", () => {
+  it("joins readings with the unannotated kana between them", () => {
+    expect(
+      joinSegmentReadings([
+        { text: "結論", reading: "けつろん" },
+        { text: "に" },
+        { text: "至る", reading: "いたる" },
+      ]),
+    ).toBe("けつろんにいたる")
+  })
+
+  it("returns undefined when an unannotated segment still has kanji", () => {
+    expect(
+      joinSegmentReadings([
+        { text: "特殊", reading: "とくしゅ" },
+        { text: "な" },
+        { text: "製" },
+        { text: "法" },
+      ]),
+    ).toBeUndefined()
+  })
+
+  it("returns undefined when nothing is annotated", () => {
+    expect(joinSegmentReadings([{ text: "学生" }])).toBeUndefined()
+    expect(joinSegmentReadings(undefined)).toBeUndefined()
+  })
+})
+
+describe("furiganaSegments", () => {
+  it("uses the map when it accounts for every kanji, over the whole-word reading", () => {
+    expect(
+      furiganaSegments(
+        "結論に至る",
+        { 結論: "けつろん", 至る: "いたる" },
+        "けつろんにいたる",
+      ),
+    ).toEqual([
+      { text: "結論", reading: "けつろん" },
+      { text: "に" },
+      { text: "至る", reading: "いたる" },
+    ])
+  })
+
+  it("keeps a partial map when there is no whole-word reading", () => {
+    expect(furiganaSegments("特殊な製法", { 特殊: "とくしゅ" }, undefined)).toEqual(
+      [
+        { text: "特殊", reading: "とくしゅ" },
+        { text: "な" },
+        { text: "製" },
+        { text: "法" },
+      ],
+    )
+  })
+
+  it("defers to the whole-word reading when the map covers only part", () => {
+    // 人=ひと, written for an example sentence, must not override 大人=おとな.
+    expect(furiganaSegments("大人", { 人: "ひと" }, "おとな")).toBeUndefined()
+  })
+
+  it("returns undefined when the map annotates nothing", () => {
+    expect(furiganaSegments("大人", { 猫: "ねこ" }, "おとな")).toBeUndefined()
+    expect(furiganaSegments("大人", undefined, "おとな")).toBeUndefined()
   })
 })
 

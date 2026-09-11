@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react"
 import type { DueItem } from "../../services/review"
 import { AnswerComparison } from "../../ui/AnswerComparison"
 import { CardImageRow } from "../../ui/CardImageRow"
-import { annotatedSegments } from "../../domain/readingsMap"
+import { furiganaSegments } from "../../domain/readingsMap"
 import { useScrollShadow } from "../../ui/useScrollShadow"
 import { ReviewFooter } from "./ReviewFooter"
 import {
@@ -80,7 +80,11 @@ export function ReviewSessionAnswerPanel({
     m === "vocab_type_word_from_clue" &&
     card.kind === "vocabulary" &&
     containsKanji(displayExpected)
-      ? annotatedSegments(displayExpected, card.content.readings ?? {})
+      ? furiganaSegments(
+          displayExpected,
+          card.content.readings,
+          wordFromClueReading,
+        )
       : undefined
   const wordFromClueShowRuby =
     containsKanji(displayExpected) &&
