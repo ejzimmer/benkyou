@@ -388,6 +388,47 @@ describe("ReviewSessionPromptBody", () => {
     expect(prompt?.textContent).toBe("結論けつろんに至るいたる")
   })
 
+  it("keeps a phrase word's own reading ahead of a partial map", () => {
+    const item: DueItem = {
+      card: {
+        id: "card-7c",
+        deckId: "deck-1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "結論に至る",
+          // The whole-word reading of a phrase card lives here, not in
+          // `reading` — a partial map must not outrank it either.
+          readingParts: { 結論: "けつろん", 至る: "いたる" },
+          readings: { 至: "いた" },
+          definitionsEn: ["to reach a conclusion"],
+          images: [],
+          exampleSentences: [],
+        },
+      },
+      modeId: "vocab_oral_en",
+      due: 0,
+      isLeech: false,
+    }
+
+    const { container } = render(
+      <ReviewSessionPromptBody
+        item={item}
+        typed=""
+        onTypedChange={vi.fn()}
+        readingWarn={false}
+        kanjiWarn={false}
+        onTypedSubmit={vi.fn()}
+        column="question"
+      />,
+    )
+
+    const prompt = container.querySelector(".prompt-main")
+    const rubies = Array.from(prompt?.querySelectorAll("ruby") ?? [])
+    expect(rubies.map((r) => r.firstChild?.textContent)).toEqual(["結論に至る"])
+    expect(rubies[0]?.querySelector("rt")?.textContent).toBe("けつろんにいたる")
+  })
+
   it("annotates the kanji the map covers and leaves the rest bare", () => {
     const item: DueItem = {
       card: {

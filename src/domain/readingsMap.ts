@@ -46,23 +46,6 @@ export function annotatedSegments(
 }
 
 /**
- * `segmentText`, but only returned when every kanji character in `text` ends
- * up inside a matched (read) segment — otherwise the caller should fall back
- * to a single whole-string reading (or none), since a partial breakdown
- * would silently drop part of the pronunciation.
- */
-export function fullyCoveredSegments(
-  text: string,
-  readings: Record<string, string>,
-): ReadingSegment[] | undefined {
-  const segments = segmentText(text, readings)
-  const hasUncoveredKanji = segments.some(
-    (s) => !s.reading?.trim() && containsKanji(s.text),
-  )
-  return hasUncoveredKanji ? undefined : segments
-}
-
-/**
  * Flatten segments into a single reading string for the whole text — each
  * segment's reading, with any unannotated characters between them (e.g. the
  * な in 特殊な製法) kept as-is. Returns undefined unless the segments account

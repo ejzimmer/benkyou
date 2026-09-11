@@ -3,7 +3,6 @@ import {
   addMissingKanjiLines,
   deriveFurigana,
   annotatedSegments,
-  fullyCoveredSegments,
   furiganaSegments,
   joinSegmentReadings,
   kanjiOnlyEntry,
@@ -100,28 +99,6 @@ describe("segmentText", () => {
 
   it("returns unmatched characters one at a time", () => {
     expect(segmentText("猫犬", {})).toEqual([{ text: "猫" }, { text: "犬" }])
-  })
-})
-
-describe("fullyCoveredSegments", () => {
-  it("returns the segments when every kanji character is covered", () => {
-    expect(
-      fullyCoveredSegments("結論に至る", { 結論: "けつろん", 至る: "いたる" }),
-    ).toEqual([
-      { text: "結論", reading: "けつろん" },
-      { text: "に" },
-      { text: "至る", reading: "いたる" },
-    ])
-  })
-
-  it("returns undefined when a kanji cluster is missing from the map", () => {
-    expect(
-      fullyCoveredSegments("結論に至る", { 結論: "けつろん" }),
-    ).toBeUndefined()
-  })
-
-  it("returns undefined for an uncovered kanji word with no map entries", () => {
-    expect(fullyCoveredSegments("学生", {})).toBeUndefined()
   })
 })
 
