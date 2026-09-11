@@ -95,6 +95,8 @@ export type Card =
       kind: "vocabulary"
       content: VocabularyCardContent
       updatedAt: number
+      /** See `notDuplicateOf` on the grammar branch. */
+      notDuplicateOf?: string[]
       /** Reserved for future metadata (SRS summary, flags, etc.) */
       meta?: Record<string, unknown>
     }
@@ -104,6 +106,14 @@ export type Card =
       kind: "grammar"
       content: GrammarCardContent
       updatedAt: number
+      /**
+       * IDs of cards the duplicate finder flagged that the user has checked
+       * and confirmed are *not* duplicates of this one, so they stop being
+       * reported. Written symmetrically to both cards (see
+       * `markCardsNotDuplicates`), so either side of the pair staying behind
+       * after a sync still suppresses the pair.
+       */
+      notDuplicateOf?: string[]
       meta?: Record<string, unknown>
     }
 

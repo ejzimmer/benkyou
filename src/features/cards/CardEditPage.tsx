@@ -27,9 +27,11 @@ import {
   deleteCard,
   grammarFromVocabularyContent,
   isMediaReferencedByOtherCards,
+  markCardsNotDuplicates,
   mergeCards,
   normalizeGrammarContent,
   saveCard,
+  unmarkCardsNotDuplicates,
   validateGrammar,
   validateVocabulary,
   vocabularyFromGrammarContent,
@@ -38,8 +40,9 @@ import { deleteImageBlob, saveImageBlob } from "../../services/media"
 import { db } from "../../lib/db/schema"
 import { CardImage } from "../../ui/CardImage"
 import { normalizeJapanese } from "../../lib/japanese/normalize"
-import { findDuplicateCards, japaneseWordForCard } from "../../domain/duplicates"
+import { japaneseWordForCard } from "../../domain/duplicates"
 import { DuplicateCardsModal } from "./DuplicateCardsModal"
+import { useDuplicateCards } from "./useDuplicateCards"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { UserMenu } from "../../ui/UserMenu"
@@ -196,28 +199,13 @@ export function CardEditPage() {
       : undefined
 
   // Runs automatically whenever an existing card's edit page opens (rather
-  // than behind a manual "search" button). It's a Dexie live query over the
-  // whole cards table, so it also refreshes for free after a merge removes
-  // a match. Keyed off `loadedCard` rather than the in-progress form fields
-  // — it reflects the saved card, not each keystroke.
-  const existingCardDuplicateCheck = useLiveQuery(
-    async () => {
-      if (isNew || !loadedCard) return null
-      const allCards = await db.cards.toArray()
-      return {
-        forCardId: loadedCard.id,
-        matches: findDuplicateCards(loadedCard, allCards),
-      }
-    },
-    [isNew, loadedCard],
-  )
-
-  const duplicateCheckResult =
-    !isNew && existingCardDuplicateCheck?.forCardId === cardId
-      ? existingCardDuplicateCheck
-      : null
-  const duplicateMatches = duplicateCheckResult?.matches ?? []
-  const duplicateCheckLoading = !isNew && !duplicateCheckResult
+  // than behind a manual "search" button), off a Dexie live query so it also
+  // refreshes for free after a merge or a dismissal. Keyed off `loadedCard`
+  // rather than the in-progress form fields — it reflects the saved card,
+  // not each keystroke.
+  const duplicateCard = isNew || loadedCard?.id !== cardId ? null : loadedCard
+  const { matches: duplicateMatches, dismissed: dismissedDuplicates } =
+    useDuplicateCards(duplicateCard)
 
   const duplicateJapaneseWarning =
     isNew && normalizedCurrentJapanese && duplicateJapaneseCards?.length
@@ -371,6 +359,24 @@ export function CardEditPage() {
     }
   }
 
+  async function onMarkNotDuplicate(match: Card) {
+    setMergeErr(null)
+    try {
+      await markCardsNotDuplicates(cardId, match.id)
+    } catch (x) {
+      setMergeErr(x instanceof Error ? x.message : "保存に失敗しました。")
+    }
+  }
+
+  async function onRestoreDuplicate(match: Card) {
+    setMergeErr(null)
+    try {
+      await unmarkCardsNotDuplicates(cardId, match.id)
+    } catch (x) {
+      setMergeErr(x instanceof Error ? x.message : "保存に失敗しました。")
+    }
+  }
+
   async function onMergeDuplicate(match: Card) {
     setMergeErr(null)
     setMergingId(match.id)
@@ -502,12 +508,10 @@ export function CardEditPage() {
 
       {!isNew && (
         <div className="toolbar card-edit-toolbar">
-          {duplicateCheckLoading ? (
-            <span className="muted small" role="status">
-              <span className="import-spinner" aria-hidden="true" />
-              重複カードを確認中…
-            </span>
-          ) : duplicateMatches.length > 0 ? (
+          {/* Nothing is shown while the check runs, or when it finds nothing:
+              "no duplicates" is the normal case and isn't worth a line of
+              chrome on every card. */}
+          {(duplicateMatches.length > 0 || dismissedDuplicates.length > 0) && (
             <button
               type="button"
               className="btn secondary"
@@ -515,8 +519,6 @@ export function CardEditPage() {
             >
               重複カード見せる
             </button>
-          ) : (
-            <p className="muted small">重複カードがありません</p>
           )}
           <button type="button" className="btn primary pink" onClick={onDeleteCard}>
             削除
@@ -527,9 +529,12 @@ export function CardEditPage() {
       {showDuplicatesModal && (
         <DuplicateCardsModal
           matches={duplicateMatches}
+          dismissed={dismissedDuplicates}
           mergingId={mergingId}
           error={mergeErr}
           onMerge={onMergeDuplicate}
+          onMarkNotDuplicate={(match) => void onMarkNotDuplicate(match)}
+          onRestoreDuplicate={(match) => void onRestoreDuplicate(match)}
           onClose={() => setShowDuplicatesModal(false)}
         />
       )}

@@ -2083,6 +2083,45 @@ code {
   justify-content: flex-end;
 }
 
+.duplicate-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.duplicate-cards-dismissed {
+  margin-top: 1.5rem;
+  border-top: 1px solid #2a2a3e;
+  padding-top: 0.5rem;
+}
+
+.duplicate-cards-dismissed h3 {
+  margin: 0;
+  font-weight: normal;
+}
+
+.duplicate-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  background: none;
+  font-family: inherit;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.duplicate-badge:hover,
+.duplicate-badge:focus-visible {
+  box-shadow:
+    0 0 8px var(--orange),
+    0 0 20px var(--orange);
+}
+
 .modal-panel.leech-modal-panel {
   width: fit-content;
   max-width: none;

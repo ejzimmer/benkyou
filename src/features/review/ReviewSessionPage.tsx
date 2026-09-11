@@ -11,7 +11,13 @@ import {
   type DueItem,
   type JudgementSnapshot,
 } from "../../services/review"
-import { clearLeech, deleteCard, markLeech } from "../../services/cards"
+import {
+  clearLeech,
+  deleteCard,
+  markCardsNotDuplicates,
+  markLeech,
+  unmarkCardsNotDuplicates,
+} from "../../services/cards"
 import { useSync } from "../../lib/sync/SyncContext"
 import { finalizeReadingAnswer, hasLatinScript } from "../../lib/japanese/normalize"
 import { matchesConfusedWord } from "../../lib/japanese/confusedWords"
@@ -21,6 +27,8 @@ import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import { ReviewFooter } from "./ReviewFooter"
 import { LeechModal } from "./LeechModal"
 import { LeechBadge } from "../../ui/LeechBadge"
+import { DuplicateCardsModal } from "../cards/DuplicateCardsModal"
+import { useDuplicateCards } from "../cards/useDuplicateCards"
 import {
   clearReviewSessionTimer,
   decrementReviewedCount,
@@ -351,6 +359,27 @@ export function ReviewSessionPage() {
 
   const current = sessionQueue[0]
   const backTo = deckId ? `/decks/${deckId}` : "/"
+
+  // Surfaced right in the session rather than only on the edit page: a
+  // duplicate is easiest to recognise while actually reviewing the card.
+  // Nothing renders unless there's something to report.
+  const { matches: duplicateMatches, dismissed: dismissedDuplicates } =
+    useDuplicateCards(current?.card)
+  const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
+  const duplicateCardId = current?.card.id
+
+  // Close the modal when moving on to the next card, and when the last
+  // remaining duplicate has just been dismissed — leaving it open on an empty
+  // list would strand the user on a panel with nothing in it.
+  useEffect(() => {
+    setShowDuplicatesModal(false)
+  }, [duplicateCardId])
+
+  useEffect(() => {
+    if (duplicateMatches.length === 0 && dismissedDuplicates.length === 0) {
+      setShowDuplicatesModal(false)
+    }
+  }, [duplicateMatches.length, dismissedDuplicates.length])
 
   // Nothing due and nothing was due this mount either — this is a direct
   // visit to a review URL with an empty queue (including a refresh on the
@@ -751,6 +780,16 @@ export function ReviewSessionPage() {
         </Link>
         <div className="review-header-actions">
           {item.isLeech && <LeechBadge onClear={() => void onClearLeech()} />}
+          {duplicateMatches.length > 0 && (
+            <button
+              type="button"
+              className="duplicate-badge"
+              aria-label={`重複の可能性があるカードが${duplicateMatches.length}枚あります`}
+              onClick={() => setShowDuplicatesModal(true)}
+            >
+              重複{duplicateMatches.length > 1 && duplicateMatches.length}
+            </button>
+          )}
           <p className="muted small">
             残り{remainingCount}枚
             {wrongCount > 0 && `・やり直し${wrongCount}枚`}
@@ -914,6 +953,20 @@ export function ReviewSessionPage() {
           </div>
         )}
       </section>
+
+      {showDuplicatesModal && (
+        <DuplicateCardsModal
+          matches={duplicateMatches}
+          dismissed={dismissedDuplicates}
+          onMarkNotDuplicate={(match) =>
+            void markCardsNotDuplicates(item.card.id, match.id)
+          }
+          onRestoreDuplicate={(match) =>
+            void unmarkCardsNotDuplicates(item.card.id, match.id)
+          }
+          onClose={() => setShowDuplicatesModal(false)}
+        />
+      )}
 
       {leechPrompt && (
         <LeechModal

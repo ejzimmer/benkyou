@@ -19,6 +19,9 @@ function cardPayload(card: Card) {
     deckId: card.deckId,
     kind: card.kind,
     content: card.content,
+    // Sorted so two devices that dismissed the same duplicate pairs in a
+    // different order don't read as a conflicting edit.
+    notDuplicateOf: [...(card.notDuplicateOf ?? [])].sort(),
     meta: card.meta ?? null,
   }
 }

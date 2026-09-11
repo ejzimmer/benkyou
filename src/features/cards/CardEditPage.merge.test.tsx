@@ -168,7 +168,7 @@ describe("CardEditPage duplicate finder / merge", () => {
     })
   })
 
-  it("shows a message when there are no matching cards", async () => {
+  it("shows nothing at all when there are no matching cards", async () => {
     await db.cards.put({
       id: "card-1",
       deckId: "deck-1",
@@ -183,9 +183,12 @@ describe("CardEditPage duplicate finder / merge", () => {
       expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
     })
 
-    expect(await screen.findByText("重複カードがありません")).toBeInTheDocument()
+    // The delete button shares the toolbar, so waiting for it is enough to
+    // know the toolbar itself has rendered and stayed empty of duplicate UI.
+    expect(await screen.findByRole("button", { name: "削除" })).toBeInTheDocument()
     expect(
       screen.queryByRole("button", { name: "重複カード見せる" }),
     ).not.toBeInTheDocument()
+    expect(screen.queryByText(/重複カード/)).not.toBeInTheDocument()
   })
 })
