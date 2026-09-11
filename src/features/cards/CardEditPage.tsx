@@ -268,10 +268,34 @@ export function CardEditPage() {
     firstFieldRef.current?.focus()
   }
 
+  /**
+   * Card-level fields the form neither shows nor can reconstruct. Every save
+   * here is a whole-row `db.cards.put`, so anything left out of the literal
+   * is silently wiped — carry them across from the stored card instead.
+   */
+  function preservedCardFields() {
+    const stored = loadedCard?.id === cardId ? loadedCard : null
+    return { notDuplicateOf: stored?.notDuplicateOf, meta: stored?.meta }
+  }
+
   function currentCardDraft(): Card {
     return kind === "vocabulary"
-      ? { id: cardId, deckId, kind: "vocabulary", content: vocab, updatedAt: Date.now() }
-      : { id: cardId, deckId, kind: "grammar", content: grammar, updatedAt: Date.now() }
+      ? {
+          ...preservedCardFields(),
+          id: cardId,
+          deckId,
+          kind: "vocabulary",
+          content: vocab,
+          updatedAt: Date.now(),
+        }
+      : {
+          ...preservedCardFields(),
+          id: cardId,
+          deckId,
+          kind: "grammar",
+          content: grammar,
+          updatedAt: Date.now(),
+        }
   }
 
   // Clears the currently shown error once the field(s) it was about get
@@ -331,6 +355,7 @@ export function CardEditPage() {
           return
         } else {
           await saveCard({
+            ...preservedCardFields(),
             id: cardId,
             deckId,
             kind: "grammar",
@@ -438,6 +463,7 @@ export function CardEditPage() {
         }
         if (!isNew) {
           await saveCard({
+            ...preservedCardFields(),
             id: cardId,
             deckId,
             kind: "vocabulary",
@@ -453,6 +479,7 @@ export function CardEditPage() {
         }
         if (!isNew) {
           await saveCard({
+            ...preservedCardFields(),
             id: cardId,
             deckId,
             kind: "grammar",

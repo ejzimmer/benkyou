@@ -121,4 +121,83 @@ describe("CardEditPage not-a-duplicate marking", () => {
     expect(within(dismissedSection).getAllByRole("listitem")).toHaveLength(1)
     expect(within(dialog).getAllByRole("button", { name: "重複ではない" })).toHaveLength(1)
   })
+
+  it("keeps the verdict when the card is saved from the edit form", async () => {
+    await db.cards.update("card-1", { notDuplicateOf: ["card-2"] })
+
+    const user = userEvent.setup()
+    renderEditPage("deck-1", "card-1")
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
+    })
+    await user.type(screen.getByLabelText("日本語で"), "科")
+    await user.click(screen.getByRole("button", { name: "保存" }))
+
+    // The form doesn't show the verdict, but saving must not wipe it — every
+    // save here is a whole-row put.
+    await waitFor(async () => {
+      expect((await db.cards.get("card-1"))?.content).toMatchObject({ wordJa: "猫科" })
+    })
+    expect((await db.cards.get("card-1"))?.notDuplicateOf).toEqual(["card-2"])
+  })
+
+  it("keeps the target's verdicts when a duplicate is merged in", async () => {
+    await db.cards.put({
+      id: "card-3",
+      deckId: "deck-1",
+      kind: "vocabulary",
+      content: { ...defaultVocabulary(), wordJa: "猫", definitionsEn: ["cat, again"] },
+      updatedAt: Date.now(),
+    })
+    await db.cards.update("card-1", { notDuplicateOf: ["card-3"] })
+
+    const user = userEvent.setup()
+    renderEditPage("deck-1", "card-1")
+
+    await user.click(await screen.findByRole("button", { name: "重複カード見せる" }))
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "統合" }),
+    )
+
+    await waitFor(async () => {
+      expect(await db.cards.get("card-2")).toBeUndefined()
+    })
+    expect((await db.cards.get("card-1"))?.notDuplicateOf).toEqual(["card-3"])
+  })
+
+  it("keeps the verdict when a fill-in-the-gap card is saved", async () => {
+    await db.cards.put({
+      id: "card-4",
+      deckId: "deck-1",
+      kind: "grammar",
+      content: {
+        sentenceWithGap: "彼は___に至った",
+        gapMarker: "___",
+        construction: "結論",
+        translationEn: "He reached a conclusion",
+        readings: {},
+        images: [],
+      },
+      updatedAt: Date.now(),
+      notDuplicateOf: ["card-1"],
+    })
+
+    const user = userEvent.setup()
+    renderEditPage("deck-1", "card-4")
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("結論")).toBeInTheDocument()
+    })
+    await user.type(screen.getByLabelText("答え"), "！")
+    await user.click(screen.getByRole("button", { name: "保存" }))
+
+    // The grammar branch of `onSubmit` builds its own card literal rather
+    // than going through `currentCardDraft()`, so it needs the same guard.
+    await waitFor(async () => {
+      const saved = await db.cards.get("card-4")
+      expect(saved?.kind === "grammar" && saved.content.construction).toBe("結論！")
+    })
+    expect((await db.cards.get("card-4"))?.notDuplicateOf).toEqual(["card-1"])
+  })
 })

@@ -137,4 +137,36 @@ describe("duplicate indicator on the review screen", () => {
     expect((await db.cards.get(card.id))?.notDuplicateOf).toEqual(["other-card"])
     expect((await db.cards.get("other-card"))?.notDuplicateOf).toEqual([card.id])
   })
+
+  it("does not let Enter on a modal button fall through and reveal the answer", async () => {
+    const card = await seedCard("猫", "ねこ")
+    await db.cards.put({
+      id: "other-card",
+      deckId: card.deckId,
+      kind: "vocabulary",
+      content: {
+        wordJa: "猫舌",
+        reading: "ねこじた",
+        definitionsEn: ["sensitive to hot food"],
+        images: [],
+        exampleSentences: [],
+      },
+      updatedAt: Date.now(),
+    })
+
+    const user = userEvent.setup()
+    renderReview()
+
+    await user.click(await screen.findByRole("button", { name: /重複の可能性/ }))
+    const dialog = await screen.findByRole("dialog")
+    within(dialog).getByRole("button", { name: "重複ではない" }).focus()
+    await user.keyboard("{Enter}")
+
+    // The button activated, and the session behind the modal stayed on the
+    // prompt rather than revealing the answer with nothing typed.
+    await waitFor(async () => {
+      expect((await db.cards.get(card.id))?.notDuplicateOf).toEqual(["other-card"])
+    })
+    expect(screen.queryByRole("button", { name: /^正解$/ })).not.toBeInTheDocument()
+  })
 })

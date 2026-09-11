@@ -26,7 +26,13 @@ export type DuplicateCards = {
  * so it refreshes on its own after a merge, a dismissal, or a sync.
  */
 export function useDuplicateCards(card: Card | null | undefined): DuplicateCards {
-  const allCards = useLiveQuery(() => db.cards.toArray(), [])
+  // Nothing to compare against on the new-card form, so don't read the whole
+  // cards table there — the query still has to be declared unconditionally.
+  const enabled = Boolean(card)
+  const allCards = useLiveQuery(
+    async () => (enabled ? await db.cards.toArray() : null),
+    [enabled],
+  )
   return useMemo(() => {
     if (!card || !allCards) {
       return { matches: [], dismissed: [], loading: Boolean(card) && !allCards }

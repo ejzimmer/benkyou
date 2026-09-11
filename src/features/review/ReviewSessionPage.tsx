@@ -366,6 +366,7 @@ export function ReviewSessionPage() {
   const { matches: duplicateMatches, dismissed: dismissedDuplicates } =
     useDuplicateCards(current?.card)
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
+  const [duplicateErr, setDuplicateErr] = useState<string | null>(null)
   const duplicateCardId = current?.card.id
 
   // Close the modal when moving on to the next card, and when the last
@@ -373,6 +374,7 @@ export function ReviewSessionPage() {
   // list would strand the user on a panel with nothing in it.
   useEffect(() => {
     setShowDuplicatesModal(false)
+    setDuplicateErr(null)
   }, [duplicateCardId])
 
   useEffect(() => {
@@ -534,6 +536,12 @@ export function ReviewSessionPage() {
   useEffect(() => {
     if (phase !== "prompt" || !current || pendingIncorrectDelay || loading)
       return
+    // The duplicate modal is the one overlay that can open during the prompt
+    // phase (the leech modal only appears after a judgement, when this
+    // handler is already disarmed). Focus is trapped inside its panel, but
+    // this listener is on `window` and would still swallow Enter on the
+    // modal's own buttons and reveal the answer behind it.
+    if (showDuplicatesModal) return
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Enter") return
       const t = e.target
@@ -544,7 +552,7 @@ export function ReviewSessionPage() {
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [phase, current, pendingIncorrectDelay, loading])
+  }, [phase, current, pendingIncorrectDelay, loading, showDuplicatesModal])
 
   /** Requeue an incorrectly-judged item for a later retry this session — the
    *  continuation shared by the plain-wrong path and the leech modal's 除外
@@ -649,6 +657,15 @@ export function ReviewSessionPage() {
     setLeechPrompt(null)
     await markLeech(item.card.id, item.modeId)
     advanceAfterIncorrect({ ...item, isLeech: true }, wasWrong, key)
+  }
+
+  async function runDuplicateUpdate(update: () => Promise<void>) {
+    setDuplicateErr(null)
+    try {
+      await update()
+    } catch (x) {
+      setDuplicateErr(x instanceof Error ? x.message : "保存に失敗しました。")
+    }
   }
 
   async function onClearLeech() {
@@ -780,6 +797,11 @@ export function ReviewSessionPage() {
         </Link>
         <div className="review-header-actions">
           {item.isLeech && <LeechBadge onClear={() => void onClearLeech()} />}
+          {/* Matches only, unlike the edit page's button: once a pair has
+              been dismissed there is nothing left to act on mid-review, and
+              a badge for it would be exactly the noise this replaced. The
+              modal stays open on the dismissal so it can be undone
+              immediately, and the edit page keeps the lasting way back. */}
           {duplicateMatches.length > 0 && (
             <button
               type="button"
@@ -958,11 +980,16 @@ export function ReviewSessionPage() {
         <DuplicateCardsModal
           matches={duplicateMatches}
           dismissed={dismissedDuplicates}
+          error={duplicateErr}
           onMarkNotDuplicate={(match) =>
-            void markCardsNotDuplicates(item.card.id, match.id)
+            void runDuplicateUpdate(() =>
+              markCardsNotDuplicates(item.card.id, match.id),
+            )
           }
           onRestoreDuplicate={(match) =>
-            void unmarkCardsNotDuplicates(item.card.id, match.id)
+            void runDuplicateUpdate(() =>
+              unmarkCardsNotDuplicates(item.card.id, match.id),
+            )
           }
           onClose={() => setShowDuplicatesModal(false)}
         />

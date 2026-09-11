@@ -58,6 +58,14 @@ describe("CardEditPage duplicate warning", () => {
     await user.type(screen.getByLabelText("意味"), "cat")
     await user.click(screen.getByRole("button", { name: "保存" }))
 
+    // Saving a new card clears the form for the next one rather than
+    // navigating away, so that's what marks `onSubmit` as finished. Waiting
+    // for it (rather than only for the card to land in Dexie) keeps the
+    // save's tail from running on into the environment teardown.
+    await waitFor(() => {
+      expect(screen.getByLabelText("日本語で")).toHaveValue("")
+    })
+
     await waitFor(async () => {
       const cards = await db.cards.toArray()
       expect(cards).toHaveLength(2)
