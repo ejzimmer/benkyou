@@ -2,8 +2,8 @@ import { useMemo } from "react"
 import { useLiveQuery } from "dexie-react-hooks"
 import type { Card } from "../../domain/types"
 import {
-  findDismissedDuplicateCards,
-  findDuplicateCards,
+  findDuplicateCandidates,
+  isMarkedNotDuplicate,
 } from "../../domain/duplicates"
 import { db } from "../../lib/db/schema"
 
@@ -41,10 +41,15 @@ export function useDuplicateCards(card: Card | null | undefined): DuplicateCards
     // snapshots its cards when the session starts, so `card` can predate a
     // dismissal written moments ago.
     const fresh = allCards.find((other) => other.id === card.id) ?? card
-    return {
-      matches: findDuplicateCards(fresh, allCards),
-      dismissed: findDismissedDuplicateCards(fresh, allCards),
-      loading: false,
+    // Partition one candidate scan rather than calling `findDuplicateCards`
+    // and `findDismissedDuplicateCards`: each re-runs the substring search,
+    // which NFKC-normalizes every field of every card — twice per card shown
+    // during a review session.
+    const matches: Card[] = []
+    const dismissed: Card[] = []
+    for (const candidate of findDuplicateCandidates(fresh, allCards)) {
+      ;(isMarkedNotDuplicate(fresh, candidate) ? dismissed : matches).push(candidate)
     }
+    return { matches, dismissed, loading: false }
   }, [card, allCards])
 }

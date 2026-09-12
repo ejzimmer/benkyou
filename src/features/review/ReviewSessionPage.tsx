@@ -539,14 +539,26 @@ export function ReviewSessionPage() {
     // The duplicate modal is the one overlay that can open during the prompt
     // phase (the leech modal only appears after a judgement, when this
     // handler is already disarmed). Focus is trapped inside its panel, but
-    // this listener is on `window` and would still swallow Enter on the
-    // modal's own buttons and reveal the answer behind it.
+    // this listener is on `window` and would still swallow Enter on a part
+    // of the modal that isn't itself focusable, revealing the answer behind
+    // it.
     if (showDuplicatesModal) return
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Enter") return
+      // Anything that already activates on Enter handles its own — this
+      // listener is only here to catch Enter with nothing useful focused.
+      // Without the button/link cases it preventDefault()s the activation of
+      // whatever is focused (the duplicate badge, the edit link, 取り消す)
+      // and reveals the answer instead of doing what was asked.
       const t = e.target
-      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement)
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLButtonElement ||
+        t instanceof HTMLAnchorElement
+      ) {
         return
+      }
       e.preventDefault()
       tryShowAnswerRef.current()
     }

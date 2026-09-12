@@ -265,6 +265,22 @@ function formatMap(map: Record<string, string> = {}): string {
 export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
   const rows: DiffRow[] = []
 
+  // Card-level rather than content, so it applies to both kinds. Card ids
+  // mean nothing to the user, so this can only report how many dismissed
+  // duplicate pairs each side has — but without the row, two sides differing
+  // only here produce a conflict whose table is empty but for the timestamp,
+  // leaving the user to arbitrate between two identical-looking cards.
+  const localNotDuplicate = [...(local.notDuplicateOf ?? [])].sort()
+  const remoteNotDuplicate = [...(remote.notDuplicateOf ?? [])].sort()
+  if (!arraysEqual(localNotDuplicate, remoteNotDuplicate)) {
+    rows.push({
+      label: "重複ではないとマーク済み",
+      kind: "text",
+      local: `${localNotDuplicate.length}件`,
+      remote: `${remoteNotDuplicate.length}件`,
+    })
+  }
+
   if (local.kind === "vocabulary" && remote.kind === "vocabulary") {
     const l = local.content
     const r = remote.content

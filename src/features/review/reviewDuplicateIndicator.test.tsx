@@ -53,6 +53,27 @@ async function seedCard(wordJa: string, reading: string) {
   })
 }
 
+/**
+ * Pin the session to the one oral mode, so the prompt has no typing input
+ * and the queue can't shuffle a different mode to the front. Content alone
+ * can't produce a card with only `vocab_oral_en`, so drop the other modes'
+ * scheduling rows — the due queue is built from those.
+ */
+async function seedOralOnlyCard(wordJa: string, definition: string) {
+  const deck = await createDeck("T")
+  const card = await createVocabularyCard(deck.id, {
+    wordJa,
+    definitionsEn: [definition],
+    images: [],
+    exampleSentences: [],
+  })
+  const rows = await db.scheduling.where("cardId").equals(card.id).toArray()
+  for (const row of rows) {
+    if (row.modeId !== "vocab_oral_en") await db.scheduling.delete(row.id)
+  }
+  return card
+}
+
 describe("duplicate indicator on the review screen", () => {
   beforeEach(async () => {
     sessionStorage.clear()
@@ -168,5 +189,71 @@ describe("duplicate indicator on the review screen", () => {
       expect((await db.cards.get(card.id))?.notDuplicateOf).toEqual(["other-card"])
     })
     expect(screen.queryByRole("button", { name: /^正解$/ })).not.toBeInTheDocument()
+  })
+
+  it("opens the modal when the badge is reached by keyboard", async () => {
+    const card = await seedOralOnlyCard("猫", "cat")
+    await db.cards.put({
+      id: "other-card",
+      deckId: card.deckId,
+      kind: "vocabulary",
+      content: {
+        wordJa: "猫舌",
+        reading: "ねこじた",
+        definitionsEn: ["sensitive to hot food"],
+        images: [],
+        exampleSentences: [],
+      },
+      updatedAt: Date.now(),
+    })
+
+    const user = userEvent.setup()
+    renderReview()
+
+    const badge = await screen.findByRole("button", { name: /重複の可能性/ })
+    badge.focus()
+    await user.keyboard("{Enter}")
+
+    // The badge activated rather than the window-level Enter handler
+    // swallowing it and revealing the answer instead.
+    expect(await screen.findByRole("dialog")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /^正解$/ })).not.toBeInTheDocument()
+  })
+})
+
+describe("Enter still reveals the answer in oral modes", () => {
+  beforeEach(async () => {
+    sessionStorage.clear()
+    await resetDatabase()
+  })
+
+  it("reveals on Enter with nothing focused", async () => {
+    await seedOralOnlyCard("猫", "cat")
+
+    const user = userEvent.setup()
+    renderReview()
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
+    })
+    // The window-level handler is what covers Enter with no control focused.
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    await user.keyboard("{Enter}")
+
+    expect(await screen.findByRole("button", { name: /^正解$/ })).toBeInTheDocument()
+  })
+
+  it("reveals on Enter with the reveal button focused", async () => {
+    await seedOralOnlyCard("猫", "cat")
+
+    const user = userEvent.setup()
+    renderReview()
+
+    const reveal = await screen.findByRole("button", { name: /答えを見る/ })
+    await waitFor(() => expect(reveal).toBeEnabled())
+    reveal.focus()
+    await user.keyboard("{Enter}")
+
+    expect(await screen.findByRole("button", { name: /^正解$/ })).toBeInTheDocument()
   })
 })
