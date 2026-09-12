@@ -54,14 +54,18 @@ async function seedCard(wordJa: string, reading: string) {
 }
 
 /** As `seedOralOnlyCard`, but pinned to the typed-reading mode. */
-async function seedReadingOnlyCard(wordJa: string, reading: string) {
+async function seedReadingOnlyCard(
+  wordJa: string,
+  reading: string,
+  extras: { definitionsEn?: string[]; exampleSentences?: string[] } = {},
+) {
   const deck = await createDeck("T")
   const card = await createVocabularyCard(deck.id, {
     wordJa,
     reading,
-    definitionsEn: [],
+    definitionsEn: extras.definitionsEn ?? [],
     images: [],
-    exampleSentences: [],
+    exampleSentences: extras.exampleSentences ?? [],
   })
   const rows = await db.scheduling.where("cardId").equals(card.id).toArray()
   for (const row of rows) {
@@ -355,5 +359,33 @@ describe("the duplicate modal does not disturb the session", () => {
       expect(events).toHaveLength(1)
       expect(events[0].responseMs).toBeNull()
     })
+  })
+
+  it("leaves an opened hint disclosure open across the modal", async () => {
+    const card = await seedReadingOnlyCard("猫", "ねこ", {
+      definitionsEn: ["cat"],
+      exampleSentences: ["猫がいます"],
+    })
+    await addDuplicateOf(card)
+
+    const user = userEvent.setup()
+    renderReview()
+
+    const toggle = await screen.findByRole("button", { name: /表示$/ })
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+
+    await user.click(screen.getByRole("button", { name: /重複の可能性/ }))
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "閉じる" }),
+    )
+
+    // Restoring focus must not restart the prompt — the hints the user just
+    // opened stay open.
+    await waitFor(() => expect(screen.getByRole("textbox")).toHaveFocus())
+    expect(screen.getByRole("button", { name: /表示$/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    )
   })
 })

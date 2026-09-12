@@ -343,6 +343,65 @@ describe("ReviewSessionPromptBody", () => {
     expect(content).toHaveAttribute("aria-hidden", "true")
   })
 
+  it("collapses the extras disclosure when the prompt restarts, but not on a bare refocus", async () => {
+    const user = userEvent.setup()
+    const item: DueItem = {
+      card: {
+        id: "c1",
+        deckId: "d1",
+        kind: "vocabulary",
+        updatedAt: 0,
+        content: {
+          wordJa: "猫",
+          reading: "ねこ",
+          definitionsEn: ["cat"],
+          images: [],
+          exampleSentences: [],
+        },
+      },
+      modeId: "vocab_type_reading",
+      due: 0,
+      isLeech: false,
+    }
+    const props = {
+      item,
+      typed: "",
+      onTypedChange: vi.fn(),
+      readingWarn: false,
+      kanjiWarn: false,
+      onTypedSubmit: vi.fn(),
+      column: "question" as const,
+    }
+
+    const { rerender } = render(
+      <ReviewSessionPromptBody {...props} promptFocusToken={1} promptRefocusToken={0} />,
+    )
+
+    const toggle = screen.getByRole("button", { name: /意味・例文・画像/ })
+    await user.click(toggle)
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
+
+    // Focus coming back to the prompt (the duplicate modal closing) must
+    // leave the hints the user opened alone...
+    rerender(
+      <ReviewSessionPromptBody {...props} promptFocusToken={1} promptRefocusToken={1} />,
+    )
+    expect(screen.getByRole("button", { name: /意味・例文・画像/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    )
+
+    // ...but the prompt actually restarting (undo back to this card) hides
+    // them again, so the answer isn't sitting there on the retry.
+    rerender(
+      <ReviewSessionPromptBody {...props} promptFocusToken={2} promptRefocusToken={1} />,
+    )
+    expect(screen.getByRole("button", { name: /意味・例文・画像/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    )
+  })
+
   it("shows per-segment furigana for a phrase word in the oral-meaning prompt", () => {
     const item: DueItem = {
       card: {

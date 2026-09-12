@@ -215,6 +215,9 @@ export function ReviewSessionPage() {
    * wouldn't otherwise re-run. Folded into that focusKey below to force it to.
    */
   const [promptFocusToken, setPromptFocusToken] = useState(0)
+  /** Focus-only counterpart to `promptFocusToken` — see the prop's doc on
+   *  `ReviewSessionPromptBody`. */
+  const [promptRefocusToken, setPromptRefocusToken] = useState(0)
 
   useEffect(() => {
     phaseRef.current = phase
@@ -399,7 +402,9 @@ export function ReviewSessionPage() {
       return
     }
     if (requiresTyping(current.modeId)) {
-      setPromptFocusToken((n) => n + 1)
+      // Focus only: `promptFocusToken` would also restart the prompt, and
+      // with it collapse a hint disclosure the user has open.
+      setPromptRefocusToken((n) => n + 1)
     } else {
       showAnswerBtnRef.current?.focus({ preventScroll: true })
     }
@@ -906,6 +911,7 @@ export function ReviewSessionPage() {
                   revealed={phase === "answer"}
                   column="question"
                   promptFocusToken={promptFocusToken}
+                  promptRefocusToken={promptRefocusToken}
                 />
               </div>
               {buttonOnQuestionSide ? (
@@ -969,6 +975,7 @@ export function ReviewSessionPage() {
                       onTypedSubmit={() => tryShowAnswerRef.current()}
                       column="answer"
                       promptFocusToken={promptFocusToken}
+                      promptRefocusToken={promptRefocusToken}
                     />
                   </ScrollShadow>
                   {buttonOnQuestionSide ? (

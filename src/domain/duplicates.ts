@@ -45,11 +45,6 @@ export function isMarkedNotDuplicate(card: Card, other: Card): boolean {
 }
 
 /**
- * Cards whose text contains `card`'s Japanese word/construction as a
- * substring — the raw duplicate candidates, including any the user has since
- * marked as not duplicates.
- */
-/**
  * Every field of a card, normalized and joined into one haystack, cached per
  * card object. A review session scans the whole table once per card shown,
  * and NFKC-normalizing every field of every card each time is the bulk of
@@ -69,6 +64,11 @@ function normalizedCardText(card: Card): string {
   return text
 }
 
+/**
+ * Cards whose text contains `card`'s Japanese word/construction as a
+ * substring — the raw duplicate candidates, including any the user has since
+ * marked as not duplicates.
+ */
 export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
   const term = normalizeJapanese(japaneseWordForCard(card))
   if (!term) return []
