@@ -388,4 +388,43 @@ describe("the duplicate modal does not disturb the session", () => {
       "true",
     )
   })
+
+  it("returns focus to the grading controls when closed after the answer is revealed", async () => {
+    const card = await seedOralOnlyCard("猫", "cat")
+    await addDuplicateOf(card)
+
+    const user = userEvent.setup()
+    renderReview()
+
+    await user.click(await screen.findByRole("button", { name: /答えを見る/ }))
+    const correct = await screen.findByRole("button", { name: /^正解$/ })
+
+    await user.click(screen.getByRole("button", { name: /重複の可能性/ }))
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "閉じる" }),
+    )
+
+    // Not left on the badge, where Enter would just re-open the modal.
+    await waitFor(() => expect(correct).toHaveFocus())
+  })
+
+  it("returns focus to the grading controls even when dismissing removed the badge", async () => {
+    const card = await seedOralOnlyCard("猫", "cat")
+    await addDuplicateOf(card)
+
+    const user = userEvent.setup()
+    renderReview()
+
+    await user.click(await screen.findByRole("button", { name: /答えを見る/ }))
+    const correct = await screen.findByRole("button", { name: /^正解$/ })
+
+    await user.click(screen.getByRole("button", { name: /重複の可能性/ }))
+    const dialog = await screen.findByRole("dialog")
+    await user.click(within(dialog).getByRole("button", { name: "重複ではない" }))
+    await user.click(within(dialog).getByRole("button", { name: "閉じる" }))
+
+    // The badge is gone, so the focus trap has nothing to restore to.
+    expect(screen.queryByRole("button", { name: /重複の可能性/ })).not.toBeInTheDocument()
+    await waitFor(() => expect(correct).toHaveFocus())
+  })
 })

@@ -252,6 +252,20 @@ function formatList(items: string[] = []): string {
   return list.length ? list.join("; ") : "—"
 }
 
+/** Names the dismissed cards where they can still be found, so the two
+ *  sides read differently; falls back to a count for ids that resolve to
+ *  nothing (a card deleted since, or one this device never had). */
+function formatNotDuplicateOf(
+  ids: string[],
+  cardLabel: (cardId: string) => string | undefined,
+): string {
+  if (ids.length === 0) return "—"
+  const labels = ids.map((id) => cardLabel(id)).filter((label): label is string => !!label)
+  const unresolved = ids.length - labels.length
+  if (unresolved > 0) labels.push(`ほか${unresolved}件`)
+  return labels.join("、")
+}
+
 function formatMap(map: Record<string, string> = {}): string {
   const entries = Object.entries(map)
   return entries.length ? entries.map(([k, v]) => `${k}=${v}`).join(", ") : "—"
@@ -262,22 +276,28 @@ function formatMap(map: Record<string, string> = {}): string {
  *  repeat values both sides already agree on. Falls back to the coarse
  *  summary in the (very rare) case a card's `kind` itself differs between
  *  local and remote, since there's no shared field set to diff in that case. */
-export function cardDiffRows(local: Card, remote: Card): DiffRow[] {
+export function cardDiffRows(
+  local: Card,
+  remote: Card,
+  /** Card id → the Japanese word to show for it. Ids alone are meaningless
+   *  to the user, so without this the "not a duplicate" row can only count,
+   *  and two sides that each dismissed one different pair both read "1件". */
+  cardLabel: (cardId: string) => string | undefined = () => undefined,
+): DiffRow[] {
   const rows: DiffRow[] = []
 
-  // Card-level rather than content, so it applies to both kinds. Card ids
-  // mean nothing to the user, so this can only report how many dismissed
-  // duplicate pairs each side has — but without the row, two sides differing
-  // only here produce a conflict whose table is empty but for the timestamp,
-  // leaving the user to arbitrate between two identical-looking cards.
+  // Card-level rather than content, so it applies to both kinds. Without the
+  // row, two sides differing only here produce a conflict whose table is
+  // empty but for the timestamp, leaving the user to arbitrate between two
+  // identical-looking cards.
   const localNotDuplicate = [...(local.notDuplicateOf ?? [])].sort()
   const remoteNotDuplicate = [...(remote.notDuplicateOf ?? [])].sort()
   if (!arraysEqual(localNotDuplicate, remoteNotDuplicate)) {
     rows.push({
       label: "重複ではないとマーク済み",
       kind: "text",
-      local: `${localNotDuplicate.length}件`,
-      remote: `${remoteNotDuplicate.length}件`,
+      local: formatNotDuplicateOf(localNotDuplicate, cardLabel),
+      remote: formatNotDuplicateOf(remoteNotDuplicate, cardLabel),
     })
   }
 

@@ -216,8 +216,11 @@ export function ReviewSessionPage() {
    */
   const [promptFocusToken, setPromptFocusToken] = useState(0)
   /** Focus-only counterpart to `promptFocusToken` — see the prop's doc on
-   *  `ReviewSessionPromptBody`. */
+   *  `ReviewSessionPromptBody`. Separate from the answer panel's token below
+   *  because both layers stay mounted: bumping the prompt's while the answer
+   *  is showing would pull focus back onto the (inert) typing input. */
   const [promptRefocusToken, setPromptRefocusToken] = useState(0)
+  const [answerRefocusToken, setAnswerRefocusToken] = useState(0)
 
   useEffect(() => {
     phaseRef.current = phase
@@ -396,9 +399,12 @@ export function ReviewSessionPage() {
       return
     }
 
-    // The modal's focus trap hands focus back to the badge that opened it,
-    // where Enter would just re-open the modal and typing would go nowhere.
-    if (!justClosed || !current || phase !== "prompt" || pendingIncorrectDelay) {
+    // The modal's focus trap hands focus back to the badge that opened it —
+    // where Enter just re-opens the modal and typing goes nowhere — or to
+    // nothing at all, if dismissing the last match unmounted that badge.
+    if (!justClosed || !current || pendingIncorrectDelay) return
+    if (phase === "answer") {
+      setAnswerRefocusToken((n) => n + 1)
       return
     }
     if (requiresTyping(current.modeId)) {
@@ -1014,6 +1020,7 @@ export function ReviewSessionPage() {
                     onJudge={(correct) => void onJudge(correct)}
                     onUndoAnswer={() => void onUndoAnswer()}
                     active={phase === "answer"}
+                    refocusToken={answerRefocusToken}
                     showFlipBack={buttonOnQuestionSide}
                   />
                 </div>
