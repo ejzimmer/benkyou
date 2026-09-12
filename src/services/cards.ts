@@ -157,6 +157,72 @@ export async function saveCard(card: Card): Promise<void> {
   markCardEdited(card.id)
 }
 
+/**
+ * Record (or undo) the user's verdict that two cards the duplicate finder
+ * paired up aren't actually duplicates. Written to both cards so the pair
+ * stays suppressed whichever one is being looked at.
+ *
+ * Deliberately not routed through `saveCard`: nothing about the card's
+ * reviewable content changes, so this must not rebuild scheduling rows or
+ * clear a leech flag. It still bumps `updatedAt` and marks the cards edited
+ * so the verdict syncs like any other card change.
+ */
+async function setNotDuplicatePair(
+  cardIdA: string,
+  cardIdB: string,
+  linked: boolean,
+): Promise<void> {
+  if (cardIdA === cardIdB) return
+  const now = Date.now()
+  const written: string[] = []
+  await db.transaction("rw", db.cards, async () => {
+    // Both sides are rewritten or neither is, so the pair can't end up
+    // half-marked; `written` is reset on each attempt because a retried
+    // transaction replays this whole body.
+    written.length = 0
+    for (const [id, otherId] of [
+      [cardIdA, cardIdB],
+      [cardIdB, cardIdA],
+    ]) {
+      const card = await db.cards.get(id)
+      if (!card) continue
+      const current = card.notDuplicateOf ?? []
+      const next = linked
+        ? [...new Set([...current, otherId])]
+        : current.filter((entry) => entry !== otherId)
+      // Already in the wanted state — don't churn `updatedAt` (and with it
+      // the sync comparison) for a no-op.
+      if (next.length === current.length) continue
+      await db.cards.put({
+        ...card,
+        notDuplicateOf: next.length > 0 ? next : undefined,
+        updatedAt: now,
+      })
+      written.push(id)
+    }
+  })
+  // Only once the transaction has actually committed: this flag lives in
+  // localStorage, which doesn't roll back with Dexie, so marking inside
+  // would leave a card queued for push after an aborted write.
+  for (const id of written) markCardEdited(id)
+}
+
+/** Stop reporting `cardIdB` as a possible duplicate of `cardIdA`, and vice versa. */
+export async function markCardsNotDuplicates(
+  cardIdA: string,
+  cardIdB: string,
+): Promise<void> {
+  await setNotDuplicatePair(cardIdA, cardIdB, true)
+}
+
+/** Undo `markCardsNotDuplicates`, putting the pair back in the duplicate list. */
+export async function unmarkCardsNotDuplicates(
+  cardIdA: string,
+  cardIdB: string,
+): Promise<void> {
+  await setNotDuplicatePair(cardIdA, cardIdB, false)
+}
+
 function concatText(a: string, b: string): string {
   const at = a.trim()
   const bt = b.trim()
@@ -242,18 +308,39 @@ function mergeConfusedWith(
  * `source` is converted to `target`'s kind first if the two cards differ.
  */
 export function mergeCardContent(target: Card, source: Card): Card {
+  const notDuplicateOf = mergeNotDuplicateOf(target, source)
   if (target.kind === "vocabulary") {
     const sourceVocab =
       source.kind === "vocabulary"
         ? source.content
         : vocabularyFromGrammarContent(source.content)
-    return { ...target, content: mergeVocabularyContent(target.content, sourceVocab) }
+    return {
+      ...target,
+      notDuplicateOf,
+      content: mergeVocabularyContent(target.content, sourceVocab),
+    }
   }
   const sourceGrammar =
     source.kind === "grammar"
       ? source.content
       : grammarFromVocabularyContent(source.content)
-  return { ...target, content: mergeGrammarContent(target.content, sourceGrammar) }
+  return {
+    ...target,
+    notDuplicateOf,
+    content: mergeGrammarContent(target.content, sourceGrammar),
+  }
+}
+
+/**
+ * Union of both cards' "checked, not a duplicate" verdicts, minus the two
+ * merged cards themselves — the merged card can't be a non-duplicate of the
+ * card it absorbed, nor of itself.
+ */
+function mergeNotDuplicateOf(target: Card, source: Card): string[] | undefined {
+  const merged = [
+    ...new Set([...(target.notDuplicateOf ?? []), ...(source.notDuplicateOf ?? [])]),
+  ].filter((id) => id !== target.id && id !== source.id)
+  return merged.length > 0 ? merged : undefined
 }
 
 /**

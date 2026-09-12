@@ -161,6 +161,15 @@ export type ReviewSessionPromptBodyProps = {
    * to. Folding this into `focusKey` does.
    */
   promptFocusToken?: number
+  /**
+   * Bumped when focus alone has to come back to the prompt without the
+   * prompt itself restarting — closing the duplicate modal, which hands
+   * focus back to the badge that opened it. Kept separate from
+   * `promptFocusToken` because that one also means "start this prompt
+   * over", which collapses the hint disclosure; a focus restoration must
+   * not close a disclosure the user just opened.
+   */
+  promptRefocusToken?: number
 }
 
 export function ReviewSessionPromptBody({
@@ -176,9 +185,12 @@ export function ReviewSessionPromptBody({
   revealed = false,
   column,
   promptFocusToken = 0,
+  promptRefocusToken = 0,
 }: ReviewSessionPromptBodyProps) {
   const { card, modeId: m } = item
-  const focusKey = `${card.id}:${m}:${promptFocusToken}`
+  /** Identifies the prompt itself — changes only when it (re-)starts. */
+  const promptKey = `${card.id}:${m}:${promptFocusToken}`
+  const focusKey = `${promptKey}:${promptRefocusToken}`
 
   // Shared open/closed state for the "show meaning/examples/images" disclosure
   // used by both reading-quiz modes below. Reset whenever the prompt changes
@@ -186,7 +198,7 @@ export function ReviewSessionPromptBody({
   // be reused across cards rather than remounted.
   const [extrasOpen, setExtrasOpen] = useState(false)
   const extrasContentId = useId()
-  useEffect(() => setExtrasOpen(false), [focusKey])
+  useEffect(() => setExtrasOpen(false), [promptKey])
 
   function renderExtrasToggle(label: string) {
     return (

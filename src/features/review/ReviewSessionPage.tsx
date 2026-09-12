@@ -11,7 +11,13 @@ import {
   type DueItem,
   type JudgementSnapshot,
 } from "../../services/review"
-import { clearLeech, deleteCard, markLeech } from "../../services/cards"
+import {
+  clearLeech,
+  deleteCard,
+  markCardsNotDuplicates,
+  markLeech,
+  unmarkCardsNotDuplicates,
+} from "../../services/cards"
 import { useSync } from "../../lib/sync/SyncContext"
 import { finalizeReadingAnswer, hasLatinScript } from "../../lib/japanese/normalize"
 import { matchesConfusedWord } from "../../lib/japanese/confusedWords"
@@ -21,6 +27,8 @@ import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import { ReviewFooter } from "./ReviewFooter"
 import { LeechModal } from "./LeechModal"
 import { LeechBadge } from "../../ui/LeechBadge"
+import { DuplicateCardsModal } from "../cards/DuplicateCardsModal"
+import { useDuplicateCards } from "../cards/useDuplicateCards"
 import {
   clearReviewSessionTimer,
   decrementReviewedCount,
@@ -207,6 +215,12 @@ export function ReviewSessionPage() {
    * wouldn't otherwise re-run. Folded into that focusKey below to force it to.
    */
   const [promptFocusToken, setPromptFocusToken] = useState(0)
+  /** Focus-only counterpart to `promptFocusToken` — see the prop's doc on
+   *  `ReviewSessionPromptBody`. Separate from the answer panel's token below
+   *  because both layers stay mounted: bumping the prompt's while the answer
+   *  is showing would pull focus back onto the (inert) typing input. */
+  const [promptRefocusToken, setPromptRefocusToken] = useState(0)
+  const [answerRefocusToken, setAnswerRefocusToken] = useState(0)
 
   useEffect(() => {
     phaseRef.current = phase
@@ -351,6 +365,64 @@ export function ReviewSessionPage() {
 
   const current = sessionQueue[0]
   const backTo = deckId ? `/decks/${deckId}` : "/"
+
+  // Surfaced right in the session rather than only on the edit page: a
+  // duplicate is easiest to recognise while actually reviewing the card.
+  // Nothing renders unless there's something to report.
+  const { matches: duplicateMatches, dismissed: dismissedDuplicates } =
+    useDuplicateCards(current?.card)
+  const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
+  const [duplicateErr, setDuplicateErr] = useState<string | null>(null)
+  const duplicateCardId = current?.card.id
+
+  // Close the modal when moving on to the next card, and when the last
+  // remaining duplicate has just been dismissed — leaving it open on an empty
+  // list would strand the user on a panel with nothing in it.
+  useEffect(() => {
+    setShowDuplicatesModal(false)
+    setDuplicateErr(null)
+  }, [duplicateCardId])
+
+  const duplicatesModalWasOpen = useRef(false)
+  useEffect(() => {
+    const justClosed = duplicatesModalWasOpen.current && !showDuplicatesModal
+    duplicatesModalWasOpen.current = showDuplicatesModal
+
+    if (showDuplicatesModal) {
+      // A failure from an earlier visit to this card's list is stale now.
+      setDuplicateErr(null)
+      // Checking duplicates is a detour, not thinking time: leaving the clock
+      // running would charge the whole visit to prompt→reveal latency and
+      // downgrade the FSRS grade. The duplicate list also shows the other
+      // cards' Japanese, which for `vocab_type_word_from_clue` is this card's
+      // answer — so drop the timing signal rather than trying to subtract the
+      // detour. `null` grades a correct answer neutrally, as on resume.
+      setStartedAt(null)
+      return
+    }
+
+    // The modal's focus trap hands focus back to the badge that opened it —
+    // where Enter just re-opens the modal and typing goes nowhere — or to
+    // nothing at all, if dismissing the last match unmounted that badge.
+    if (!justClosed || !current || pendingIncorrectDelay) return
+    if (phase === "answer") {
+      setAnswerRefocusToken((n) => n + 1)
+      return
+    }
+    if (requiresTyping(current.modeId)) {
+      // Focus only: `promptFocusToken` would also restart the prompt, and
+      // with it collapse a hint disclosure the user has open.
+      setPromptRefocusToken((n) => n + 1)
+    } else {
+      showAnswerBtnRef.current?.focus({ preventScroll: true })
+    }
+  }, [showDuplicatesModal, current, phase, pendingIncorrectDelay])
+
+  useEffect(() => {
+    if (duplicateMatches.length === 0 && dismissedDuplicates.length === 0) {
+      setShowDuplicatesModal(false)
+    }
+  }, [duplicateMatches.length, dismissedDuplicates.length])
 
   // Nothing due and nothing was due this mount either — this is a direct
   // visit to a review URL with an empty queue (including a refresh on the
@@ -505,17 +577,35 @@ export function ReviewSessionPage() {
   useEffect(() => {
     if (phase !== "prompt" || !current || pendingIncorrectDelay || loading)
       return
+    // The duplicate modal is the one overlay that can open during the prompt
+    // phase (the leech modal only appears after a judgement, when this
+    // handler is already disarmed). Focus is trapped inside its panel, but
+    // this listener is on `window` and would still swallow Enter on a part
+    // of the modal that isn't itself focusable, revealing the answer behind
+    // it.
+    if (showDuplicatesModal) return
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Enter") return
+      // Anything that already activates on Enter handles its own — this
+      // listener is only here to catch Enter with nothing useful focused.
+      // Without the button/link cases it preventDefault()s the activation of
+      // whatever is focused (the duplicate badge, the edit link, 取り消す)
+      // and reveals the answer instead of doing what was asked.
       const t = e.target
-      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement)
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLButtonElement ||
+        t instanceof HTMLAnchorElement
+      ) {
         return
+      }
       e.preventDefault()
       tryShowAnswerRef.current()
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
-  }, [phase, current, pendingIncorrectDelay, loading])
+  }, [phase, current, pendingIncorrectDelay, loading, showDuplicatesModal])
 
   /** Requeue an incorrectly-judged item for a later retry this session — the
    *  continuation shared by the plain-wrong path and the leech modal's 除外
@@ -620,6 +710,15 @@ export function ReviewSessionPage() {
     setLeechPrompt(null)
     await markLeech(item.card.id, item.modeId)
     advanceAfterIncorrect({ ...item, isLeech: true }, wasWrong, key)
+  }
+
+  async function runDuplicateUpdate(update: () => Promise<void>) {
+    setDuplicateErr(null)
+    try {
+      await update()
+    } catch (x) {
+      setDuplicateErr(x instanceof Error ? x.message : "保存に失敗しました。")
+    }
   }
 
   async function onClearLeech() {
@@ -751,6 +850,21 @@ export function ReviewSessionPage() {
         </Link>
         <div className="review-header-actions">
           {item.isLeech && <LeechBadge onClear={() => void onClearLeech()} />}
+          {/* Matches only, unlike the edit page's button: once a pair has
+              been dismissed there is nothing left to act on mid-review, and
+              a badge for it would be exactly the noise this replaced. The
+              modal stays open on the dismissal so it can be undone
+              immediately, and the edit page keeps the lasting way back. */}
+          {duplicateMatches.length > 0 && (
+            <button
+              type="button"
+              className="duplicate-badge"
+              aria-label={`重複の可能性があるカードが${duplicateMatches.length}枚あります`}
+              onClick={() => setShowDuplicatesModal(true)}
+            >
+              重複{duplicateMatches.length > 1 && duplicateMatches.length}
+            </button>
+          )}
           <p className="muted small">
             残り{remainingCount}枚
             {wrongCount > 0 && `・やり直し${wrongCount}枚`}
@@ -805,6 +919,7 @@ export function ReviewSessionPage() {
                   revealed={phase === "answer"}
                   column="question"
                   promptFocusToken={promptFocusToken}
+                  promptRefocusToken={promptRefocusToken}
                 />
               </div>
               {buttonOnQuestionSide ? (
@@ -868,6 +983,7 @@ export function ReviewSessionPage() {
                       onTypedSubmit={() => tryShowAnswerRef.current()}
                       column="answer"
                       promptFocusToken={promptFocusToken}
+                      promptRefocusToken={promptRefocusToken}
                     />
                   </ScrollShadow>
                   {buttonOnQuestionSide ? (
@@ -906,6 +1022,7 @@ export function ReviewSessionPage() {
                     onJudge={(correct) => void onJudge(correct)}
                     onUndoAnswer={() => void onUndoAnswer()}
                     active={phase === "answer"}
+                    refocusToken={answerRefocusToken}
                     showFlipBack={buttonOnQuestionSide}
                   />
                 </div>
@@ -914,6 +1031,25 @@ export function ReviewSessionPage() {
           </div>
         )}
       </section>
+
+      {showDuplicatesModal && (
+        <DuplicateCardsModal
+          matches={duplicateMatches}
+          dismissed={dismissedDuplicates}
+          error={duplicateErr}
+          onMarkNotDuplicate={(match) =>
+            void runDuplicateUpdate(() =>
+              markCardsNotDuplicates(item.card.id, match.id),
+            )
+          }
+          onRestoreDuplicate={(match) =>
+            void runDuplicateUpdate(() =>
+              unmarkCardsNotDuplicates(item.card.id, match.id),
+            )
+          }
+          onClose={() => setShowDuplicatesModal(false)}
+        />
+      )}
 
       {leechPrompt && (
         <LeechModal

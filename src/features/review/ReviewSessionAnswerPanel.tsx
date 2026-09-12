@@ -45,6 +45,13 @@ export type ReviewSessionAnswerPanelProps = {
    * behaviour.
    */
   active?: boolean
+  /**
+   * Bumped when focus has to come back to the grading controls without
+   * anything else changing — closing the duplicate modal, whose focus trap
+   * otherwise hands focus back to the badge that opened it (or to nothing,
+   * if dismissing the last match unmounted that badge).
+   */
+  refocusToken?: number
 }
 
 export function ReviewSessionAnswerPanel({
@@ -56,6 +63,7 @@ export function ReviewSessionAnswerPanel({
   onUndoAnswer,
   showFlipBack = false,
   active = true,
+  refocusToken = 0,
 }: ReviewSessionAnswerPanelProps) {
   const { card, modeId: m } = item
   const typingMode = requiresTyping(m)
@@ -131,6 +139,7 @@ export function ReviewSessionAnswerPanel({
     pendingIncorrectDelay,
     typed,
     expected,
+    refocusToken,
   ])
 
   const answerControls = (

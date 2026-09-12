@@ -2,6 +2,7 @@ import type { Firestore } from "firebase/firestore"
 import type { FirebaseStorage } from "firebase/storage"
 import type { Card, Deck } from "../../domain/types"
 import { db, type MediaRow, type SchedulingRow } from "../db/schema"
+import { japaneseWordForCard } from "../../domain/duplicates"
 import {
   cardChanged,
   cardDiffRows,
@@ -353,6 +354,15 @@ async function collectEntityConflicts(
     })
   }
 
+  // Names the cards a "not a duplicate" verdict points at, for the conflict
+  // table — checking both sides, since a card one device dismissed against
+  // may not exist on the other.
+  const localCardsById = new Map(localCards.map((card) => [card.id, card]))
+  const cardLabel = (cardId: string): string | undefined => {
+    const card = localCardsById.get(cardId) ?? remote.cards.get(cardId)
+    return card && japaneseWordForCard(card)
+  }
+
   for (let i = 0; i < localCards.length; i++) {
     await yieldPeriodically(i)
     const local = localCards[i]
@@ -386,7 +396,7 @@ async function collectEntityConflicts(
           localSummary: cardSummary(local),
           remoteSummary: cardSummary(remoteCard),
           contextLabel: cardSummary(local),
-          diffRows: cardDiffRows(local, remoteCard),
+          diffRows: cardDiffRows(local, remoteCard, cardLabel),
           local,
           remote: remoteCard,
         },

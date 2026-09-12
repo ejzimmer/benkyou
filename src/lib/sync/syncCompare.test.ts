@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { Card, Deck } from "../../domain/types"
 import {
   cardChanged,
+  cardDiffRows,
   preferNonEmptyCard,
   resolveByTimestamp,
   resolveEntityMerge,
@@ -121,5 +122,67 @@ describe("preferNonEmptyCard", () => {
 
   it("does not apply to grammar cards", () => {
     expect(preferNonEmptyCard(grammar, grammar)).toBeNull()
+  })
+})
+
+describe("cardDiffRows and not-a-duplicate verdicts", () => {
+  function card(id: string, wordJa: string, notDuplicateOf?: string[]): Card {
+    return {
+      id,
+      deckId: "d1",
+      kind: "vocabulary",
+      updatedAt: 1,
+      notDuplicateOf,
+      content: {
+        wordJa,
+        definitionsEn: [wordJa],
+        images: [],
+        exampleSentences: [],
+      },
+    }
+  }
+
+  const labels: Record<string, string> = { "c-2": "子猫", "c-3": "猫舌" }
+  const cardLabel = (id: string) => labels[id]
+
+  it("names the dismissed cards so two sides can be told apart", () => {
+    const rows = cardDiffRows(
+      card("c-1", "猫", ["c-2"]),
+      card("c-1", "猫", ["c-3"]),
+      cardLabel,
+    )
+
+    // Both sides have one entry — a count alone would read "1件" vs "1件"
+    // and leave the user picking between identical-looking cards.
+    expect(rows).toEqual([
+      { label: "重複ではないとマーク済み", kind: "text", local: "子猫", remote: "猫舌" },
+    ])
+  })
+
+  it("falls back to a count for ids it cannot resolve", () => {
+    const rows = cardDiffRows(
+      card("c-1", "猫", ["c-2", "c-9"]),
+      card("c-1", "猫", []),
+      cardLabel,
+    )
+
+    expect(rows).toEqual([
+      {
+        label: "重複ではないとマーク済み",
+        kind: "text",
+        local: "子猫、ほか1件",
+        remote: "—",
+      },
+    ])
+  })
+
+  it("adds no row when both sides carry the same verdicts in any order", () => {
+    expect(
+      cardDiffRows(
+        card("c-1", "猫", ["c-2", "c-3"]),
+        card("c-1", "猫", ["c-3", "c-2"]),
+        cardLabel,
+      ),
+    ).toEqual([])
   })
 })

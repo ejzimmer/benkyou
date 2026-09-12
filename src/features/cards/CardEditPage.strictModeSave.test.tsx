@@ -53,6 +53,13 @@ describe("CardEditPage under StrictMode", () => {
     const saveBtn = screen.getByRole("button", { name: "保存" })
     await user.click(saveBtn)
 
+    // Saving a new card clears the form for the next one, which is the last
+    // thing `onSubmit` does — wait for that rather than only for the card to
+    // land in Dexie, so the save's tail can't run on into the teardown.
+    await waitFor(() => {
+      expect(wordInput).toHaveValue("")
+    })
+
     await waitFor(async () => {
       const cards = await db.cards.toArray()
       expect(cards.length).toBe(1)
