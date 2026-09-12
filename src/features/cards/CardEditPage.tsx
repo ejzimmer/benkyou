@@ -542,7 +542,11 @@ export function CardEditPage() {
             <button
               type="button"
               className="btn secondary"
-              onClick={() => setShowDuplicatesModal(true)}
+              onClick={() => {
+                // Don't reopen onto a failure from an earlier visit.
+                setMergeErr(null)
+                setShowDuplicatesModal(true)
+              }}
             >
               重複カード見せる
             </button>

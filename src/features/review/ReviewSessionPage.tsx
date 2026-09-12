@@ -389,6 +389,8 @@ export function ReviewSessionPage() {
     duplicatesModalWasOpen.current = showDuplicatesModal
 
     if (showDuplicatesModal) {
+      // A failure from an earlier visit to this card's list is stale now.
+      setDuplicateErr(null)
       // Checking duplicates is a detour, not thinking time: leaving the clock
       // running would charge the whole visit to prompt→reveal latency and
       // downgrade the FSRS grade. The duplicate list also shows the other

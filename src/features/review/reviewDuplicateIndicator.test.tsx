@@ -427,4 +427,28 @@ describe("the duplicate modal does not disturb the session", () => {
     expect(screen.queryByRole("button", { name: /重複の可能性/ })).not.toBeInTheDocument()
     await waitFor(() => expect(correct).toHaveFocus())
   })
+
+  it("does not reopen onto a failure from an earlier visit", async () => {
+    const card = await seedOralOnlyCard("猫", "cat")
+    await addDuplicateOf(card)
+
+    const user = userEvent.setup()
+    renderReview()
+
+    await user.click(await screen.findByRole("button", { name: /重複の可能性/ }))
+    const dialog = await screen.findByRole("dialog")
+
+    // Make the dismissal write fail once, so the modal shows an error.
+    const put = vi.spyOn(db.cards, "put").mockRejectedValueOnce(new Error("書き込み失敗"))
+    await user.click(within(dialog).getByRole("button", { name: "重複ではない" }))
+    expect(await within(dialog).findByText("書き込み失敗")).toBeInTheDocument()
+    put.mockRestore()
+
+    await user.click(within(dialog).getByRole("button", { name: "閉じる" }))
+    await user.click(screen.getByRole("button", { name: /重複の可能性/ }))
+
+    expect(
+      within(await screen.findByRole("dialog")).queryByText("書き込み失敗"),
+    ).not.toBeInTheDocument()
+  })
 })
