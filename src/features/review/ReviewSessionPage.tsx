@@ -377,6 +377,34 @@ export function ReviewSessionPage() {
     setDuplicateErr(null)
   }, [duplicateCardId])
 
+  const duplicatesModalWasOpen = useRef(false)
+  useEffect(() => {
+    const justClosed = duplicatesModalWasOpen.current && !showDuplicatesModal
+    duplicatesModalWasOpen.current = showDuplicatesModal
+
+    if (showDuplicatesModal) {
+      // Checking duplicates is a detour, not thinking time: leaving the clock
+      // running would charge the whole visit to prompt→reveal latency and
+      // downgrade the FSRS grade. The duplicate list also shows the other
+      // cards' Japanese, which for `vocab_type_word_from_clue` is this card's
+      // answer — so drop the timing signal rather than trying to subtract the
+      // detour. `null` grades a correct answer neutrally, as on resume.
+      setStartedAt(null)
+      return
+    }
+
+    // The modal's focus trap hands focus back to the badge that opened it,
+    // where Enter would just re-open the modal and typing would go nowhere.
+    if (!justClosed || !current || phase !== "prompt" || pendingIncorrectDelay) {
+      return
+    }
+    if (requiresTyping(current.modeId)) {
+      setPromptFocusToken((n) => n + 1)
+    } else {
+      showAnswerBtnRef.current?.focus({ preventScroll: true })
+    }
+  }, [showDuplicatesModal, current, phase, pendingIncorrectDelay])
+
   useEffect(() => {
     if (duplicateMatches.length === 0 && dismissedDuplicates.length === 0) {
       setShowDuplicatesModal(false)

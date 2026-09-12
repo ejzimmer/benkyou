@@ -53,6 +53,23 @@ async function seedCard(wordJa: string, reading: string) {
   })
 }
 
+/** As `seedOralOnlyCard`, but pinned to the typed-reading mode. */
+async function seedReadingOnlyCard(wordJa: string, reading: string) {
+  const deck = await createDeck("T")
+  const card = await createVocabularyCard(deck.id, {
+    wordJa,
+    reading,
+    definitionsEn: [],
+    images: [],
+    exampleSentences: [],
+  })
+  const rows = await db.scheduling.where("cardId").equals(card.id).toArray()
+  for (const row of rows) {
+    if (row.modeId !== "vocab_type_reading") await db.scheduling.delete(row.id)
+  }
+  return card
+}
+
 /**
  * Pin the session to the one oral mode, so the prompt has no typing input
  * and the queue can't shuffle a different mode to the front. Content alone
@@ -255,5 +272,88 @@ describe("Enter still reveals the answer in oral modes", () => {
     await user.keyboard("{Enter}")
 
     expect(await screen.findByRole("button", { name: /^正解$/ })).toBeInTheDocument()
+  })
+})
+
+describe("the duplicate modal does not disturb the session", () => {
+  beforeEach(async () => {
+    sessionStorage.clear()
+    await resetDatabase()
+  })
+
+  async function addDuplicateOf(card: { deckId: string }) {
+    await db.cards.put({
+      id: "other-card",
+      deckId: card.deckId,
+      kind: "vocabulary",
+      content: {
+        wordJa: "猫舌",
+        reading: "ねこじた",
+        definitionsEn: ["sensitive to hot food"],
+        images: [],
+        exampleSentences: [],
+      },
+      updatedAt: Date.now(),
+    })
+  }
+
+  it("returns focus to the typing input after closing", async () => {
+    const card = await seedReadingOnlyCard("猫", "ねこ")
+    await addDuplicateOf(card)
+
+    const user = userEvent.setup()
+    renderReview()
+
+    await user.click(await screen.findByRole("button", { name: /重複の可能性/ }))
+    const dialog = await screen.findByRole("dialog")
+    await user.click(within(dialog).getByRole("button", { name: "閉じる" }))
+
+    // Not the badge the focus trap would otherwise restore to, where typing
+    // would go nowhere and Enter would just re-open the modal.
+    const input = screen.getByRole("textbox")
+    await waitFor(() => expect(input).toHaveFocus())
+    await user.keyboard("ねこ{Enter}")
+    expect(await screen.findByRole("button", { name: /^正解$/ })).toBeInTheDocument()
+  })
+
+  it("returns focus to the reveal button after closing in an oral mode", async () => {
+    const card = await seedOralOnlyCard("猫", "cat")
+    await addDuplicateOf(card)
+
+    const user = userEvent.setup()
+    renderReview()
+
+    await user.click(await screen.findByRole("button", { name: /重複の可能性/ }))
+    const dialog = await screen.findByRole("dialog")
+    await user.click(within(dialog).getByRole("button", { name: "閉じる" }))
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /答えを見る/ })).toHaveFocus()
+    })
+    await user.keyboard("{Enter}")
+    expect(await screen.findByRole("button", { name: /^正解$/ })).toBeInTheDocument()
+  })
+
+  it("does not charge time spent in the modal to the answer latency", async () => {
+    const card = await seedOralOnlyCard("猫", "cat")
+    await addDuplicateOf(card)
+
+    const user = userEvent.setup()
+    renderReview()
+
+    await user.click(await screen.findByRole("button", { name: /重複の可能性/ }))
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "閉じる" }),
+    )
+    await user.click(await screen.findByRole("button", { name: /答えを見る/ }))
+    await user.click(await screen.findByRole("button", { name: /^正解$/ }))
+
+    // Timing is discarded rather than counting the detour as thinking time,
+    // which would drag the FSRS grade down.
+    await waitFor(async () => {
+      const events = await db.reviewEvents.where("cardId").equals(card.id).toArray()
+      expect(events).toHaveLength(1)
+      expect(events[0].responseMs).toBeNull()
+    })
   })
 })
