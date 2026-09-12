@@ -47,7 +47,7 @@ export function isMarkedNotDuplicate(card: Card, other: Card): boolean {
 /**
  * Cards whose text contains `card`'s Japanese word/construction as a
  * substring — the raw duplicate candidates, including any the user has since
- * marked as not duplicates. Use `findDuplicateCards` for the list to act on.
+ * marked as not duplicates.
  */
 export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
   const term = normalizeJapanese(japaneseWordForCard(card))
@@ -59,24 +59,31 @@ export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
   )
 }
 
-/**
- * Other cards that might be duplicates of `card` — any of their fields
- * contains `card`'s Japanese word/construction as a substring — minus the
- * ones already confirmed as not duplicates.
- */
-export function findDuplicateCards(card: Card, allCards: Card[]): Card[] {
-  return findDuplicateCandidates(card, allCards).filter(
-    (other) => !isMarkedNotDuplicate(card, other),
-  )
+export type DuplicatePartition = {
+  /** Candidates still worth reporting as possible duplicates. */
+  matches: Card[]
+  /**
+   * Candidates the user has confirmed aren't duplicates. Returned rather
+   * than dropped so a mis-click stays reversible: with the pair otherwise
+   * invisible, these are the only cards a "this really is a duplicate"
+   * control can restore.
+   */
+  dismissed: Card[]
 }
 
 /**
- * Candidates the user has confirmed aren't duplicates of `card`. Surfaced so
- * a mis-click is reversible: these are the only cards a "this really is a
- * duplicate" control can restore, since the pair is otherwise invisible.
+ * Split `card`'s duplicate candidates by the user's verdict, in one pass —
+ * the substring search NFKC-normalizes every field of every card, so it's
+ * worth not running twice for the two halves of the same answer.
  */
-export function findDismissedDuplicateCards(card: Card, allCards: Card[]): Card[] {
-  return findDuplicateCandidates(card, allCards).filter((other) =>
-    isMarkedNotDuplicate(card, other),
-  )
+export function partitionDuplicateCards(
+  card: Card,
+  allCards: Card[],
+): DuplicatePartition {
+  const matches: Card[] = []
+  const dismissed: Card[] = []
+  for (const candidate of findDuplicateCandidates(card, allCards)) {
+    ;(isMarkedNotDuplicate(card, candidate) ? dismissed : matches).push(candidate)
+  }
+  return { matches, dismissed }
 }

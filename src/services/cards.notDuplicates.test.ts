@@ -8,6 +8,7 @@ import {
   unmarkCardsNotDuplicates,
 } from "./cards"
 import type { Card } from "../domain/types"
+import { clearSessionEdits, getSessionEditedCardIds } from "../lib/sync/sessionEdits"
 
 vi.mock("../lib/firebase", () => ({
   getFirebaseApp: () => null,
@@ -28,6 +29,7 @@ function vocabCard(id: string, wordJa: string, updatedAt = 1_000): Card {
 describe("markCardsNotDuplicates", () => {
   beforeEach(async () => {
     await resetDatabase()
+    clearSessionEdits()
     await db.cards.bulkPut([vocabCard("card-1", "猫"), vocabCard("card-2", "子猫")])
   })
 
@@ -80,6 +82,23 @@ describe("markCardsNotDuplicates", () => {
     await markCardsNotDuplicates("card-1", "card-1")
 
     expect((await db.cards.get("card-1"))?.notDuplicateOf).toBeUndefined()
+  })
+
+  it("queues both cards for the next push", async () => {
+    await markCardsNotDuplicates("card-1", "card-2")
+
+    expect(getSessionEditedCardIds().sort()).toEqual(["card-1", "card-2"])
+  })
+
+  it("queues nothing when the write was a no-op", async () => {
+    await markCardsNotDuplicates("card-1", "card-2")
+    clearSessionEdits()
+
+    await markCardsNotDuplicates("card-1", "card-2")
+
+    // The flag lives in localStorage and doesn't roll back with Dexie, so it
+    // must only be set for cards actually written.
+    expect(getSessionEditedCardIds()).toEqual([])
   })
 })
 

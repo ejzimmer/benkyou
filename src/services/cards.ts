@@ -174,7 +174,12 @@ async function setNotDuplicatePair(
 ): Promise<void> {
   if (cardIdA === cardIdB) return
   const now = Date.now()
+  const written: string[] = []
   await db.transaction("rw", db.cards, async () => {
+    // Both sides are rewritten or neither is, so the pair can't end up
+    // half-marked; `written` is reset on each attempt because a retried
+    // transaction replays this whole body.
+    written.length = 0
     for (const [id, otherId] of [
       [cardIdA, cardIdB],
       [cardIdB, cardIdA],
@@ -193,9 +198,13 @@ async function setNotDuplicatePair(
         notDuplicateOf: next.length > 0 ? next : undefined,
         updatedAt: now,
       })
-      markCardEdited(id)
+      written.push(id)
     }
   })
+  // Only once the transaction has actually committed: this flag lives in
+  // localStorage, which doesn't roll back with Dexie, so marking inside
+  // would leave a card queued for push after an aborted write.
+  for (const id of written) markCardEdited(id)
 }
 
 /** Stop reporting `cardIdB` as a possible duplicate of `cardIdA`, and vice versa. */
