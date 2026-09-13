@@ -42,6 +42,27 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
   })
 
+  it("matches a reading authored only as headword furigana", () => {
+    // No `reading` field — the reading lives in the furigana map, which is
+    // the shape a card gets when its reading was only ever authored there.
+    const target = vocab("a", "deck-1", { wordJa: "ひんぱん" })
+    const kanji = vocab("b", "deck-1", {
+      wordJa: "頻繁",
+      readings: { 頻繁: "ひんぱん" },
+    })
+    expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
+  })
+
+  it("reports a pair from whichever side is being reviewed", () => {
+    const word = vocab("a", "deck-1", { wordJa: "結論" })
+    const phrase = vocab("b", "deck-1", { wordJa: "結論に至る" })
+
+    // "These might be the same word" is symmetric, and so is the dismissal
+    // that answers it, so neither direction may go silent.
+    expect(partitionDuplicateCards(word, [word, phrase]).matches).toEqual([phrase])
+    expect(partitionDuplicateCards(phrase, [word, phrase]).matches).toEqual([word])
+  })
+
   it("matches a fill-in-the-gap card whose answer is the same word", () => {
     const target = vocab("a", "deck-1", { wordJa: "交換" })
     const match = grammar("b", "deck-1", {

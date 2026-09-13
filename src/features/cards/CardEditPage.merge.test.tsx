@@ -82,7 +82,7 @@ describe("CardEditPage duplicate finder / merge", () => {
       ).not.toBeInTheDocument()
     })
     expect(
-      within(dialog).getByText(/この単語を含む他のカードはありません/),
+      within(dialog).getByText(/重複の可能性があるカードはありません/),
     ).toBeInTheDocument()
 
     await waitFor(() => {

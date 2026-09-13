@@ -6,11 +6,29 @@ export function japaneseWordForCard(card: Card): string {
   return card.kind === "vocabulary" ? card.content.wordJa : card.content.construction
 }
 
+/**
+ * The furigana entries that annotate `headword` itself, not the card's
+ * example/gap sentence — the map holds both, keyed on the kanji phrase each
+ * reading is for, so the key says which it is. Without this a card whose
+ * headword reading was only ever authored as furigana (no `reading` field)
+ * would have no reading to match on at all; with the sentence's entries left
+ * in, any word the sentence happens to use would match instead.
+ */
+function headwordReadings(
+  headword: string,
+  readings: Record<string, string> | undefined,
+): string[] {
+  return Object.entries(readings ?? {})
+    .filter(([phrase]) => phrase && headword.includes(phrase))
+    .map(([, reading]) => reading)
+}
+
 function vocabularyIdentityFields(content: VocabularyCardContent): string[] {
   return [
     content.wordJa,
     content.reading ?? "",
     ...Object.values(content.readingParts ?? {}),
+    ...headwordReadings(content.wordJa, content.readings),
   ]
 }
 
@@ -19,6 +37,7 @@ function grammarIdentityFields(content: GrammarCardContent): string[] {
     content.construction,
     content.constructionReading ?? "",
     ...Object.values(content.constructionReadingParts ?? {}),
+    ...headwordReadings(content.construction, content.readings),
   ]
 }
 
@@ -74,22 +93,42 @@ function normalizedCardText(card: Card): string {
   return text
 }
 
+const normalizedTermCache = new WeakMap<Card, string>()
+
+function normalizedTerm(card: Card): string {
+  const cached = normalizedTermCache.get(card)
+  if (cached !== undefined) return cached
+  const term = normalizeJapanese(japaneseWordForCard(card))
+  normalizedTermCache.set(card, term)
+  return term
+}
+
 /**
  * Cards whose headword (or its reading) contains `card`'s Japanese
- * word/construction as a substring — the raw duplicate candidates, including
- * any the user has since marked as not duplicates.
+ * word/construction as a substring, or vice versa — the raw duplicate
+ * candidates, including any the user has since marked as not duplicates.
+ *
+ * Containment is checked both ways round because "these two might be the
+ * same word" is a symmetric claim: 結論 contains nothing of 結論に至る, so
+ * checking one way only would report the pair while reviewing 結論 and stay
+ * silent while reviewing 結論に至る. The dismissal that answers the report
+ * is symmetric too, so the report itself has to be.
  *
  * Still a substring match rather than an exact one, so a card for a phrase
- * built on the same word (結論 against 結論に至る) is worth a look; it's the
- * *fields* searched, not the looseness of the match, that decides whether
- * two cards are about the same word.
+ * built on the same word is worth a look; it's the *fields* searched, not
+ * the looseness of the match, that decides whether two cards are about the
+ * same word.
  */
 export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
-  const term = normalizeJapanese(japaneseWordForCard(card))
+  const term = normalizedTerm(card)
   if (!term) return []
-  return allCards.filter(
-    (other) => other.id !== card.id && normalizedCardText(other).includes(term),
-  )
+  const text = normalizedCardText(card)
+  return allCards.filter((other) => {
+    if (other.id === card.id) return false
+    if (normalizedCardText(other).includes(term)) return true
+    const otherTerm = normalizedTerm(other)
+    return Boolean(otherTerm) && text.includes(otherTerm)
+  })
 }
 
 export type DuplicatePartition = {
