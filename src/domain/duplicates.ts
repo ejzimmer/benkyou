@@ -6,29 +6,38 @@ export function japaneseWordForCard(card: Card): string {
   return card.kind === "vocabulary" ? card.content.wordJa : card.content.construction
 }
 
-function vocabularyTextFields(content: VocabularyCardContent): string[] {
+function vocabularyIdentityFields(content: VocabularyCardContent): string[] {
   return [
     content.wordJa,
     content.reading ?? "",
-    ...Object.values(content.readings ?? {}),
-    ...content.definitionsEn,
-    ...content.exampleSentences,
+    ...Object.values(content.readingParts ?? {}),
   ]
 }
 
-function grammarTextFields(content: GrammarCardContent): string[] {
+function grammarIdentityFields(content: GrammarCardContent): string[] {
   return [
-    content.sentenceWithGap,
     content.construction,
-    content.translationEn,
-    ...Object.values(content.readings),
+    content.constructionReading ?? "",
+    ...Object.values(content.constructionReadingParts ?? {}),
   ]
 }
 
-export function cardTextFields(card: Card): string[] {
+/**
+ * The text that says what a card *teaches* — its headword/construction and
+ * that word's own reading — and nothing else.
+ *
+ * Deliberately excludes everything that merely supports the headword:
+ * example sentences, the fill-in-the-gap sentence, English definitions and
+ * translations, and the `readings` furigana map (which is keyed on words
+ * from the sentence, not the headword). Two cards sharing one of those are
+ * not duplicates — a 交換 card whose sentence happens to use 頻繁, and a
+ * 頻繁 card whose example sentence happens to use 交換, teach different
+ * words and were being flagged for each other in both directions.
+ */
+export function cardIdentityFields(card: Card): string[] {
   return card.kind === "vocabulary"
-    ? vocabularyTextFields(card.content)
-    : grammarTextFields(card.content)
+    ? vocabularyIdentityFields(card.content)
+    : grammarIdentityFields(card.content)
 }
 
 /**
@@ -45,11 +54,12 @@ export function isMarkedNotDuplicate(card: Card, other: Card): boolean {
 }
 
 /**
- * Every field of a card, normalized and joined into one haystack, cached per
- * card object. A review session scans the whole table once per card shown,
- * and NFKC-normalizing every field of every card each time is the bulk of
- * that work; Dexie hands back a fresh object whenever a card actually
- * changes, so identity is a safe cache key and stale entries are collected.
+ * A card's identity fields, normalized and joined into one haystack, cached
+ * per card object. A review session scans the whole table once per card
+ * shown, and NFKC-normalizing every field of every card each time is the
+ * bulk of that work; Dexie hands back a fresh object whenever a card
+ * actually changes, so identity is a safe cache key and stale entries are
+ * collected.
  *
  * NUL separates the fields: no Japanese term can contain one, so joining
  * can't create a match that spans two fields.
@@ -59,15 +69,20 @@ const normalizedTextCache = new WeakMap<Card, string>()
 function normalizedCardText(card: Card): string {
   const cached = normalizedTextCache.get(card)
   if (cached !== undefined) return cached
-  const text = cardTextFields(card).map(normalizeJapanese).join("\u0000")
+  const text = cardIdentityFields(card).map(normalizeJapanese).join("\u0000")
   normalizedTextCache.set(card, text)
   return text
 }
 
 /**
- * Cards whose text contains `card`'s Japanese word/construction as a
- * substring — the raw duplicate candidates, including any the user has since
- * marked as not duplicates.
+ * Cards whose headword (or its reading) contains `card`'s Japanese
+ * word/construction as a substring — the raw duplicate candidates, including
+ * any the user has since marked as not duplicates.
+ *
+ * Still a substring match rather than an exact one, so a card for a phrase
+ * built on the same word (結論 against 結論に至る) is worth a look; it's the
+ * *fields* searched, not the looseness of the match, that decides whether
+ * two cards are about the same word.
  */
 export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
   const term = normalizeJapanese(japaneseWordForCard(card))

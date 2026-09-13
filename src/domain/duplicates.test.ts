@@ -24,31 +24,85 @@ function grammar(id: string, deckId: string, overrides = {}): Card {
 }
 
 describe("partitionDuplicateCards", () => {
-  it("matches when the word appears in another card's definitions", () => {
+  it("matches another card teaching the same word", () => {
+    const target = vocab("a", "deck-1", { wordJa: "猫", definitionsEn: ["cat"] })
+    const other = vocab("b", "deck-1", { wordJa: "猫", definitionsEn: ["a cat"] })
+    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([other])
+  })
+
+  it("matches a phrase built on the same word", () => {
+    const target = vocab("a", "deck-1", { wordJa: "結論" })
+    const phrase = vocab("b", "deck-1", { wordJa: "結論に至る" })
+    expect(partitionDuplicateCards(target, [target, phrase]).matches).toEqual([phrase])
+  })
+
+  it("matches a kana card against the same word's reading", () => {
+    const target = vocab("a", "deck-1", { wordJa: "ひんぱん" })
+    const kanji = vocab("b", "deck-1", { wordJa: "頻繁", reading: "ひんぱん" })
+    expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
+  })
+
+  it("matches a fill-in-the-gap card whose answer is the same word", () => {
+    const target = vocab("a", "deck-1", { wordJa: "交換" })
+    const match = grammar("b", "deck-1", {
+      construction: "交換",
+      sentenceWithGap: "ペン先は頻繁に___する",
+    })
+    expect(partitionDuplicateCards(target, [target, match]).matches).toEqual([match])
+  })
+
+  it("ignores a word that only appears in another card's example sentence", () => {
+    const target = vocab("a", "deck-1", { wordJa: "交換", definitionsEn: ["exchange"] })
+    const other = vocab("b", "deck-1", {
+      wordJa: "頻繁",
+      definitionsEn: ["frequent"],
+      exampleSentences: ["磨墨をつけて使うペン先は＿＿に交換する"],
+    })
+    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([])
+  })
+
+  it("ignores a word that only appears in a gap sentence or its furigana", () => {
+    const target = vocab("a", "deck-1", { wordJa: "頻繁", definitionsEn: ["frequent"] })
+    const other = grammar("b", "deck-1", {
+      construction: "交換",
+      sentenceWithGap: "磨墨をつけて使うペン先は頻繁に___する",
+      translationEn: "replace the nib frequently",
+      readings: { 頻繁: "ひんぱん", 交換: "こうかん" },
+    })
+    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([])
+  })
+
+  // The pair that prompted narrowing the search: two unrelated words that a
+  // single example sentence happens to use together, flagged for each other
+  // in both directions because each appeared in the other's sentence (and,
+  // for good measure, in its furigana map).
+  it("ignores two words that only share a sentence", () => {
+    const hinpan = vocab("a", "deck-1", {
+      wordJa: "頻繁",
+      reading: "ひんぱん",
+      definitionsEn: ["frequent"],
+      exampleSentences: ["磨墨をつけて使うペン先は＿＿に交換する"],
+      readings: { 磨墨: "まずみ", 交換: "こうかん" },
+    })
+    const koukan = grammar("b", "deck-1", {
+      sentenceWithGap: "磨墨をつけて使うペン先は頻繁に___する",
+      construction: "交換",
+      constructionReading: "こうかん",
+      translationEn: "exchange",
+      readings: { 磨墨: "まずみ", 頻繁: "ひんぱん" },
+    })
+
+    expect(partitionDuplicateCards(hinpan, [hinpan, koukan]).matches).toEqual([])
+    expect(partitionDuplicateCards(koukan, [hinpan, koukan]).matches).toEqual([])
+  })
+
+  it("ignores a word that only appears inside an English definition", () => {
     const target = vocab("a", "deck-1", { wordJa: "猫" })
     const other = vocab("b", "deck-1", {
       wordJa: "動物",
       definitionsEn: ["a 猫 is a kind of animal"],
     })
-    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([other])
-  })
-
-  it("matches when the word appears in an example sentence", () => {
-    const target = vocab("a", "deck-1", { wordJa: "猫" })
-    const bySentence = vocab("b", "deck-1", {
-      exampleSentences: ["猫がいます"],
-    })
-    expect(partitionDuplicateCards(target, [target, bySentence]).matches).toEqual([bySentence])
-  })
-
-  it("matches against grammar card fields, including readings", () => {
-    const target = vocab("a", "deck-1", { wordJa: "学生" })
-    const match = grammar("b", "deck-1", {
-      construction: "元",
-      translationEn: "student stuff",
-      readings: { 元: "学生時代" },
-    })
-    expect(partitionDuplicateCards(target, [target, match]).matches).toEqual([match])
+    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([])
   })
 
   it("does not match itself", () => {
