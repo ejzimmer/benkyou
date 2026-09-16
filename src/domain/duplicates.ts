@@ -1,5 +1,6 @@
 import type { Card, GrammarCardContent, VocabularyCardContent } from "./types"
 import { normalizeJapanese } from "../lib/japanese/normalize"
+import { annotatedSegments, joinSegmentReadings } from "./readingsMap"
 
 /** The Japanese headword used to search for duplicates of this card. */
 export function japaneseWordForCard(card: Card): string {
@@ -7,20 +8,30 @@ export function japaneseWordForCard(card: Card): string {
 }
 
 /**
- * The furigana entries that annotate `headword` itself, not the card's
- * example/gap sentence — the map holds both, keyed on the kanji phrase each
- * reading is for, so the key says which it is. Without this a card whose
- * headword reading was only ever authored as furigana (no `reading` field)
- * would have no reading to match on at all; with the sentence's entries left
- * in, any word the sentence happens to use would match instead.
+ * The headword's own reading, as recorded in the card's furigana map.
+ *
+ * The map holds furigana for both the headword and the card's example/gap
+ * sentence, so it can't be searched wholesale — any word the sentence
+ * happens to use would match. But it can't be ignored either: a card whose
+ * reading was only ever authored as furigana (no `reading` field) would have
+ * no reading to match on at all.
+ *
+ * So tokenize the headword against the map, exactly as the furigana renderer
+ * does, and keep the whole-word reading that falls out. That reads the map
+ * as authored: 頻繁 entered one kanji per line ({頻: ひん, 繁: ぱん}, the
+ * shape `addMissingKanjiLines` seeds) joins back to ひんぱん, and okurigana
+ * left un-annotated (至る with {至: いた}) is carried through as itself.
+ * Entries belonging to the sentence simply don't match the headword, and a
+ * map that leaves any of the headword's kanji unread yields nothing rather
+ * than a half-reading — so a sentence's 人=ひと can't turn 大人 into おおひと.
  */
-function headwordReadings(
+function headwordFuriganaReading(
   headword: string,
   readings: Record<string, string> | undefined,
 ): string[] {
-  return Object.entries(readings ?? {})
-    .filter(([phrase]) => phrase && headword.includes(phrase))
-    .map(([, reading]) => reading)
+  if (!headword.trim() || !readings) return []
+  const joined = joinSegmentReadings(annotatedSegments(headword, readings))
+  return joined ? [joined] : []
 }
 
 function vocabularyIdentityFields(content: VocabularyCardContent): string[] {
@@ -28,7 +39,7 @@ function vocabularyIdentityFields(content: VocabularyCardContent): string[] {
     content.wordJa,
     content.reading ?? "",
     ...Object.values(content.readingParts ?? {}),
-    ...headwordReadings(content.wordJa, content.readings),
+    ...headwordFuriganaReading(content.wordJa, content.readings),
   ]
 }
 
@@ -37,7 +48,7 @@ function grammarIdentityFields(content: GrammarCardContent): string[] {
     content.construction,
     content.constructionReading ?? "",
     ...Object.values(content.constructionReadingParts ?? {}),
-    ...headwordReadings(content.construction, content.readings),
+    ...headwordFuriganaReading(content.construction, content.readings),
   ]
 }
 
@@ -46,12 +57,15 @@ function grammarIdentityFields(content: GrammarCardContent): string[] {
  * that word's own reading — and nothing else.
  *
  * Deliberately excludes everything that merely supports the headword:
- * example sentences, the fill-in-the-gap sentence, English definitions and
- * translations, and the `readings` furigana map (which is keyed on words
- * from the sentence, not the headword). Two cards sharing one of those are
- * not duplicates — a 交換 card whose sentence happens to use 頻繁, and a
- * 頻繁 card whose example sentence happens to use 交換, teach different
- * words and were being flagged for each other in both directions.
+ * example sentences, the fill-in-the-gap sentence, and English definitions
+ * and translations. Two cards sharing one of those are not duplicates — a
+ * 交換 card whose sentence happens to use 頻繁, and a 頻繁 card whose
+ * example sentence happens to use 交換, teach different words and were being
+ * flagged for each other in both directions.
+ *
+ * The `readings` furigana map spans both, since it annotates the headword
+ * and the sentence alike; `headwordFuriganaReading` takes the headword's
+ * part of it and leaves the sentence's behind.
  */
 export function cardIdentityFields(card: Card): string[] {
   return card.kind === "vocabulary"

@@ -53,6 +53,33 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
   })
 
+  it("matches headword furigana authored one kanji per line", () => {
+    // The shape `addMissingKanjiLines` seeds the editor with: a line per
+    // kanji, so the whole-word reading only exists once they're joined.
+    const target = vocab("a", "deck-1", { wordJa: "ひんぱん" })
+    const kanji = vocab("b", "deck-1", {
+      wordJa: "頻繁",
+      readings: { 頻: "ひん", 繁: "ぱん" },
+    })
+    expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
+  })
+
+  it("carries un-annotated okurigana into the headword reading", () => {
+    // 至る=いたる is authored narrowed to the kanji (至=いた), per the
+    // furigana field's own convention.
+    const target = vocab("a", "deck-1", { wordJa: "いたる" })
+    const kanji = vocab("b", "deck-1", { wordJa: "至る", readings: { 至: "いた" } })
+    expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
+  })
+
+  it("builds no reading from a furigana map that leaves a headword kanji unread", () => {
+    // 人=ひと is an example-sentence entry; 大 has no reading, so there is no
+    // whole-word reading here — and 大人 must not become おおひと or ひと.
+    const target = vocab("a", "deck-1", { wordJa: "ひと" })
+    const otona = vocab("b", "deck-1", { wordJa: "大人", readings: { 人: "ひと" } })
+    expect(partitionDuplicateCards(target, [target, otona]).matches).toEqual([])
+  })
+
   it("reports a pair from whichever side is being reviewed", () => {
     const word = vocab("a", "deck-1", { wordJa: "結論" })
     const phrase = vocab("b", "deck-1", { wordJa: "結論に至る" })
