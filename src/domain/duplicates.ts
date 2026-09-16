@@ -21,6 +21,10 @@ export function japaneseWordForCard(card: Card): string {
  * as authored: 頻繁 entered one kanji per line ({頻: ひん, 繁: ぱん}, the
  * shape `addMissingKanjiLines` seeds) joins back to ひんぱん, and okurigana
  * left un-annotated (至る with {至: いた}) is carried through as itself.
+ *
+ * `readingParts` gets the same treatment, for the same reason: its
+ * per-cluster fragments ({結論: けつろん, 至る: いたる}) only match a kana
+ * card once joined into けつろんにいたる.
  * Entries belonging to the sentence simply don't match the headword, and a
  * map that leaves any of the headword's kanji unread yields nothing rather
  * than a half-reading — so a sentence's 人=ひと can't turn 大人 into おおひと.
@@ -38,7 +42,7 @@ function vocabularyIdentityFields(content: VocabularyCardContent): string[] {
   return [
     content.wordJa,
     content.reading ?? "",
-    ...Object.values(content.readingParts ?? {}),
+    ...headwordFuriganaReading(content.wordJa, content.readingParts),
     ...headwordFuriganaReading(content.wordJa, content.readings),
   ]
 }
@@ -47,7 +51,10 @@ function grammarIdentityFields(content: GrammarCardContent): string[] {
   return [
     content.construction,
     content.constructionReading ?? "",
-    ...Object.values(content.constructionReadingParts ?? {}),
+    ...headwordFuriganaReading(
+      content.construction,
+      content.constructionReadingParts,
+    ),
     ...headwordFuriganaReading(content.construction, content.readings),
   ]
 }

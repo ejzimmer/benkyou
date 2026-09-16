@@ -64,6 +64,15 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
   })
 
+  it("matches a reading split across readingParts", () => {
+    const target = vocab("a", "deck-1", { wordJa: "けつろんにいたる" })
+    const parts = vocab("b", "deck-1", {
+      wordJa: "結論に至る",
+      readingParts: { 結論: "けつろん", 至る: "いたる" },
+    })
+    expect(partitionDuplicateCards(target, [target, parts]).matches).toEqual([parts])
+  })
+
   it("carries un-annotated okurigana into the headword reading", () => {
     // 至る=いたる is authored narrowed to the kanji (至=いた), per the
     // furigana field's own convention.
