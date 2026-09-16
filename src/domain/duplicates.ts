@@ -1,6 +1,7 @@
 import type { Card, GrammarCardContent, VocabularyCardContent } from "./types"
 import { normalizeJapanese } from "../lib/japanese/normalize"
 import { annotatedSegments, joinSegmentReadings } from "./readingsMap"
+import { containsKanji } from "./vocabularyContent"
 
 /** The Japanese headword used to search for duplicates of this card. */
 export function japaneseWordForCard(card: Card): string {
@@ -25,36 +26,62 @@ export function japaneseWordForCard(card: Card): string {
  * `readingParts` gets the same treatment, for the same reason: its
  * per-cluster fragments ({結論: けつろん, 至る: いたる}) only match a kana
  * card once joined into けつろんにいたる.
+ *
  * Entries belonging to the sentence simply don't match the headword, and a
  * map that leaves any of the headword's kanji unread yields nothing rather
- * than a half-reading — so a sentence's 人=ひと can't turn 大人 into おおひと.
+ * than a half-reading.
  */
 function headwordFuriganaReading(
   headword: string,
   readings: Record<string, string> | undefined,
+): string | undefined {
+  if (!headword.trim() || !readings) return undefined
+  return joinSegmentReadings(annotatedSegments(headword, readings))
+}
+
+/**
+ * The card's own reading for its headword, in the order the card records it:
+ * the explicit reading field first, then the author's per-cluster breakdown,
+ * and only then the furigana map.
+ *
+ * The order matters because the furigana map is shared with the card's
+ * sentence, so a reading derived from it can disagree with the one the card
+ * actually teaches — 一日 read ついたち, with per-kanji entries {一: いち,
+ * 日: にち} left over from a sentence, derives いちにち; 大人 read おとな
+ * with {大: おお, 人: ひと} derives おおひと. Neither is a reading this card
+ * teaches, and matching on one invents duplicates. The map is the fallback
+ * for a card that has no reading of its own, not a second opinion about a
+ * card that does.
+ */
+function headwordReading(
+  headword: string,
+  explicit: string | undefined,
+  parts: Record<string, string> | undefined,
+  furigana: Record<string, string> | undefined,
 ): string[] {
-  if (!headword.trim() || !readings) return []
-  const joined = joinSegmentReadings(annotatedSegments(headword, readings))
-  return joined ? [joined] : []
+  const reading =
+    (explicit?.trim() ? explicit : undefined) ??
+    headwordFuriganaReading(headword, parts) ??
+    headwordFuriganaReading(headword, furigana)
+  return reading ? [reading] : []
 }
 
 function vocabularyReadings(content: VocabularyCardContent): string[] {
-  return [
-    content.reading ?? "",
-    ...headwordFuriganaReading(content.wordJa, content.readingParts),
-    ...headwordFuriganaReading(content.wordJa, content.readings),
-  ]
+  return headwordReading(
+    content.wordJa,
+    content.reading,
+    content.readingParts,
+    content.readings,
+  )
 }
 
 function grammarReadings(content: GrammarCardContent): string[] {
-  return [
-    content.constructionReading ?? "",
-    ...headwordFuriganaReading(
-      content.construction,
-      content.constructionReadingParts,
-    ),
-    ...headwordFuriganaReading(content.construction, content.readings),
-  ]
+  return headwordReading(
+    content.construction,
+    content.constructionReading,
+    content.constructionReadingParts,
+    content.readings,
+  )
 }
 
 export type CardIdentity = {
@@ -107,10 +134,11 @@ export function isMarkedNotDuplicate(card: Card, other: Card): boolean {
 
 /**
  * A card's identity, normalized, cached per card object. A review session
- * scans the whole table once per card shown, and NFKC-normalizing every
- * field of every card each time is the bulk of that work; Dexie hands back a
- * fresh object whenever a card actually changes, so identity is a safe cache
- * key and stale entries are collected.
+ * scans the whole table once per card shown, and deriving each card's
+ * identity — tokenizing its headword against its furigana map, then NFKC
+ * normalization — is the bulk of that work; Dexie hands back a fresh object
+ * whenever a card actually changes, so identity is a safe cache key and
+ * stale entries are collected.
  */
 const normalizedIdentityCache = new WeakMap<Card, CardIdentity>()
 
@@ -127,24 +155,37 @@ function normalizedIdentity(card: Card): CardIdentity {
 }
 
 /**
+ * True when `headword` appearing inside `container` is worth reporting.
+ *
+ * Only a headword containing kanji may match as a substring. Kanji carry
+ * enough meaning that a word built around one is worth a second look — 猫
+ * inside 子猫, 結論 inside 結論に至る. Kana alone don't: they are the
+ * language's connective tissue, so a kana-only headword turns up inside
+ * unrelated words constantly, and a one- or two-kana grammar point would
+ * sweep up a large slice of the deck (こと inside ことわざ, に inside にんじん
+ * and 結論に至る). A kana-only headword therefore has to match in full.
+ */
+function headwordContains(container: string, headword: string): boolean {
+  return containsKanji(headword) && container.includes(headword)
+}
+
+/**
  * Cards that might be teaching the same word as `card` — the raw duplicate
  * candidates, including any the user has since marked as not duplicates.
  *
- * Two ways to qualify, matched differently on purpose:
+ * Three ways to qualify:
  *
- * - **Headword against headword, as a substring either way round.** A card
- *   for a phrase built on the same word (結論 against 結論に至る, 猫 against
- *   子猫) is worth a look. Both directions, because "these might be the same
- *   word" is a symmetric claim and so is the dismissal that answers it —
- *   checking one way only would report the pair while reviewing 結論 and go
- *   silent while reviewing 結論に至る.
- * - **Headword against the other card's reading, exactly.** This is what
- *   pairs a kana card with the kanji card it spells out (ひんぱん against
- *   頻繁). Exactly, because a reading identifies *the same word* written in
- *   kana — not any word whose kana happen to contain it. Loosened to a
- *   substring it matches on syllable coincidence, and a two-kana grammar
- *   card sweeps up half the deck: こと would flag 異なる (ことなる) and 誠
- *   (まこと), たら would flag 働く (はたらく) and 新しい (あたらしい).
+ * - **The same headword.** Always, whatever it's written in.
+ * - **One headword inside the other**, either way round, and only for a
+ *   headword with kanji in it (see `headwordContains`). Both directions,
+ *   because "these might be the same word" is a symmetric claim and so is
+ *   the dismissal that answers it — checking one way only would report the
+ *   pair while reviewing 結論 and go silent while reviewing 結論に至る.
+ * - **A headword equal to the other card's reading.** This is what pairs a
+ *   kana card with the kanji card it spells out (ひんぱん against 頻繁).
+ *   Equal, not contained, for the same reason kana headwords must match in
+ *   full: readings are all kana, so containment there is syllable
+ *   coincidence — こと would flag 異なる (ことなる) and 誠 (まこと).
  *
  * Reading against reading is not a match: same reading, different kanji is a
  * homophone (橋 against 箸), not a duplicate. Two cards for the genuinely
@@ -157,9 +198,10 @@ export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
     if (other.id === card.id) return false
     const otherIdentity = normalizedIdentity(other)
     if (!otherIdentity.headword) return false
+    if (otherIdentity.headword === headword) return true
     if (
-      otherIdentity.headword.includes(headword) ||
-      headword.includes(otherIdentity.headword)
+      headwordContains(otherIdentity.headword, headword) ||
+      headwordContains(headword, otherIdentity.headword)
     ) {
       return true
     }
@@ -184,8 +226,8 @@ export type DuplicatePartition = {
 
 /**
  * Split `card`'s duplicate candidates by the user's verdict, in one pass —
- * the substring search NFKC-normalizes every field of every card, so it's
- * worth not running twice for the two halves of the same answer.
+ * the search walks the whole table, so it's worth not running twice for the
+ * two halves of the same answer.
  */
 export function partitionDuplicateCards(
   card: Card,

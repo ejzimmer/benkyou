@@ -124,6 +124,53 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(makoto, [koto, kotonaru, makoto]).matches).toEqual([])
   })
 
+  it("matches two cards for the same kana-only word", () => {
+    const koto = grammar("a", "deck-1", { construction: "こと" })
+    const alsoKoto = grammar("b", "deck-1", { construction: "こと", translationEn: "nominalizer" })
+    expect(partitionDuplicateCards(koto, [koto, alsoKoto]).matches).toEqual([alsoKoto])
+  })
+
+  it("does not match a kana-only headword inside a longer word", () => {
+    // Kana are the language's connective tissue, so a one- or two-kana
+    // construction turns up inside unrelated words constantly. Only a
+    // headword with kanji in it may match as a substring.
+    const koto = grammar("a", "deck-1", { construction: "こと" })
+    const ni = grammar("b", "deck-1", { construction: "に" })
+    const kotowaza = vocab("c", "deck-1", { wordJa: "ことわざ" })
+    const ninjin = vocab("d", "deck-1", { wordJa: "にんじん" })
+    const itaru = vocab("e", "deck-1", { wordJa: "結論に至る" })
+    const all = [koto, ni, kotowaza, ninjin, itaru]
+
+    expect(partitionDuplicateCards(koto, all).matches).toEqual([])
+    expect(partitionDuplicateCards(ni, all).matches).toEqual([])
+    expect(partitionDuplicateCards(kotowaza, all).matches).toEqual([])
+    expect(partitionDuplicateCards(ninjin, all).matches).toEqual([])
+    expect(partitionDuplicateCards(itaru, all).matches).toEqual([])
+  })
+
+  it("does not invent a reading from the furigana map when the card has its own", () => {
+    // 一日 is read ついたち here; {一: いち, 日: にち} are sentence entries.
+    // Deriving いちにち from them would match a word this card never teaches.
+    const tsuitachi = vocab("a", "deck-1", {
+      wordJa: "一日",
+      reading: "ついたち",
+      readings: { 一: "いち", 日: "にち" },
+    })
+    const ichinichi = vocab("b", "deck-1", { wordJa: "いちにち" })
+    expect(partitionDuplicateCards(tsuitachi, [tsuitachi, ichinichi]).matches).toEqual([])
+    expect(partitionDuplicateCards(ichinichi, [tsuitachi, ichinichi]).matches).toEqual([])
+  })
+
+  it("still matches the card's own reading when it has one", () => {
+    const tsuitachi = vocab("a", "deck-1", {
+      wordJa: "一日",
+      reading: "ついたち",
+      readings: { 一: "いち", 日: "にち" },
+    })
+    const kana = vocab("b", "deck-1", { wordJa: "ついたち" })
+    expect(partitionDuplicateCards(kana, [tsuitachi, kana]).matches).toEqual([tsuitachi])
+  })
+
   it("ignores homophones written with different kanji", () => {
     // Same reading, different word — a shared reading only identifies a
     // duplicate when it's the *headword* of the other card.
