@@ -108,6 +108,30 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(target, [target, match]).matches).toEqual([match])
   })
 
+  it("ignores a reading that merely contains a short construction", () => {
+    // A two-kana grammar point would otherwise sweep up half the deck on
+    // syllable coincidence alone — these words have nothing to do with こと.
+    const koto = grammar("a", "deck-1", {
+      construction: "こと",
+      constructionReading: "こと",
+      sentenceWithGap: "泳ぐ___ができる",
+    })
+    const kotonaru = vocab("b", "deck-1", { wordJa: "異なる", reading: "ことなる" })
+    const makoto = vocab("c", "deck-1", { wordJa: "誠", reading: "まこと" })
+
+    expect(partitionDuplicateCards(koto, [koto, kotonaru, makoto]).matches).toEqual([])
+    expect(partitionDuplicateCards(kotonaru, [koto, kotonaru, makoto]).matches).toEqual([])
+    expect(partitionDuplicateCards(makoto, [koto, kotonaru, makoto]).matches).toEqual([])
+  })
+
+  it("ignores homophones written with different kanji", () => {
+    // Same reading, different word — a shared reading only identifies a
+    // duplicate when it's the *headword* of the other card.
+    const hashi = vocab("a", "deck-1", { wordJa: "橋", reading: "はし" })
+    const chopsticks = vocab("b", "deck-1", { wordJa: "箸", reading: "はし" })
+    expect(partitionDuplicateCards(hashi, [hashi, chopsticks]).matches).toEqual([])
+  })
+
   it("ignores a word that only appears in another card's example sentence", () => {
     const target = vocab("a", "deck-1", { wordJa: "交換", definitionsEn: ["exchange"] })
     const other = vocab("b", "deck-1", {

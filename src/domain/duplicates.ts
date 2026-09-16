@@ -38,18 +38,16 @@ function headwordFuriganaReading(
   return joined ? [joined] : []
 }
 
-function vocabularyIdentityFields(content: VocabularyCardContent): string[] {
+function vocabularyReadings(content: VocabularyCardContent): string[] {
   return [
-    content.wordJa,
     content.reading ?? "",
     ...headwordFuriganaReading(content.wordJa, content.readingParts),
     ...headwordFuriganaReading(content.wordJa, content.readings),
   ]
 }
 
-function grammarIdentityFields(content: GrammarCardContent): string[] {
+function grammarReadings(content: GrammarCardContent): string[] {
   return [
-    content.construction,
     content.constructionReading ?? "",
     ...headwordFuriganaReading(
       content.construction,
@@ -59,9 +57,16 @@ function grammarIdentityFields(content: GrammarCardContent): string[] {
   ]
 }
 
+export type CardIdentity = {
+  /** The headword/construction itself, as written. */
+  headword: string
+  /** Whole-word readings of that headword, however they were authored. */
+  readings: string[]
+}
+
 /**
- * The text that says what a card *teaches* — its headword/construction and
- * that word's own reading — and nothing else.
+ * What a card *teaches* — its headword/construction and that word's own
+ * reading — and nothing else.
  *
  * Deliberately excludes everything that merely supports the headword:
  * example sentences, the fill-in-the-gap sentence, and English definitions
@@ -73,11 +78,18 @@ function grammarIdentityFields(content: GrammarCardContent): string[] {
  * The `readings` furigana map spans both, since it annotates the headword
  * and the sentence alike; `headwordFuriganaReading` takes the headword's
  * part of it and leaves the sentence's behind.
+ *
+ * Headword and readings are kept apart because they are matched differently
+ * — see `findDuplicateCandidates`.
  */
-export function cardIdentityFields(card: Card): string[] {
-  return card.kind === "vocabulary"
-    ? vocabularyIdentityFields(card.content)
-    : grammarIdentityFields(card.content)
+export function cardIdentity(card: Card): CardIdentity {
+  const headword = japaneseWordForCard(card)
+  const readings = (
+    card.kind === "vocabulary"
+      ? vocabularyReadings(card.content)
+      : grammarReadings(card.content)
+  ).filter((reading) => reading.trim())
+  return { headword, readings }
 }
 
 /**
@@ -94,61 +106,67 @@ export function isMarkedNotDuplicate(card: Card, other: Card): boolean {
 }
 
 /**
- * A card's identity fields, normalized and joined into one haystack, cached
- * per card object. A review session scans the whole table once per card
- * shown, and NFKC-normalizing every field of every card each time is the
- * bulk of that work; Dexie hands back a fresh object whenever a card
- * actually changes, so identity is a safe cache key and stale entries are
- * collected.
- *
- * NUL separates the fields: no Japanese term can contain one, so joining
- * can't create a match that spans two fields.
+ * A card's identity, normalized, cached per card object. A review session
+ * scans the whole table once per card shown, and NFKC-normalizing every
+ * field of every card each time is the bulk of that work; Dexie hands back a
+ * fresh object whenever a card actually changes, so identity is a safe cache
+ * key and stale entries are collected.
  */
-const normalizedTextCache = new WeakMap<Card, string>()
+const normalizedIdentityCache = new WeakMap<Card, CardIdentity>()
 
-function normalizedCardText(card: Card): string {
-  const cached = normalizedTextCache.get(card)
+function normalizedIdentity(card: Card): CardIdentity {
+  const cached = normalizedIdentityCache.get(card)
   if (cached !== undefined) return cached
-  const text = cardIdentityFields(card).map(normalizeJapanese).join("\u0000")
-  normalizedTextCache.set(card, text)
-  return text
-}
-
-const normalizedTermCache = new WeakMap<Card, string>()
-
-function normalizedTerm(card: Card): string {
-  const cached = normalizedTermCache.get(card)
-  if (cached !== undefined) return cached
-  const term = normalizeJapanese(japaneseWordForCard(card))
-  normalizedTermCache.set(card, term)
-  return term
+  const { headword, readings } = cardIdentity(card)
+  const identity = {
+    headword: normalizeJapanese(headword),
+    readings: readings.map(normalizeJapanese).filter(Boolean),
+  }
+  normalizedIdentityCache.set(card, identity)
+  return identity
 }
 
 /**
- * Cards whose headword (or its reading) contains `card`'s Japanese
- * word/construction as a substring, or vice versa — the raw duplicate
+ * Cards that might be teaching the same word as `card` — the raw duplicate
  * candidates, including any the user has since marked as not duplicates.
  *
- * Containment is checked both ways round because "these two might be the
- * same word" is a symmetric claim: 結論 contains nothing of 結論に至る, so
- * checking one way only would report the pair while reviewing 結論 and stay
- * silent while reviewing 結論に至る. The dismissal that answers the report
- * is symmetric too, so the report itself has to be.
+ * Two ways to qualify, matched differently on purpose:
  *
- * Still a substring match rather than an exact one, so a card for a phrase
- * built on the same word is worth a look; it's the *fields* searched, not
- * the looseness of the match, that decides whether two cards are about the
- * same word.
+ * - **Headword against headword, as a substring either way round.** A card
+ *   for a phrase built on the same word (結論 against 結論に至る, 猫 against
+ *   子猫) is worth a look. Both directions, because "these might be the same
+ *   word" is a symmetric claim and so is the dismissal that answers it —
+ *   checking one way only would report the pair while reviewing 結論 and go
+ *   silent while reviewing 結論に至る.
+ * - **Headword against the other card's reading, exactly.** This is what
+ *   pairs a kana card with the kanji card it spells out (ひんぱん against
+ *   頻繁). Exactly, because a reading identifies *the same word* written in
+ *   kana — not any word whose kana happen to contain it. Loosened to a
+ *   substring it matches on syllable coincidence, and a two-kana grammar
+ *   card sweeps up half the deck: こと would flag 異なる (ことなる) and 誠
+ *   (まこと), たら would flag 働く (はたらく) and 新しい (あたらしい).
+ *
+ * Reading against reading is not a match: same reading, different kanji is a
+ * homophone (橋 against 箸), not a duplicate. Two cards for the genuinely
+ * same word already share a headword.
  */
 export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
-  const term = normalizedTerm(card)
-  if (!term) return []
-  const text = normalizedCardText(card)
+  const { headword, readings } = normalizedIdentity(card)
+  if (!headword) return []
   return allCards.filter((other) => {
     if (other.id === card.id) return false
-    if (normalizedCardText(other).includes(term)) return true
-    const otherTerm = normalizedTerm(other)
-    return Boolean(otherTerm) && text.includes(otherTerm)
+    const otherIdentity = normalizedIdentity(other)
+    if (!otherIdentity.headword) return false
+    if (
+      otherIdentity.headword.includes(headword) ||
+      headword.includes(otherIdentity.headword)
+    ) {
+      return true
+    }
+    return (
+      otherIdentity.readings.includes(headword) ||
+      readings.includes(otherIdentity.headword)
+    )
   })
 }
 
