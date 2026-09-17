@@ -1,7 +1,6 @@
 import type { Card, GrammarCardContent, VocabularyCardContent } from "./types"
-import { normalizeJapanese } from "../lib/japanese/normalize"
+import { hasKanjiOrKatakana, normalizeJapanese } from "../lib/japanese/normalize"
 import { annotatedSegments, joinSegmentReadings } from "./readingsMap"
-import { containsKanji } from "./vocabularyContent"
 
 /** The Japanese headword used to search for duplicates of this card. */
 export function japaneseWordForCard(card: Card): string {
@@ -51,7 +50,8 @@ function headwordFuriganaReading(
  * with {大: おお, 人: ひと} derives おおひと. Neither is a reading this card
  * teaches, and matching on one invents duplicates. The map is the fallback
  * for a card that has no reading of its own, not a second opinion about a
- * card that does.
+ * card that does — and `furigana` is passed only when the map can't have
+ * picked up a sentence's readings in the first place (see the callers).
  */
 function headwordReading(
   headword: string,
@@ -67,20 +67,29 @@ function headwordReading(
 }
 
 function vocabularyReadings(content: VocabularyCardContent): string[] {
+  // With no example sentences there is nothing else the furigana map can be
+  // annotating, so it's safe to read a headword reading out of it. With
+  // sentences present it's a mixture, and a reading derived from it may be
+  // one of the *sentence's* words' readings rather than the headword's.
+  const sentenceFree = !content.exampleSentences.some((line) => line.trim())
   return headwordReading(
     content.wordJa,
     content.reading,
     content.readingParts,
-    content.readings,
+    sentenceFree ? content.readings : undefined,
   )
 }
 
 function grammarReadings(content: GrammarCardContent): string[] {
+  // A fill-in-the-gap card's `readings` map is documented as furigana for
+  // the sentence, and its construction is the gap's answer rather than part
+  // of that sentence — so the map is never a source for this headword's
+  // reading. `constructionReadingParts` is the card's own breakdown.
   return headwordReading(
     content.construction,
     content.constructionReading,
     content.constructionReadingParts,
-    content.readings,
+    undefined,
   )
 }
 
@@ -157,16 +166,17 @@ function normalizedIdentity(card: Card): CardIdentity {
 /**
  * True when `headword` appearing inside `container` is worth reporting.
  *
- * Only a headword containing kanji may match as a substring. Kanji carry
- * enough meaning that a word built around one is worth a second look — 猫
- * inside 子猫, 結論 inside 結論に至る. Kana alone don't: they are the
- * language's connective tissue, so a kana-only headword turns up inside
- * unrelated words constantly, and a one- or two-kana grammar point would
- * sweep up a large slice of the deck (こと inside ことわざ, に inside にんじん
- * and 結論に至る). A kana-only headword therefore has to match in full.
+ * Only a headword written with kanji or katakana may match as a substring.
+ * Those scripts spell content words, and a word built around one is worth a
+ * second look — 猫 inside 子猫, 結論 inside 結論に至る, ペン inside
+ * ボールペン. Hiragana alone doesn't: it is the language's connective
+ * tissue, so a hiragana-only headword turns up inside unrelated words
+ * constantly, and a one- or two-kana grammar point would sweep up a large
+ * slice of the deck (こと inside ことわざ, に inside にんじん and 結論に至る).
+ * A hiragana-only headword therefore has to match in full.
  */
 function headwordContains(container: string, headword: string): boolean {
-  return containsKanji(headword) && container.includes(headword)
+  return hasKanjiOrKatakana(headword) && container.includes(headword)
 }
 
 /**

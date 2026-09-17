@@ -130,7 +130,19 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(koto, [koto, alsoKoto]).matches).toEqual([alsoKoto])
   })
 
-  it("does not match a kana-only headword inside a longer word", () => {
+  it("matches a katakana word inside a longer katakana compound", () => {
+    // Katakana spells content words just as kanji does — only hiragana is
+    // the connective tissue the substring rule has to keep out.
+    const pen = vocab("a", "deck-1", { wordJa: "ペン", definitionsEn: ["pen"] })
+    const ballpen = vocab("b", "deck-1", {
+      wordJa: "ボールペン",
+      definitionsEn: ["ballpoint pen"],
+    })
+    expect(partitionDuplicateCards(pen, [pen, ballpen]).matches).toEqual([ballpen])
+    expect(partitionDuplicateCards(ballpen, [pen, ballpen]).matches).toEqual([pen])
+  })
+
+  it("does not match a hiragana-only headword inside a longer word", () => {
     // Kana are the language's connective tissue, so a one- or two-kana
     // construction turns up inside unrelated words constantly. Only a
     // headword with kanji in it may match as a substring.
@@ -146,6 +158,22 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(kotowaza, all).matches).toEqual([])
     expect(partitionDuplicateCards(ninjin, all).matches).toEqual([])
     expect(partitionDuplicateCards(itaru, all).matches).toEqual([])
+  })
+
+  it("does not read a headword reading out of a map shared with a sentence", () => {
+    // No `reading` of its own, but the furigana map also annotates the
+    // example sentence — so {一: いち, 日: にち} may be the sentence's
+    // reading of 一日, not this card's. Deriving いちにち from it would
+    // match a card for a word this one may not teach at all.
+    const tsuitachi = vocab("a", "deck-1", {
+      wordJa: "一日",
+      readings: { 一: "いち", 日: "にち" },
+      exampleSentences: ["一日中ねていた"],
+      definitionsEn: ["the first of the month"],
+    })
+    const ichinichi = vocab("b", "deck-1", { wordJa: "いちにち" })
+    expect(partitionDuplicateCards(tsuitachi, [tsuitachi, ichinichi]).matches).toEqual([])
+    expect(partitionDuplicateCards(ichinichi, [tsuitachi, ichinichi]).matches).toEqual([])
   })
 
   it("does not invent a reading from the furigana map when the card has its own", () => {
