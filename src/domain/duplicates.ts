@@ -51,16 +51,33 @@ function headwordReading(
   return joinSegmentReadings(annotatedSegments(headword, parts))
 }
 
+/**
+ * The card's reading field, lined up one-to-one with its headwords.
+ *
+ * With a single headword the field is that word's reading, whatever is in
+ * it. With several gap answers the editor writes their readings into the
+ * same field comma-joined, in gap order — the convention `answersMatch`
+ * already grades against — so it splits positionally. A field that doesn't
+ * split into one reading per gap says nothing reliable about any single
+ * answer, so none of it is used.
+ */
+function readingsPerHeadword(
+  explicit: string | undefined,
+  headwords: string[],
+): (string | undefined)[] {
+  if (headwords.length <= 1) return [explicit]
+  const split = splitGapAnswers(explicit ?? "")
+  return split.length === headwords.length ? split : []
+}
+
 function cardReadings(card: Card, headwords: string[]): string[] {
   const [explicit, parts] =
     card.kind === "vocabulary"
       ? [card.content.reading, card.content.readingParts]
       : [card.content.constructionReading, card.content.constructionReadingParts]
-  // A whole-word reading only describes the headword when there is just one;
-  // with several gap answers each has to find its own entry in `parts`.
-  const wholeWord = headwords.length === 1 ? explicit : undefined
+  const perHeadword = readingsPerHeadword(explicit, headwords)
   return headwords
-    .map((headword) => headwordReading(headword, wholeWord, parts))
+    .map((headword, i) => headwordReading(headword, perHeadword[i], parts))
     .filter((reading): reading is string => Boolean(reading?.trim()))
 }
 

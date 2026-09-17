@@ -193,11 +193,14 @@ describe("partitionDuplicateCards", () => {
   })
 
   it("matches each answer of a multi-gap card separately", () => {
-    // A multi-gap construction is stored comma-joined, but "こと, もの" is
-    // two words: a card for either alone is a possible duplicate of it.
+    // A multi-gap construction is stored comma-joined, but "頻繁, 交換" is
+    // two words: a card for either alone is a possible duplicate of it. The
+    // editor writes both readings into one comma-joined field in gap order,
+    // and leaves `constructionReadingParts` empty.
     const multi = grammar("a", "deck-1", {
       construction: "頻繁, 交換",
-      constructionReadingParts: { 頻繁: "ひんぱん", 交換: "こうかん" },
+      constructionReading: "ひんぱん, こうかん",
+      constructionReadingParts: {},
       sentenceWithGap: "ペン先は___に___する",
     })
     const hinpan = vocab("b", "deck-1", { wordJa: "頻繁", definitionsEn: ["frequent"] })
@@ -207,6 +210,30 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(multi, all).matches).toEqual([hinpan, koukanKana])
     expect(partitionDuplicateCards(hinpan, all).matches).toEqual([multi])
     expect(partitionDuplicateCards(koukanKana, all).matches).toEqual([multi])
+  })
+
+  it("matches multi-gap answers whose readings are stored per part", () => {
+    // The shape a bulk import or a card merge produces.
+    const multi = grammar("a", "deck-1", {
+      construction: "頻繁, 交換",
+      constructionReadingParts: { 頻繁: "ひんぱん", 交換: "こうかん" },
+      sentenceWithGap: "ペン先は___に___する",
+    })
+    const koukanKana = vocab("b", "deck-1", { wordJa: "こうかん" })
+    expect(partitionDuplicateCards(koukanKana, [multi, koukanKana]).matches).toEqual([
+      multi,
+    ])
+  })
+
+  it("uses no reading at all when the field does not split per gap", () => {
+    // One reading for two gaps says nothing reliable about either answer.
+    const multi = grammar("a", "deck-1", {
+      construction: "頻繁, 交換",
+      constructionReading: "ひんぱん",
+      sentenceWithGap: "ペン先は___に___する",
+    })
+    const kana = vocab("b", "deck-1", { wordJa: "ひんぱん" })
+    expect(partitionDuplicateCards(kana, [multi, kana]).matches).toEqual([])
   })
 
   it("ignores homophones written with different kanji", () => {
