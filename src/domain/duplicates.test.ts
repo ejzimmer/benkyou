@@ -206,6 +206,29 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(kana, [tsuitachi, kana]).matches).toEqual([tsuitachi])
   })
 
+  it("reads a gap card's construction reading from its own fields, not the sentence furigana", () => {
+    // A gap card always has a sentence, so its furigana map is always a
+    // mixture of the two — same rule as a vocabulary card with examples.
+    const fromParts = grammar("a", "deck-1", {
+      construction: "頻繁",
+      constructionReadingParts: { 頻繁: "ひんぱん" },
+      sentenceWithGap: "ペン先は___に交換する",
+      readings: { 先: "さき", 交換: "こうかん" },
+    })
+    const kana = vocab("b", "deck-1", { wordJa: "ひんぱん" })
+    expect(partitionDuplicateCards(kana, [fromParts, kana]).matches).toEqual([fromParts])
+
+    const fromSentenceFurigana = grammar("c", "deck-1", {
+      construction: "一日",
+      sentenceWithGap: "___中ねていた",
+      readings: { 一: "いち", 日: "にち" },
+    })
+    const ichinichi = vocab("d", "deck-1", { wordJa: "いちにち" })
+    expect(
+      partitionDuplicateCards(ichinichi, [fromSentenceFurigana, ichinichi]).matches,
+    ).toEqual([])
+  })
+
   it("ignores homophones written with different kanji", () => {
     // Same reading, different word — a shared reading only identifies a
     // duplicate when it's the *headword* of the other card.

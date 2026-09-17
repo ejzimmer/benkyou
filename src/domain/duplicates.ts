@@ -52,7 +52,8 @@ function headwordFuriganaReading(
  * teaches, and matching on one invents duplicates. The map is the fallback
  * for a card that has no reading of its own, not a second opinion about a
  * card that does — and `furigana` is passed only when the map can't have
- * picked up a sentence's readings in the first place (see the callers).
+ * picked up a sentence's readings in the first place (see
+ * `sentenceFreeFurigana`).
  */
 function headwordReading(
   headword: string,
@@ -67,30 +68,42 @@ function headwordReading(
   return reading ? [reading] : []
 }
 
+/**
+ * The furigana map, but only for a card with no sentence of its own.
+ *
+ * The map annotates the headword and the card's sentence alike — the editor
+ * seeds it from both — and records nothing about which entry came from
+ * where. So with a sentence present, a reading derived from the map may be
+ * one of the *sentence's* words' readings rather than the headword's: 一日
+ * read ついたち, sitting beside a sentence that uses it as いちにち, derives
+ * いちにち from {一: いち, 日: にち}. With no sentence, the headword is the
+ * only thing the map can be describing, and it's safe to read.
+ */
+function sentenceFreeFurigana(
+  readings: Record<string, string> | undefined,
+  sentences: string[],
+): Record<string, string> | undefined {
+  return sentences.some((line) => line.trim()) ? undefined : readings
+}
+
 function vocabularyReadings(content: VocabularyCardContent): string[] {
-  // With no example sentences there is nothing else the furigana map can be
-  // annotating, so it's safe to read a headword reading out of it. With
-  // sentences present it's a mixture, and a reading derived from it may be
-  // one of the *sentence's* words' readings rather than the headword's.
-  const sentenceFree = !content.exampleSentences.some((line) => line.trim())
   return headwordReading(
     content.wordJa,
     content.reading,
     content.readingParts,
-    sentenceFree ? content.readings : undefined,
+    sentenceFreeFurigana(content.readings, content.exampleSentences),
   )
 }
 
 function grammarReadings(content: GrammarCardContent): string[] {
-  // A fill-in-the-gap card's `readings` map is documented as furigana for
-  // the sentence, and its construction is the gap's answer rather than part
-  // of that sentence — so the map is never a source for this headword's
-  // reading. `constructionReadingParts` is the card's own breakdown.
+  // A fill-in-the-gap card always has a sentence, so its map is always a
+  // mixture and never a source here — the same rule as above, not a special
+  // case. `constructionReadingParts` is the card's own breakdown.
   return headwordReading(
     content.construction,
     content.constructionReading,
     content.constructionReadingParts,
-    undefined,
+    sentenceFreeFurigana(content.readings, [content.sentenceWithGap]),
   )
 }
 
