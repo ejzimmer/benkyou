@@ -130,22 +130,29 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(koto, [koto, alsoKoto]).matches).toEqual([alsoKoto])
   })
 
-  it("matches a katakana word inside a longer katakana compound", () => {
-    // Katakana spells content words just as kanji does — only hiragana is
-    // the connective tissue the substring rule has to keep out.
-    const pen = vocab("a", "deck-1", { wordJa: "ペン", definitionsEn: ["pen"] })
-    const ballpen = vocab("b", "deck-1", {
-      wordJa: "ボールペン",
-      definitionsEn: ["ballpoint pen"],
-    })
-    expect(partitionDuplicateCards(pen, [pen, ballpen]).matches).toEqual([ballpen])
-    expect(partitionDuplicateCards(ballpen, [pen, ballpen]).matches).toEqual([pen])
+  it("does not match a short katakana word inside a longer one", () => {
+    // Katakana is kana: a short loanword lands inside unrelated longer ones
+    // just as ことわざ swallows こと.
+    const pan = vocab("a", "deck-1", { wordJa: "パン", definitionsEn: ["bread"] })
+    const panda = vocab("b", "deck-1", { wordJa: "パンダ", definitionsEn: ["panda"] })
+    const japan = vocab("c", "deck-1", { wordJa: "ジャパン", definitionsEn: ["Japan"] })
+    const all = [pan, panda, japan]
+
+    expect(partitionDuplicateCards(pan, all).matches).toEqual([])
+    expect(partitionDuplicateCards(panda, all).matches).toEqual([])
+    expect(partitionDuplicateCards(japan, all).matches).toEqual([])
   })
 
-  it("does not match a hiragana-only headword inside a longer word", () => {
-    // Kana are the language's connective tissue, so a one- or two-kana
-    // construction turns up inside unrelated words constantly. Only a
-    // headword with kanji in it may match as a substring.
+  it("matches two cards for the same katakana word", () => {
+    const pen = vocab("a", "deck-1", { wordJa: "ペン", definitionsEn: ["pen"] })
+    const alsoPen = vocab("b", "deck-1", { wordJa: "ペン", definitionsEn: ["a pen"] })
+    expect(partitionDuplicateCards(pen, [pen, alsoPen]).matches).toEqual([alsoPen])
+  })
+
+  it("does not match a kana-only headword inside a longer word", () => {
+    // Kana are syllables, so a one- or two-kana construction turns up
+    // inside unrelated words constantly. Only a headword with kanji in it
+    // may match as a substring.
     const koto = grammar("a", "deck-1", { construction: "こと" })
     const ni = grammar("b", "deck-1", { construction: "に" })
     const kotowaza = vocab("c", "deck-1", { wordJa: "ことわざ" })

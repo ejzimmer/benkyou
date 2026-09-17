@@ -1,6 +1,7 @@
 import type { Card, GrammarCardContent, VocabularyCardContent } from "./types"
-import { hasKanjiOrKatakana, normalizeJapanese } from "../lib/japanese/normalize"
+import { normalizeJapanese } from "../lib/japanese/normalize"
 import { annotatedSegments, joinSegmentReadings } from "./readingsMap"
+import { containsKanji } from "./vocabularyContent"
 
 /** The Japanese headword used to search for duplicates of this card. */
 export function japaneseWordForCard(card: Card): string {
@@ -166,17 +167,18 @@ function normalizedIdentity(card: Card): CardIdentity {
 /**
  * True when `headword` appearing inside `container` is worth reporting.
  *
- * Only a headword written with kanji or katakana may match as a substring.
- * Those scripts spell content words, and a word built around one is worth a
- * second look — 猫 inside 子猫, 結論 inside 結論に至る, ペン inside
- * ボールペン. Hiragana alone doesn't: it is the language's connective
- * tissue, so a hiragana-only headword turns up inside unrelated words
- * constantly, and a one- or two-kana grammar point would sweep up a large
- * slice of the deck (こと inside ことわざ, に inside にんじん and 結論に至る).
- * A hiragana-only headword therefore has to match in full.
+ * Only a headword containing kanji may match as a substring. A kanji is a
+ * word in itself, so a longer word built around one is worth a second look —
+ * 猫 inside 子猫, 結論 inside 結論に至る. Kana are syllables, and a short
+ * kana word lands inside unrelated longer ones constantly, in either script:
+ * こと inside ことわざ and に inside にんじん, but equally パン inside パンダ
+ * and ジャパン, カメ inside カメラ. A kana-only headword therefore has to
+ * match in full — which does cost the odd real pair (ペン inside ボールペン),
+ * but those are rarer than the collisions, and the pair is still reported
+ * when the two cards genuinely share a word.
  */
 function headwordContains(container: string, headword: string): boolean {
-  return hasKanjiOrKatakana(headword) && container.includes(headword)
+  return containsKanji(headword) && container.includes(headword)
 }
 
 /**
