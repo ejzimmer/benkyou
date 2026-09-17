@@ -42,24 +42,21 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
   })
 
-  it("matches a reading authored only as headword furigana", () => {
-    // No `reading` field — the reading lives in the furigana map, which is
-    // the shape a card gets when its reading was only ever authored there.
+  it("matches a reading authored as a single reading part", () => {
     const target = vocab("a", "deck-1", { wordJa: "ひんぱん" })
     const kanji = vocab("b", "deck-1", {
       wordJa: "頻繁",
-      readings: { 頻繁: "ひんぱん" },
+      readingParts: { 頻繁: "ひんぱん" },
     })
     expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
   })
 
-  it("matches headword furigana authored one kanji per line", () => {
-    // The shape `addMissingKanjiLines` seeds the editor with: a line per
-    // kanji, so the whole-word reading only exists once they're joined.
+  it("matches reading parts authored one kanji at a time", () => {
+    // The whole-word reading only exists once the clusters are joined.
     const target = vocab("a", "deck-1", { wordJa: "ひんぱん" })
     const kanji = vocab("b", "deck-1", {
       wordJa: "頻繁",
-      readings: { 頻: "ひん", 繁: "ぱん" },
+      readingParts: { 頻: "ひん", 繁: "ぱん" },
     })
     expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
   })
@@ -75,9 +72,9 @@ describe("partitionDuplicateCards", () => {
 
   it("carries un-annotated okurigana into the headword reading", () => {
     // 至る=いたる is authored narrowed to the kanji (至=いた), per the
-    // furigana field's own convention.
+    // readings field's own convention.
     const target = vocab("a", "deck-1", { wordJa: "いたる" })
-    const kanji = vocab("b", "deck-1", { wordJa: "至る", readings: { 至: "いた" } })
+    const kanji = vocab("b", "deck-1", { wordJa: "至る", readingParts: { 至: "いた" } })
     expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
   })
 
@@ -167,66 +164,49 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(itaru, all).matches).toEqual([])
   })
 
-  it("does not read a headword reading out of a map shared with a sentence", () => {
-    // No `reading` of its own, but the furigana map also annotates the
-    // example sentence — so {一: いち, 日: にち} may be the sentence's
-    // reading of 一日, not this card's. Deriving いちにち from it would
-    // match a card for a word this one may not teach at all.
-    const tsuitachi = vocab("a", "deck-1", {
-      wordJa: "一日",
-      readings: { 一: "いち", 日: "にち" },
-      exampleSentences: ["一日中ねていた"],
-      definitionsEn: ["the first of the month"],
+  it("never reads a headword reading out of the furigana map", () => {
+    // The map annotates the headword and the card's sentence alike, with no
+    // record of which is which, so a reading assembled from it is a guess —
+    // {大: おお, 人: ひと} would make 大人 read おおひと.
+    const otona = vocab("a", "deck-1", {
+      wordJa: "大人",
+      readings: { 大: "おお", 人: "ひと" },
+      definitionsEn: ["adult"],
     })
-    const ichinichi = vocab("b", "deck-1", { wordJa: "いちにち" })
-    expect(partitionDuplicateCards(tsuitachi, [tsuitachi, ichinichi]).matches).toEqual([])
-    expect(partitionDuplicateCards(ichinichi, [tsuitachi, ichinichi]).matches).toEqual([])
+    const oohito = vocab("b", "deck-1", { wordJa: "おおひと" })
+    expect(partitionDuplicateCards(otona, [otona, oohito]).matches).toEqual([])
+    expect(partitionDuplicateCards(oohito, [otona, oohito]).matches).toEqual([])
   })
 
-  it("does not invent a reading from the furigana map when the card has its own", () => {
-    // 一日 is read ついたち here; {一: いち, 日: にち} are sentence entries.
-    // Deriving いちにち from them would match a word this card never teaches.
+  it("does not let the furigana map override the card's own reading", () => {
     const tsuitachi = vocab("a", "deck-1", {
       wordJa: "一日",
       reading: "ついたち",
       readings: { 一: "いち", 日: "にち" },
     })
     const ichinichi = vocab("b", "deck-1", { wordJa: "いちにち" })
-    expect(partitionDuplicateCards(tsuitachi, [tsuitachi, ichinichi]).matches).toEqual([])
-    expect(partitionDuplicateCards(ichinichi, [tsuitachi, ichinichi]).matches).toEqual([])
+    const kana = vocab("c", "deck-1", { wordJa: "ついたち" })
+    const all = [tsuitachi, ichinichi, kana]
+
+    expect(partitionDuplicateCards(tsuitachi, all).matches).toEqual([kana])
+    expect(partitionDuplicateCards(ichinichi, all).matches).toEqual([])
   })
 
-  it("still matches the card's own reading when it has one", () => {
-    const tsuitachi = vocab("a", "deck-1", {
-      wordJa: "一日",
-      reading: "ついたち",
-      readings: { 一: "いち", 日: "にち" },
+  it("matches each answer of a multi-gap card separately", () => {
+    // A multi-gap construction is stored comma-joined, but "こと, もの" is
+    // two words: a card for either alone is a possible duplicate of it.
+    const multi = grammar("a", "deck-1", {
+      construction: "頻繁, 交換",
+      constructionReadingParts: { 頻繁: "ひんぱん", 交換: "こうかん" },
+      sentenceWithGap: "ペン先は___に___する",
     })
-    const kana = vocab("b", "deck-1", { wordJa: "ついたち" })
-    expect(partitionDuplicateCards(kana, [tsuitachi, kana]).matches).toEqual([tsuitachi])
-  })
+    const hinpan = vocab("b", "deck-1", { wordJa: "頻繁", definitionsEn: ["frequent"] })
+    const koukanKana = vocab("c", "deck-1", { wordJa: "こうかん" })
+    const all = [multi, hinpan, koukanKana]
 
-  it("reads a gap card's construction reading from its own fields, not the sentence furigana", () => {
-    // A gap card always has a sentence, so its furigana map is always a
-    // mixture of the two — same rule as a vocabulary card with examples.
-    const fromParts = grammar("a", "deck-1", {
-      construction: "頻繁",
-      constructionReadingParts: { 頻繁: "ひんぱん" },
-      sentenceWithGap: "ペン先は___に交換する",
-      readings: { 先: "さき", 交換: "こうかん" },
-    })
-    const kana = vocab("b", "deck-1", { wordJa: "ひんぱん" })
-    expect(partitionDuplicateCards(kana, [fromParts, kana]).matches).toEqual([fromParts])
-
-    const fromSentenceFurigana = grammar("c", "deck-1", {
-      construction: "一日",
-      sentenceWithGap: "___中ねていた",
-      readings: { 一: "いち", 日: "にち" },
-    })
-    const ichinichi = vocab("d", "deck-1", { wordJa: "いちにち" })
-    expect(
-      partitionDuplicateCards(ichinichi, [fromSentenceFurigana, ichinichi]).matches,
-    ).toEqual([])
+    expect(partitionDuplicateCards(multi, all).matches).toEqual([hinpan, koukanKana])
+    expect(partitionDuplicateCards(hinpan, all).matches).toEqual([multi])
+    expect(partitionDuplicateCards(koukanKana, all).matches).toEqual([multi])
   })
 
   it("ignores homophones written with different kanji", () => {

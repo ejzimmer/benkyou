@@ -1,145 +1,94 @@
-import type { Card, GrammarCardContent, VocabularyCardContent } from "./types"
+import type { Card } from "./types"
 import { normalizeJapanese } from "../lib/japanese/normalize"
 import { annotatedSegments, joinSegmentReadings } from "./readingsMap"
 import { containsKanji } from "./vocabularyContent"
+import { splitGapAnswers } from "./grammarGaps"
 
-/** The Japanese headword used to search for duplicates of this card. */
+/** The Japanese headword shown for this card in the duplicates list. */
 export function japaneseWordForCard(card: Card): string {
   return card.kind === "vocabulary" ? card.content.wordJa : card.content.construction
 }
 
 /**
- * The headword's own reading, as recorded in the card's furigana map.
- *
- * The map holds furigana for both the headword and the card's example/gap
- * sentence, so it can't be searched wholesale — any word the sentence
- * happens to use would match. But it can't be ignored either: a card whose
- * reading was only ever authored as furigana (no `reading` field) would have
- * no reading to match on at all.
- *
- * So tokenize the headword against the map, exactly as the furigana renderer
- * does, and keep the whole-word reading that falls out. That reads the map
- * as authored: 頻繁 entered one kanji per line ({頻: ひん, 繁: ぱん}, the
- * shape `addMissingKanjiLines` seeds) joins back to ひんぱん, and okurigana
- * left un-annotated (至る with {至: いた}) is carried through as itself.
- *
- * `readingParts` gets the same treatment, for the same reason: its
- * per-cluster fragments ({結論: けつろん, 至る: いたる}) only match a kana
- * card once joined into けつろんにいたる.
- *
- * Entries belonging to the sentence simply don't match the headword, and a
- * map that leaves any of the headword's kanji unread yields nothing rather
- * than a half-reading.
+ * The words a card teaches. Usually one — but a fill-in-the-gap card with
+ * several gaps stores its answers comma-joined in `construction`
+ * (`normalizeGapAnswers`), and "こと, もの" is two words, not a word. Left
+ * joined it can never equal another card's headword, so a card for either
+ * answer alone would never be reported.
  */
-function headwordFuriganaReading(
-  headword: string,
-  readings: Record<string, string> | undefined,
-): string | undefined {
-  if (!headword.trim() || !readings) return undefined
-  return joinSegmentReadings(annotatedSegments(headword, readings))
+function cardHeadwords(card: Card): string[] {
+  if (card.kind === "vocabulary") return [card.content.wordJa]
+  return splitGapAnswers(card.content.construction)
 }
 
 /**
- * The card's own reading for its headword, in the order the card records it:
- * the explicit reading field first, then the author's per-cluster breakdown,
- * and only then the furigana map.
+ * The reading a card teaches for `headword`, as the card itself records it.
  *
- * The order matters because the furigana map is shared with the card's
- * sentence, so a reading derived from it can disagree with the one the card
- * actually teaches — 一日 read ついたち, with per-kanji entries {一: いち,
- * 日: にち} left over from a sentence, derives いちにち; 大人 read おとな
- * with {大: おお, 人: ひと} derives おおひと. Neither is a reading this card
- * teaches, and matching on one invents duplicates. The map is the fallback
- * for a card that has no reading of its own, not a second opinion about a
- * card that does — and `furigana` is passed only when the map can't have
- * picked up a sentence's readings in the first place (see
- * `sentenceFreeFurigana`).
+ * `parts` is the author's per-cluster breakdown, which serves double duty:
+ * one entry per gap answer on a multi-gap card (so a direct lookup finds
+ * this headword's own reading), or one per kanji cluster of a single word
+ * (結論に至る as {結論: けつろん, 至る: いたる}), which has to be joined back
+ * into けつろんにいたる before it can match a kana card. Tokenizing the
+ * headword against the map covers both, and carries un-annotated okurigana
+ * through as itself (至る with {至: いた} → いたる).
+ *
+ * The card's `readings` furigana map is deliberately not consulted. It
+ * annotates the headword and the card's sentence alike — the editor seeds it
+ * from both — and records nothing about which entry came from where, so a
+ * reading assembled from it is a guess: 大人 with {大: おお, 人: ひと} would
+ * give おおひと, 明日 with {明: めい, 日: にち} would give めいにち and flag
+ * a 命日 card. A card with no reading of its own teaches no reading, so
+ * there is nothing there worth guessing at.
  */
 function headwordReading(
   headword: string,
   explicit: string | undefined,
   parts: Record<string, string> | undefined,
-  furigana: Record<string, string> | undefined,
-): string[] {
-  const reading =
-    (explicit?.trim() ? explicit : undefined) ??
-    headwordFuriganaReading(headword, parts) ??
-    headwordFuriganaReading(headword, furigana)
-  return reading ? [reading] : []
+): string | undefined {
+  if (explicit?.trim()) return explicit
+  if (!headword.trim() || !parts) return undefined
+  if (parts[headword]?.trim()) return parts[headword]
+  return joinSegmentReadings(annotatedSegments(headword, parts))
 }
 
-/**
- * The furigana map, but only for a card with no sentence of its own.
- *
- * The map annotates the headword and the card's sentence alike — the editor
- * seeds it from both — and records nothing about which entry came from
- * where. So with a sentence present, a reading derived from the map may be
- * one of the *sentence's* words' readings rather than the headword's: 一日
- * read ついたち, sitting beside a sentence that uses it as いちにち, derives
- * いちにち from {一: いち, 日: にち}. With no sentence, the headword is the
- * only thing the map can be describing, and it's safe to read.
- */
-function sentenceFreeFurigana(
-  readings: Record<string, string> | undefined,
-  sentences: string[],
-): Record<string, string> | undefined {
-  return sentences.some((line) => line.trim()) ? undefined : readings
-}
-
-function vocabularyReadings(content: VocabularyCardContent): string[] {
-  return headwordReading(
-    content.wordJa,
-    content.reading,
-    content.readingParts,
-    sentenceFreeFurigana(content.readings, content.exampleSentences),
-  )
-}
-
-function grammarReadings(content: GrammarCardContent): string[] {
-  // A fill-in-the-gap card always has a sentence, so its map is always a
-  // mixture and never a source here — the same rule as above, not a special
-  // case. `constructionReadingParts` is the card's own breakdown.
-  return headwordReading(
-    content.construction,
-    content.constructionReading,
-    content.constructionReadingParts,
-    sentenceFreeFurigana(content.readings, [content.sentenceWithGap]),
-  )
+function cardReadings(card: Card, headwords: string[]): string[] {
+  const [explicit, parts] =
+    card.kind === "vocabulary"
+      ? [card.content.reading, card.content.readingParts]
+      : [card.content.constructionReading, card.content.constructionReadingParts]
+  // A whole-word reading only describes the headword when there is just one;
+  // with several gap answers each has to find its own entry in `parts`.
+  const wholeWord = headwords.length === 1 ? explicit : undefined
+  return headwords
+    .map((headword) => headwordReading(headword, wholeWord, parts))
+    .filter((reading): reading is string => Boolean(reading?.trim()))
 }
 
 export type CardIdentity = {
-  /** The headword/construction itself, as written. */
-  headword: string
-  /** Whole-word readings of that headword, however they were authored. */
+  /** The word(s) this card teaches, as written. */
+  headwords: string[]
+  /** Whole-word readings of those headwords, as the card records them. */
   readings: string[]
 }
 
 /**
- * What a card *teaches* — its headword/construction and that word's own
- * reading — and nothing else.
+ * What a card *teaches* — the word(s) it drills and their own readings — and
+ * nothing else.
  *
  * Deliberately excludes everything that merely supports the headword:
- * example sentences, the fill-in-the-gap sentence, and English definitions
- * and translations. Two cards sharing one of those are not duplicates — a
- * 交換 card whose sentence happens to use 頻繁, and a 頻繁 card whose
- * example sentence happens to use 交換, teach different words and were being
- * flagged for each other in both directions.
+ * example sentences, the fill-in-the-gap sentence, English definitions and
+ * translations, and the furigana map (see `headwordReading`). Two cards
+ * sharing one of those are not duplicates — a 交換 card whose sentence
+ * happens to use 頻繁, and a 頻繁 card whose example sentence happens to use
+ * 交換, teach different words and were being flagged for each other in both
+ * directions.
  *
- * The `readings` furigana map spans both, since it annotates the headword
- * and the sentence alike; `headwordFuriganaReading` takes the headword's
- * part of it and leaves the sentence's behind.
- *
- * Headword and readings are kept apart because they are matched differently
+ * Headwords and readings are kept apart because they are matched differently
  * — see `findDuplicateCandidates`.
  */
 export function cardIdentity(card: Card): CardIdentity {
-  const headword = japaneseWordForCard(card)
-  const readings = (
-    card.kind === "vocabulary"
-      ? vocabularyReadings(card.content)
-      : grammarReadings(card.content)
-  ).filter((reading) => reading.trim())
-  return { headword, readings }
+  const headwords = cardHeadwords(card).filter((word) => word.trim())
+  return { headwords, readings: cardReadings(card, headwords) }
 }
 
 /**
@@ -158,7 +107,7 @@ export function isMarkedNotDuplicate(card: Card, other: Card): boolean {
 /**
  * A card's identity, normalized, cached per card object. A review session
  * scans the whole table once per card shown, and deriving each card's
- * identity — tokenizing its headword against its furigana map, then NFKC
+ * identity — tokenizing its headword against its reading parts, then NFKC
  * normalization — is the bulk of that work; Dexie hands back a fresh object
  * whenever a card actually changes, so identity is a safe cache key and
  * stale entries are collected.
@@ -168,9 +117,9 @@ const normalizedIdentityCache = new WeakMap<Card, CardIdentity>()
 function normalizedIdentity(card: Card): CardIdentity {
   const cached = normalizedIdentityCache.get(card)
   if (cached !== undefined) return cached
-  const { headword, readings } = cardIdentity(card)
+  const { headwords, readings } = cardIdentity(card)
   const identity = {
-    headword: normalizeJapanese(headword),
+    headwords: headwords.map(normalizeJapanese).filter(Boolean),
     readings: readings.map(normalizeJapanese).filter(Boolean),
   }
   normalizedIdentityCache.set(card, identity)
@@ -198,7 +147,8 @@ function headwordContains(container: string, headword: string): boolean {
  * Cards that might be teaching the same word as `card` — the raw duplicate
  * candidates, including any the user has since marked as not duplicates.
  *
- * Three ways to qualify:
+ * Any of a card's headwords qualifying is enough, since a multi-gap card
+ * teaches each of its answers. Three ways to qualify:
  *
  * - **The same headword.** Always, whatever it's written in.
  * - **One headword inside the other**, either way round, and only for a
@@ -217,22 +167,23 @@ function headwordContains(container: string, headword: string): boolean {
  * same word already share a headword.
  */
 export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
-  const { headword, readings } = normalizedIdentity(card)
-  if (!headword) return []
+  const { headwords, readings } = normalizedIdentity(card)
+  if (headwords.length === 0) return []
   return allCards.filter((other) => {
     if (other.id === card.id) return false
     const otherIdentity = normalizedIdentity(other)
-    if (!otherIdentity.headword) return false
-    if (otherIdentity.headword === headword) return true
-    if (
-      headwordContains(otherIdentity.headword, headword) ||
-      headwordContains(headword, otherIdentity.headword)
-    ) {
-      return true
-    }
-    return (
-      otherIdentity.readings.includes(headword) ||
-      readings.includes(otherIdentity.headword)
+    return headwords.some(
+      (headword) =>
+        otherIdentity.headwords.some(
+          (otherHeadword) =>
+            otherHeadword === headword ||
+            headwordContains(otherHeadword, headword) ||
+            headwordContains(headword, otherHeadword),
+        ) ||
+        otherIdentity.readings.includes(headword) ||
+        otherIdentity.headwords.some((otherHeadword) =>
+          readings.includes(otherHeadword),
+        ),
     )
   })
 }
