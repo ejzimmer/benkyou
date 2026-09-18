@@ -109,13 +109,41 @@ describe("partitionDuplicateCards", () => {
   })
 
   it("keeps multi-gap reading alignment when an answer lists alternates", () => {
+    // The first answer carries a "/" list. Expanding it into extra headwords
+    // before the readings are paired positionally would misalign the second
+    // gap's reading onto the wrong word.
     const multi = grammar("a", "deck-1", {
-      construction: "頻繁, 交換",
-      constructionReading: "ひんぱん, こうかん",
+      construction: "頻繁/しきりに, 交換",
+      constructionReading: "ひんぱん/しきりに, こうかん",
       sentenceWithGap: "ペン先は___に___する",
     })
-    const kana = vocab("b", "deck-1", { wordJa: "こうかん" })
-    expect(partitionDuplicateCards(kana, [multi, kana]).matches).toEqual([multi])
+    const koukan = vocab("b", "deck-1", { wordJa: "こうかん" })
+    const hinpan = vocab("c", "deck-1", { wordJa: "ひんぱん" })
+    const all = [multi, koukan, hinpan]
+
+    // こうかん is the *second* gap's reading, so it only matches if the
+    // pairing survived the alternates.
+    expect(partitionDuplicateCards(koukan, all).matches).toEqual([multi])
+    expect(partitionDuplicateCards(hinpan, all).matches).toEqual([multi])
+  })
+
+  it("does not split a single-gap answer on its ordinary punctuation", () => {
+    // Only a multi-gap construction is a comma-joined list; 、 inside a
+    // single answer is punctuation, as in a 〜たり、〜たり construction.
+    // Splitting it would claim the card teaches two words it doesn't, and
+    // leave its one reading unable to pair with either of them.
+    const tari = grammar("a", "deck-1", {
+      construction: "食べたり、飲んだり",
+      constructionReading: "たべたりのんだり",
+      sentenceWithGap: "パーティーで___した",
+    })
+    expect(cardIdentity(tari)).toEqual({
+      headwords: ["食べたり、飲んだり"],
+      readings: ["たべたりのんだり"],
+    })
+
+    const kana = vocab("b", "deck-1", { wordJa: "たべたりのんだり" })
+    expect(partitionDuplicateCards(kana, [tari, kana]).matches).toEqual([tari])
   })
 
   it("does not read a non-BMP kanji as a break in the run", () => {

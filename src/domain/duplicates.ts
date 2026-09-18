@@ -1,7 +1,7 @@
 import type { Card } from "./types"
 import { normalizeJapanese } from "../lib/japanese/normalize"
 import { annotatedSegments, joinSegmentReadings } from "./readingsMap"
-import { splitGapAnswers } from "./grammarGaps"
+import { countGaps, splitGapAnswers } from "./grammarGaps"
 
 /** The Japanese headword shown for this card in the duplicates list. */
 export function japaneseWordForCard(card: Card): string {
@@ -14,10 +14,19 @@ export function japaneseWordForCard(card: Card): string {
  * (`normalizeGapAnswers`), and "こと, もの" is two words, not a word. Left
  * joined it can never equal another card's headword, so a card for either
  * answer alone would never be reported.
+ *
+ * Gated on the gap count exactly as `normalizeGrammarContent` gates the
+ * joining: with one gap the answer is one word, and a 、 in it is ordinary
+ * punctuation rather than a separator — splitting 食べたり、飲んだり would
+ * invent two headwords the card doesn't teach and report an unrelated
+ * 飲んだり card against it.
  */
 function cardHeadwords(card: Card): string[] {
   if (card.kind === "vocabulary") return [card.content.wordJa]
-  return splitGapAnswers(card.content.construction)
+  const { construction, sentenceWithGap, gapMarker } = card.content
+  const gap = gapMarker.trim() || "___"
+  if (countGaps(sentenceWithGap, gap) <= 1) return [construction]
+  return splitGapAnswers(construction)
 }
 
 /**
@@ -91,21 +100,6 @@ export type CardIdentity = {
 }
 
 /**
- * What a card *teaches* — the word(s) it drills and their own readings — and
- * nothing else.
- *
- * Deliberately excludes everything that merely supports the headword:
- * example sentences, the fill-in-the-gap sentence, English definitions and
- * translations, and the furigana map (see `headwordReading`). Two cards
- * sharing one of those are not duplicates — a 交換 card whose sentence
- * happens to use 頻繁, and a 頻繁 card whose example sentence happens to use
- * 交換, teach different words and were being flagged for each other in both
- * directions.
- *
- * Headwords and readings are kept apart because they are matched differently
- * — see `findDuplicateCandidates`.
- */
-/**
  * A field's text plus any "/"-separated alternates it lists — the authoring
  * convention `answersMatch` grades against, where 食べる/食べます accepts
  * either. A card writing one of those teaches both, so both have to count
@@ -123,6 +117,21 @@ function withAlternates(text: string): string[] {
   return parts.length > 1 ? [text, ...parts] : [text]
 }
 
+/**
+ * What a card *teaches* — the word(s) it drills and their own readings — and
+ * nothing else.
+ *
+ * Deliberately excludes everything that merely supports the headword:
+ * example sentences, the fill-in-the-gap sentence, English definitions and
+ * translations, and the furigana map (see `headwordReading`). Two cards
+ * sharing one of those are not duplicates — a 交換 card whose sentence
+ * happens to use 頻繁, and a 頻繁 card whose example sentence happens to use
+ * 交換, teach different words and were being flagged for each other in both
+ * directions.
+ *
+ * Headwords and readings are kept apart because they are matched differently
+ * — see `findDuplicateCandidates`.
+ */
 export function cardIdentity(card: Card): CardIdentity {
   // Readings are derived before alternates are expanded: `cardReadings`
   // pairs a multi-gap card's reading field positionally with its gap
