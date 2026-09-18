@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   finalizeReadingAnswer,
+  foldKatakanaToHiragana,
   hasKanjiOrKatakana,
   hasNonHiraganaKana,
   isMissingDoubledN,
@@ -101,5 +102,23 @@ describe("isMissingDoubledN", () => {
   })
   it("does not flag an empty answer", () => {
     expect(isMissingDoubledN("", "うんえいしゃ")).toBe(false)
+  })
+})
+
+describe("foldKatakanaToHiragana", () => {
+  it("folds katakana to hiragana", () => {
+    expect(foldKatakanaToHiragana("スシ")).toBe("すし")
+  })
+  it("leaves hiragana alone", () => {
+    expect(foldKatakanaToHiragana("すし")).toBe("すし")
+  })
+  it("folds small kana and voiced marks", () => {
+    expect(foldKatakanaToHiragana("キャップ")).toBe("きゃっぷ")
+  })
+  it("keeps the prolonged sound mark, which has no hiragana counterpart", () => {
+    expect(foldKatakanaToHiragana("コーヒー")).toBe("こーひー")
+  })
+  it("leaves kanji and punctuation untouched", () => {
+    expect(foldKatakanaToHiragana("食べる、ネコ")).toBe("食べる、ねこ")
   })
 })

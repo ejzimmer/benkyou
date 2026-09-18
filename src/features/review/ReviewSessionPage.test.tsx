@@ -29,6 +29,18 @@ vi.mock("../../lib/sync/firestoreSync", () => ({
   upsertSchedulingRemote: vi.fn(),
 }))
 
+/**
+ * The header count paragraph, matched on its full text. Its numbers sit in
+ * their own coloured <span>s, so testing-library's default text matching —
+ * which only sees an element's direct text nodes — can't match the whole
+ * line on its own.
+ */
+function headerCount(text: string) {
+  return screen.getByText(
+    (_, el) => el?.tagName === "P" && el.textContent === text,
+  )
+}
+
 describe("ReviewSessionPage", () => {
   // Every test here reviews from the same "/review" (unscoped) route, which
   // shares one review-session-timer scope ("all") backed by sessionStorage —
@@ -97,7 +109,7 @@ describe("ReviewSessionPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
     })
-    expect(screen.getByText("残り2枚")).toBeInTheDocument()
+    expect(headerCount("残り2枚")).toBeInTheDocument()
   })
 
   it("resumes the session timer and reviewed count across a simulated page refresh", async () => {
@@ -137,7 +149,7 @@ describe("ReviewSessionPage", () => {
     await user.click(screen.getByRole("button", { name: /答えを見る/ }))
     await user.click(await screen.findByRole("button", { name: /^正解$/ }))
     await waitFor(() => {
-      expect(screen.getByText("残り1枚")).toBeInTheDocument()
+      expect(headerCount("残り1枚")).toBeInTheDocument()
     })
 
     // Simulate a page refresh: tear down and mount a fresh instance — the
@@ -185,7 +197,7 @@ describe("ReviewSessionPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
     })
-    expect(screen.getByText("残り3枚")).toBeInTheDocument()
+    expect(headerCount("残り3枚")).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: /答えを見る/ }))
     await user.click(await screen.findByRole("button", { name: /^不正解$/ }))
@@ -195,7 +207,14 @@ describe("ReviewSessionPage", () => {
     })
     // Still 3 cards left in the queue overall, but one of them now needs a
     // correcting retry rather than being reviewed for the first time.
-    expect(screen.getByText("残り2枚・やり直し1枚")).toBeInTheDocument()
+    const count = headerCount("残り2枚・やり直し1枚")
+    expect(count).toBeInTheDocument()
+    // Only the two numbers are accented (blue for remaining, pink for
+    // needs-correction); the labels around them stay in the muted text.
+    expect(count.querySelector(".review-count-remaining")).toHaveTextContent(
+      "2",
+    )
+    expect(count.querySelector(".review-count-wrong")).toHaveTextContent("1")
   })
 
   it("keeps the needs-correction count across a card-edit round trip", async () => {
@@ -241,7 +260,7 @@ describe("ReviewSessionPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
     })
-    expect(screen.getByText("残り2枚・やり直し1枚")).toBeInTheDocument()
+    expect(headerCount("残り2枚・やり直し1枚")).toBeInTheDocument()
 
     // Navigating to edit a card and back remounts the page — the
     // needs-correction split must survive that, not silently reset.
@@ -250,7 +269,7 @@ describe("ReviewSessionPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
     })
-    expect(screen.getByText("残り2枚・やり直し1枚")).toBeInTheDocument()
+    expect(headerCount("残り2枚・やり直し1枚")).toBeInTheDocument()
 
     // Correctly answering a card that was never marked wrong should still
     // decrement 残り, leaving やり直し untouched.
@@ -259,7 +278,7 @@ describe("ReviewSessionPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
     })
-    expect(screen.getByText("残り1枚・やり直し1枚")).toBeInTheDocument()
+    expect(headerCount("残り1枚・やり直し1枚")).toBeInTheDocument()
   })
 
   it("after incorrect, does not flash next card answer during queue rotation gap", async () => {

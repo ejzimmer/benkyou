@@ -1088,6 +1088,18 @@ fieldset.plain legend {
   margin-left: auto;
 }
 
+/* Just the digits in the review header's count are accented — blue for the
+   cards still to be reviewed, pink for the ones waiting on a correction —
+   so the two numbers are told apart at a glance while their labels stay in
+   the surrounding muted text. */
+.review-count-remaining {
+  color: var(--blue);
+}
+
+.review-count-wrong {
+  color: var(--pink);
+}
+
 .control-text-short {
   display: none;
 }
