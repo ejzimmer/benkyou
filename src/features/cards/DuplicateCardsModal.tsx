@@ -57,7 +57,7 @@ export function DuplicateCardsModal({
           // With dismissals below, "there are no other cards" would be
           // plainly false — the dismissed list speaks for itself instead.
           dismissed.length === 0 && (
-            <p className="muted small">この単語を含む他のカードはありません。</p>
+            <p className="muted small">重複の可能性があるカードはありません。</p>
           )
         ) : (
           <ul className="card-list">

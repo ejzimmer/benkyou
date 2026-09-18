@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isMarkedNotDuplicate, partitionDuplicateCards } from "./duplicates"
+import { cardIdentity, isMarkedNotDuplicate, partitionDuplicateCards } from "./duplicates"
 import type { Card } from "./types"
 import { defaultGrammar, defaultVocabulary } from "../services/cards"
 
@@ -24,31 +24,450 @@ function grammar(id: string, deckId: string, overrides = {}): Card {
 }
 
 describe("partitionDuplicateCards", () => {
-  it("matches when the word appears in another card's definitions", () => {
+  it("matches another card teaching the same word", () => {
+    const target = vocab("a", "deck-1", { wordJa: "猫", definitionsEn: ["cat"] })
+    const other = vocab("b", "deck-1", { wordJa: "猫", definitionsEn: ["a cat"] })
+    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([other])
+  })
+
+  it("matches a phrase built on the same word", () => {
+    // Kana break the kanji run, so 結論 and 至る are words in their own right
+    // inside 結論に至る rather than parts of one.
+    const target = vocab("a", "deck-1", { wordJa: "結論" })
+    const verb = vocab("b", "deck-1", { wordJa: "至る" })
+    const phrase = vocab("c", "deck-1", { wordJa: "結論に至る" })
+    const all = [target, verb, phrase]
+
+    expect(partitionDuplicateCards(target, all).matches).toEqual([phrase])
+    expect(partitionDuplicateCards(verb, all).matches).toEqual([phrase])
+    expect(partitionDuplicateCards(phrase, all).matches).toEqual([target, verb])
+  })
+
+  it("matches a headword sitting at either end of a phrase", () => {
+    // The boundary either side of a match can be the end of the string, not
+    // just a kana — 結論 starts 結論に至る and 至る ends it.
+    const first = vocab("a", "deck-1", { wordJa: "結論" })
+    const last = vocab("b", "deck-1", { wordJa: "至る" })
+    const phrase = vocab("c", "deck-1", { wordJa: "結論に至る" })
+
+    expect(partitionDuplicateCards(first, [first, phrase]).matches).toEqual([phrase])
+    expect(partitionDuplicateCards(last, [last, phrase]).matches).toEqual([phrase])
+  })
+
+  it("matches a headword ending in okurigana before a kanji", () => {
+    // The seam only cuts a run when both its sides are part of one. 至る
+    // ends in kana, so the 所 after it starts a new run rather than
+    // continuing the headword's — they are still two words.
+    for (const [word, longer] of [
+      ["至る", "至る所"],
+      ["食べる", "食べる物"],
+      ["同じ", "同じ日"],
+    ]) {
+      const a = vocab("a", "deck-1", { wordJa: word })
+      const b = vocab("b", "deck-1", { wordJa: longer })
+      expect(partitionDuplicateCards(a, [a, b]).matches).toEqual([b])
+      expect(partitionDuplicateCards(b, [a, b]).matches).toEqual([a])
+    }
+  })
+
+  it("survives a headword that collides with an Object prototype member", () => {
+    // A bare `parts[headword]` lookup would resolve to the inherited
+    // function and throw, taking the whole duplicate scan down with it.
+    const weird = vocab("a", "deck-1", {
+      wordJa: "toString",
+      readingParts: { 頻繁: "ひんぱん" },
+    })
+    const other = vocab("b", "deck-1", { wordJa: "toString" })
+    expect(cardIdentity(weird)).toEqual({ headwords: ["toString"], readings: [] })
+    expect(partitionDuplicateCards(weird, [weird, other]).matches).toEqual([other])
+  })
+
+  it("counts each of a card's \"/\" alternates as its own identity", () => {
+    // 食べる/食べます is the authoring convention for "either answer", so a
+    // card for one alone is a possible duplicate of it.
+    const alternates = vocab("a", "deck-1", { wordJa: "たべる/たべます" })
+    const plain = vocab("b", "deck-1", { wordJa: "たべる" })
+    expect(partitionDuplicateCards(plain, [alternates, plain]).matches).toEqual([
+      alternates,
+    ])
+
+    // Same for a reading holding alternates.
+    const tsuitachi = vocab("c", "deck-1", {
+      wordJa: "一日",
+      reading: "ついたち/いちにち",
+    })
+    const kana = vocab("d", "deck-1", { wordJa: "いちにち" })
+    expect(partitionDuplicateCards(kana, [tsuitachi, kana]).matches).toEqual([
+      tsuitachi,
+    ])
+  })
+
+  it("splits a fullwidth slash list too", () => {
+    // Comparison is NFKC-normalized, which folds ／ to /, so a fullwidth
+    // list must split or its text would compare as though it had.
+    const alternates = vocab("a", "deck-1", { wordJa: "たべる／たべます" })
+    const plain = vocab("b", "deck-1", { wordJa: "たべる" })
+    expect(partitionDuplicateCards(plain, [alternates, plain]).matches).toEqual([
+      alternates,
+    ])
+  })
+
+  it("treats a lone slash as ordinary text, not an alternate list", () => {
+    const half = vocab("a", "deck-1", { wordJa: "1/2", definitionsEn: ["half"] })
+    const alsoHalf = vocab("b", "deck-1", { wordJa: "1/2", definitionsEn: ["a half"] })
+    expect(partitionDuplicateCards(half, [half, alsoHalf]).matches).toEqual([alsoHalf])
+  })
+
+  it("keeps multi-gap reading alignment when an answer lists alternates", () => {
+    // The first answer carries a "/" list. Expanding it into extra headwords
+    // before the readings are paired positionally would misalign the second
+    // gap's reading onto the wrong word.
+    const multi = grammar("a", "deck-1", {
+      construction: "頻繁/しきりに, 交換",
+      constructionReading: "ひんぱん/しきりに, こうかん",
+      sentenceWithGap: "ペン先は___に___する",
+    })
+    const koukan = vocab("b", "deck-1", { wordJa: "こうかん" })
+    const hinpan = vocab("c", "deck-1", { wordJa: "ひんぱん" })
+    const all = [multi, koukan, hinpan]
+
+    // こうかん is the *second* gap's reading, so it only matches if the
+    // pairing survived the alternates.
+    expect(partitionDuplicateCards(koukan, all).matches).toEqual([multi])
+    expect(partitionDuplicateCards(hinpan, all).matches).toEqual([multi])
+  })
+
+  it("does not split a single-gap answer on its ordinary punctuation", () => {
+    // Only a multi-gap construction is a comma-joined list; 、 inside a
+    // single answer is punctuation, as in a 〜たり、〜たり construction.
+    // Splitting it would claim the card teaches two words it doesn't, and
+    // leave its one reading unable to pair with either of them.
+    const tari = grammar("a", "deck-1", {
+      construction: "食べたり、飲んだり",
+      constructionReading: "たべたりのんだり",
+      sentenceWithGap: "パーティーで___した",
+    })
+    expect(cardIdentity(tari)).toEqual({
+      headwords: ["食べたり、飲んだり"],
+      readings: ["たべたりのんだり"],
+    })
+
+    const kana = vocab("b", "deck-1", { wordJa: "たべたりのんだり" })
+    expect(partitionDuplicateCards(kana, [tari, kana]).matches).toEqual([tari])
+  })
+
+  it("does not read a non-BMP kanji as a break in the run", () => {
+    // 𠮟 (U+20B9F, the jōyō form of 叱) is a surrogate pair — read as a half
+    // it looks like a boundary and lets 責 match 𠮟責.
+    const seki = vocab("a", "deck-1", { wordJa: "責", reading: "せき" })
+    const shisseki = vocab("b", "deck-1", { wordJa: "𠮟責", reading: "しっせき" })
+    expect(partitionDuplicateCards(seki, [seki, shisseki]).matches).toEqual([])
+    expect(partitionDuplicateCards(shisseki, [seki, shisseki]).matches).toEqual([])
+  })
+
+  it("does not match a kanji that is only part of a longer run", () => {
+    // A run of kanji is one word: 大人 is not 大 plus 人, and 日本語 is not
+    // 日 plus 本 plus 語.
+    const hito = vocab("a", "deck-1", { wordJa: "人", reading: "ひと" })
+    const otona = vocab("b", "deck-1", { wordJa: "大人", reading: "おとな" })
+    const hi = vocab("c", "deck-1", { wordJa: "日", reading: "ひ" })
+    const nihongo = vocab("d", "deck-1", { wordJa: "日本語", reading: "にほんご" })
+    const ashita = vocab("e", "deck-1", { wordJa: "明日", reading: "あした" })
+    const all = [hito, otona, hi, nihongo, ashita]
+
+    for (const card of all) {
+      expect(partitionDuplicateCards(card, all).matches).toEqual([])
+    }
+  })
+
+  it("treats iteration marks and counter ヶ as part of the kanji run", () => {
+    // 々 and ヶ aren't kanji by codepoint, but they don't end a word either:
+    // 時々 is one word, and the ヶ in 一ヶ月 doesn't make 月 a word there.
+    const toki = vocab("a", "deck-1", { wordJa: "時", reading: "とき" })
+    const tokidoki = vocab("b", "deck-1", { wordJa: "時々", reading: "ときどき" })
+    const hito = vocab("c", "deck-1", { wordJa: "人", reading: "ひと" })
+    const hitobito = vocab("d", "deck-1", { wordJa: "人々", reading: "ひとびと" })
+    const tsuki = vocab("e", "deck-1", { wordJa: "月", reading: "つき" })
+    const ikkagetsu = vocab("f", "deck-1", { wordJa: "一ヶ月", reading: "いっかげつ" })
+    const all = [toki, tokidoki, hito, hitobito, tsuki, ikkagetsu]
+
+    for (const card of all) {
+      expect(partitionDuplicateCards(card, all).matches).toEqual([])
+    }
+  })
+
+  it("does not match a compound against its own parts", () => {
+    // Same judgement as 大人/人 — 子猫 is one word, not 子 plus 猫.
+    const neko = vocab("a", "deck-1", { wordJa: "猫", reading: "ねこ" })
+    const koneko = vocab("b", "deck-1", { wordJa: "子猫", reading: "こねこ" })
+    const nekojita = vocab("c", "deck-1", { wordJa: "猫舌", reading: "ねこじた" })
+    const all = [neko, koneko, nekojita]
+
+    for (const card of all) {
+      expect(partitionDuplicateCards(card, all).matches).toEqual([])
+    }
+  })
+
+  it("matches a kana card against the same word's reading", () => {
+    const target = vocab("a", "deck-1", { wordJa: "ひんぱん" })
+    const kanji = vocab("b", "deck-1", { wordJa: "頻繁", reading: "ひんぱん" })
+    expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
+  })
+
+  it("matches a reading authored as a single reading part", () => {
+    const target = vocab("a", "deck-1", { wordJa: "ひんぱん" })
+    const kanji = vocab("b", "deck-1", {
+      wordJa: "頻繁",
+      readingParts: { 頻繁: "ひんぱん" },
+    })
+    expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
+  })
+
+  it("matches reading parts authored one kanji at a time", () => {
+    // The whole-word reading only exists once the clusters are joined.
+    const target = vocab("a", "deck-1", { wordJa: "ひんぱん" })
+    const kanji = vocab("b", "deck-1", {
+      wordJa: "頻繁",
+      readingParts: { 頻: "ひん", 繁: "ぱん" },
+    })
+    expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
+  })
+
+  it("matches a reading split across readingParts", () => {
+    const target = vocab("a", "deck-1", { wordJa: "けつろんにいたる" })
+    const parts = vocab("b", "deck-1", {
+      wordJa: "結論に至る",
+      readingParts: { 結論: "けつろん", 至る: "いたる" },
+    })
+    expect(partitionDuplicateCards(target, [target, parts]).matches).toEqual([parts])
+  })
+
+  it("carries un-annotated okurigana into the headword reading", () => {
+    // 至る=いたる is authored narrowed to the kanji (至=いた), per the
+    // readings field's own convention.
+    const target = vocab("a", "deck-1", { wordJa: "いたる" })
+    const kanji = vocab("b", "deck-1", { wordJa: "至る", readingParts: { 至: "いた" } })
+    expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
+  })
+
+  it("builds no reading from a furigana map that leaves a headword kanji unread", () => {
+    // 人=ひと is an example-sentence entry; 大 has no reading, so there is no
+    // whole-word reading here — and 大人 must not become おおひと or ひと.
+    const target = vocab("a", "deck-1", { wordJa: "ひと" })
+    const otona = vocab("b", "deck-1", { wordJa: "大人", readings: { 人: "ひと" } })
+    expect(partitionDuplicateCards(target, [target, otona]).matches).toEqual([])
+  })
+
+  it("reports a pair from whichever side is being reviewed", () => {
+    const word = vocab("a", "deck-1", { wordJa: "結論" })
+    const phrase = vocab("b", "deck-1", { wordJa: "結論に至る" })
+
+    // "These might be the same word" is symmetric, and so is the dismissal
+    // that answers it, so neither direction may go silent.
+    expect(partitionDuplicateCards(word, [word, phrase]).matches).toEqual([phrase])
+    expect(partitionDuplicateCards(phrase, [word, phrase]).matches).toEqual([word])
+  })
+
+  it("matches a fill-in-the-gap card whose answer is the same word", () => {
+    const target = vocab("a", "deck-1", { wordJa: "交換" })
+    const match = grammar("b", "deck-1", {
+      construction: "交換",
+      sentenceWithGap: "ペン先は頻繁に___する",
+    })
+    expect(partitionDuplicateCards(target, [target, match]).matches).toEqual([match])
+  })
+
+  it("ignores a reading that merely contains a short construction", () => {
+    // A two-kana grammar point would otherwise sweep up half the deck on
+    // syllable coincidence alone — these words have nothing to do with こと.
+    const koto = grammar("a", "deck-1", {
+      construction: "こと",
+      constructionReading: "こと",
+      sentenceWithGap: "泳ぐ___ができる",
+    })
+    const kotonaru = vocab("b", "deck-1", { wordJa: "異なる", reading: "ことなる" })
+    const makoto = vocab("c", "deck-1", { wordJa: "誠", reading: "まこと" })
+
+    expect(partitionDuplicateCards(koto, [koto, kotonaru, makoto]).matches).toEqual([])
+    expect(partitionDuplicateCards(kotonaru, [koto, kotonaru, makoto]).matches).toEqual([])
+    expect(partitionDuplicateCards(makoto, [koto, kotonaru, makoto]).matches).toEqual([])
+  })
+
+  it("matches two cards for the same kana-only word", () => {
+    const koto = grammar("a", "deck-1", { construction: "こと" })
+    const alsoKoto = grammar("b", "deck-1", { construction: "こと", translationEn: "nominalizer" })
+    expect(partitionDuplicateCards(koto, [koto, alsoKoto]).matches).toEqual([alsoKoto])
+  })
+
+  it("does not match a short katakana word inside a longer one", () => {
+    // Katakana is kana: a short loanword lands inside unrelated longer ones
+    // just as ことわざ swallows こと.
+    const pan = vocab("a", "deck-1", { wordJa: "パン", definitionsEn: ["bread"] })
+    const panda = vocab("b", "deck-1", { wordJa: "パンダ", definitionsEn: ["panda"] })
+    const japan = vocab("c", "deck-1", { wordJa: "ジャパン", definitionsEn: ["Japan"] })
+    const all = [pan, panda, japan]
+
+    expect(partitionDuplicateCards(pan, all).matches).toEqual([])
+    expect(partitionDuplicateCards(panda, all).matches).toEqual([])
+    expect(partitionDuplicateCards(japan, all).matches).toEqual([])
+  })
+
+  it("matches two cards for the same katakana word", () => {
+    const pen = vocab("a", "deck-1", { wordJa: "ペン", definitionsEn: ["pen"] })
+    const alsoPen = vocab("b", "deck-1", { wordJa: "ペン", definitionsEn: ["a pen"] })
+    expect(partitionDuplicateCards(pen, [pen, alsoPen]).matches).toEqual([alsoPen])
+  })
+
+  it("does not match a kana-only headword inside a longer word", () => {
+    // Kana are syllables, so a one- or two-kana construction turns up
+    // inside unrelated words constantly. Only a headword with kanji in it
+    // may match as a substring.
+    const koto = grammar("a", "deck-1", { construction: "こと" })
+    const ni = grammar("b", "deck-1", { construction: "に" })
+    const kotowaza = vocab("c", "deck-1", { wordJa: "ことわざ" })
+    const ninjin = vocab("d", "deck-1", { wordJa: "にんじん" })
+    const itaru = vocab("e", "deck-1", { wordJa: "結論に至る" })
+    const all = [koto, ni, kotowaza, ninjin, itaru]
+
+    expect(partitionDuplicateCards(koto, all).matches).toEqual([])
+    expect(partitionDuplicateCards(ni, all).matches).toEqual([])
+    expect(partitionDuplicateCards(kotowaza, all).matches).toEqual([])
+    expect(partitionDuplicateCards(ninjin, all).matches).toEqual([])
+    expect(partitionDuplicateCards(itaru, all).matches).toEqual([])
+  })
+
+  it("never reads a headword reading out of the furigana map", () => {
+    // The map annotates the headword and the card's sentence alike, with no
+    // record of which is which, so a reading assembled from it is a guess —
+    // {大: おお, 人: ひと} would make 大人 read おおひと.
+    const otona = vocab("a", "deck-1", {
+      wordJa: "大人",
+      readings: { 大: "おお", 人: "ひと" },
+      definitionsEn: ["adult"],
+    })
+    const oohito = vocab("b", "deck-1", { wordJa: "おおひと" })
+    expect(partitionDuplicateCards(otona, [otona, oohito]).matches).toEqual([])
+    expect(partitionDuplicateCards(oohito, [otona, oohito]).matches).toEqual([])
+  })
+
+  it("does not let the furigana map override the card's own reading", () => {
+    const tsuitachi = vocab("a", "deck-1", {
+      wordJa: "一日",
+      reading: "ついたち",
+      readings: { 一: "いち", 日: "にち" },
+    })
+    const ichinichi = vocab("b", "deck-1", { wordJa: "いちにち" })
+    const kana = vocab("c", "deck-1", { wordJa: "ついたち" })
+    const all = [tsuitachi, ichinichi, kana]
+
+    expect(partitionDuplicateCards(tsuitachi, all).matches).toEqual([kana])
+    expect(partitionDuplicateCards(ichinichi, all).matches).toEqual([])
+  })
+
+  it("matches each answer of a multi-gap card separately", () => {
+    // A multi-gap construction is stored comma-joined, but "頻繁, 交換" is
+    // two words: a card for either alone is a possible duplicate of it. The
+    // editor writes both readings into one comma-joined field in gap order,
+    // and leaves `constructionReadingParts` empty.
+    const multi = grammar("a", "deck-1", {
+      construction: "頻繁, 交換",
+      constructionReading: "ひんぱん, こうかん",
+      constructionReadingParts: {},
+      sentenceWithGap: "ペン先は___に___する",
+    })
+    const hinpan = vocab("b", "deck-1", { wordJa: "頻繁", definitionsEn: ["frequent"] })
+    const koukanKana = vocab("c", "deck-1", { wordJa: "こうかん" })
+    const all = [multi, hinpan, koukanKana]
+
+    expect(partitionDuplicateCards(multi, all).matches).toEqual([hinpan, koukanKana])
+    expect(partitionDuplicateCards(hinpan, all).matches).toEqual([multi])
+    expect(partitionDuplicateCards(koukanKana, all).matches).toEqual([multi])
+  })
+
+  it("matches multi-gap answers whose readings are stored per part", () => {
+    // The shape a bulk import or a card merge produces.
+    const multi = grammar("a", "deck-1", {
+      construction: "頻繁, 交換",
+      constructionReadingParts: { 頻繁: "ひんぱん", 交換: "こうかん" },
+      sentenceWithGap: "ペン先は___に___する",
+    })
+    const koukanKana = vocab("b", "deck-1", { wordJa: "こうかん" })
+    expect(partitionDuplicateCards(koukanKana, [multi, koukanKana]).matches).toEqual([
+      multi,
+    ])
+  })
+
+  it("uses no reading at all when the field does not split per gap", () => {
+    // One reading for two gaps says nothing reliable about either answer.
+    const multi = grammar("a", "deck-1", {
+      construction: "頻繁, 交換",
+      constructionReading: "ひんぱん",
+      sentenceWithGap: "ペン先は___に___する",
+    })
+    const kana = vocab("b", "deck-1", { wordJa: "ひんぱん" })
+    expect(partitionDuplicateCards(kana, [multi, kana]).matches).toEqual([])
+  })
+
+  it("ignores homophones written with different kanji", () => {
+    // Same reading, different word — a shared reading only identifies a
+    // duplicate when it's the *headword* of the other card.
+    const hashi = vocab("a", "deck-1", { wordJa: "橋", reading: "はし" })
+    const chopsticks = vocab("b", "deck-1", { wordJa: "箸", reading: "はし" })
+    expect(partitionDuplicateCards(hashi, [hashi, chopsticks]).matches).toEqual([])
+  })
+
+  it("ignores a word that only appears in another card's example sentence", () => {
+    const target = vocab("a", "deck-1", { wordJa: "交換", definitionsEn: ["exchange"] })
+    const other = vocab("b", "deck-1", {
+      wordJa: "頻繁",
+      definitionsEn: ["frequent"],
+      exampleSentences: ["磨墨をつけて使うペン先は＿＿に交換する"],
+    })
+    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([])
+  })
+
+  it("ignores a word that only appears in a gap sentence or its furigana", () => {
+    const target = vocab("a", "deck-1", { wordJa: "頻繁", definitionsEn: ["frequent"] })
+    const other = grammar("b", "deck-1", {
+      construction: "交換",
+      sentenceWithGap: "磨墨をつけて使うペン先は頻繁に___する",
+      translationEn: "replace the nib frequently",
+      readings: { 頻繁: "ひんぱん", 交換: "こうかん" },
+    })
+    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([])
+  })
+
+  // The pair that prompted narrowing the search: two unrelated words that a
+  // single example sentence happens to use together, flagged for each other
+  // in both directions because each appeared in the other's sentence (and,
+  // for good measure, in its furigana map).
+  it("ignores two words that only share a sentence", () => {
+    const hinpan = vocab("a", "deck-1", {
+      wordJa: "頻繁",
+      reading: "ひんぱん",
+      definitionsEn: ["frequent"],
+      exampleSentences: ["磨墨をつけて使うペン先は＿＿に交換する"],
+      readings: { 磨墨: "まずみ", 交換: "こうかん" },
+    })
+    const koukan = grammar("b", "deck-1", {
+      sentenceWithGap: "磨墨をつけて使うペン先は頻繁に___する",
+      construction: "交換",
+      constructionReading: "こうかん",
+      translationEn: "exchange",
+      readings: { 磨墨: "まずみ", 頻繁: "ひんぱん" },
+    })
+
+    expect(partitionDuplicateCards(hinpan, [hinpan, koukan]).matches).toEqual([])
+    expect(partitionDuplicateCards(koukan, [hinpan, koukan]).matches).toEqual([])
+  })
+
+  it("ignores a word that only appears inside an English definition", () => {
     const target = vocab("a", "deck-1", { wordJa: "猫" })
     const other = vocab("b", "deck-1", {
       wordJa: "動物",
       definitionsEn: ["a 猫 is a kind of animal"],
     })
-    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([other])
-  })
-
-  it("matches when the word appears in an example sentence", () => {
-    const target = vocab("a", "deck-1", { wordJa: "猫" })
-    const bySentence = vocab("b", "deck-1", {
-      exampleSentences: ["猫がいます"],
-    })
-    expect(partitionDuplicateCards(target, [target, bySentence]).matches).toEqual([bySentence])
-  })
-
-  it("matches against grammar card fields, including readings", () => {
-    const target = vocab("a", "deck-1", { wordJa: "学生" })
-    const match = grammar("b", "deck-1", {
-      construction: "元",
-      translationEn: "student stuff",
-      readings: { 元: "学生時代" },
-    })
-    expect(partitionDuplicateCards(target, [target, match]).matches).toEqual([match])
+    expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([])
   })
 
   it("does not match itself", () => {
@@ -71,7 +490,7 @@ describe("partitionDuplicateCards", () => {
 
 describe("cards marked as not duplicates", () => {
   it("drops a match the card has marked as not a duplicate", () => {
-    const other = vocab("b", "deck-1", { wordJa: "子猫", definitionsEn: ["kitten"] })
+    const other = vocab("b", "deck-1", { wordJa: "猫", definitionsEn: ["a cat"] })
     const target: Card = { ...vocab("a", "deck-1", { wordJa: "猫" }), notDuplicateOf: ["b"] }
 
     expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([])
@@ -81,7 +500,7 @@ describe("cards marked as not duplicates", () => {
   it("honours the mark from whichever side of the pair still carries it", () => {
     const target = vocab("a", "deck-1", { wordJa: "猫" })
     const other: Card = {
-      ...vocab("b", "deck-1", { wordJa: "子猫", definitionsEn: ["kitten"] }),
+      ...vocab("b", "deck-1", { wordJa: "猫", definitionsEn: ["a cat"] }),
       notDuplicateOf: ["a"],
     }
 
@@ -91,9 +510,12 @@ describe("cards marked as not duplicates", () => {
   })
 
   it("leaves other matches alone", () => {
-    const dismissed = vocab("b", "deck-1", { wordJa: "子猫", definitionsEn: ["kitten"] })
-    const stillMatching = vocab("c", "deck-1", { wordJa: "猫舌", definitionsEn: ["cat tongue"] })
-    const target: Card = { ...vocab("a", "deck-1", { wordJa: "猫" }), notDuplicateOf: ["b"] }
+    const dismissed = vocab("b", "deck-1", { wordJa: "結論", definitionsEn: ["conclusion"] })
+    const stillMatching = vocab("c", "deck-1", { wordJa: "結論に至る" })
+    const target: Card = {
+      ...vocab("a", "deck-1", { wordJa: "結論" }),
+      notDuplicateOf: ["b"],
+    }
 
     expect(partitionDuplicateCards(target, [target, dismissed, stillMatching]).matches).toEqual([
       stillMatching,
