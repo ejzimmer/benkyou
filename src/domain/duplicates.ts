@@ -47,7 +47,10 @@ function headwordReading(
 ): string | undefined {
   if (explicit?.trim()) return explicit
   if (!headword.trim() || !parts) return undefined
-  if (parts[headword]?.trim()) return parts[headword]
+  // `Object.hasOwn`, not a bare lookup: a headword like "toString" would
+  // otherwise resolve to the inherited function and throw on `.trim()`.
+  const own = Object.hasOwn(parts, headword) ? parts[headword] : undefined
+  if (own?.trim()) return own
   return joinSegmentReadings(annotatedSegments(headword, parts))
 }
 
@@ -144,26 +147,6 @@ function normalizedIdentity(card: Card): CardIdentity {
 }
 
 /**
- * True when `headword` appearing inside `container` is worth reporting.
- *
- * Two conditions, both about not mistaking a fragment for a word.
- *
- * The headword must contain kanji. Kana are syllables, and a short kana word
- * lands inside unrelated longer ones constantly, in either script: こと
- * inside ことわざ and に inside にんじん, but equally パン inside パンダ and
- * ジャパン, カメ inside カメラ. A kana-only headword has to match in full.
- *
- * And it must sit on kanji-block boundaries — nothing continuing a kanji run
- * immediately either side of it (see `continuesKanjiRun`). A run of kanji is
- * one word: 大人 is not 大 plus 人, 日本語 is not 日 plus 本 plus 語, and a
- * 人 or 日 card has no business being reported against them. Break the run
- * with kana and it's a phrase rather than a word, and its parts are words in
- * their own right: 結論 and 至る are each worth reporting against 結論に至る.
- * This does mean a compound never matches its own parts (子猫 no longer
- * reports 猫), which is the same judgement as 大人/人 — only the familiar
- * ones look like they should pair.
- */
-/**
  * Characters that continue a kanji run without being kanji themselves: the
  * iteration marks 々 and 〆, and the small ヶ/ヵ that stand in for 箇 in
  * counters. Treated as kanji for the boundary test only — 時々 is one word,
@@ -183,16 +166,45 @@ function continuesKanjiRun(ch: string): boolean {
   return containsKanji(ch) || KANJI_RUN_MARKS.includes(ch)
 }
 
+/**
+ * True when `headword` appearing inside `container` is worth reporting.
+ *
+ * Two conditions, both about not mistaking a fragment for a word.
+ *
+ * The headword must contain kanji. Kana are syllables, and a short kana word
+ * lands inside unrelated longer ones constantly, in either script: こと
+ * inside ことわざ and に inside にんじん, but equally パン inside パンダ and
+ * ジャパン, カメ inside カメラ. A kana-only headword has to match in full.
+ *
+ * And it must sit on kanji-block boundaries — nothing continuing a kanji run
+ * immediately either side of it (see `continuesKanjiRun`). A run of kanji is
+ * one word: 大人 is not 大 plus 人, 日本語 is not 日 plus 本 plus 語, and a
+ * 人 or 日 card has no business being reported against them. Break the run
+ * with kana and it's a phrase rather than a word, and its parts are words in
+ * their own right: 結論 and 至る are each worth reporting against 結論に至る.
+ * This does mean a compound never matches its own parts (子猫 no longer
+ * reports 猫), which is the same judgement as 大人/人 — only the familiar
+ * ones look like they should pair.
+ */
 function headwordContains(container: string, headword: string): boolean {
   if (!containsKanji(headword)) return false
+  const firstChar = headword[0] ?? ""
+  const lastChar = headword[headword.length - 1] ?? ""
   for (
     let at = container.indexOf(headword);
     at >= 0;
     at = container.indexOf(headword, at + 1)
   ) {
-    const before = container[at - 1] ?? ""
-    const after = container[at + headword.length] ?? ""
-    if (!continuesKanjiRun(before) && !continuesKanjiRun(after)) return true
+    // A seam only cuts a run when *both* of its sides are part of one. The
+    // headword's own edge matters as much as the character next to it: 至る
+    // ends in kana, so the 所 after it in 至る所 begins a new run rather than
+    // continuing the headword's, and the two are still separate words.
+    const cutAtStart =
+      continuesKanjiRun(firstChar) && continuesKanjiRun(container[at - 1] ?? "")
+    const cutAtEnd =
+      continuesKanjiRun(lastChar) &&
+      continuesKanjiRun(container[at + headword.length] ?? "")
+    if (!cutAtStart && !cutAtEnd) return true
   }
   return false
 }

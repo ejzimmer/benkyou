@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isMarkedNotDuplicate, partitionDuplicateCards } from "./duplicates"
+import { cardIdentity, isMarkedNotDuplicate, partitionDuplicateCards } from "./duplicates"
 import type { Card } from "./types"
 import { defaultGrammar, defaultVocabulary } from "../services/cards"
 
@@ -52,6 +52,34 @@ describe("partitionDuplicateCards", () => {
 
     expect(partitionDuplicateCards(first, [first, phrase]).matches).toEqual([phrase])
     expect(partitionDuplicateCards(last, [last, phrase]).matches).toEqual([phrase])
+  })
+
+  it("matches a headword ending in okurigana before a kanji", () => {
+    // The seam only cuts a run when both its sides are part of one. 至る
+    // ends in kana, so the 所 after it starts a new run rather than
+    // continuing the headword's — they are still two words.
+    for (const [word, longer] of [
+      ["至る", "至る所"],
+      ["食べる", "食べる物"],
+      ["同じ", "同じ日"],
+    ]) {
+      const a = vocab("a", "deck-1", { wordJa: word })
+      const b = vocab("b", "deck-1", { wordJa: longer })
+      expect(partitionDuplicateCards(a, [a, b]).matches).toEqual([b])
+      expect(partitionDuplicateCards(b, [a, b]).matches).toEqual([a])
+    }
+  })
+
+  it("survives a headword that collides with an Object prototype member", () => {
+    // A bare `parts[headword]` lookup would resolve to the inherited
+    // function and throw, taking the whole duplicate scan down with it.
+    const weird = vocab("a", "deck-1", {
+      wordJa: "toString",
+      readingParts: { 頻繁: "ひんぱん" },
+    })
+    const other = vocab("b", "deck-1", { wordJa: "toString" })
+    expect(cardIdentity(weird)).toEqual({ headwords: ["toString"], readings: [] })
+    expect(partitionDuplicateCards(weird, [weird, other]).matches).toEqual([other])
   })
 
   it("does not match a kanji that is only part of a longer run", () => {
