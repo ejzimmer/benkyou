@@ -43,6 +43,17 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(phrase, all).matches).toEqual([target, verb])
   })
 
+  it("matches a headword sitting at either end of a phrase", () => {
+    // The boundary either side of a match can be the end of the string, not
+    // just a kana — 結論 starts 結論に至る and 至る ends it.
+    const first = vocab("a", "deck-1", { wordJa: "結論" })
+    const last = vocab("b", "deck-1", { wordJa: "至る" })
+    const phrase = vocab("c", "deck-1", { wordJa: "結論に至る" })
+
+    expect(partitionDuplicateCards(first, [first, phrase]).matches).toEqual([phrase])
+    expect(partitionDuplicateCards(last, [last, phrase]).matches).toEqual([phrase])
+  })
+
   it("does not match a kanji that is only part of a longer run", () => {
     // A run of kanji is one word: 大人 is not 大 plus 人, and 日本語 is not
     // 日 plus 本 plus 語.
@@ -52,6 +63,22 @@ describe("partitionDuplicateCards", () => {
     const nihongo = vocab("d", "deck-1", { wordJa: "日本語", reading: "にほんご" })
     const ashita = vocab("e", "deck-1", { wordJa: "明日", reading: "あした" })
     const all = [hito, otona, hi, nihongo, ashita]
+
+    for (const card of all) {
+      expect(partitionDuplicateCards(card, all).matches).toEqual([])
+    }
+  })
+
+  it("treats iteration marks and counter ヶ as part of the kanji run", () => {
+    // 々 and ヶ aren't kanji by codepoint, but they don't end a word either:
+    // 時々 is one word, and the ヶ in 一ヶ月 doesn't make 月 a word there.
+    const toki = vocab("a", "deck-1", { wordJa: "時", reading: "とき" })
+    const tokidoki = vocab("b", "deck-1", { wordJa: "時々", reading: "ときどき" })
+    const hito = vocab("c", "deck-1", { wordJa: "人", reading: "ひと" })
+    const hitobito = vocab("d", "deck-1", { wordJa: "人々", reading: "ひとびと" })
+    const tsuki = vocab("e", "deck-1", { wordJa: "月", reading: "つき" })
+    const ikkagetsu = vocab("f", "deck-1", { wordJa: "一ヶ月", reading: "いっかげつ" })
+    const all = [toki, tokidoki, hito, hitobito, tsuki, ikkagetsu]
 
     for (const card of all) {
       expect(partitionDuplicateCards(card, all).matches).toEqual([])

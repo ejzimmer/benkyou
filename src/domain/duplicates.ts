@@ -153,15 +153,36 @@ function normalizedIdentity(card: Card): CardIdentity {
  * inside ことわざ and に inside にんじん, but equally パン inside パンダ and
  * ジャパン, カメ inside カメラ. A kana-only headword has to match in full.
  *
- * And it must sit on kanji-block boundaries — no kanji immediately either
- * side of it. A run of kanji is one word: 大人 is not 大 plus 人, 日本語 is
- * not 日 plus 本 plus 語, and a 人 or 日 card has no business being reported
- * against them. Break the run with kana and it's a phrase rather than a
- * word, and its parts are words in their own right: 結論 and 至る are each
- * worth reporting against 結論に至る. This does mean a compound never
- * matches its own parts (子猫 no longer reports 猫), which is the same
- * judgement as 大人/人 — only the familiar ones look like they should pair.
+ * And it must sit on kanji-block boundaries — nothing continuing a kanji run
+ * immediately either side of it (see `continuesKanjiRun`). A run of kanji is
+ * one word: 大人 is not 大 plus 人, 日本語 is not 日 plus 本 plus 語, and a
+ * 人 or 日 card has no business being reported against them. Break the run
+ * with kana and it's a phrase rather than a word, and its parts are words in
+ * their own right: 結論 and 至る are each worth reporting against 結論に至る.
+ * This does mean a compound never matches its own parts (子猫 no longer
+ * reports 猫), which is the same judgement as 大人/人 — only the familiar
+ * ones look like they should pair.
  */
+/**
+ * Characters that continue a kanji run without being kanji themselves: the
+ * iteration marks 々 and 〆, and the small ヶ/ヵ that stand in for 箇 in
+ * counters. Treated as kanji for the boundary test only — 時々 is one word,
+ * so a 時 card has no business being reported against it, and the ヶ in
+ * 一ヶ月 doesn't make 月 a word of its own there.
+ *
+ * Kept local rather than widened into `containsKanji`, whose other callers
+ * (`extractKanji`, `hasVocabularyPronunciation`, the reading-field
+ * validation in `services/cards.ts`) all want kanji proper.
+ */
+const KANJI_RUN_MARKS = "々〆ヶヵ"
+
+function continuesKanjiRun(ch: string): boolean {
+  // "" stands for "past the end of the string", which is a boundary — and
+  // `String.includes("")` is true, so it has to be rejected up front.
+  if (!ch) return false
+  return containsKanji(ch) || KANJI_RUN_MARKS.includes(ch)
+}
+
 function headwordContains(container: string, headword: string): boolean {
   if (!containsKanji(headword)) return false
   for (
@@ -171,7 +192,7 @@ function headwordContains(container: string, headword: string): boolean {
   ) {
     const before = container[at - 1] ?? ""
     const after = container[at + headword.length] ?? ""
-    if (!containsKanji(before) && !containsKanji(after)) return true
+    if (!continuesKanjiRun(before) && !continuesKanjiRun(after)) return true
   }
   return false
 }
@@ -205,6 +226,11 @@ export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
   return allCards.filter((other) => {
     if (other.id === card.id) return false
     const otherIdentity = normalizedIdentity(other)
+    // Doesn't vary with `headword`, so it's settled once rather than
+    // re-scanned inside the loop below.
+    if (otherIdentity.headwords.some((word) => readings.includes(word))) {
+      return true
+    }
     return headwords.some(
       (headword) =>
         otherIdentity.headwords.some(
@@ -212,11 +238,7 @@ export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
             otherHeadword === headword ||
             headwordContains(otherHeadword, headword) ||
             headwordContains(headword, otherHeadword),
-        ) ||
-        otherIdentity.readings.includes(headword) ||
-        otherIdentity.headwords.some((otherHeadword) =>
-          readings.includes(otherHeadword),
-        ),
+        ) || otherIdentity.readings.includes(headword),
     )
   })
 }
