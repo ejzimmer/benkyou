@@ -1,7 +1,6 @@
 import type { Card } from "./types"
 import { normalizeJapanese } from "../lib/japanese/normalize"
 import { annotatedSegments, joinSegmentReadings } from "./readingsMap"
-import { containsKanji } from "./vocabularyContent"
 import { splitGapAnswers } from "./grammarGaps"
 
 /** The Japanese headword shown for this card in the duplicates list. */
@@ -106,9 +105,35 @@ export type CardIdentity = {
  * Headwords and readings are kept apart because they are matched differently
  * — see `findDuplicateCandidates`.
  */
+/**
+ * A field's text plus any "/"-separated alternates it lists — the authoring
+ * convention `answersMatch` grades against, where 食べる/食べます accepts
+ * either. A card writing one of those teaches both, so both have to count
+ * as its identity, or it never pairs with a card for either alone.
+ *
+ * The raw text stays in the list because a lone "/" is ordinary text rather
+ * than a separator (a card for "1/2" still matches another "1/2" card), and
+ * a single non-empty part means there was no alternate list to begin with.
+ */
+function withAlternates(text: string): string[] {
+  const parts = text
+    .split("/")
+    .map((part) => part.trim())
+    .filter(Boolean)
+  return parts.length > 1 ? [text, ...parts] : [text]
+}
+
 export function cardIdentity(card: Card): CardIdentity {
-  const headwords = cardHeadwords(card).filter((word) => word.trim())
-  return { headwords, readings: cardReadings(card, headwords) }
+  // Readings are derived before alternates are expanded: `cardReadings`
+  // pairs a multi-gap card's reading field positionally with its gap
+  // answers, and expanding "食べる/食べます" into two entries first would
+  // throw that alignment out.
+  const perGap = cardHeadwords(card).filter((word) => word.trim())
+  const readings = cardReadings(card, perGap)
+  return {
+    headwords: perGap.flatMap(withAlternates).filter((word) => word.trim()),
+    readings: readings.flatMap(withAlternates).filter((word) => word.trim()),
+  }
 }
 
 /**
@@ -159,11 +184,52 @@ function normalizedIdentity(card: Card): CardIdentity {
  */
 const KANJI_RUN_MARKS = "々〆ヶヵ"
 
+/**
+ * Kanji by code point, over every block the app might see — including the
+ * non-BMP ones `containsKanji` misses (𠮟 of 𠮟責 is jōyō and lives at
+ * U+20B9F). Read as a surrogate half, such a kanji looks like a run break
+ * and lets 責 match 𠮟責, which is the very fragment-matching this is here
+ * to stop.
+ */
+function isKanjiCodePoint(ch: string): boolean {
+  const cp = ch.codePointAt(0)
+  if (cp === undefined) return false
+  return (
+    (cp >= 0x4e00 && cp <= 0x9fff) || // CJK Unified Ideographs
+    (cp >= 0x3400 && cp <= 0x4dbf) || // Extension A
+    (cp >= 0xf900 && cp <= 0xfaff) || // Compatibility Ideographs
+    (cp >= 0x20000 && cp <= 0x3ffff) // Extension B and beyond
+  )
+}
+
 function continuesKanjiRun(ch: string): boolean {
   // "" stands for "past the end of the string", which is a boundary — and
   // `String.includes("")` is true, so it has to be rejected up front.
   if (!ch) return false
-  return containsKanji(ch) || KANJI_RUN_MARKS.includes(ch)
+  return isKanjiCodePoint(ch) || KANJI_RUN_MARKS.includes(ch)
+}
+
+function hasKanji(text: string): boolean {
+  for (const ch of text) if (isKanjiCodePoint(ch)) return true
+  return false
+}
+
+/** The whole code point starting at `at`, or "" past the end. */
+function codePointAt(text: string, at: number): string {
+  if (at < 0 || at >= text.length) return ""
+  const cp = text.codePointAt(at)
+  return cp === undefined ? "" : String.fromCodePoint(cp)
+}
+
+/** The whole code point ending just before `at`, or "" at the start. */
+function codePointBefore(text: string, at: number): string {
+  if (at <= 0) return ""
+  const low = text.charCodeAt(at - 1)
+  if (low >= 0xdc00 && low <= 0xdfff && at >= 2) {
+    const high = text.charCodeAt(at - 2)
+    if (high >= 0xd800 && high <= 0xdbff) return text.slice(at - 2, at)
+  }
+  return text[at - 1] ?? ""
 }
 
 /**
@@ -187,9 +253,9 @@ function continuesKanjiRun(ch: string): boolean {
  * ones look like they should pair.
  */
 function headwordContains(container: string, headword: string): boolean {
-  if (!containsKanji(headword)) return false
-  const firstChar = headword[0] ?? ""
-  const lastChar = headword[headword.length - 1] ?? ""
+  if (!hasKanji(headword)) return false
+  const firstChar = codePointAt(headword, 0)
+  const lastChar = codePointBefore(headword, headword.length)
   for (
     let at = container.indexOf(headword);
     at >= 0;
@@ -200,10 +266,11 @@ function headwordContains(container: string, headword: string): boolean {
     // ends in kana, so the 所 after it in 至る所 begins a new run rather than
     // continuing the headword's, and the two are still separate words.
     const cutAtStart =
-      continuesKanjiRun(firstChar) && continuesKanjiRun(container[at - 1] ?? "")
+      continuesKanjiRun(firstChar) &&
+      continuesKanjiRun(codePointBefore(container, at))
     const cutAtEnd =
       continuesKanjiRun(lastChar) &&
-      continuesKanjiRun(container[at + headword.length] ?? "")
+      continuesKanjiRun(codePointAt(container, at + headword.length))
     if (!cutAtStart && !cutAtEnd) return true
   }
   return false

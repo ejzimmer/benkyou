@@ -82,6 +82,51 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(weird, [weird, other]).matches).toEqual([other])
   })
 
+  it("counts each of a card's \"/\" alternates as its own identity", () => {
+    // 食べる/食べます is the authoring convention for "either answer", so a
+    // card for one alone is a possible duplicate of it.
+    const alternates = vocab("a", "deck-1", { wordJa: "たべる/たべます" })
+    const plain = vocab("b", "deck-1", { wordJa: "たべる" })
+    expect(partitionDuplicateCards(plain, [alternates, plain]).matches).toEqual([
+      alternates,
+    ])
+
+    // Same for a reading holding alternates.
+    const tsuitachi = vocab("c", "deck-1", {
+      wordJa: "一日",
+      reading: "ついたち/いちにち",
+    })
+    const kana = vocab("d", "deck-1", { wordJa: "いちにち" })
+    expect(partitionDuplicateCards(kana, [tsuitachi, kana]).matches).toEqual([
+      tsuitachi,
+    ])
+  })
+
+  it("treats a lone slash as ordinary text, not an alternate list", () => {
+    const half = vocab("a", "deck-1", { wordJa: "1/2", definitionsEn: ["half"] })
+    const alsoHalf = vocab("b", "deck-1", { wordJa: "1/2", definitionsEn: ["a half"] })
+    expect(partitionDuplicateCards(half, [half, alsoHalf]).matches).toEqual([alsoHalf])
+  })
+
+  it("keeps multi-gap reading alignment when an answer lists alternates", () => {
+    const multi = grammar("a", "deck-1", {
+      construction: "頻繁, 交換",
+      constructionReading: "ひんぱん, こうかん",
+      sentenceWithGap: "ペン先は___に___する",
+    })
+    const kana = vocab("b", "deck-1", { wordJa: "こうかん" })
+    expect(partitionDuplicateCards(kana, [multi, kana]).matches).toEqual([multi])
+  })
+
+  it("does not read a non-BMP kanji as a break in the run", () => {
+    // 𠮟 (U+20B9F, the jōyō form of 叱) is a surrogate pair — read as a half
+    // it looks like a boundary and lets 責 match 𠮟責.
+    const seki = vocab("a", "deck-1", { wordJa: "責", reading: "せき" })
+    const shisseki = vocab("b", "deck-1", { wordJa: "𠮟責", reading: "しっせき" })
+    expect(partitionDuplicateCards(seki, [seki, shisseki]).matches).toEqual([])
+    expect(partitionDuplicateCards(shisseki, [seki, shisseki]).matches).toEqual([])
+  })
+
   it("does not match a kanji that is only part of a longer run", () => {
     // A run of kanji is one word: 大人 is not 大 plus 人, and 日本語 is not
     // 日 plus 本 plus 語.
