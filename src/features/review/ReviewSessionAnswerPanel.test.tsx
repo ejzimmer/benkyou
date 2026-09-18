@@ -71,6 +71,29 @@ describe("ReviewSessionAnswerPanel", () => {
     })
   })
 
+  it("counts an answer typed in the other kana script as correct, showing the card's own spelling", async () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={readingItem}
+        typed="こーひー"
+        expected="コーヒー"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    const answer = screen.getByRole("group", { name: "答え" })
+    // No diff: the card's katakana is shown as the answer, not stacked over
+    // the hiragana that was typed.
+    expect(within(answer).getByText("コーヒー")).toBeInTheDocument()
+    expect(within(answer).queryByText("あなたの答え")).not.toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^正解$/ })).toHaveFocus()
+    })
+  })
+
   it("aligns missing hiragana under the correct answer, then focuses Incorrect", async () => {
     render(
       <ReviewSessionAnswerPanel

@@ -43,11 +43,11 @@ import {
   appliesConfusedWordCheck,
   expectedAnswer,
   hasMissingDoubledN,
-  hasNonHiraganaReadingAnswer,
   isReadingTypingMode,
   REVIEW_MODE_LABELS,
   requiresTyping,
   showAnswerOnQuestionSide,
+  warnsNonHiraganaReading,
 } from "./reviewFlowHelpers"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UndoIcon } from "../../ui/UndoIcon"
@@ -303,9 +303,11 @@ export function ReviewSessionPage() {
       setPhase(snap ? "answer" : "prompt")
       if (
         snap &&
-        isReadingTypingMode(resumedItem.modeId) &&
-        restoredTyped &&
-        hasNonHiraganaReadingAnswer(restoredTyped)
+        warnsNonHiraganaReading(
+          resumedItem.card,
+          resumedItem.modeId,
+          restoredTyped,
+        )
       ) {
         setReadingWarn(true)
       }
@@ -547,7 +549,7 @@ export function ReviewSessionPage() {
         return false
       }
     }
-    if (isReadingTypingMode(m) && typedValue && hasNonHiraganaReadingAnswer(typedValue)) {
+    if (warnsNonHiraganaReading(c, m, typedValue)) {
       setReadingWarn(true)
       return false
     }
@@ -866,8 +868,13 @@ export function ReviewSessionPage() {
             </button>
           )}
           <p className="muted small">
-            残り{remainingCount}枚
-            {wrongCount > 0 && `・やり直し${wrongCount}枚`}
+            残り<span className="review-count-remaining">{remainingCount}</span>枚
+            {wrongCount > 0 && (
+              <>
+                ・やり直し
+                <span className="review-count-wrong">{wrongCount}</span>枚
+              </>
+            )}
           </p>
           <Link
             to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(

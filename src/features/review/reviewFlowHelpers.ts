@@ -17,6 +17,7 @@ import {
 import { phraseReadingSegments } from "../../domain/vocabularyContent"
 import { constructionReadingSegments } from "../../domain/grammarContent"
 import {
+  foldKatakanaToHiragana,
   hasNonHiraganaKana,
   isMissingDoubledN,
 } from "../../lib/japanese/normalize"
@@ -90,6 +91,23 @@ export function isReadingTypingMode(mode: ReviewModeId): boolean {
  */
 export function hasNonHiraganaReadingAnswer(typed: string): boolean {
   return splitGapAnswers(typed).some((part) => hasNonHiraganaKana(part))
+}
+
+/**
+ * Whether a typed reading answer should be flagged for containing kanji or
+ * katakana instead of being graded. Not flagged when it matches the card's
+ * reading anyway: a reading stored as katakana (コーヒー) grades as correct
+ * whichever kana script it's typed in, and "readings are hiragana" would be
+ * unhelpful advice about an answer that's already right.
+ */
+export function warnsNonHiraganaReading(
+  card: Card,
+  mode: ReviewModeId,
+  typed: string,
+): boolean {
+  if (!isReadingTypingMode(mode) || !typed) return false
+  if (!hasNonHiraganaReadingAnswer(typed)) return false
+  return !answersMatch(mode, typed, expectedAnswer(card, mode))
 }
 
 /**
@@ -235,13 +253,20 @@ function candidateMatches(
     mode === "vocab_type_reading" ||
     mode === "grammar_type_reading"
   ) {
-    return normalizeGapAnswers(typed) === normalizeGapAnswers(candidate)
+    return (
+      foldKatakanaToHiragana(normalizeGapAnswers(typed)) ===
+      foldKatakanaToHiragana(normalizeGapAnswers(candidate))
+    )
   }
-  return typed === candidate
+  return foldKatakanaToHiragana(typed) === foldKatakanaToHiragana(candidate)
 }
 
 /**
- * Whether `typed` matches `expected` for grading purposes. Fill-in-the-gap
+ * Whether `typed` matches `expected` for grading purposes. Hiragana and
+ * katakana compare as the same script, so a word or reading stored in one
+ * and typed in the other (コーヒー vs こーひー) grades as correct — the
+ * revealed answer still shows the card's own spelling, and the 正解/不正解
+ * controls are still there to mark the script itself wrong. Fill-in-the-gap
  * cards with multiple gaps compare each comma-separated answer positionally,
  * so "," vs "、" and incidental spacing around the separator don't cause a
  * correct answer to be treated as wrong. When `expected` lists multiple

@@ -10,6 +10,7 @@ import {
   readingForConstruction,
   requiresTyping,
   vocabExampleReadings,
+  warnsNonHiraganaReading,
 } from "./reviewFlowHelpers"
 import type { Card } from "../../domain/types"
 
@@ -138,10 +139,57 @@ describe("reviewFlowHelpers", () => {
     )
   })
 
+  it("answersMatch treats hiragana and katakana as the same script", () => {
+    expect(answersMatch("vocab_type_reading", "こーひー", "コーヒー")).toBe(true)
+    expect(
+      answersMatch("vocab_type_word_from_clue", "コーヒー", "こーひー"),
+    ).toBe(true)
+    expect(answersMatch("vocab_type_word_from_clue", "ラーメン", "ラーメン")).toBe(
+      true,
+    )
+    expect(answersMatch("grammar_type_construction", "サッカー", "さっかー")).toBe(
+      true,
+    )
+    // Only the script is forgiven — a different word is still wrong.
+    expect(answersMatch("vocab_type_word_from_clue", "コーラ", "コーヒー")).toBe(
+      false,
+    )
+  })
+
+  it("answersMatch folds kana within a multi-part answer and across /-alternates", () => {
+    expect(
+      answersMatch("vocab_type_reading", "けつろん、コーヒー", "けつろん, こーひー"),
+    ).toBe(true)
+    expect(
+      answersMatch("vocab_type_word_from_clue", "こーひー", "お茶/コーヒー"),
+    ).toBe(true)
+  })
+
   it("hasNonHiraganaReadingAnswer tolerates the segment separator between valid hiragana parts", () => {
     expect(hasNonHiraganaReadingAnswer("けつろん, いたる")).toBe(false)
     expect(hasNonHiraganaReadingAnswer("けつろん、いたる")).toBe(false)
     expect(hasNonHiraganaReadingAnswer("けつろん")).toBe(false)
+  })
+
+  it("warnsNonHiraganaReading flags kanji/katakana, except when it is the answer", () => {
+    const c = vocabCard()
+    expect(warnsNonHiraganaReading(c, "vocab_type_reading", "猫")).toBe(true)
+    expect(warnsNonHiraganaReading(c, "vocab_type_reading", "ネコ")).toBe(false)
+    expect(warnsNonHiraganaReading(c, "vocab_type_reading", "ねこ")).toBe(false)
+    expect(warnsNonHiraganaReading(c, "vocab_type_reading", "")).toBe(false)
+    // Only reading modes have a hiragana-only expectation to warn about.
+    expect(warnsNonHiraganaReading(c, "vocab_type_word_from_clue", "猫")).toBe(
+      false,
+    )
+
+    const katakanaReading = vocabCard()
+    katakanaReading.content.reading = "コーヒー"
+    expect(
+      warnsNonHiraganaReading(katakanaReading, "vocab_type_reading", "コーヒー"),
+    ).toBe(false)
+    expect(
+      warnsNonHiraganaReading(katakanaReading, "vocab_type_reading", "コーラ"),
+    ).toBe(true)
   })
 
   it("hasNonHiraganaReadingAnswer still catches kanji/katakana within a segment", () => {

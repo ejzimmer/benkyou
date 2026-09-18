@@ -112,3 +112,19 @@ export function isMissingDoubledN(typed: string, expected: string): boolean {
   }
   return false
 }
+
+/**
+ * Katakana folded to hiragana so the two scripts compare equal — a reading
+ * stored as コーヒー and the こーひー the IME produces are the same answer as
+ * far as grading is concerned, and a word typed in the other script is a
+ * script slip rather than a wrong answer.
+ *
+ * Only the kana block itself (ァ..ヶ) maps across; ー, ・, ヽ/ヾ and the
+ * ヷ..ヺ combining forms have no plain hiragana counterpart and are left as
+ * they are — both sides carry them identically anyway.
+ */
+export function foldKatakanaToHiragana(s: string): string {
+  return s.replace(/[ァ-ヶ]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0x60),
+  )
+}
