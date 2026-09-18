@@ -102,6 +102,16 @@ describe("partitionDuplicateCards", () => {
     ])
   })
 
+  it("splits a fullwidth slash list too", () => {
+    // Comparison is NFKC-normalized, which folds ／ to /, so a fullwidth
+    // list must split or its text would compare as though it had.
+    const alternates = vocab("a", "deck-1", { wordJa: "たべる／たべます" })
+    const plain = vocab("b", "deck-1", { wordJa: "たべる" })
+    expect(partitionDuplicateCards(plain, [alternates, plain]).matches).toEqual([
+      alternates,
+    ])
+  })
+
   it("treats a lone slash as ordinary text, not an alternate list", () => {
     const half = vocab("a", "deck-1", { wordJa: "1/2", definitionsEn: ["half"] })
     const alsoHalf = vocab("b", "deck-1", { wordJa: "1/2", definitionsEn: ["a half"] })

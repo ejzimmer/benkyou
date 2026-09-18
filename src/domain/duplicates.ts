@@ -109,9 +109,14 @@ export type CardIdentity = {
  * than a separator (a card for "1/2" still matches another "1/2" card), and
  * a single non-empty part means there was no alternate list to begin with.
  */
+/** Both slash forms: everything here is compared NFKC-normalized, which
+ *  folds ／ to /, so splitting on only the ASCII one would leave a fullwidth
+ *  list unsplit while its text compares as though it had been split. */
+const ALTERNATE_SEPARATOR = /[\u002F\uFF0F]/
+
 function withAlternates(text: string): string[] {
   const parts = text
-    .split("/")
+    .split(ALTERNATE_SEPARATOR)
     .map((part) => part.trim())
     .filter(Boolean)
   return parts.length > 1 ? [text, ...parts] : [text]
