@@ -43,7 +43,7 @@ describe("CardEditPage duplicate finder / merge", () => {
       id: "card-1",
       deckId: "deck-1",
       kind: "vocabulary",
-      content: { ...defaultVocabulary(), wordJa: "猫", definitionsEn: ["cat"] },
+      content: { ...defaultVocabulary(), wordJa: "結論", definitionsEn: ["conclusion"] },
       updatedAt: Date.now(),
     })
     await db.cards.put({
@@ -52,8 +52,8 @@ describe("CardEditPage duplicate finder / merge", () => {
       kind: "vocabulary",
       content: {
         ...defaultVocabulary(),
-        wordJa: "子猫",
-        definitionsEn: ["kitten (contains 猫)"],
+        wordJa: "結論に至る",
+        definitionsEn: ["come to a conclusion"],
       },
       updatedAt: Date.now(),
     })
@@ -62,7 +62,7 @@ describe("CardEditPage duplicate finder / merge", () => {
     renderEditPage("deck-1", "card-1")
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
+      expect(screen.getByDisplayValue("結論")).toBeInTheDocument()
     })
 
     await user.click(
@@ -70,7 +70,7 @@ describe("CardEditPage duplicate finder / merge", () => {
     )
 
     const dialog = await screen.findByRole("dialog")
-    expect(within(dialog).getByText(/子猫/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/結論に至る/)).toBeInTheDocument()
 
     await user.click(
       within(dialog).getByRole("button", { name: "統合" }),
@@ -78,7 +78,7 @@ describe("CardEditPage duplicate finder / merge", () => {
 
     await waitFor(() => {
       expect(
-        within(dialog).queryByText(/子猫/),
+        within(dialog).queryByText(/結論に至る/),
       ).not.toBeInTheDocument()
     })
     expect(
@@ -87,7 +87,7 @@ describe("CardEditPage duplicate finder / merge", () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText("意味")).toHaveValue(
-        "cat; kitten (contains 猫)",
+        "conclusion; come to a conclusion",
       )
     })
 
@@ -97,8 +97,8 @@ describe("CardEditPage duplicate finder / merge", () => {
       expect(merged?.kind).toBe("vocabulary")
       if (merged?.kind !== "vocabulary") return
       expect(merged.content.definitionsEn).toEqual([
-        "cat",
-        "kitten (contains 猫)",
+        "conclusion",
+        "come to a conclusion",
       ])
     })
   })

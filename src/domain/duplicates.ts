@@ -146,18 +146,34 @@ function normalizedIdentity(card: Card): CardIdentity {
 /**
  * True when `headword` appearing inside `container` is worth reporting.
  *
- * Only a headword containing kanji may match as a substring. A kanji is a
- * word in itself, so a longer word built around one is worth a second look —
- * 猫 inside 子猫, 結論 inside 結論に至る. Kana are syllables, and a short
- * kana word lands inside unrelated longer ones constantly, in either script:
- * こと inside ことわざ and に inside にんじん, but equally パン inside パンダ
- * and ジャパン, カメ inside カメラ. A kana-only headword therefore has to
- * match in full — which does cost the odd real pair (ペン inside ボールペン),
- * but those are rarer than the collisions, and the pair is still reported
- * when the two cards genuinely share a word.
+ * Two conditions, both about not mistaking a fragment for a word.
+ *
+ * The headword must contain kanji. Kana are syllables, and a short kana word
+ * lands inside unrelated longer ones constantly, in either script: こと
+ * inside ことわざ and に inside にんじん, but equally パン inside パンダ and
+ * ジャパン, カメ inside カメラ. A kana-only headword has to match in full.
+ *
+ * And it must sit on kanji-block boundaries — no kanji immediately either
+ * side of it. A run of kanji is one word: 大人 is not 大 plus 人, 日本語 is
+ * not 日 plus 本 plus 語, and a 人 or 日 card has no business being reported
+ * against them. Break the run with kana and it's a phrase rather than a
+ * word, and its parts are words in their own right: 結論 and 至る are each
+ * worth reporting against 結論に至る. This does mean a compound never
+ * matches its own parts (子猫 no longer reports 猫), which is the same
+ * judgement as 大人/人 — only the familiar ones look like they should pair.
  */
 function headwordContains(container: string, headword: string): boolean {
-  return containsKanji(headword) && container.includes(headword)
+  if (!containsKanji(headword)) return false
+  for (
+    let at = container.indexOf(headword);
+    at >= 0;
+    at = container.indexOf(headword, at + 1)
+  ) {
+    const before = container[at - 1] ?? ""
+    const after = container[at + headword.length] ?? ""
+    if (!containsKanji(before) && !containsKanji(after)) return true
+  }
+  return false
 }
 
 /**
@@ -168,8 +184,8 @@ function headwordContains(container: string, headword: string): boolean {
  * teaches each of its answers. Three ways to qualify:
  *
  * - **The same headword.** Always, whatever it's written in.
- * - **One headword inside the other**, either way round, and only for a
- *   headword with kanji in it (see `headwordContains`). Both directions,
+ * - **One headword inside the other**, either way round, as a whole kanji
+ *   block (see `headwordContains`). Both directions,
  *   because "these might be the same word" is a symmetric claim and so is
  *   the dismissal that answers it — checking one way only would report the
  *   pair while reviewing 結論 and go silent while reviewing 結論に至る.

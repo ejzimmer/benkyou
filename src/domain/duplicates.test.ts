@@ -31,9 +31,43 @@ describe("partitionDuplicateCards", () => {
   })
 
   it("matches a phrase built on the same word", () => {
+    // Kana break the kanji run, so 結論 and 至る are words in their own right
+    // inside 結論に至る rather than parts of one.
     const target = vocab("a", "deck-1", { wordJa: "結論" })
-    const phrase = vocab("b", "deck-1", { wordJa: "結論に至る" })
-    expect(partitionDuplicateCards(target, [target, phrase]).matches).toEqual([phrase])
+    const verb = vocab("b", "deck-1", { wordJa: "至る" })
+    const phrase = vocab("c", "deck-1", { wordJa: "結論に至る" })
+    const all = [target, verb, phrase]
+
+    expect(partitionDuplicateCards(target, all).matches).toEqual([phrase])
+    expect(partitionDuplicateCards(verb, all).matches).toEqual([phrase])
+    expect(partitionDuplicateCards(phrase, all).matches).toEqual([target, verb])
+  })
+
+  it("does not match a kanji that is only part of a longer run", () => {
+    // A run of kanji is one word: 大人 is not 大 plus 人, and 日本語 is not
+    // 日 plus 本 plus 語.
+    const hito = vocab("a", "deck-1", { wordJa: "人", reading: "ひと" })
+    const otona = vocab("b", "deck-1", { wordJa: "大人", reading: "おとな" })
+    const hi = vocab("c", "deck-1", { wordJa: "日", reading: "ひ" })
+    const nihongo = vocab("d", "deck-1", { wordJa: "日本語", reading: "にほんご" })
+    const ashita = vocab("e", "deck-1", { wordJa: "明日", reading: "あした" })
+    const all = [hito, otona, hi, nihongo, ashita]
+
+    for (const card of all) {
+      expect(partitionDuplicateCards(card, all).matches).toEqual([])
+    }
+  })
+
+  it("does not match a compound against its own parts", () => {
+    // Same judgement as 大人/人 — 子猫 is one word, not 子 plus 猫.
+    const neko = vocab("a", "deck-1", { wordJa: "猫", reading: "ねこ" })
+    const koneko = vocab("b", "deck-1", { wordJa: "子猫", reading: "こねこ" })
+    const nekojita = vocab("c", "deck-1", { wordJa: "猫舌", reading: "ねこじた" })
+    const all = [neko, koneko, nekojita]
+
+    for (const card of all) {
+      expect(partitionDuplicateCards(card, all).matches).toEqual([])
+    }
   })
 
   it("matches a kana card against the same word's reading", () => {
@@ -318,7 +352,7 @@ describe("partitionDuplicateCards", () => {
 
 describe("cards marked as not duplicates", () => {
   it("drops a match the card has marked as not a duplicate", () => {
-    const other = vocab("b", "deck-1", { wordJa: "子猫", definitionsEn: ["kitten"] })
+    const other = vocab("b", "deck-1", { wordJa: "猫", definitionsEn: ["a cat"] })
     const target: Card = { ...vocab("a", "deck-1", { wordJa: "猫" }), notDuplicateOf: ["b"] }
 
     expect(partitionDuplicateCards(target, [target, other]).matches).toEqual([])
@@ -328,7 +362,7 @@ describe("cards marked as not duplicates", () => {
   it("honours the mark from whichever side of the pair still carries it", () => {
     const target = vocab("a", "deck-1", { wordJa: "猫" })
     const other: Card = {
-      ...vocab("b", "deck-1", { wordJa: "子猫", definitionsEn: ["kitten"] }),
+      ...vocab("b", "deck-1", { wordJa: "猫", definitionsEn: ["a cat"] }),
       notDuplicateOf: ["a"],
     }
 
@@ -338,9 +372,12 @@ describe("cards marked as not duplicates", () => {
   })
 
   it("leaves other matches alone", () => {
-    const dismissed = vocab("b", "deck-1", { wordJa: "子猫", definitionsEn: ["kitten"] })
-    const stillMatching = vocab("c", "deck-1", { wordJa: "猫舌", definitionsEn: ["cat tongue"] })
-    const target: Card = { ...vocab("a", "deck-1", { wordJa: "猫" }), notDuplicateOf: ["b"] }
+    const dismissed = vocab("b", "deck-1", { wordJa: "結論", definitionsEn: ["conclusion"] })
+    const stillMatching = vocab("c", "deck-1", { wordJa: "結論に至る" })
+    const target: Card = {
+      ...vocab("a", "deck-1", { wordJa: "結論" }),
+      notDuplicateOf: ["b"],
+    }
 
     expect(partitionDuplicateCards(target, [target, dismissed, stillMatching]).matches).toEqual([
       stillMatching,

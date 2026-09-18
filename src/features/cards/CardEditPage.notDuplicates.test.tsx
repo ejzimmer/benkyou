@@ -36,7 +36,7 @@ async function seedPair() {
       id: "card-1",
       deckId: "deck-1",
       kind: "vocabulary",
-      content: { ...defaultVocabulary(), wordJa: "猫", definitionsEn: ["cat"] },
+      content: { ...defaultVocabulary(), wordJa: "結論", definitionsEn: ["conclusion"] },
       updatedAt: Date.now(),
     },
     {
@@ -45,8 +45,8 @@ async function seedPair() {
       kind: "vocabulary",
       content: {
         ...defaultVocabulary(),
-        wordJa: "猫舌",
-        definitionsEn: ["sensitive to hot food"],
+        wordJa: "結論に至る",
+        definitionsEn: ["come to a conclusion"],
       },
       updatedAt: Date.now(),
     },
@@ -99,7 +99,7 @@ describe("CardEditPage not-a-duplicate marking", () => {
       id: "card-3",
       deckId: "deck-1",
       kind: "vocabulary",
-      content: { ...defaultVocabulary(), wordJa: "猫", definitionsEn: ["cat, again"] },
+      content: { ...defaultVocabulary(), wordJa: "結論", definitionsEn: ["conclusion, again"] },
       updatedAt: Date.now(),
       notDuplicateOf: ["card-1"],
     })
@@ -108,7 +108,7 @@ describe("CardEditPage not-a-duplicate marking", () => {
     renderEditPage("deck-1", "card-1")
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
+      expect(screen.getByDisplayValue("結論")).toBeInTheDocument()
     })
     await user.click(await screen.findByRole("button", { name: "重複カード見せる" }))
 
@@ -117,7 +117,7 @@ describe("CardEditPage not-a-duplicate marking", () => {
     const dismissedSection = within(dialog)
       .getByText("重複ではないとマーク済み")
       .closest("section")!
-    expect(within(dismissedSection).getByText(/猫/)).toBeInTheDocument()
+    expect(within(dismissedSection).getByText(/結論/)).toBeInTheDocument()
     expect(within(dismissedSection).getAllByRole("listitem")).toHaveLength(1)
     expect(within(dialog).getAllByRole("button", { name: "重複ではない" })).toHaveLength(1)
   })
@@ -129,15 +129,15 @@ describe("CardEditPage not-a-duplicate marking", () => {
     renderEditPage("deck-1", "card-1")
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("猫")).toBeInTheDocument()
+      expect(screen.getByDisplayValue("結論")).toBeInTheDocument()
     })
-    await user.type(screen.getByLabelText("日本語で"), "科")
+    await user.type(screen.getByLabelText("日本語で"), "！")
     await user.click(screen.getByRole("button", { name: "保存" }))
 
     // The form doesn't show the verdict, but saving must not wipe it — every
     // save here is a whole-row put.
     await waitFor(async () => {
-      expect((await db.cards.get("card-1"))?.content).toMatchObject({ wordJa: "猫科" })
+      expect((await db.cards.get("card-1"))?.content).toMatchObject({ wordJa: "結論！" })
     })
     expect((await db.cards.get("card-1"))?.notDuplicateOf).toEqual(["card-2"])
   })
@@ -147,7 +147,7 @@ describe("CardEditPage not-a-duplicate marking", () => {
       id: "card-3",
       deckId: "deck-1",
       kind: "vocabulary",
-      content: { ...defaultVocabulary(), wordJa: "猫", definitionsEn: ["cat, again"] },
+      content: { ...defaultVocabulary(), wordJa: "結論", definitionsEn: ["conclusion, again"] },
       updatedAt: Date.now(),
     })
     await db.cards.update("card-1", { notDuplicateOf: ["card-3"] })
