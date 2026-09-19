@@ -32,6 +32,12 @@ describe("addMissingKanjiLines", () => {
     expect(addMissingKanjiLines("", ["結論に至る"])).toBe("結=\n論=\n至=")
   })
 
+  it("offers a line for a non-BMP kanji too, so no reading is silently unreachable", () => {
+    // Without a 𠮟 line the author has no way to give 𠮟責 a reading the
+    // unread-kanji guard will accept, and the word's reading just vanishes.
+    expect(addMissingKanjiLines("", ["𠮟責"])).toBe("𠮟=\n責=")
+  })
+
   it("dedupes repeated kanji across multiple source texts", () => {
     expect(addMissingKanjiLines("", ["結論", "結論に至る"])).toBe("結=\n論=\n至=")
   })

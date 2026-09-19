@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react"
 import { segmentText } from "../domain/readingsMap"
+import { containsKanji } from "../domain/vocabularyContent"
 
 type Props = {
   /** Full phrase ruby (when only one reading string for whole expression) */
@@ -9,8 +10,7 @@ type Props = {
 
 /** Hover or keyboard focus shows hiragana reading for kanji-containing surface text */
 export function RubyWord({ surface, reading }: Props) {
-  const showRuby =
-    Boolean(reading?.trim()) && /[\u4e00-\u9fff]/.test(surface)
+  const showRuby = Boolean(reading?.trim()) && containsKanji(surface)
 
   if (!showRuby) return <span>{surface}</span>
 

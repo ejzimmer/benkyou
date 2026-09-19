@@ -43,8 +43,7 @@ export function extractKanji(texts: string[]): string[] {
   const seen = new Set<string>()
   const result: string[] = []
   for (const ch of texts.join("")) {
-    const cp = ch.codePointAt(0)!
-    if (cp >= 0x4e00 && cp <= 0x9fff && !seen.has(ch)) {
+    if (isKanjiCodePoint(ch) && !seen.has(ch)) {
       seen.add(ch)
       result.push(ch)
     }
