@@ -22,8 +22,14 @@ export function segmentText(
       segments.push({ text: key, reading: readings[key] })
       i += key.length
     } else {
-      segments.push({ text: text[i]! })
-      i += 1
+      // A whole code point, not one UTF-16 unit: a non-BMP kanji (𠮟 of
+      // 𠮟責, U+20B9F) is a surrogate pair, and split down the middle it
+      // becomes two segments that are each half a character — unrenderable
+      // as furigana, and invisible to the `containsKanji` guard below, which
+      // would let an unread 𠮟 pass as part of a reading.
+      const ch = String.fromCodePoint(text.codePointAt(i)!)
+      segments.push({ text: ch })
+      i += ch.length
     }
   }
   return segments

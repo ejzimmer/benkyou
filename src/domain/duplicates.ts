@@ -1,4 +1,5 @@
 import type { Card } from "./types"
+import { containsKanji, isKanjiCodePoint } from "./vocabularyContent"
 import { normalizeJapanese } from "../lib/japanese/normalize"
 import { annotatedSegments, joinSegmentReadings } from "./readingsMap"
 import { countGaps, splitGapAnswers } from "./grammarGaps"
@@ -198,34 +199,11 @@ function normalizedIdentity(card: Card): CardIdentity {
  */
 const KANJI_RUN_MARKS = "々〆ヶヵ"
 
-/**
- * Kanji by code point, over every block the app might see — including the
- * non-BMP ones `containsKanji` misses (𠮟 of 𠮟責 is jōyō and lives at
- * U+20B9F). Read as a surrogate half, such a kanji looks like a run break
- * and lets 責 match 𠮟責, which is the very fragment-matching this is here
- * to stop.
- */
-function isKanjiCodePoint(ch: string): boolean {
-  const cp = ch.codePointAt(0)
-  if (cp === undefined) return false
-  return (
-    (cp >= 0x4e00 && cp <= 0x9fff) || // CJK Unified Ideographs
-    (cp >= 0x3400 && cp <= 0x4dbf) || // Extension A
-    (cp >= 0xf900 && cp <= 0xfaff) || // Compatibility Ideographs
-    (cp >= 0x20000 && cp <= 0x3ffff) // Extension B and beyond
-  )
-}
-
 function continuesKanjiRun(ch: string): boolean {
   // "" stands for "past the end of the string", which is a boundary — and
   // `String.includes("")` is true, so it has to be rejected up front.
   if (!ch) return false
   return isKanjiCodePoint(ch) || KANJI_RUN_MARKS.includes(ch)
-}
-
-function hasKanji(text: string): boolean {
-  for (const ch of text) if (isKanjiCodePoint(ch)) return true
-  return false
 }
 
 /** The whole code point starting at `at`, or "" past the end. */
@@ -244,6 +222,35 @@ function codePointBefore(text: string, at: number): string {
     if (high >= 0xd800 && high <= 0xdbff) return text.slice(at - 2, at)
   }
   return text[at - 1] ?? ""
+}
+
+/**
+ * Small kana that ride on the mora before them rather than counting as one
+ * of their own: the ゃゅょ of きゃ/しゅ/にょ and the small vowels a
+ * transcribed word uses (フィ, ウェ). The sokuon っ and the long-vowel ー
+ * are morae in their own right, so they are not here.
+ */
+const COMBINING_SMALL_KANA = "ゃゅょャュョぁぃぅぇぉァィゥェォゎヮ"
+
+/**
+ * True when a kana string is long enough for matching it to mean something.
+ *
+ * The reading rules below pair a kana card with the kanji card it spells
+ * out, which only says anything when the kana are distinctive. One mora is
+ * not: there are about fifty of them, every deck is full of cards whose
+ * headword is exactly one (に, て, and the rest of the particles), and a
+ * card for 荷 (に) or 手 (て) would be reported against every one of them —
+ * both ways round, since the claim is symmetric. That is the same syllable
+ * coincidence that keeps kana headwords from matching by containment, at
+ * the one length where equality is a coincidence too.
+ */
+function isDistinctiveReading(kana: string): boolean {
+  let morae = 0
+  for (const ch of kana) {
+    if (!COMBINING_SMALL_KANA.includes(ch)) morae++
+    if (morae > 1) return true
+  }
+  return false
 }
 
 /**
@@ -267,7 +274,7 @@ function codePointBefore(text: string, at: number): string {
  * ones look like they should pair.
  */
 function headwordContains(container: string, headword: string): boolean {
-  if (!hasKanji(headword)) return false
+  if (!containsKanji(headword)) return false
   const firstChar = codePointAt(headword, 0)
   const lastChar = codePointBefore(headword, headword.length)
   for (
@@ -303,7 +310,8 @@ function headwordContains(container: string, headword: string): boolean {
  *   because "these might be the same word" is a symmetric claim and so is
  *   the dismissal that answers it — checking one way only would report the
  *   pair while reviewing 結論 and go silent while reviewing 結論に至る.
- * - **A headword equal to the other card's reading.** This is what pairs a
+ * - **A headword equal to the other card's reading**, when that reading is
+ *   more than one mora (see `isDistinctiveReading`). This is what pairs a
  *   kana card with the kanji card it spells out (ひんぱん against 頻繁).
  *   Equal, not contained, for the same reason kana headwords must match in
  *   full: readings are all kana, so containment there is syllable
@@ -321,7 +329,11 @@ export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
     const otherIdentity = normalizedIdentity(other)
     // Doesn't vary with `headword`, so it's settled once rather than
     // re-scanned inside the loop below.
-    if (otherIdentity.headwords.some((word) => readings.includes(word))) {
+    if (
+      otherIdentity.headwords.some(
+        (word) => readings.includes(word) && isDistinctiveReading(word),
+      )
+    ) {
       return true
     }
     return headwords.some(
@@ -331,7 +343,9 @@ export function findDuplicateCandidates(card: Card, allCards: Card[]): Card[] {
             otherHeadword === headword ||
             headwordContains(otherHeadword, headword) ||
             headwordContains(headword, otherHeadword),
-        ) || otherIdentity.readings.includes(headword),
+        ) ||
+        (otherIdentity.readings.includes(headword) &&
+          isDistinctiveReading(headword)),
     )
   })
 }

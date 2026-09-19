@@ -32,6 +32,12 @@ describe("addMissingKanjiLines", () => {
     expect(addMissingKanjiLines("", ["結論に至る"])).toBe("結=\n論=\n至=")
   })
 
+  it("offers a line for a non-BMP kanji too, so no reading is silently unreachable", () => {
+    // Without a 𠮟 line the author has no way to give 𠮟責 a reading the
+    // unread-kanji guard will accept, and the word's reading just vanishes.
+    expect(addMissingKanjiLines("", ["𠮟責"])).toBe("𠮟=\n責=")
+  })
+
   it("dedupes repeated kanji across multiple source texts", () => {
     expect(addMissingKanjiLines("", ["結論", "結論に至る"])).toBe("結=\n論=\n至=")
   })
@@ -89,6 +95,17 @@ describe("segmentText", () => {
       { text: "に" },
       { text: "至る", reading: "いたる" },
     ])
+  })
+
+  it("keeps a non-BMP kanji whole instead of splitting its surrogate pair", () => {
+    // 𠮟 is one character stored as two UTF-16 units; half of it is not a
+    // character at all, and a reading assembled from these segments has to
+    // be able to see that it is an unread kanji.
+    expect(segmentText("𠮟責", { 責: "せき" })).toEqual([
+      { text: "𠮟" },
+      { text: "責", reading: "せき" },
+    ])
+    expect(joinSegmentReadings(segmentText("𠮟責", { 責: "せき" }))).toBeUndefined()
   })
 
   it("prefers the longest matching key", () => {
