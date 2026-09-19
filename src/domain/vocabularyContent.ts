@@ -7,10 +7,33 @@ import {
 
 export const PLACEHOLDER_DEFINITION = "[translation pending]"
 
+/**
+ * Whether one code point is a kanji, over every block the app might see.
+ *
+ * Not just the main CJK Unified Ideographs block: 𠮟 (of 𠮟責) is jōyō and
+ * lives outside the Basic Multilingual Plane at U+20B9F, so a check written
+ * against U+4E00–U+9FFF alone reads it as two stray surrogate halves and
+ * concludes the text has no kanji in it — which is how an unread 𠮟 slipped
+ * into a reading assembled from a furigana map.
+ *
+ * Takes a whole code point (`for...of` over a string yields those, as does
+ * `String.fromCodePoint`); a lone surrogate half is not kanji in any range
+ * here, so callers that slice by UTF-16 unit stay as accurate as they were.
+ */
+export function isKanjiCodePoint(ch: string): boolean {
+  const cp = ch.codePointAt(0)
+  if (cp === undefined) return false
+  return (
+    (cp >= 0x4e00 && cp <= 0x9fff) || // CJK Unified Ideographs
+    (cp >= 0x3400 && cp <= 0x4dbf) || // Extension A
+    (cp >= 0xf900 && cp <= 0xfaff) || // Compatibility Ideographs
+    (cp >= 0x20000 && cp <= 0x3ffff) // Extension B and beyond
+  )
+}
+
 export function containsKanji(s: string): boolean {
   for (const ch of s) {
-    const cp = ch.codePointAt(0)!
-    if (cp >= 0x4e00 && cp <= 0x9fff) return true
+    if (isKanjiCodePoint(ch)) return true
   }
   return false
 }

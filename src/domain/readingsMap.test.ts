@@ -91,6 +91,17 @@ describe("segmentText", () => {
     ])
   })
 
+  it("keeps a non-BMP kanji whole instead of splitting its surrogate pair", () => {
+    // 𠮟 is one character stored as two UTF-16 units; half of it is not a
+    // character at all, and a reading assembled from these segments has to
+    // be able to see that it is an unread kanji.
+    expect(segmentText("𠮟責", { 責: "せき" })).toEqual([
+      { text: "𠮟" },
+      { text: "責", reading: "せき" },
+    ])
+    expect(joinSegmentReadings(segmentText("𠮟責", { 責: "せき" }))).toBeUndefined()
+  })
+
   it("prefers the longest matching key", () => {
     expect(
       segmentText("大好き", { 大好き: "だいすき", 大: "だい" }),

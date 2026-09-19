@@ -250,6 +250,44 @@ describe("partitionDuplicateCards", () => {
     expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
   })
 
+  it("matches a two-mora reading, the shortest that says anything", () => {
+    const target = vocab("a", "deck-1", { wordJa: "ねこ" })
+    const kanji = vocab("b", "deck-1", { wordJa: "猫", reading: "ねこ" })
+    expect(partitionDuplicateCards(target, [target, kanji]).matches).toEqual([kanji])
+  })
+
+  it("does not match a one-mora reading against a card for that kana", () => {
+    // に is a particle every deck drills, and 荷 is not a duplicate of it.
+    const ni = grammar("a", "deck-1", {
+      construction: "に",
+      sentenceWithGap: "日本___行く",
+      gapMarker: "___",
+    })
+    const ka = vocab("b", "deck-1", { wordJa: "荷", reading: "に" })
+    const all = [ni, ka]
+    // Symmetrically: the pair must be silent from whichever side is reviewed.
+    expect(partitionDuplicateCards(ni, all).matches).toEqual([])
+    expect(partitionDuplicateCards(ka, all).matches).toEqual([])
+  })
+
+  it("counts a small ゃゅょ with the mora it rides on, not as one of its own", () => {
+    const cha = vocab("a", "deck-1", { wordJa: "ちゃ" })
+    const kanji = vocab("b", "deck-1", { wordJa: "茶", reading: "ちゃ" })
+    expect(partitionDuplicateCards(cha, [cha, kanji]).matches).toEqual([])
+  })
+
+  it("builds no reading from a furigana map that leaves a non-BMP kanji unread", () => {
+    // 𠮟 lives outside the Basic Multilingual Plane, so a kanji check
+    // written against U+4E00–U+9FFF alone reads it as two stray surrogate
+    // halves — and 𠮟責 becomes "𠮟せき", a reading with a kanji in it.
+    const target = vocab("a", "deck-1", { wordJa: "𠮟せき" })
+    const shisseki = vocab("b", "deck-1", {
+      wordJa: "𠮟責",
+      readingParts: { 責: "せき" },
+    })
+    expect(partitionDuplicateCards(target, [target, shisseki]).matches).toEqual([])
+  })
+
   it("builds no reading from a furigana map that leaves a headword kanji unread", () => {
     // 人=ひと is an example-sentence entry; 大 has no reading, so there is no
     // whole-word reading here — and 大人 must not become おおひと or ひと.
