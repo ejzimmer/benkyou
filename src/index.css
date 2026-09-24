@@ -18,6 +18,17 @@
      matching lightness/saturation reads muddy rather than fluoro. */
   --orange: oklch(78% 0.19 55);
   --on-fluoro: #12121a;
+
+  /* How far a hovered furigana annotation sticks out above the line it
+     annotates: `.ruby-hover ruby rt` is absolutely positioned at
+     `bottom: 100%`, so on the top line of a block it paints outside that
+     block's box entirely. A scroll container clips at its padding box, so
+     the review cards' scrollable regions each carry this as `padding-top`:
+     the annotation on their first line then renders inside the clip box
+     instead of being sliced in half. Sized for the worst case in those
+     cards: a 1.5rem-font annotation on a line-height: 1.5 line (a bare
+     `RubyWord` outside a `.ruby-sentence`) hangs ~19px above its line box. */
+  --furigana-overhang: 1.25rem;
 }
 
 * {
@@ -1329,6 +1340,11 @@ fieldset.plain legend {
   justify-content: safe center;
   text-align: center;
   overflow-y: auto;
+  /* Room for a first line's furigana annotation inside the clip box — see
+     `--furigana-overhang`. Padding rather than extra card padding so that
+     scrolled-away content is still clipped at the card's own inner edge,
+     keeping its distance from the card border. */
+  padding-top: var(--furigana-overhang);
 }
 
 /* Same size and position as the real `.review-footer` in the same spot on
@@ -1341,6 +1357,15 @@ fieldset.plain legend {
 
 .review-answer {
   padding: 40px 30px 1rem;
+}
+
+/* The same furigana clearance as `.review-question-content` above, for the
+   answer card's two cross-fading layers — which become scroll containers of
+   their own on wide screens (see the media query below). Both take it, so
+   the two layers' content stays aligned with each other. */
+.review-answer-prompt > .stack,
+.answer-content {
+  padding-top: var(--furigana-overhang);
 }
 
 /* Long question/answer/example text balances across its wrapped lines
