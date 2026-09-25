@@ -2173,8 +2173,14 @@ code {
   flex-shrink: 0;
 }
 
+/* 閉じる and 保存 share one width: 1fr columns in a fit-content grid all
+   size to the widest button's content, and it stays right-aligned. */
 .duplicate-cards-footer {
-  justify-content: flex-end;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  width: fit-content;
+  margin-left: auto;
 }
 
 .duplicate-badge {
