@@ -344,14 +344,14 @@ textarea {
   background: #0f0f18;
   color: inherit;
   color-scheme: dark;
-  caret-color: var(--switch-accent);
+  caret-color: var(--blue);
   font: inherit;
 }
 
 .input::selection,
 select::selection,
 textarea::selection {
-  background: var(--switch-accent);
+  background: var(--blue);
   color: #0f0f18;
 }
 
