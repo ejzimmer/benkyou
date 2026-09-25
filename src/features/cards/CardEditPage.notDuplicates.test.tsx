@@ -59,37 +59,54 @@ describe("CardEditPage not-a-duplicate marking", () => {
     await seedPair()
   })
 
-  it("dismisses a match and then restores it", async () => {
+  it("starts with neither side of the switch picked, and saves a 違う", async () => {
     const user = userEvent.setup()
     renderEditPage("deck-1", "card-1")
 
     await user.click(await screen.findByRole("button", { name: "重複カード見せる" }))
     const dialog = await screen.findByRole("dialog")
-    await user.click(within(dialog).getByRole("button", { name: "重複ではない" }))
+    expect(within(dialog).getByRole("radio", { name: "同じ" })).not.toBeChecked()
+    expect(within(dialog).getByRole("radio", { name: "違う" })).not.toBeChecked()
+    // Nothing to save until something is picked.
+    expect(within(dialog).getByRole("button", { name: "保存" })).toBeDisabled()
 
-    // Moves into the dismissed section, where it can be put back.
-    const restore = await within(dialog).findByRole("button", { name: "元に戻す" })
-    expect(within(dialog).queryByRole("button", { name: "重複ではない" })).not.toBeInTheDocument()
-    expect((await db.cards.get("card-1"))?.notDuplicateOf).toEqual(["card-2"])
-
-    await user.click(restore)
-
-    await within(dialog).findByRole("button", { name: "重複ではない" })
+    await user.click(within(dialog).getByRole("radio", { name: "違う" }))
+    // Picking is only a draft: nothing is written until 保存.
     expect((await db.cards.get("card-1"))?.notDuplicateOf).toBeUndefined()
-    expect((await db.cards.get("card-2"))?.notDuplicateOf).toBeUndefined()
+    await user.click(within(dialog).getByRole("button", { name: "保存" }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    })
+    expect((await db.cards.get("card-1"))?.notDuplicateOf).toEqual(["card-2"])
+    expect((await db.cards.get("card-2"))?.notDuplicateOf).toEqual(["card-1"])
   })
 
-  it("keeps the toolbar button reachable after a dismissal, so it stays undoable", async () => {
+  it("closes without writing anything when the picks aren't saved", async () => {
+    const user = userEvent.setup()
+    renderEditPage("deck-1", "card-1")
+
+    await user.click(await screen.findByRole("button", { name: "重複カード見せる" }))
+    const dialog = await screen.findByRole("dialog")
+    await user.click(within(dialog).getByRole("radio", { name: "違う" }))
+    await user.click(within(dialog).getByRole("button", { name: "閉じる" }))
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect((await db.cards.get("card-1"))?.notDuplicateOf).toBeUndefined()
+  })
+
+  it("shows a dismissed match inline with 違う already picked", async () => {
     await db.cards.update("card-1", { notDuplicateOf: ["card-2"] })
 
     const user = userEvent.setup()
     renderEditPage("deck-1", "card-1")
 
+    // Still reachable after a dismissal, so the verdict stays changeable.
     await user.click(await screen.findByRole("button", { name: "重複カード見せる" }))
 
     const dialog = await screen.findByRole("dialog")
-    expect(within(dialog).getByText("重複ではないとマーク済み")).toBeInTheDocument()
-    expect(within(dialog).getByRole("button", { name: "元に戻す" })).toBeInTheDocument()
+    expect(within(dialog).getByRole("radio", { name: "違う" })).toBeChecked()
+    expect(within(dialog).getByRole("radio", { name: "同じ" })).not.toBeChecked()
   })
 
   it("honours a verdict recorded only on the other side of the pair", async () => {
@@ -113,13 +130,14 @@ describe("CardEditPage not-a-duplicate marking", () => {
     await user.click(await screen.findByRole("button", { name: "重複カード見せる" }))
 
     const dialog = await screen.findByRole("dialog")
-    // card-3 is listed as dismissed, card-2 is still a live match.
-    const dismissedSection = within(dialog)
-      .getByText("重複ではないとマーク済み")
-      .closest("section")!
-    expect(within(dismissedSection).getByText(/結論/)).toBeInTheDocument()
-    expect(within(dismissedSection).getAllByRole("listitem")).toHaveLength(1)
-    expect(within(dialog).getAllByRole("button", { name: "重複ではない" })).toHaveLength(1)
+    // card-3 shows as already answered 違う, card-2 is still unanswered.
+    const rows = within(dialog).getAllByRole("listitem")
+    expect(rows).toHaveLength(2)
+    const row3 = rows.find((row) => within(row).queryByRole("link", { name: "結論" }))!
+    const row2 = rows.find((row) => within(row).queryByRole("link", { name: "結論に至る" }))!
+    expect(within(row3).getByRole("radio", { name: "違う" })).toBeChecked()
+    expect(within(row2).getByRole("radio", { name: "違う" })).not.toBeChecked()
+    expect(within(row2).getByRole("radio", { name: "同じ" })).not.toBeChecked()
   })
 
   it("keeps the verdict when the card is saved from the edit form", async () => {
@@ -156,9 +174,12 @@ describe("CardEditPage not-a-duplicate marking", () => {
     renderEditPage("deck-1", "card-1")
 
     await user.click(await screen.findByRole("button", { name: "重複カード見せる" }))
-    await user.click(
-      within(await screen.findByRole("dialog")).getByRole("button", { name: "統合" }),
-    )
+    const dialog = await screen.findByRole("dialog")
+    const row2 = within(dialog)
+      .getAllByRole("listitem")
+      .find((row) => within(row).queryByRole("link", { name: "結論に至る" }))!
+    await user.click(within(row2).getByRole("radio", { name: "同じ" }))
+    await user.click(within(dialog).getByRole("button", { name: "保存" }))
 
     await waitFor(async () => {
       expect(await db.cards.get("card-2")).toBeUndefined()

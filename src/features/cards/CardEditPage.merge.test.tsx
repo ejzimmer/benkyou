@@ -70,20 +70,16 @@ describe("CardEditPage duplicate finder / merge", () => {
     )
 
     const dialog = await screen.findByRole("dialog")
-    expect(within(dialog).getByText(/結論に至る/)).toBeInTheDocument()
+    expect(within(dialog).getByRole("link", { name: "結論に至る" })).toBeInTheDocument()
 
-    await user.click(
-      within(dialog).getByRole("button", { name: "統合" }),
-    )
+    // Choosing 同じ alone changes nothing until it's saved.
+    await user.click(within(dialog).getByRole("radio", { name: "同じ" }))
+    expect(await db.cards.get("card-2")).toBeDefined()
+    await user.click(within(dialog).getByRole("button", { name: "保存" }))
 
     await waitFor(() => {
-      expect(
-        within(dialog).queryByText(/結論に至る/),
-      ).not.toBeInTheDocument()
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     })
-    expect(
-      within(dialog).getByText(/重複の可能性があるカードはありません/),
-    ).toBeInTheDocument()
 
     await waitFor(() => {
       expect(screen.getByLabelText("意味")).toHaveValue(
@@ -140,12 +136,11 @@ describe("CardEditPage duplicate finder / merge", () => {
       await screen.findByRole("button", { name: "重複カード見せる" }),
     )
     const dialog = await screen.findByRole("dialog")
-    await user.click(
-      within(dialog).getByRole("button", { name: "統合" }),
-    )
+    await user.click(within(dialog).getByRole("radio", { name: "同じ" }))
+    await user.click(within(dialog).getByRole("button", { name: "保存" }))
 
     await waitFor(() => {
-      expect(within(dialog).queryByText(/結論に至る/)).not.toBeInTheDocument()
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     })
 
     // The whole-word reading survived the merge and shows in the Reading

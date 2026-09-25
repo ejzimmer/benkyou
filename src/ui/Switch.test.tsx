@@ -142,4 +142,26 @@ describe("Switch", () => {
     expect(screen.getByRole("radio", { name: "Vocabulary" })).toBeDisabled()
     expect(screen.getByRole("radio", { name: "Grammar" })).toBeDisabled()
   })
+
+  it("can start with neither option selected, and no thumb", async () => {
+    const onChange = vi.fn()
+    const { container } = render(
+      <Switch
+        legend="Same card?"
+        name="verdict"
+        value={null}
+        onChange={onChange}
+        options={[
+          { value: "same", label: "Same" },
+          { value: "different", label: "Different" },
+        ]}
+      />,
+    )
+    expect(screen.getByRole("radio", { name: "Same" })).not.toBeChecked()
+    expect(screen.getByRole("radio", { name: "Different" })).not.toBeChecked()
+    expect(container.querySelector(".switch-thumb")).toBeNull()
+
+    await userEvent.setup().click(screen.getByText("Different"))
+    expect(onChange).toHaveBeenCalledWith("different")
+  })
 })

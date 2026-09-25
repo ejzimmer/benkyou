@@ -355,6 +355,26 @@ export async function mergeCards(target: Card, source: Card): Promise<Card> {
   return merged
 }
 
+/**
+ * Apply the duplicate modal's verdicts to `target`: merge each of `merge`
+ * into it in turn, then mark each of `markNotDuplicate` as not a duplicate.
+ * Merges go first because each one writes `target` whole, from the snapshot
+ * passed in — a mark written before it would be overwritten; the marks read
+ * the stored row fresh. Returns the card as it ends up (just `target` when
+ * nothing was merged).
+ */
+export async function applyDuplicateVerdicts(
+  target: Card,
+  { merge, markNotDuplicate }: { merge: Card[]; markNotDuplicate: Card[] },
+): Promise<Card> {
+  let result = target
+  for (const source of merge) result = await mergeCards(result, source)
+  for (const other of markNotDuplicate) {
+    await markCardsNotDuplicates(target.id, other.id)
+  }
+  return result
+}
+
 /** True if a card other than `excludeCardId` still references this media id (e.g. bulk import dedups identical images across notes that land on separate cards). */
 export async function isMediaReferencedByOtherCards(
   mediaId: string,
