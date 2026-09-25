@@ -120,7 +120,6 @@ export function DuplicateCardsModal({
                     name={`duplicate-${card.id}`}
                     tone="orange"
                     value={verdictFor(card, isDismissed)}
-                    disabled={saving}
                     onChange={(verdict) =>
                       setPicked((prev) => ({ ...prev, [card.id]: verdict }))
                     }
@@ -145,9 +144,13 @@ export function DuplicateCardsModal({
           {rows.length > 0 && (
             <button
               type="button"
-              className="btn primary"
-              disabled={!hasChanges || saving}
-              onClick={() => onSave(changes)}
+              className="btn primary blue"
+              onClick={() => {
+                if (saving) return
+                // Saving with nothing picked has nothing to write.
+                if (hasChanges) onSave(changes)
+                else onClose()
+              }}
             >
               {saving ? "保存中…" : "保存"}
             </button>
