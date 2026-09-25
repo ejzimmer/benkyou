@@ -67,8 +67,8 @@ describe("CardEditPage not-a-duplicate marking", () => {
     const dialog = await screen.findByRole("dialog")
     expect(within(dialog).getByRole("radio", { name: "同じ" })).not.toBeChecked()
     expect(within(dialog).getByRole("radio", { name: "違う" })).not.toBeChecked()
-    // Nothing to save until something is picked.
-    expect(within(dialog).getByRole("button", { name: "保存" })).toBeDisabled()
+    // 保存 is never disabled; it just has nothing to write yet.
+    expect(within(dialog).getByRole("button", { name: "保存" })).toBeEnabled()
 
     await user.click(within(dialog).getByRole("radio", { name: "違う" }))
     // Picking is only a draft: nothing is written until 保存.
@@ -80,6 +80,19 @@ describe("CardEditPage not-a-duplicate marking", () => {
     })
     expect((await db.cards.get("card-1"))?.notDuplicateOf).toEqual(["card-2"])
     expect((await db.cards.get("card-2"))?.notDuplicateOf).toEqual(["card-1"])
+  })
+
+  it("closes without writing anything when saved with nothing picked", async () => {
+    const user = userEvent.setup()
+    renderEditPage("deck-1", "card-1")
+
+    await user.click(await screen.findByRole("button", { name: "重複カード見せる" }))
+    const dialog = await screen.findByRole("dialog")
+    await user.click(within(dialog).getByRole("button", { name: "保存" }))
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect((await db.cards.get("card-1"))?.notDuplicateOf).toBeUndefined()
+    expect(await db.cards.get("card-2")).toBeDefined()
   })
 
   it("closes without writing anything when the picks aren't saved", async () => {

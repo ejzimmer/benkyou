@@ -397,6 +397,12 @@ fieldset.plain legend {
   --switch-thumb-top: oklch(86% 0.14 65);
 }
 
+/* The orange switch starts with neither side picked, so without a thumb
+   there's nothing to show where one option ends and the next begins. */
+.switch-orange .switch-option + .switch-option {
+  border-left: 1px solid var(--switch-accent);
+}
+
 .switch:has(input:disabled) {
   opacity: 0.5;
 }
