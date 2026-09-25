@@ -1,5 +1,11 @@
 import { diffChars } from "diff"
-import { useId } from "react"
+import {
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react"
 import {
   furiganaSegments,
   joinSegmentReadings,
@@ -83,7 +89,7 @@ function furiganaGroups(
   cells: Cell[],
   reading: string | undefined,
   segments?: ReadingSegment[],
-) {
+): FuriganaGroup[] {
   const realIndexes = cells.reduce<number[]>((acc, cell, index) => {
     if (cell.kind !== "gap") acc.push(index)
     return acc
@@ -91,7 +97,7 @@ function furiganaGroups(
   if (realIndexes.length === 0) return []
 
   if (segments) {
-    const groups: { start: number; end: number; text: string }[] = []
+    const groups: FuriganaGroup[] = []
     let pos = 0
     for (const segment of segments) {
       const segReading = segment.reading?.trim()
@@ -125,27 +131,26 @@ function furiganaGroups(
   ]
 }
 
+type FuriganaGroup = { start: number; end: number; text: string }
+
 function DiffLine({
   cells,
   labelId,
   line,
-  reading,
-  segments,
+  groups = [],
+  description,
 }: {
   cells: Cell[]
   labelId: string
   line: "correct" | "yours"
-  reading?: string
-  segments?: ReadingSegment[]
+  /** Furigana for this line, as column ranges within `cells`. */
+  groups?: FuriganaGroup[]
+  /** Whole-answer reading, announced to screen readers. */
+  description?: string
 }) {
   const descId = useId()
   const columns = Math.max(cells.length, 1)
-  const groups = furiganaGroups(cells, reading, segments)
   const hasFurigana = groups.length > 0
-  // Only when there's a reading for the answer as a whole — a map covering
-  // just some of the kanji has no such string, and the per-cluster <rt>s are
-  // announced on their own.
-  const description = reading?.trim()
   return (
     <span
       className={
@@ -192,6 +197,93 @@ function DiffLine({
 }
 
 /**
+ * Splits `total` diff columns into rows of at most `perRow`, without breaking
+ * a furigana group across two rows (unless one group alone is wider than a
+ * row) — so a reading always floats over its own characters.
+ */
+export function rowRanges(
+  total: number,
+  perRow: number,
+  groups: FuriganaGroup[],
+): [number, number][] {
+  const ranges: [number, number][] = []
+  let start = 0
+  while (start < total) {
+    let end = Math.min(start + perRow, total)
+    for (const group of groups) {
+      if (group.start > start && group.start < end && group.end >= end) {
+        end = Math.min(end, group.start)
+      }
+    }
+    ranges.push([start, end])
+    start = end
+  }
+  return ranges
+}
+
+/** `groups` narrowed to the columns [start, end), re-based to start at 0. */
+function groupsInRange(
+  groups: FuriganaGroup[],
+  start: number,
+  end: number,
+): FuriganaGroup[] {
+  return groups
+    .filter((group) => group.start >= start && group.start < end)
+    .map((group) => ({
+      ...group,
+      start: group.start - start,
+      end: Math.min(group.end, end - 1) - start,
+    }))
+}
+
+/**
+ * How many diff columns fit across the space the comparison can take up
+ * (its parent's content box), leaving room for the maru/cross mark beside
+ * each line. A diff line can't wrap on its own — its two lines' columns must
+ * stay lined up — so a long answer is instead split into row pairs of this
+ * many columns rather than overflowing the card. Stays at `total` (one row)
+ * where there's no layout to measure (jsdom).
+ */
+function useColumnsPerRow(
+  ref: RefObject<HTMLDivElement | null>,
+  total: number,
+): number {
+  const [perRow, setPerRow] = useState(total)
+  useLayoutEffect(() => {
+    const el = ref.current
+    const parent = el?.parentElement
+    if (!el || !parent || typeof ResizeObserver === "undefined") {
+      setPerRow(total)
+      return
+    }
+    function measure() {
+      const line = el!.querySelector<HTMLElement>(".reading-answer-diff-line")
+      const row = line?.parentElement
+      if (!line || !row) return
+      const parentStyle = getComputedStyle(parent!)
+      const available =
+        parent!.clientWidth -
+        parseFloat(parentStyle.paddingLeft) -
+        parseFloat(parentStyle.paddingRight)
+      const lineStyle = getComputedStyle(line)
+      const fontPx = parseFloat(lineStyle.fontSize)
+      const gapPx = parseFloat(lineStyle.columnGap) || 0
+      const markPx =
+        row.getBoundingClientRect().width - line.getBoundingClientRect().width
+      const fits = Math.floor(
+        (available - markPx + gapPx) / (fontPx * 1.4 + gapPx),
+      )
+      setPerRow(Math.max(1, Math.min(total, fits)))
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [ref, total])
+  return Math.max(1, Math.min(perRow, total))
+}
+
+/**
  * The single answer display used by every typed review mode. When correct it
  * shows just the correct answer; when incorrect it stacks the correct answer
  * over the user's answer at the same size, with character-aligned highlights
@@ -222,25 +314,85 @@ export function AnswerComparison({
   const flatReading = reading?.trim() || joinSegmentReadings(segments)
   const showRuby = hasKanji && Boolean(segments || flatReading?.trim())
   const diff = isCorrect ? null : buildAlignedDiff(expected, typed)
-  // Mirrors DiffLine's own hasFurigana check for the correct line: when it
-  // reserves margin-top for a floating furigana annotation, the maru beside
-  // it needs the same margin (see .answer-correct-row-has-furigana in
-  // index.css) so align-items: center still centers on the kanji itself,
-  // not on the kanji plus the reserved furigana space above it.
-  const correctLineHasFurigana =
-    diff !== null &&
-    furiganaGroups(diff.correct, showRuby ? flatReading : undefined, segments)
-      .length > 0
+  const comparisonRef = useRef<HTMLDivElement>(null)
+  const perRow = useColumnsPerRow(comparisonRef, diff?.correct.length ?? 0)
 
-  const correctBody = diff ? (
-    <DiffLine
-      cells={diff.correct}
-      labelId={correctId}
-      line="correct"
-      reading={showRuby ? flatReading : undefined}
-      segments={segments}
-    />
-  ) : (
+  if (diff) {
+    const groups = furiganaGroups(
+      diff.correct,
+      showRuby ? flatReading : undefined,
+      segments,
+    )
+    const description = showRuby ? flatReading?.trim() : undefined
+    const rows = rowRanges(diff.correct.length, perRow, groups)
+    return (
+      <div
+        ref={comparisonRef}
+        className="reading-answer-comparison has-diff"
+        role="group"
+        aria-label="答えの比較"
+      >
+        {rows.map(([start, end], i) => {
+          const rowGroups = groupsInRange(groups, start, end)
+          // Only the first row carries the marks — on later rows they'd
+          // read as grading each row separately.
+          const first = i === 0
+          return (
+            <div key={start} className="reading-answer-pair">
+              <div className="reading-answer-row">
+                {first && (
+                  <span id={correctId} className="answer-grid-label sr-only">
+                    正解
+                  </span>
+                )}
+                {/* The maru needs the same margin-top as a line that
+                    reserves room for floating furigana, so align-items:
+                    center still centers it on the kanji — see
+                    .answer-correct-row-has-furigana in index.css. */}
+                <span
+                  className={
+                    "answer-correct-row" +
+                    (rowGroups.length > 0 ? " answer-correct-row-has-furigana" : "")
+                  }
+                >
+                  <DiffLine
+                    cells={diff.correct.slice(start, end)}
+                    labelId={correctId}
+                    line="correct"
+                    groups={rowGroups}
+                    description={first ? description : undefined}
+                  />
+                  {first && <span className="maru-mark" aria-hidden="true" />}
+                </span>
+              </div>
+              <div className="reading-answer-row">
+                {first && (
+                  <span id={yoursId} className="answer-grid-label sr-only">
+                    あなたの答え
+                  </span>
+                )}
+                <span className="answer-incorrect-row">
+                  <DiffLine
+                    cells={diff.yours.slice(start, end)}
+                    labelId={yoursId}
+                    line="yours"
+                  />
+                  {first && (
+                    <>
+                      <span className="cross-mark" aria-hidden="true" />
+                      <span className="sr-only">不正解です</span>
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const correctBody = (
     <span
       className="answer-grid-value reading-answer-value"
       lang="ja"
@@ -261,55 +413,38 @@ export function AnswerComparison({
     </span>
   )
 
-  const correctAnswer =
-    showRuby && isCorrect ? (
-      <span className="ruby-hover" tabIndex={0}>
-        {segments ? (
-          correctBody
-        ) : (
-          <ruby>
-            {correctBody}
-            <rt>{flatReading}</rt>
-          </ruby>
-        )}
-      </span>
-    ) : (
-      correctBody
-    )
+  const correctAnswer = showRuby ? (
+    <span className="ruby-hover" tabIndex={0}>
+      {segments ? (
+        correctBody
+      ) : (
+        <ruby>
+          {correctBody}
+          <rt>{flatReading}</rt>
+        </ruby>
+      )}
+    </span>
+  ) : (
+    correctBody
+  )
 
   return (
     <div
+      ref={comparisonRef}
       className="reading-answer-comparison"
       role="group"
-      aria-label={isCorrect ? "答え" : "答えの比較"}
+      aria-label="答え"
     >
       <div className="reading-answer-row">
         <span id={correctId} className="answer-grid-label sr-only">
           正解
         </span>
-        <span
-          className={
-            "answer-correct-row" +
-            (correctLineHasFurigana ? " answer-correct-row-has-furigana" : "")
-          }
-        >
+        <span className="answer-correct-row">
           {correctAnswer}
           <span className="maru-mark" aria-hidden="true" />
-          {isCorrect && <span className="sr-only">正解です</span>}
+          <span className="sr-only">正解です</span>
         </span>
       </div>
-      {diff && (
-        <div className="reading-answer-row">
-          <span id={yoursId} className="answer-grid-label sr-only">
-            あなたの答え
-          </span>
-          <span className="answer-incorrect-row">
-            <DiffLine cells={diff.yours} labelId={yoursId} line="yours" />
-            <span className="cross-mark" aria-hidden="true" />
-            <span className="sr-only">不正解です</span>
-          </span>
-        </div>
-      )}
     </div>
   )
 }

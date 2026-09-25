@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { render, screen, within } from "@testing-library/react"
-import { AnswerComparison } from "./AnswerComparison"
+import { AnswerComparison, rowRanges } from "./AnswerComparison"
 
 describe("AnswerComparison", () => {
   it("shows only the correct answer when right", () => {
@@ -194,3 +194,34 @@ describe("AnswerComparison", () => {
     ).toHaveLength(1)
   })
 })
+
+describe("rowRanges", () => {
+  it("keeps a diff that fits on one row", () => {
+    expect(rowRanges(5, 10, [])).toEqual([[0, 5]])
+  })
+
+  it("splits a long diff into rows of at most perRow columns", () => {
+    expect(rowRanges(20, 8, [])).toEqual([
+      [0, 8],
+      [8, 16],
+      [16, 20],
+    ])
+  })
+
+  it("moves a furigana group that would straddle a row break onto the next row", () => {
+    expect(rowRanges(10, 5, [{ start: 3, end: 6, text: "x" }])).toEqual([
+      [0, 3],
+      [3, 8],
+      [8, 10],
+    ])
+  })
+
+  it("still splits a group wider than a whole row", () => {
+    expect(rowRanges(10, 4, [{ start: 0, end: 9, text: "x" }])).toEqual([
+      [0, 4],
+      [4, 8],
+      [8, 10],
+    ])
+  })
+})
+

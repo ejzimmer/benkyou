@@ -905,9 +905,9 @@ fieldset.plain legend {
   display: inline-block;
   width: 6ch;
   /* Safety net for unusually long answers: an inline-block can't wrap
-     internally the way surrounding text does, so without a viewport-relative
-     cap a long enough answer could force the page to scroll horizontally. */
-  max-width: 80vw;
+     internally the way surrounding text does, so without a cap a long
+     enough answer would overflow the card. */
+  max-width: 100%;
   margin: 0 0.2rem;
   vertical-align: baseline;
   background: none;
@@ -1458,6 +1458,12 @@ fieldset.plain legend {
    only fades the answer layer in, it never resizes the card. */
 .review-answer-stack {
   display: grid;
+  /* An explicit card-width column, not the implicit `auto` one: `auto`
+     grows to fit its widest layer's min-content, so a long answer in the
+     (invisible) revealed layer — which re-renders on every keystroke —
+     would widen the column past the card and drag the centered input in
+     the prompt layer sideways as the user types. */
+  grid-template-columns: minmax(0, 1fr);
   flex: 1;
   min-height: 0;
 }
@@ -1466,6 +1472,7 @@ fieldset.plain legend {
   grid-area: 1 / 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
   transition: opacity 0.4s ease;
 }
@@ -1773,6 +1780,25 @@ fieldset.plain legend {
   gap: 0.55rem;
   width: min(22rem, 100%);
   margin: 0 auto;
+}
+
+/* An incorrect answer: a long diff grows past the 22rem box up to the
+   card's full width (but still no narrower than that box, so a short one
+   keeps the input's left edge). Past the card's width AnswerComparison
+   splits it into correct/yours row pairs, spaced further apart than the
+   two lines within a pair so each pair reads as a unit. */
+.reading-answer-comparison.has-diff {
+  width: fit-content;
+  min-width: min(22rem, 100%);
+  max-width: 100%;
+  gap: 1.1rem;
+}
+
+.reading-answer-pair {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
 }
 
 .reading-answer-row {
