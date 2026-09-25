@@ -257,14 +257,18 @@ a:hover {
 
 .card-edit-form input.input {
   width: 75%;
+  background: transparent;
   border: none;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0;
   border-bottom: 2px solid #fff;
   padding: 0.5rem 0.65rem 0;
 }
 
+/* The glow's blur would otherwise creep up the input's sides; clipping to
+   the box on top and sides (with room below) keeps it under the line only. */
 .card-edit-form input.input:focus-visible {
   outline: none;
+  clip-path: inset(0 0 -24px 0);
   box-shadow:
     0 4px 6px -4px #fff,
     0 6px 14px -6px #fff;
