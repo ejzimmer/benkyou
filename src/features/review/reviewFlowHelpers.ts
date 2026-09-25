@@ -21,6 +21,7 @@ import {
   hasNonHiraganaKana,
   isMissingDoubledN,
 } from "../../lib/japanese/normalize"
+import { arabicToKanjiNumerals } from "../../lib/japanese/numerals"
 
 /** Marker used to blank out the target word in an example sentence. */
 export const EXAMPLE_PLACEHOLDER = "___"
@@ -248,17 +249,17 @@ function candidateMatches(
   typed: string,
   candidate: string,
 ): boolean {
+  const fold = (s: string) => foldKatakanaToHiragana(arabicToKanjiNumerals(s))
   if (
     mode === "grammar_type_construction" ||
     mode === "vocab_type_reading" ||
     mode === "grammar_type_reading"
   ) {
     return (
-      foldKatakanaToHiragana(normalizeGapAnswers(typed)) ===
-      foldKatakanaToHiragana(normalizeGapAnswers(candidate))
+      fold(normalizeGapAnswers(typed)) === fold(normalizeGapAnswers(candidate))
     )
   }
-  return foldKatakanaToHiragana(typed) === foldKatakanaToHiragana(candidate)
+  return fold(typed) === fold(candidate)
 }
 
 /**
@@ -266,7 +267,9 @@ function candidateMatches(
  * katakana compare as the same script, so a word or reading stored in one
  * and typed in the other (コーヒー vs こーひー) grades as correct — the
  * revealed answer still shows the card's own spelling, and the 正解/不正解
- * controls are still there to mark the script itself wrong. Fill-in-the-gap
+ * controls are still there to mark the script itself wrong. Arabic numerals
+ * compare equal to the kanji for the whole number (1時 = 一時, 11 = 十一 but
+ * not 一一). Fill-in-the-gap
  * cards with multiple gaps compare each comma-separated answer positionally,
  * so "," vs "、" and incidental spacing around the separator don't cause a
  * correct answer to be treated as wrong. When `expected` lists multiple
