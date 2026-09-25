@@ -20,6 +20,7 @@ import type {
   VocabularyValidationField,
 } from "../../services/cards"
 import {
+  applyDuplicateVerdicts,
   createGrammarCard,
   createVocabularyCard,
   defaultGrammar,
@@ -27,11 +28,8 @@ import {
   deleteCard,
   grammarFromVocabularyContent,
   isMediaReferencedByOtherCards,
-  markCardsNotDuplicates,
-  mergeCards,
   normalizeGrammarContent,
   saveCard,
-  unmarkCardsNotDuplicates,
   validateGrammar,
   validateVocabulary,
   vocabularyFromGrammarContent,
@@ -41,7 +39,7 @@ import { db } from "../../lib/db/schema"
 import { CardImage } from "../../ui/CardImage"
 import { normalizeJapanese } from "../../lib/japanese/normalize"
 import { japaneseWordForCard } from "../../domain/duplicates"
-import { DuplicateCardsModal } from "./DuplicateCardsModal"
+import { DuplicateCardsModal, type DuplicateChanges } from "./DuplicateCardsModal"
 import { useDuplicateCards } from "./useDuplicateCards"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
@@ -163,8 +161,8 @@ export function CardEditPage() {
 
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [mergingId, setMergingId] = useState<string | null>(null)
-  const [mergeErr, setMergeErr] = useState<string | null>(null)
+  const [savingDuplicates, setSavingDuplicates] = useState(false)
+  const [duplicatesErr, setDuplicatesErr] = useState<string | null>(null)
 
   const currentJapanese = kind === "vocabulary" ? vocab.wordJa : grammar.construction
   const normalizedCurrentJapanese = normalizeJapanese(currentJapanese)
@@ -384,40 +382,28 @@ export function CardEditPage() {
     }
   }
 
-  async function onMarkNotDuplicate(match: Card) {
-    setMergeErr(null)
+  async function onSaveDuplicates(changes: DuplicateChanges) {
+    setDuplicatesErr(null)
+    setSavingDuplicates(true)
     try {
-      await markCardsNotDuplicates(cardId, match.id)
-    } catch (x) {
-      setMergeErr(x instanceof Error ? x.message : "保存に失敗しました。")
-    }
-  }
-
-  async function onRestoreDuplicate(match: Card) {
-    setMergeErr(null)
-    try {
-      await unmarkCardsNotDuplicates(cardId, match.id)
-    } catch (x) {
-      setMergeErr(x instanceof Error ? x.message : "保存に失敗しました。")
-    }
-  }
-
-  async function onMergeDuplicate(match: Card) {
-    setMergeErr(null)
-    setMergingId(match.id)
-    try {
-      const merged = await mergeCards(currentCardDraft(), match)
-      if (merged.kind === "vocabulary") {
-        setVocab(merged.content)
-        setFuriganaDraft(readingsMapToText(merged.content.readings ?? {}))
-      } else {
-        setGrammar(merged.content)
-        setFuriganaDraft(readingsMapToText(merged.content.readings))
+      // Merging into the in-progress draft, not the stored card, so unsaved
+      // edits aren't lost — and the merged fields land back in the form,
+      // where concatenated text can be tidied before saving.
+      const merged = await applyDuplicateVerdicts(currentCardDraft(), changes)
+      if (changes.merge.length > 0) {
+        if (merged.kind === "vocabulary") {
+          setVocab(merged.content)
+          setFuriganaDraft(readingsMapToText(merged.content.readings ?? {}))
+        } else {
+          setGrammar(merged.content)
+          setFuriganaDraft(readingsMapToText(merged.content.readings))
+        }
       }
+      setShowDuplicatesModal(false)
     } catch (x) {
-      setMergeErr(x instanceof Error ? x.message : "統合に失敗しました。")
+      setDuplicatesErr(x instanceof Error ? x.message : "保存に失敗しました。")
     } finally {
-      setMergingId(null)
+      setSavingDuplicates(false)
     }
   }
 
@@ -544,7 +530,7 @@ export function CardEditPage() {
               className="btn secondary"
               onClick={() => {
                 // Don't reopen onto a failure from an earlier visit.
-                setMergeErr(null)
+                setDuplicatesErr(null)
                 setShowDuplicatesModal(true)
               }}
             >
@@ -561,11 +547,9 @@ export function CardEditPage() {
         <DuplicateCardsModal
           matches={duplicateMatches}
           dismissed={dismissedDuplicates}
-          mergingId={mergingId}
-          error={mergeErr}
-          onMerge={onMergeDuplicate}
-          onMarkNotDuplicate={(match) => void onMarkNotDuplicate(match)}
-          onRestoreDuplicate={(match) => void onRestoreDuplicate(match)}
+          saving={savingDuplicates}
+          error={duplicatesErr}
+          onSave={(changes) => void onSaveDuplicates(changes)}
           onClose={() => setShowDuplicatesModal(false)}
         />
       )}

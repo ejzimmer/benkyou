@@ -12,12 +12,12 @@ import {
   type JudgementSnapshot,
 } from "../../services/review"
 import {
+  applyDuplicateVerdicts,
   clearLeech,
   deleteCard,
-  markCardsNotDuplicates,
   markLeech,
-  unmarkCardsNotDuplicates,
 } from "../../services/cards"
+import { db } from "../../lib/db/schema"
 import { useSync } from "../../lib/sync/SyncContext"
 import { finalizeReadingAnswer, hasLatinScript } from "../../lib/japanese/normalize"
 import { matchesConfusedWord } from "../../lib/japanese/confusedWords"
@@ -27,7 +27,7 @@ import { ReviewSessionPromptBody } from "./ReviewSessionPromptBody"
 import { ReviewFooter } from "./ReviewFooter"
 import { LeechModal } from "./LeechModal"
 import { LeechBadge } from "../../ui/LeechBadge"
-import { DuplicateCardsModal } from "../cards/DuplicateCardsModal"
+import { DuplicateCardsModal, type DuplicateChanges } from "../cards/DuplicateCardsModal"
 import { useDuplicateCards } from "../cards/useDuplicateCards"
 import {
   clearReviewSessionTimer,
@@ -375,6 +375,7 @@ export function ReviewSessionPage() {
     useDuplicateCards(current?.card)
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false)
   const [duplicateErr, setDuplicateErr] = useState<string | null>(null)
+  const [savingDuplicates, setSavingDuplicates] = useState(false)
   const duplicateCardId = current?.card.id
 
   // Close the modal when moving on to the next card, and when the last
@@ -714,12 +715,39 @@ export function ReviewSessionPage() {
     advanceAfterIncorrect({ ...item, isLeech: true }, wasWrong, key)
   }
 
-  async function runDuplicateUpdate(update: () => Promise<void>) {
+  async function onSaveDuplicates(changes: DuplicateChanges) {
+    if (!current) return
+    const cardId = current.card.id
     setDuplicateErr(null)
+    setSavingDuplicates(true)
     try {
-      await update()
+      // The stored row, not the queue's copy: the queue snapshots its cards
+      // when the session starts, so merging into that copy would write back
+      // anything changed since (an edit, a sync, a dismissal) as it was.
+      const target = (await db.cards.get(cardId)) ?? current.card
+      const merged = await applyDuplicateVerdicts(target, changes)
+      if (changes.merge.length > 0) {
+        // The merged-in cards are gone, so their own items can't be
+        // reviewed any more; this card's items show its merged content.
+        const removed = new Set(changes.merge.map((card) => card.id))
+        setSessionQueue((q) =>
+          q
+            .filter((it) => !removed.has(it.card.id))
+            .map((it) => (it.card.id === cardId ? { ...it, card: merged } : it)),
+        )
+        updateWrongKeys((prev) => {
+          const next = new Set(prev)
+          for (const k of next) {
+            if (removed.has(k.slice(0, k.lastIndexOf(":")))) next.delete(k)
+          }
+          return next
+        })
+      }
+      setShowDuplicatesModal(false)
     } catch (x) {
       setDuplicateErr(x instanceof Error ? x.message : "保存に失敗しました。")
+    } finally {
+      setSavingDuplicates(false)
     }
   }
 
@@ -1043,17 +1071,9 @@ export function ReviewSessionPage() {
         <DuplicateCardsModal
           matches={duplicateMatches}
           dismissed={dismissedDuplicates}
+          saving={savingDuplicates}
           error={duplicateErr}
-          onMarkNotDuplicate={(match) =>
-            void runDuplicateUpdate(() =>
-              markCardsNotDuplicates(item.card.id, match.id),
-            )
-          }
-          onRestoreDuplicate={(match) =>
-            void runDuplicateUpdate(() =>
-              unmarkCardsNotDuplicates(item.card.id, match.id),
-            )
-          }
+          onSave={(changes) => void onSaveDuplicates(changes)}
           onClose={() => setShowDuplicatesModal(false)}
         />
       )}

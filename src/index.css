@@ -344,14 +344,14 @@ textarea {
   background: #0f0f18;
   color: inherit;
   color-scheme: dark;
-  caret-color: var(--blue);
+  caret-color: var(--switch-accent);
   font: inherit;
 }
 
 .input::selection,
 select::selection,
 textarea::selection {
-  background: var(--blue);
+  background: var(--switch-accent);
   color: #0f0f18;
 }
 
@@ -379,13 +379,22 @@ fieldset.plain legend {
 }
 
 .switch {
+  /* Overridden by .switch-orange below; everything in the switch draws its
+     accent from these two. */
+  --switch-accent: var(--blue);
+  --switch-thumb-top: hsl(200 100% 62%);
   position: relative;
   display: inline-flex;
-  border: 1px solid var(--blue);
+  border: 1px solid var(--switch-accent);
   border-radius: 10px;
   background: var(--on-fluoro);
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.switch-orange {
+  --switch-accent: var(--orange);
+  --switch-thumb-top: oklch(86% 0.14 65);
 }
 
 .switch:has(input:disabled) {
@@ -413,7 +422,7 @@ fieldset.plain legend {
   bottom: 0;
   width: 50%;
   border-radius: 9px 0 0 9px;
-  background: linear-gradient(180deg, hsl(200 100% 62%), var(--blue) 65%);
+  background: linear-gradient(180deg, var(--switch-thumb-top), var(--switch-accent) 65%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
   transition:
     left 0.2s ease,
@@ -440,7 +449,7 @@ fieldset.plain legend {
   font-size: 0.92rem;
   font-style: normal;
   font-weight: 600;
-  color: var(--blue);
+  color: var(--switch-accent);
   white-space: nowrap;
   cursor: pointer;
   transition: color 0.2s ease;
@@ -461,8 +470,8 @@ fieldset.plain legend {
 .switch:has(.switch-option:hover):not(:has(input:disabled)) {
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.4),
-    0 0 8px var(--blue),
-    0 0 20px var(--blue);
+    0 0 8px var(--switch-accent),
+    0 0 20px var(--switch-accent);
 }
 
 .switch-option input {
@@ -478,7 +487,7 @@ fieldset.plain legend {
 }
 
 .switch-option:has(input:focus-visible) {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--switch-accent);
   outline-offset: -2px;
 }
 
@@ -2142,29 +2151,30 @@ code {
   max-width: 420px;
 }
 
-.duplicate-cards-panel .card-list a {
+.duplicate-card-list li {
+  gap: 1rem;
+  padding: 0.6rem 0;
+}
+
+/* Word over its card kind, so the kind can't wrap around the switch beside
+   it on a narrow screen. */
+.duplicate-card-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.duplicate-card-label a {
   font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+
+.duplicate-card-list .switch-group {
+  flex-shrink: 0;
 }
 
 .duplicate-cards-footer {
   justify-content: flex-end;
-}
-
-.duplicate-card-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.duplicate-cards-dismissed {
-  margin-top: 1.5rem;
-  border-top: 1px solid #2a2a3e;
-  padding-top: 0.5rem;
-}
-
-.duplicate-cards-dismissed h3 {
-  margin: 0;
-  font-weight: normal;
 }
 
 .duplicate-badge {

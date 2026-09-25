@@ -137,9 +137,10 @@ describe("duplicate indicator on the review screen", () => {
     await user.click(badge)
 
     const dialog = await screen.findByRole("dialog")
-    expect(within(dialog).getByText(/猫/)).toBeInTheDocument()
-    // Merging needs the edit form's draft, so it isn't offered here.
-    expect(within(dialog).queryByRole("button", { name: "統合" })).not.toBeInTheDocument()
+    expect(within(dialog).getByRole("link", { name: "猫" })).toBeInTheDocument()
+    // The same 同じ/違う switch as on the edit page.
+    expect(within(dialog).getByRole("radio", { name: "同じ" })).toBeInTheDocument()
+    expect(within(dialog).getByRole("radio", { name: "違う" })).toBeInTheDocument()
 
     // The session is still underneath, uninterrupted.
     expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
@@ -165,11 +166,9 @@ describe("duplicate indicator on the review screen", () => {
     renderReview()
 
     await user.click(await screen.findByRole("button", { name: /重複の可能性/ }))
-    await user.click(
-      within(await screen.findByRole("dialog")).getByRole("button", {
-        name: "重複ではない",
-      }),
-    )
+    const dialog = await screen.findByRole("dialog")
+    await user.click(within(dialog).getByRole("radio", { name: "違う" }))
+    await user.click(within(dialog).getByRole("button", { name: "保存" }))
 
     // The badge goes away, and the verdict is recorded on both cards so the
     // other one stops flagging this pair too.
@@ -178,6 +177,45 @@ describe("duplicate indicator on the review screen", () => {
     })
     expect((await db.cards.get(card.id))?.notDuplicateOf).toEqual(["other-card"])
     expect((await db.cards.get("other-card"))?.notDuplicateOf).toEqual([card.id])
+  })
+
+  it("merges a card picked as 同じ into the one under review", async () => {
+    const card = await seedCard("猫", "ねこ")
+    await db.cards.put({
+      id: "other-card",
+      deckId: card.deckId,
+      kind: "vocabulary",
+      content: {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["a cat, on a second card"],
+        images: [],
+        exampleSentences: [],
+      },
+      updatedAt: Date.now(),
+    })
+
+    const user = userEvent.setup()
+    renderReview()
+
+    await user.click(await screen.findByRole("button", { name: /重複の可能性/ }))
+    const dialog = await screen.findByRole("dialog")
+    await user.click(within(dialog).getByRole("radio", { name: "同じ" }))
+    await user.click(within(dialog).getByRole("button", { name: "保存" }))
+
+    await waitFor(async () => {
+      expect(await db.cards.get("other-card")).toBeUndefined()
+    })
+    const merged = await db.cards.get(card.id)
+    expect(merged?.kind === "vocabulary" && merged.content.definitionsEn).toEqual([
+      "a cat, on a second card",
+    ])
+    // Nothing left to flag, and the session carries on with the same card.
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    })
+    expect(screen.queryByRole("button", { name: /重複の可能性/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
   })
 
   it("does not let Enter on a modal button fall through and reveal the answer", async () => {
@@ -201,7 +239,8 @@ describe("duplicate indicator on the review screen", () => {
 
     await user.click(await screen.findByRole("button", { name: /重複の可能性/ }))
     const dialog = await screen.findByRole("dialog")
-    within(dialog).getByRole("button", { name: "重複ではない" }).focus()
+    await user.click(within(dialog).getByRole("radio", { name: "違う" }))
+    within(dialog).getByRole("button", { name: "保存" }).focus()
     await user.keyboard("{Enter}")
 
     // The button activated, and the session behind the modal stayed on the
@@ -420,11 +459,13 @@ describe("the duplicate modal does not disturb the session", () => {
 
     await user.click(screen.getByRole("button", { name: /重複の可能性/ }))
     const dialog = await screen.findByRole("dialog")
-    await user.click(within(dialog).getByRole("button", { name: "重複ではない" }))
-    await user.click(within(dialog).getByRole("button", { name: "閉じる" }))
+    await user.click(within(dialog).getByRole("radio", { name: "違う" }))
+    await user.click(within(dialog).getByRole("button", { name: "保存" }))
 
     // The badge is gone, so the focus trap has nothing to restore to.
-    expect(screen.queryByRole("button", { name: /重複の可能性/ })).not.toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /重複の可能性/ })).not.toBeInTheDocument()
+    })
     await waitFor(() => expect(correct).toHaveFocus())
   })
 
@@ -440,7 +481,8 @@ describe("the duplicate modal does not disturb the session", () => {
 
     // Make the dismissal write fail once, so the modal shows an error.
     const put = vi.spyOn(db.cards, "put").mockRejectedValueOnce(new Error("書き込み失敗"))
-    await user.click(within(dialog).getByRole("button", { name: "重複ではない" }))
+    await user.click(within(dialog).getByRole("radio", { name: "違う" }))
+    await user.click(within(dialog).getByRole("button", { name: "保存" }))
     expect(await within(dialog).findByText("書き込み失敗")).toBeInTheDocument()
     put.mockRestore()
 
