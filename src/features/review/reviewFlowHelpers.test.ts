@@ -156,6 +156,18 @@ describe("reviewFlowHelpers", () => {
     )
   })
 
+  it("answersMatch treats Arabic numerals as the kanji for the whole number", () => {
+    expect(answersMatch("vocab_type_word_from_clue", "一時", "1時")).toBe(true)
+    expect(answersMatch("vocab_type_word_from_clue", "1時", "一時")).toBe(true)
+    expect(answersMatch("vocab_type_word_from_clue", "十一", "11")).toBe(true)
+    expect(answersMatch("vocab_type_word_from_clue", "11", "十一")).toBe(true)
+    expect(answersMatch("vocab_type_word_from_clue", "一一", "11")).toBe(false)
+    expect(answersMatch("vocab_type_word_from_clue", "11", "一一")).toBe(false)
+    expect(answersMatch("grammar_type_construction", "三時、五分", "3時, 5分")).toBe(
+      true,
+    )
+  })
+
   it("answersMatch folds kana within a multi-part answer and across /-alternates", () => {
     expect(
       answersMatch("vocab_type_reading", "けつろん、コーヒー", "けつろん, こーひー"),
