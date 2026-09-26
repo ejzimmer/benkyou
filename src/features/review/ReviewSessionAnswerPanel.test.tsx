@@ -94,6 +94,23 @@ describe("ReviewSessionAnswerPanel", () => {
     })
   })
 
+  it("shows the typed numeral variant rather than the card's spelling", () => {
+    render(
+      <ReviewSessionAnswerPanel
+        item={vocabWordItem}
+        typed="1回"
+        expected="一回"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+
+    const answer = screen.getByRole("group", { name: "答え" })
+    expect(within(answer).getByText("1回")).toBeInTheDocument()
+    expect(within(answer).queryByText("一回")).not.toBeInTheDocument()
+  })
+
   it("aligns missing hiragana under the correct answer, then focuses Incorrect", async () => {
     render(
       <ReviewSessionAnswerPanel
