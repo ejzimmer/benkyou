@@ -244,17 +244,22 @@ function splitAlternates(expected: string): string[] {
   return parts.length > 1 ? parts : []
 }
 
+/** Modes whose answers compare gap by gap (see `normalizeGapAnswers`). */
+function comparesByGap(mode: ReviewModeId): boolean {
+  return (
+    mode === "grammar_type_construction" ||
+    mode === "vocab_type_reading" ||
+    mode === "grammar_type_reading"
+  )
+}
+
 function candidateMatches(
   mode: ReviewModeId,
   typed: string,
   candidate: string,
 ): boolean {
   const fold = (s: string) => foldKatakanaToHiragana(arabicToKanjiNumerals(s))
-  if (
-    mode === "grammar_type_construction" ||
-    mode === "vocab_type_reading" ||
-    mode === "grammar_type_reading"
-  ) {
+  if (comparesByGap(mode)) {
     return (
       fold(normalizeGapAnswers(typed)) === fold(normalizeGapAnswers(candidate))
     )
@@ -288,12 +293,34 @@ export function answersMatch(
 }
 
 /**
+ * Whether `typed` matches `candidate` only because numerals were folded
+ * (1回 typed for 一回) — i.e. the two differ once kana script and gap
+ * formatting are ignored, but match once Arabic numerals are also folded.
+ */
+function matchesAsNumeralVariant(
+  mode: ReviewModeId,
+  typed: string,
+  candidate: string,
+): boolean {
+  const format = (s: string) =>
+    foldKatakanaToHiragana(comparesByGap(mode) ? normalizeGapAnswers(s) : s)
+  return (
+    format(typed) !== format(candidate) &&
+    candidateMatches(mode, typed, candidate)
+  )
+}
+
+/**
  * The answer to display once judged correct: when `expected` lists "/"
  * alternates and `typed` matches one of them specifically, show just that
  * alternate rather than the raw "A/B" — otherwise a reading/furigana meant
- * for one alternate would be shown stacked over both. Falls back to the full
- * `expected` text when nothing was typed yet (nothing revealed as "correct")
- * or the literal un-split field is what actually matched.
+ * for one alternate would be shown stacked over both. When the match only
+ * holds because of numeral folding (1回 typed for 一回), show what was typed
+ * instead — the learner's own accepted variant, not a different spelling of
+ * it. (A kana-script-only match still shows the card's own spelling, so the
+ * 正解/不正解 controls can still mark the script itself wrong.) Falls back
+ * to the full `expected` text when nothing was typed yet (nothing revealed
+ * as "correct") or the literal un-split field is what actually matched.
  */
 export function displayedCorrectAnswer(
   mode: ReviewModeId,
@@ -301,6 +328,10 @@ export function displayedCorrectAnswer(
   expected: string,
 ): string {
   const alternates = splitAlternates(expected)
-  if (alternates.length === 0) return expected
-  return alternates.find((alt) => candidateMatches(mode, typed, alt)) ?? expected
+  const matched =
+    alternates.find((alt) => candidateMatches(mode, typed, alt)) ??
+    (candidateMatches(mode, typed, expected) ? expected : undefined)
+  if (matched === undefined) return expected
+  if (matchesAsNumeralVariant(mode, typed, matched)) return typed.trim()
+  return matched
 }

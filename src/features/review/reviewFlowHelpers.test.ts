@@ -3,6 +3,7 @@ import {
   answerMissingKanji,
   answersMatch,
   appliesConfusedWordCheck,
+  displayedCorrectAnswer,
   expectedAnswer,
   hasMissingDoubledN,
   hasNonHiraganaReadingAnswer,
@@ -277,5 +278,27 @@ describe("reviewFlowHelpers", () => {
     expect(isReadingTypingMode("grammar_type_reading")).toBe(true)
     expect(isReadingTypingMode("vocab_type_reading")).toBe(true)
     expect(isReadingTypingMode("grammar_type_construction")).toBe(false)
+  })
+
+  it("displayedCorrectAnswer shows the typed answer for a numeral variant", () => {
+    expect(
+      displayedCorrectAnswer("vocab_type_word_from_clue", "1回", "一回"),
+    ).toBe("1回")
+    expect(
+      displayedCorrectAnswer("vocab_type_word_from_clue", "1回", "一度/一回"),
+    ).toBe("1回")
+    // Exact, kana-script-only and wrong answers keep the card's spelling.
+    expect(
+      displayedCorrectAnswer("vocab_type_word_from_clue", "一回", "一回"),
+    ).toBe("一回")
+    expect(displayedCorrectAnswer("vocab_type_reading", "こーひー", "コーヒー")).toBe(
+      "コーヒー",
+    )
+    expect(
+      displayedCorrectAnswer("vocab_type_word_from_clue", "2回", "一回"),
+    ).toBe("一回")
+    expect(
+      displayedCorrectAnswer("grammar_type_construction", "は、が", "は, が"),
+    ).toBe("は, が")
   })
 })
