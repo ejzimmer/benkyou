@@ -37,7 +37,8 @@ import {
 import { deleteImageBlob, saveImageBlob } from "../../services/media"
 import { db } from "../../lib/db/schema"
 import { CardImage } from "../../ui/CardImage"
-import { normalizeJapanese } from "../../lib/japanese/normalize"
+import { toHiragana } from "wanakana"
+import { finalizeReadingAnswer, normalizeJapanese } from "../../lib/japanese/normalize"
 import { japaneseWordForCard } from "../../domain/duplicates"
 import { DuplicateCardsModal, type DuplicateChanges } from "./DuplicateCardsModal"
 import { useDuplicateCards } from "./useDuplicateCards"
@@ -283,7 +284,7 @@ export function CardEditPage() {
           id: cardId,
           deckId,
           kind: "vocabulary",
-          content: vocab,
+          content: finalizeVocabReading(vocab),
           updatedAt: Date.now(),
         }
       : {
@@ -291,7 +292,7 @@ export function CardEditPage() {
           id: cardId,
           deckId,
           kind: "grammar",
-          content: grammar,
+          content: finalizeGrammarReading(grammar),
           updatedAt: Date.now(),
         }
   }
@@ -328,20 +329,21 @@ export function CardEditPage() {
     setErr(null)
     try {
       if (kind === "vocabulary") {
-        const validationErr = validateVocabulary(vocab)
+        const finalVocab = finalizeVocabReading(vocab)
+        const validationErr = validateVocabulary(finalVocab)
         if (validationErr) {
           setErr(validationErr)
           return
         }
         if (isNew) {
-          await createVocabularyCard(deckId, vocab)
+          await createVocabularyCard(deckId, finalVocab)
           resetNewCardForm()
           return
         } else {
           await saveCard(currentCardDraft())
         }
       } else {
-        const normalizedGrammar = normalizeGrammarContent(grammar)
+        const normalizedGrammar = normalizeGrammarContent(finalizeGrammarReading(grammar))
         const validationErr = validateGrammar(normalizedGrammar)
         if (validationErr) {
           setErr(validationErr)
@@ -628,7 +630,7 @@ export function CardEditPage() {
                 aria-label="読み方"
                 value={vocab.reading ?? ""}
                 onChange={(e) => {
-                  const reading = e.target.value
+                  const reading = toReadingInput(e.target.value)
                   setVocab((v) => ({
                     ...v,
                     reading: reading || undefined,
@@ -771,7 +773,7 @@ export function CardEditPage() {
                 aria-label="読み方"
                 value={grammar.constructionReading ?? ""}
                 onChange={(e) => {
-                  const reading = e.target.value
+                  const reading = toReadingInput(e.target.value)
                   setGrammar((g) => ({
                     ...g,
                     constructionReading: reading || undefined,
@@ -865,4 +867,23 @@ export function CardEditPage() {
       </form>
     </div>
   )
+}
+
+/**
+ * Live-convert what's typed into a ひらがなで field, the same way review's
+ * reading answers are: romaji (and katakana) become hiragana as you type.
+ */
+function toReadingInput(value: string): string {
+  return toHiragana(value, { IMEMode: true })
+}
+
+/** Fix a dangling IME "n" left at the end of the reading on save. */
+function finalizeVocabReading(v: VocabularyCardContent): VocabularyCardContent {
+  return v.reading ? { ...v, reading: finalizeReadingAnswer(v.reading) } : v
+}
+
+function finalizeGrammarReading(g: GrammarCardContent): GrammarCardContent {
+  return g.constructionReading
+    ? { ...g, constructionReading: finalizeReadingAnswer(g.constructionReading) }
+    : g
 }
