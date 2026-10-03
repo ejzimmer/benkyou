@@ -34,6 +34,32 @@ describe("CardEditPage create flow", () => {
     await resetDatabase()
   })
 
+  it("converts romaji typed into the reading field to hiragana, fixing a trailing n on save", async () => {
+    const user = userEvent.setup()
+    renderNewCardPage()
+
+    await user.type(screen.getByLabelText("日本語で"), "勉強")
+    const reading = screen.getByRole("textbox", { name: /^読み方$/ })
+    await user.type(reading, "benkyou")
+    expect(reading).toHaveValue("べんきょう")
+
+    await user.clear(reading)
+    await user.type(reading, "sen")
+    expect(reading).toHaveValue("せn")
+
+    await user.type(screen.getByLabelText("意味"), "thousand")
+    await user.click(screen.getByRole("button", { name: "保存" }))
+
+    await waitFor(async () => {
+      expect(await db.cards.count()).toBe(1)
+    })
+    const [card] = await db.cards.toArray()
+    if (!card || card.kind !== "vocabulary") {
+      throw new Error("Expected a saved vocabulary card")
+    }
+    expect(card.content.reading).toBe("せん")
+  })
+
   it("resets the new-card form instead of returning to the deck", async () => {
     const user = userEvent.setup()
     renderNewCardPage()
