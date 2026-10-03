@@ -8,6 +8,7 @@ import { useMemo, useState } from "react"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
+import { cardMatchesQuery } from "../../domain/cardSearch"
 import { NextReviewBar } from "../../ui/NextReviewBar"
 import { LeechBadge } from "../../ui/LeechBadge"
 import { UserMenu } from "../../ui/UserMenu"
@@ -59,19 +60,7 @@ export function DeckPage() {
   const filtered = useMemo(() => {
     const list = cards ?? []
     if (!q.trim()) return list
-    const n = q.toLowerCase()
-    return list.filter((c) => {
-      if (c.kind === "vocabulary") {
-        return (
-          c.content.wordJa.includes(q) ||
-          c.content.definitionsEn.some((d) => d.toLowerCase().includes(n))
-        )
-      }
-      return (
-        c.content.sentenceWithGap.includes(q) ||
-        c.content.translationEn.toLowerCase().includes(n)
-      )
-    })
+    return list.filter((c) => cardMatchesQuery(c, q))
   }, [cards, q])
 
   function onDeleteDeck() {
