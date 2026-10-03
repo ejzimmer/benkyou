@@ -330,6 +330,50 @@ a:hover {
   margin-top: 1rem;
 }
 
+/* Deck list: the all-decks card search and the add-deck form share one row
+   above the deck list, each taking half; on a phone they wrap onto their own
+   lines at full width. */
+.deck-list-toolbar > * {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+/* Keep 作る on the same line as its name field; the toolbar does the wrapping. */
+.deck-list-toolbar .deck-create {
+  flex-wrap: nowrap;
+}
+
+.deck-list-toolbar .add-deck-btn {
+  white-space: nowrap;
+}
+
+.deck-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Stands in for a placeholder (which the UI conventions rule out): the
+   magnifier tells the field apart from the add-deck name input beside it. */
+.deck-search-icon {
+  position: absolute;
+  left: 0.65rem;
+  width: 1rem;
+  height: 1rem;
+  color: #8a8aa6;
+  pointer-events: none;
+}
+
+.deck-search .input {
+  appearance: none;
+  padding-left: 2.1rem;
+}
+
+.deck-search-results a.muted {
+  text-align: right;
+  margin-left: 1rem;
+}
+
 .toolbar-count {
   margin-right: auto;
 }
