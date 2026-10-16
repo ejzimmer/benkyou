@@ -745,7 +745,7 @@ export function ReviewSessionPromptBody({
  * for a word that's just as correct written without them. */
 function KanjiWarning({ onAcceptTyped }: { onAcceptTyped?: () => void }) {
   return (
-    <div className="stack">
+    <div className="stack kanji-warning">
       <p className="error">この解答には漢字が必要です。</p>
       {onAcceptTyped && (
         <button

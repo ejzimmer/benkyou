@@ -1,0 +1,93 @@
+import { useEffect, useId, useRef, type ReactNode } from "react"
+import { PlusIcon } from "../../ui/PlusIcon"
+import { CloseIcon } from "../../ui/CloseIcon"
+
+type Props = {
+  /** The field's label text (日本語で / 答え). */
+  label: string
+  /** Renders the card's main answer input (the first row), given the id the
+   * label points at. */
+  renderPrimaryInput: (id: string) => ReactNode
+  /** Other spellings also accepted as correct (`alternateAnswers`). */
+  alternates: string[]
+  onAlternatesChange: (alternates: string[]) => void
+}
+
+/**
+ * A card's answer field plus any number of extra accepted answers, one input
+ * each, stacked under it. The + button always sits at the end of the last
+ * input and adds another below it; each extra input's × removes it.
+ */
+export function AnswerInputs({
+  label,
+  renderPrimaryInput,
+  alternates,
+  onAlternatesChange,
+}: Props) {
+  const primaryId = useId()
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const focusIndexRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const i = focusIndexRef.current
+    if (i == null) return
+    focusIndexRef.current = null
+    inputRefs.current[i]?.focus()
+  }, [alternates.length])
+
+  function add() {
+    focusIndexRef.current = alternates.length
+    onAlternatesChange([...alternates, ""])
+  }
+
+  function remove(index: number) {
+    onAlternatesChange(alternates.filter((_, i) => i !== index))
+  }
+
+  const addButton = (
+    <button
+      type="button"
+      className="answer-icon-btn"
+      aria-label="答えを追加"
+      onClick={add}
+    >
+      <PlusIcon className="answer-icon" />
+    </button>
+  )
+
+  return (
+    <div className="answer-inputs">
+      <label htmlFor={primaryId}>{label}</label>
+      <div className="answer-input-row">
+        {renderPrimaryInput(primaryId)}
+        {alternates.length === 0 && addButton}
+      </div>
+      {alternates.map((value, i) => (
+        <div key={i} className="answer-input-row">
+          <input
+            ref={(el) => {
+              inputRefs.current[i] = el
+            }}
+            className="input"
+            aria-label={`${label}（${i + 2}）`}
+            value={value}
+            onChange={(e) =>
+              onAlternatesChange(
+                alternates.map((a, j) => (j === i ? e.target.value : a)),
+              )
+            }
+          />
+          <button
+            type="button"
+            className="answer-icon-btn"
+            aria-label={`${label}（${i + 2}）を削除`}
+            onClick={() => remove(i)}
+          >
+            <CloseIcon className="answer-icon" />
+          </button>
+          {i === alternates.length - 1 && addButton}
+        </div>
+      ))}
+    </div>
+  )
+}

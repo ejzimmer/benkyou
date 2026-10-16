@@ -288,6 +288,55 @@ a:hover {
   border: 1px solid #fff;
 }
 
+/* A card's answer input plus its extra accepted answers (AnswerInputs):
+   each input keeps the form's usual 75% width, with its × / + icon buttons
+   right after it on the same underline baseline. */
+.answer-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.answer-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.answer-input-row + .answer-input-row {
+  margin-top: 0.4rem;
+}
+
+.card-edit-form .answer-input-row input.input {
+  flex: 0 1 75%;
+  min-width: 0;
+}
+
+.answer-icon-btn {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+}
+
+.answer-icon-btn:hover,
+.answer-icon-btn:focus-visible {
+  outline: none;
+  filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #fff);
+}
+
+.answer-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
 .card-edit-form textarea.input:focus-visible {
   outline: none;
   box-shadow:
@@ -311,6 +360,16 @@ a:hover {
 
 .align-start {
   align-self: flex-start;
+}
+
+/* The needs-kanji message with its accept button below it — positioned as
+   one unit under the input (see `.answer-input-anchor > .kanji-warning`). */
+.kanji-warning {
+  gap: 0.5rem;
+}
+
+.kanji-warning .error {
+  margin: 0;
 }
 
 .row {
@@ -1602,8 +1661,9 @@ fieldset.plain legend {
    renders as a plain `.stack` child, not inside an anchor — with nothing to
    protect from shifting, it can stay in normal flow and centered like any
    other single `.stack` child. */
-.answer-input-anchor .error,
-.answer-input-anchor .warn {
+.answer-input-anchor > .error,
+.answer-input-anchor > .warn,
+.answer-input-anchor > .kanji-warning {
   position: absolute;
   top: 100%;
   left: 0;
