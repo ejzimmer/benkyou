@@ -54,4 +54,13 @@ describe("AnswerInputs", () => {
     expect(screen.queryByLabelText("日本語で（3）")).not.toBeInTheDocument()
     expect(document.querySelector("output")?.textContent).toBe('["ネコ"]')
   })
+
+  it("moves focus to the input above when × removes a row", async () => {
+    const user = userEvent.setup()
+    render(<Harness initial={["ねこ", "ネコ"]} />)
+    await user.click(screen.getByRole("button", { name: "日本語で（3）を削除" }))
+    expect(screen.getByLabelText("日本語で（2）")).toHaveFocus()
+    await user.click(screen.getByRole("button", { name: "日本語で（2）を削除" }))
+    expect(screen.getByLabelText("日本語で")).toHaveFocus()
+  })
 })
