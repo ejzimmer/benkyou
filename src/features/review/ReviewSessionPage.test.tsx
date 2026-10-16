@@ -891,6 +891,93 @@ describe("ReviewSessionPage", () => {
     expect(screen.getByRole("button", { name: /答えを見る/ })).toBeInTheDocument()
   })
 
+  function renderResumed(cardId: string, modeId: string) {
+    render(
+      <MemoryRouter
+        initialEntries={[`/review?resumeCardId=${cardId}&resumeModeId=${modeId}`]}
+      >
+        <AuthProvider>
+          <SyncProvider>
+            <Routes>
+              <Route path="/review" element={<ReviewSessionPage />} />
+            </Routes>
+          </SyncProvider>
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+  }
+
+  it("grades a kana answer listed in the card's other accepted answers as correct instead of asking for kanji", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    const card = await createVocabularyCard(deck.id, {
+      wordJa: "猫",
+      reading: "ねこ",
+      definitionsEn: ["cat"],
+      images: [],
+      exampleSentences: [],
+      alternateAnswers: ["ねこ"],
+    })
+    renderResumed(card.id, "vocab_type_word_from_clue")
+
+    const input = await screen.findByLabelText("日本語で")
+    await user.type(input, "ねこ{Enter}")
+
+    expect(await screen.findByText("正解です")).toBeInTheDocument()
+    expect(screen.queryByText(/漢字が必要/)).not.toBeInTheDocument()
+  })
+
+  it("accepts a kana answer from the needs-kanji warning and remembers it on the card", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    const card = await createVocabularyCard(deck.id, {
+      wordJa: "猫",
+      reading: "ねこ",
+      definitionsEn: ["cat"],
+      images: [],
+      exampleSentences: [],
+    })
+    renderResumed(card.id, "vocab_type_word_from_clue")
+
+    const input = await screen.findByLabelText("日本語で")
+    await user.type(input, "ねこ{Enter}")
+    await screen.findByText(/漢字が必要/)
+    await user.click(screen.getByRole("button", { name: "この答えも正解にする" }))
+
+    expect(await screen.findByText("正解です")).toBeInTheDocument()
+    const saved = await db.cards.get(card.id)
+    expect(saved?.content.alternateAnswers).toEqual(["ねこ"])
+  })
+
+  it("accepts a wrong kanji answer for a kana card from the revealed answer", async () => {
+    await resetDatabase()
+    const user = userEvent.setup()
+    const deck = await createDeck("T")
+    const card = await createVocabularyCard(deck.id, {
+      wordJa: "きれい",
+      definitionsEn: ["pretty"],
+      images: [],
+      exampleSentences: [],
+    })
+    renderResumed(card.id, "vocab_type_word_from_clue")
+
+    const input = await screen.findByLabelText("日本語で")
+    await user.type(input, "綺麗{Enter}")
+    const accept = await screen.findByRole("button", {
+      name: "この答えも正解にする",
+    })
+    await user.click(accept)
+
+    expect(await screen.findByText("正解です")).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "この答えも正解にする" }),
+    ).not.toBeInTheDocument()
+    const saved = await db.cards.get(card.id)
+    expect(saved?.content.alternateAnswers).toEqual(["綺麗"])
+  })
+
   it("blocks submitting a kana-only answer for a fill-in-the-gap construction whose answer has kanji", async () => {
     await resetDatabase()
     const user = userEvent.setup()

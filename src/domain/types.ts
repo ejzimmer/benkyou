@@ -50,6 +50,12 @@ export type VocabularyCardContent = {
    * answer wasn't recalled.
    */
   confusedWith?: string[]
+  /**
+   * Other spellings also graded as correct when typing the word — e.g. the
+   * kana form of a word stored in kanji (たべる for 食べる), or vice versa.
+   * `wordJa` stays the answer shown on reveal.
+   */
+  alternateAnswers?: string[]
 }
 
 export type GrammarCardContent = {
@@ -86,6 +92,9 @@ export type GrammarCardContent = {
   /** Other Japanese constructions the author habitually mixes this one up
    * with — see `VocabularyCardContent.confusedWith`. */
   confusedWith?: string[]
+  /** Other spellings also graded as correct when typing the construction —
+   * see `VocabularyCardContent.alternateAnswers`. */
+  alternateAnswers?: string[]
 }
 
 export type Card =

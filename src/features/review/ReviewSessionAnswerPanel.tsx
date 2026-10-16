@@ -6,6 +6,8 @@ import { furiganaSegments } from "../../domain/readingsMap"
 import { useScrollShadow } from "../../ui/useScrollShadow"
 import { ReviewFooter } from "./ReviewFooter"
 import {
+  acceptsAlternateAnswers,
+  alternateAnswersFor,
   answersMatch,
   differsOnlyByPunctuation,
   displayedCorrectAnswer,
@@ -27,6 +29,10 @@ export type ReviewSessionAnswerPanelProps = {
   pendingIncorrectDelay: boolean
   onJudge: (correct: boolean) => void
   onUndoAnswer: () => void
+  /** Adds the typed answer to the card's `alternateAnswers` so it grades as
+   * correct (now and from then on) — offered when a typed word/construction
+   * was judged wrong, e.g. a kana spelling of a word stored in kanji. */
+  onAcceptTyped?: () => void
   /**
    * Whether "Show answer" lives on the question side for this mode (oral
    * modes, or a construction gap typed inline in the question sentence —
@@ -61,6 +67,7 @@ export function ReviewSessionAnswerPanel({
   pendingIncorrectDelay,
   onJudge,
   onUndoAnswer,
+  onAcceptTyped,
   showFlipBack = false,
   active = true,
   refocusToken = 0,
@@ -70,7 +77,17 @@ export function ReviewSessionAnswerPanel({
   const answerContentRef = useScrollShadow<HTMLDivElement>()
   const correctBtnRef = useRef<HTMLButtonElement>(null)
   const incorrectBtnRef = useRef<HTMLButtonElement>(null)
-  const answeredCorrectly = answersMatch(m, typed, expected)
+  const answeredCorrectly = answersMatch(
+    m,
+    typed,
+    expected,
+    alternateAnswersFor(card, m),
+  )
+  const canAcceptTyped =
+    Boolean(onAcceptTyped) &&
+    acceptsAlternateAnswers(m) &&
+    !answeredCorrectly &&
+    Boolean(typed.trim())
   // When `expected` lists "/"-separated alternates, show just the one the
   // learner actually matched — the raw "A/B" isn't itself an answer anyone
   // typed, and a reading/furigana meant for one alternate would otherwise be
@@ -173,6 +190,16 @@ export function ReviewSessionAnswerPanel({
           onClick={() => onUndoAnswer()}
         >
           やり直す
+        </button>
+      )}
+      {canAcceptTyped && (
+        <button
+          type="button"
+          className="btn secondary"
+          disabled={pendingIncorrectDelay}
+          onClick={() => onAcceptTyped?.()}
+        >
+          この答えも正解にする
         </button>
       )}
     </ReviewFooter>

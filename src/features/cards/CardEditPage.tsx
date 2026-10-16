@@ -609,6 +609,25 @@ export function CardEditPage() {
               </p>
             )}
             <label>
+              他の正解
+              <textarea
+                className="input"
+                rows={2}
+                aria-label="他の正解"
+                aria-describedby="alternate-answers-help"
+                value={(vocab.alternateAnswers ?? []).join("\n")}
+                onChange={(e) =>
+                  setVocab({
+                    ...vocab,
+                    alternateAnswers: e.target.value.split("\n"),
+                  })
+                }
+              />
+            </label>
+            <p id="alternate-answers-help" className="muted small">
+              1行に1つ。ひらがなや漢字など、他の書き方も正解にします。
+            </p>
+            <label>
               意味
               <input
                 className={inputClass("definitionsEn")}
@@ -744,6 +763,25 @@ export function CardEditPage() {
                 {duplicateJapaneseWarning}
               </p>
             )}
+            <label>
+              他の正解
+              <textarea
+                className="input"
+                rows={2}
+                aria-label="他の正解"
+                aria-describedby="alternate-answers-help"
+                value={(grammar.alternateAnswers ?? []).join("\n")}
+                onChange={(e) =>
+                  setGrammar({
+                    ...grammar,
+                    alternateAnswers: e.target.value.split("\n"),
+                  })
+                }
+              />
+            </label>
+            <p id="alternate-answers-help" className="muted small">
+              1行に1つ。ひらがなや漢字など、他の書き方も正解にします。
+            </p>
             <LabeledToggle
               legend="テスト"
               name="grammar-sides"

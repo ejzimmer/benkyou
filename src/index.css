@@ -309,6 +309,10 @@ a:hover {
   align-self: flex-end;
 }
 
+.align-start {
+  align-self: flex-start;
+}
+
 .row {
   display: flex;
   gap: 0.5rem;

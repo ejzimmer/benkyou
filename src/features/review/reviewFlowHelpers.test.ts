@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  alternateAnswersFor,
   answerMissingKanji,
   answersMatch,
   appliesConfusedWordCheck,
@@ -300,5 +301,24 @@ describe("reviewFlowHelpers", () => {
     expect(
       displayedCorrectAnswer("grammar_type_construction", "は、が", "は, が"),
     ).toBe("は, が")
+  })
+})
+
+describe("alternate accepted answers", () => {
+  it("accepts any of the card's alternate answers in the word modes only", () => {
+    const card = vocabCard()
+    card.content.alternateAnswers = ["ねこ", " "]
+    expect(alternateAnswersFor(card, "vocab_type_word_from_clue")).toEqual(["ねこ"])
+    expect(alternateAnswersFor(card, "vocab_type_reading")).toEqual([])
+    expect(
+      answersMatch("vocab_type_word_from_clue", "ねこ", "猫", ["ねこ"]),
+    ).toBe(true)
+    expect(answersMatch("vocab_type_word_from_clue", "ねこ", "猫")).toBe(false)
+  })
+
+  it("still shows the card's own spelling when an alternate matched", () => {
+    expect(displayedCorrectAnswer("vocab_type_word_from_clue", "ねこ", "猫")).toBe(
+      "猫",
+    )
   })
 })

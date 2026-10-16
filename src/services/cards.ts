@@ -207,6 +207,34 @@ async function setNotDuplicatePair(
   for (const id of written) markCardEdited(id)
 }
 
+/**
+ * Add `answer` to a card's alternate accepted answers (see
+ * `VocabularyCardContent.alternateAnswers`) — used from a review session to
+ * accept what was just typed. Like `setNotDuplicatePair`, deliberately not
+ * routed through `saveCard`: the card's review modes don't change, so its
+ * scheduling rows and leech flags are left alone. Returns the updated card,
+ * or the card unchanged when the answer was already listed (undefined if the
+ * card no longer exists).
+ */
+export async function addAlternateAnswer(
+  cardId: string,
+  answer: string,
+): Promise<Card | undefined> {
+  const trimmed = answer.trim()
+  const card = await db.cards.get(cardId)
+  if (!card || !trimmed) return card
+  const existing = card.content.alternateAnswers ?? []
+  if (existing.some((a) => a.trim() === trimmed)) return card
+  const content = {
+    ...card.content,
+    alternateAnswers: [...existing.filter((a) => a.trim()), trimmed],
+  }
+  const updated = { ...card, content, updatedAt: Date.now() } as Card
+  await db.cards.put(updated)
+  markCardEdited(cardId)
+  return updated
+}
+
 /** Stop reporting `cardIdB` as a possible duplicate of `cardIdA`, and vice versa. */
 export async function markCardsNotDuplicates(
   cardIdA: string,
@@ -265,7 +293,11 @@ function mergeVocabularyContent(
     definitionsEn: [...target.definitionsEn, ...source.definitionsEn],
     images: mergeImages(target.images, source.images),
     exampleSentences: [...target.exampleSentences, ...source.exampleSentences],
-    confusedWith: mergeConfusedWith(target.confusedWith, source.confusedWith),
+    confusedWith: mergeWordLists(target.confusedWith, source.confusedWith),
+    alternateAnswers: mergeWordLists(
+      target.alternateAnswers,
+      source.alternateAnswers,
+    ),
   }
 }
 
@@ -290,12 +322,16 @@ function mergeGrammarContent(
     readings: mergeReadings(target.readings, source.readings),
     images: mergeImages(target.images, source.images),
     singleSided: isSingleSided(target) || isSingleSided(source),
-    confusedWith: mergeConfusedWith(target.confusedWith, source.confusedWith),
+    confusedWith: mergeWordLists(target.confusedWith, source.confusedWith),
+    alternateAnswers: mergeWordLists(
+      target.alternateAnswers,
+      source.alternateAnswers,
+    ),
   }
 }
 
-/** Union of both cards' flagged confusable words, deduped. */
-function mergeConfusedWith(
+/** Union of both cards' word lists (confusable words, alternate answers), deduped. */
+function mergeWordLists(
   target: string[] | undefined,
   source: string[] | undefined,
 ): string[] {
@@ -429,6 +465,7 @@ export function defaultVocabulary(): VocabularyCardContent {
     images: [],
     exampleSentences: [],
     confusedWith: [],
+    alternateAnswers: [],
   }
 }
 
@@ -444,6 +481,7 @@ export function defaultGrammar(): GrammarCardContent {
     images: [],
     singleSided: false,
     confusedWith: [],
+    alternateAnswers: [],
   }
 }
 
@@ -475,6 +513,7 @@ export function vocabularyFromGrammarContent(
     images: [...content.images],
     exampleSentences: [content.sentenceWithGap],
     confusedWith: [...(content.confusedWith ?? [])],
+    alternateAnswers: [...(content.alternateAnswers ?? [])],
   }
 }
 
@@ -502,6 +541,7 @@ export function grammarFromVocabularyContent(
     readings: { ...(content.readings ?? {}) },
     images: [...content.images],
     confusedWith: [...(content.confusedWith ?? [])],
+    alternateAnswers: [...(content.alternateAnswers ?? [])],
   }
 }
 
