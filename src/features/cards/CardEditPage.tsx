@@ -609,13 +609,17 @@ export function CardEditPage() {
               onAlternatesChange={(alternateAnswers) =>
                 setVocab((v) => ({ ...v, alternateAnswers }))
               }
+              primaryMessages={
+                <>
+                  <FieldError err={err} field="wordJa" />
+                  {duplicateJapaneseWarning && (
+                    <p className="warn small" role="status">
+                      {duplicateJapaneseWarning}
+                    </p>
+                  )}
+                </>
+              }
             />
-            <FieldError err={err} field="wordJa" />
-            {duplicateJapaneseWarning && (
-              <p className="warn small" role="status">
-                {duplicateJapaneseWarning}
-              </p>
-            )}
             <label>
               意味
               <input
@@ -752,13 +756,17 @@ export function CardEditPage() {
               onAlternatesChange={(alternateAnswers) =>
                 setGrammar((g) => ({ ...g, alternateAnswers }))
               }
+              primaryMessages={
+                <>
+                  <FieldError err={err} field="construction" />
+                  {duplicateJapaneseWarning && (
+                    <p className="warn small" role="status">
+                      {duplicateJapaneseWarning}
+                    </p>
+                  )}
+                </>
+              }
             />
-            <FieldError err={err} field="construction" />
-            {duplicateJapaneseWarning && (
-              <p className="warn small" role="status">
-                {duplicateJapaneseWarning}
-              </p>
-            )}
             <LabeledToggle
               legend="テスト"
               name="grammar-sides"
@@ -894,14 +902,14 @@ function toReadingInput(value: string): string {
 
 /** Fix a dangling IME "n" left at the end of the reading on save. */
 function finalizeVocabReading(v: VocabularyCardContent): VocabularyCardContent {
-  const withAnswers = { ...v, alternateAnswers: nonBlankAnswers(v.alternateAnswers) }
+  const withAnswers = { ...v, alternateAnswers: nonBlankAnswers(v.alternateAnswers, v.wordJa) }
   return v.reading
     ? { ...withAnswers, reading: finalizeReadingAnswer(v.reading) }
     : withAnswers
 }
 
 function finalizeGrammarReading(g: GrammarCardContent): GrammarCardContent {
-  const withAnswers = { ...g, alternateAnswers: nonBlankAnswers(g.alternateAnswers) }
+  const withAnswers = { ...g, alternateAnswers: nonBlankAnswers(g.alternateAnswers, g.construction) }
   return g.constructionReading
     ? {
         ...withAnswers,
@@ -910,8 +918,16 @@ function finalizeGrammarReading(g: GrammarCardContent): GrammarCardContent {
     : withAnswers
 }
 
-/** Extra answer inputs left empty (added with + but never filled in) aren't
- * saved. */
-function nonBlankAnswers(answers: string[] | undefined): string[] {
-  return (answers ?? []).map((a) => a.trim()).filter(Boolean)
+/** Extra answers as saved: trimmed, without inputs left empty (added with +
+ * but never filled in), repeats, or a copy of the main answer itself. */
+function nonBlankAnswers(
+  answers: string[] | undefined,
+  primary: string,
+): string[] {
+  const main = primary.trim()
+  return [
+    ...new Set(
+      (answers ?? []).map((a) => a.trim()).filter((a) => a && a !== main),
+    ),
+  ]
 }
