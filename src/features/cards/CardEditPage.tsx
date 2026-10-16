@@ -40,6 +40,7 @@ import { CardImage } from "../../ui/CardImage"
 import { toHiragana } from "wanakana"
 import { finalizeReadingAnswer, normalizeJapanese } from "../../lib/japanese/normalize"
 import { japaneseWordForCard } from "../../domain/duplicates"
+import { AnswerInputs } from "./AnswerInputs"
 import { DuplicateCardsModal, type DuplicateChanges } from "./DuplicateCardsModal"
 import { useDuplicateCards } from "./useDuplicateCards"
 import { ConfirmModal } from "../../ui/ConfirmModal"
@@ -585,48 +586,36 @@ export function CardEditPage() {
 
         {kind === "vocabulary" ? (
           <>
-            <label>
-              日本語で
-              <input
-                ref={firstFieldRef}
-                className={inputClass("wordJa")}
-                value={vocab.wordJa}
-                onChange={(e) => {
-                  const wordJa = e.target.value
-                  const kanaOnly = isKanaOnly(wordJa)
-                  const reading = kanaOnly ? undefined : vocab.reading
-                  const readingParts = kanaOnly ? {} : vocab.readingParts
-                  setVocab((v) => ({ ...v, wordJa, reading, readingParts }))
-                  clearFieldErr("wordJa")
-                }}
-                required
-              />
-            </label>
+            <AnswerInputs
+              label="日本語で"
+              renderPrimaryInput={(id) => (
+                <input
+                  id={id}
+                  ref={firstFieldRef}
+                  className={inputClass("wordJa")}
+                  value={vocab.wordJa}
+                  onChange={(e) => {
+                    const wordJa = e.target.value
+                    const kanaOnly = isKanaOnly(wordJa)
+                    const reading = kanaOnly ? undefined : vocab.reading
+                    const readingParts = kanaOnly ? {} : vocab.readingParts
+                    setVocab((v) => ({ ...v, wordJa, reading, readingParts }))
+                    clearFieldErr("wordJa")
+                  }}
+                  required
+                />
+              )}
+              alternates={vocab.alternateAnswers ?? []}
+              onAlternatesChange={(alternateAnswers) =>
+                setVocab((v) => ({ ...v, alternateAnswers }))
+              }
+            />
             <FieldError err={err} field="wordJa" />
             {duplicateJapaneseWarning && (
               <p className="warn small" role="status">
                 {duplicateJapaneseWarning}
               </p>
             )}
-            <label>
-              他の正解
-              <textarea
-                className="input"
-                rows={2}
-                aria-label="他の正解"
-                aria-describedby="alternate-answers-help"
-                value={(vocab.alternateAnswers ?? []).join("\n")}
-                onChange={(e) =>
-                  setVocab({
-                    ...vocab,
-                    alternateAnswers: e.target.value.split("\n"),
-                  })
-                }
-              />
-            </label>
-            <p id="alternate-answers-help" className="muted small">
-              1行に1つ。ひらがなや漢字など、他の書き方も正解にします。
-            </p>
             <label>
               意味
               <input
@@ -746,42 +735,30 @@ export function CardEditPage() {
               />
             </label>
             <FieldError err={err} field="sentenceWithGap" />
-            <label>
-              答え
-              <input
-                className={inputClass("construction")}
-                value={grammar.construction}
-                onChange={(e) => {
-                  setGrammar({ ...grammar, construction: e.target.value })
-                  clearFieldErr("construction")
-                }}
-              />
-            </label>
+            <AnswerInputs
+              label="答え"
+              renderPrimaryInput={(id) => (
+                <input
+                  id={id}
+                  className={inputClass("construction")}
+                  value={grammar.construction}
+                  onChange={(e) => {
+                    setGrammar({ ...grammar, construction: e.target.value })
+                    clearFieldErr("construction")
+                  }}
+                />
+              )}
+              alternates={grammar.alternateAnswers ?? []}
+              onAlternatesChange={(alternateAnswers) =>
+                setGrammar((g) => ({ ...g, alternateAnswers }))
+              }
+            />
             <FieldError err={err} field="construction" />
             {duplicateJapaneseWarning && (
               <p className="warn small" role="status">
                 {duplicateJapaneseWarning}
               </p>
             )}
-            <label>
-              他の正解
-              <textarea
-                className="input"
-                rows={2}
-                aria-label="他の正解"
-                aria-describedby="alternate-answers-help"
-                value={(grammar.alternateAnswers ?? []).join("\n")}
-                onChange={(e) =>
-                  setGrammar({
-                    ...grammar,
-                    alternateAnswers: e.target.value.split("\n"),
-                  })
-                }
-              />
-            </label>
-            <p id="alternate-answers-help" className="muted small">
-              1行に1つ。ひらがなや漢字など、他の書き方も正解にします。
-            </p>
             <LabeledToggle
               legend="テスト"
               name="grammar-sides"
@@ -917,11 +894,24 @@ function toReadingInput(value: string): string {
 
 /** Fix a dangling IME "n" left at the end of the reading on save. */
 function finalizeVocabReading(v: VocabularyCardContent): VocabularyCardContent {
-  return v.reading ? { ...v, reading: finalizeReadingAnswer(v.reading) } : v
+  const withAnswers = { ...v, alternateAnswers: nonBlankAnswers(v.alternateAnswers) }
+  return v.reading
+    ? { ...withAnswers, reading: finalizeReadingAnswer(v.reading) }
+    : withAnswers
 }
 
 function finalizeGrammarReading(g: GrammarCardContent): GrammarCardContent {
+  const withAnswers = { ...g, alternateAnswers: nonBlankAnswers(g.alternateAnswers) }
   return g.constructionReading
-    ? { ...g, constructionReading: finalizeReadingAnswer(g.constructionReading) }
-    : g
+    ? {
+        ...withAnswers,
+        constructionReading: finalizeReadingAnswer(g.constructionReading),
+      }
+    : withAnswers
+}
+
+/** Extra answer inputs left empty (added with + but never filled in) aren't
+ * saved. */
+function nonBlankAnswers(answers: string[] | undefined): string[] {
+  return (answers ?? []).map((a) => a.trim()).filter(Boolean)
 }
