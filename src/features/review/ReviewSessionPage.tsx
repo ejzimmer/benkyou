@@ -40,6 +40,7 @@ import {
 } from "./reviewSessionTimer"
 import { readWrongKeys, writeWrongKeys } from "./reviewWrongKeys"
 import {
+  acceptsAlternateAnswers,
   alternateAnswersFor,
   answerMissingKanji,
   answersMatch,
@@ -585,7 +586,7 @@ export function ReviewSessionPage() {
    * answer; on the revealed answer the panel just re-grades it as correct.
    */
   async function onAcceptTyped() {
-    if (!current) return
+    if (!current || !acceptsAlternateAnswers(current.modeId)) return
     const answer = typed.trim()
     if (!answer) return
     const updated = await addAlternateAnswer(current.card.id, answer)
