@@ -231,6 +231,23 @@ export function expectedAnswer(card: Card, mode: ReviewModeId): string {
 }
 
 /**
+ * Extra spellings the card accepts for `mode` (its `alternateAnswers`) —
+ * only for the modes that type the word/construction itself, where kana vs
+ * kanji spellings of the same answer come up. Blank entries are dropped.
+ */
+export function alternateAnswersFor(card: Card, mode: ReviewModeId): string[] {
+  if (!acceptsAlternateAnswers(mode)) return []
+  return (card.content.alternateAnswers ?? [])
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/** Modes where a typed answer can be added to the card's `alternateAnswers`. */
+export function acceptsAlternateAnswers(mode: ReviewModeId): boolean {
+  return mode === "vocab_type_word_from_clue" || mode === "grammar_type_construction"
+}
+
+/**
  * A card author can write two acceptable answers separated by "/" (e.g.
  * "たべる/たべます") to accept either. Empty when there's one or fewer
  * non-empty parts — a lone "/" with nothing on one side is left as literal
@@ -281,14 +298,16 @@ function candidateMatches(
  * "/"-separated alternates, matching any one of them counts as correct — the
  * literal, un-split `expected` is always tried too, so a field whose "/" is
  * ordinary text (not an alternate list, e.g. a literal "1/2") still matches
- * itself exactly.
+ * itself exactly. `alternates` (the card's `alternateAnswers`, see
+ * `alternateAnswersFor`) are accepted the same way.
  */
 export function answersMatch(
   mode: ReviewModeId,
   typed: string,
   expected: string,
+  alternates: string[] = [],
 ): boolean {
-  const candidates = [expected, ...splitAlternates(expected)]
+  const candidates = [expected, ...splitAlternates(expected), ...alternates]
   return candidates.some((candidate) => candidateMatches(mode, typed, candidate))
 }
 
@@ -321,6 +340,9 @@ function matchesAsNumeralVariant(
  * 正解/不正解 controls can still mark the script itself wrong.) Falls back
  * to the full `expected` text when nothing was typed yet (nothing revealed
  * as "correct") or the literal un-split field is what actually matched.
+ * An answer accepted only via the card's own `alternateAnswers` (たべる for
+ * 食べる) also shows the full `expected` — those are other spellings of the
+ * same answer, so the card's main spelling is the one worth seeing.
  */
 export function displayedCorrectAnswer(
   mode: ReviewModeId,

@@ -234,6 +234,7 @@ describe("card type conversions", () => {
       images: ["image-1"],
       exampleSentences: ["私は___です"],
       confusedWith: [],
+      alternateAnswers: [],
     })
   })
 
@@ -256,6 +257,7 @@ describe("card type conversions", () => {
       readings: {},
       images: ["image-1"],
       confusedWith: [],
+      alternateAnswers: [],
     })
   })
 
@@ -377,6 +379,7 @@ describe("mergeCardContent", () => {
       images: ["img-a", "img-b"],
       exampleSentences: ["猫がいます"],
       confusedWith: [],
+      alternateAnswers: [],
     })
   })
 

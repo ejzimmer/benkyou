@@ -363,6 +363,14 @@ export function cardDiffRows(
         remote: formatList(r.confusedWith),
       })
     }
+    if (!arraysEqual(l.alternateAnswers, r.alternateAnswers)) {
+      rows.push({
+        label: "他の正解",
+        kind: "text",
+        local: formatList(l.alternateAnswers),
+        remote: formatList(r.alternateAnswers),
+      })
+    }
   } else if (local.kind === "grammar" && remote.kind === "grammar") {
     const l = local.content
     const r = remote.content
@@ -436,6 +444,14 @@ export function cardDiffRows(
         kind: "text",
         local: formatList(l.confusedWith),
         remote: formatList(r.confusedWith),
+      })
+    }
+    if (!arraysEqual(l.alternateAnswers, r.alternateAnswers)) {
+      rows.push({
+        label: "他の正解",
+        kind: "text",
+        local: formatList(l.alternateAnswers),
+        remote: formatList(r.alternateAnswers),
       })
     }
   } else {
