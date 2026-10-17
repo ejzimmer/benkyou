@@ -12,7 +12,6 @@ import {
   type JudgementSnapshot,
 } from "../../services/review"
 import {
-  addAlternateAnswer,
   applyDuplicateVerdicts,
   clearLeech,
   deleteCard,
@@ -40,7 +39,6 @@ import {
 } from "./reviewSessionTimer"
 import { readWrongKeys, writeWrongKeys } from "./reviewWrongKeys"
 import {
-  acceptsAlternateAnswers,
   alternateAnswersFor,
   answerMissingKanji,
   answersMatch,
@@ -578,28 +576,6 @@ export function ReviewSessionPage() {
     return true
   }
 
-  /**
-   * Accept what was typed as another correct spelling of this card's answer
-   * (e.g. the kana form of a word stored in kanji): saves it to the card's
-   * `alternateAnswers`, so it grades as correct now and in later reviews.
-   * From the prompt (the needs-kanji warning) this goes on to reveal the
-   * answer; on the revealed answer the panel just re-grades it as correct.
-   */
-  async function onAcceptTyped() {
-    if (!current || !acceptsAlternateAnswers(current.modeId)) return
-    const answer = typed.trim()
-    if (!answer) return
-    const updated = await addAlternateAnswer(current.card.id, answer)
-    if (!updated) return
-    setSessionQueue((q) =>
-      q.map((it) => (it.card.id === updated.id ? { ...it, card: updated } : it)),
-    )
-    if (phase === "prompt") {
-      setKanjiWarn(false)
-      void prepareAndShowAnswer()
-    }
-  }
-
   const tryShowAnswerRef = useRef(() => {})
   tryShowAnswerRef.current = () => {
     let finalTyped = typed
@@ -982,7 +958,6 @@ export function ReviewSessionPage() {
                   onTypedChange={handleTypedChange}
                   readingWarn={readingWarn}
                   kanjiWarn={kanjiWarn}
-                  onAcceptTyped={() => void onAcceptTyped()}
                   latinWarn={latinWarn}
                   nWarn={nWarn}
                   confusedMatch={confusedMatch}
@@ -1048,7 +1023,6 @@ export function ReviewSessionPage() {
                       onTypedChange={handleTypedChange}
                       readingWarn={readingWarn}
                       kanjiWarn={kanjiWarn}
-                      onAcceptTyped={() => void onAcceptTyped()}
                       latinWarn={latinWarn}
                       nWarn={nWarn}
                       confusedMatch={confusedMatch}
@@ -1093,7 +1067,6 @@ export function ReviewSessionPage() {
                     pendingIncorrectDelay={pendingIncorrectDelay}
                     onJudge={(correct) => void onJudge(correct)}
                     onUndoAnswer={() => void onUndoAnswer()}
-                    onAcceptTyped={() => void onAcceptTyped()}
                     active={phase === "answer"}
                     refocusToken={answerRefocusToken}
                     showFlipBack={buttonOnQuestionSide}

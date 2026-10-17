@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { db } from "../lib/db/schema"
 import { resetDatabase } from "../test/db"
 import {
-  addAlternateAnswer,
   defaultVocabulary,
   markCardsNotDuplicates,
   mergeCardContent,
@@ -114,24 +113,5 @@ describe("mergeCardContent and not-duplicate verdicts", () => {
   it("leaves the field unset when neither card had a verdict", () => {
     const merged = mergeCardContent(vocabCard("card-1", "猫"), vocabCard("card-2", "猫"))
     expect(merged.notDuplicateOf).toBeUndefined()
-  })
-})
-
-describe("addAlternateAnswer", () => {
-  beforeEach(async () => {
-    await resetDatabase()
-    clearSessionEdits()
-  })
-
-  it("adds a trimmed answer once, bumps updatedAt and marks the card edited", async () => {
-    await db.cards.put(vocabCard("a", "猫"))
-    const updated = await addAlternateAnswer("a", " ねこ ")
-    expect(updated?.content.alternateAnswers).toEqual(["ねこ"])
-    expect(updated!.updatedAt).toBeGreaterThan(1_000)
-    expect(getSessionEditedCardIds()).toContain("a")
-
-    const again = await addAlternateAnswer("a", "ねこ")
-    expect(again?.content.alternateAnswers).toEqual(["ねこ"])
-    expect((await db.cards.get("a"))?.content.alternateAnswers).toEqual(["ねこ"])
   })
 })

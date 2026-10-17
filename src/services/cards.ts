@@ -207,34 +207,6 @@ async function setNotDuplicatePair(
   for (const id of written) markCardEdited(id)
 }
 
-/**
- * Add `answer` to a card's alternate accepted answers (see
- * `VocabularyCardContent.alternateAnswers`) — used from a review session to
- * accept what was just typed. Like `setNotDuplicatePair`, deliberately not
- * routed through `saveCard`: the card's review modes don't change, so its
- * scheduling rows and leech flags are left alone. Returns the updated card,
- * or the card unchanged when the answer was already listed (undefined if the
- * card no longer exists).
- */
-export async function addAlternateAnswer(
-  cardId: string,
-  answer: string,
-): Promise<Card | undefined> {
-  const trimmed = answer.trim()
-  const card = await db.cards.get(cardId)
-  if (!card || !trimmed) return card
-  const existing = card.content.alternateAnswers ?? []
-  if (existing.some((a) => a.trim() === trimmed)) return card
-  const content = {
-    ...card.content,
-    alternateAnswers: [...existing.filter((a) => a.trim()), trimmed],
-  }
-  const updated = { ...card, content, updatedAt: Date.now() } as Card
-  await db.cards.put(updated)
-  markCardEdited(cardId)
-  return updated
-}
-
 /** Stop reporting `cardIdB` as a possible duplicate of `cardIdA`, and vice versa. */
 export async function markCardsNotDuplicates(
   cardIdA: string,
