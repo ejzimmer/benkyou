@@ -139,10 +139,6 @@ export type ReviewSessionPromptBodyProps = {
    * easy to mix up with the actual answer — the matched word itself, so the
    * message can name it. A validation error, not a graded mistake. */
   confusedMatch?: string | null
-  /** Accepts the typed answer as another correct spelling for this card
-   * (adding it to `alternateAnswers`) — offered next to the kanji warning,
-   * for a word that's fine written in kana. */
-  onAcceptTyped?: () => void
   /** Called when user presses Enter in a typing field */
   onTypedSubmit: () => void
   /** Answer is visible — show the prompt only, not typing inputs or warnings */
@@ -185,7 +181,6 @@ export function ReviewSessionPromptBody({
   latinWarn = false,
   nWarn = false,
   confusedMatch = null,
-  onAcceptTyped,
   onTypedSubmit,
   revealed = false,
   column,
@@ -467,7 +462,7 @@ export function ReviewSessionPromptBody({
           {latinWarn && (
             <p className="error">解答は日本語で入力してください。</p>
           )}
-          {kanjiWarn && <KanjiWarning onAcceptTyped={onAcceptTyped} />}
+          {kanjiWarn && <KanjiWarning />}
           {confusedMatch && (
             <p className="error">
               「{confusedMatch}」は、このカードの解答と似ています。
@@ -570,7 +565,7 @@ export function ReviewSessionPromptBody({
         {latinWarn && (
           <p className="error">解答は日本語で入力してください。</p>
         )}
-        {kanjiWarn && <KanjiWarning onAcceptTyped={onAcceptTyped} />}
+        {kanjiWarn && <KanjiWarning />}
         {confusedMatch && (
           <p className="error">
             「{confusedMatch}」は、このカードの解答と似ています。
@@ -741,21 +736,11 @@ export function ReviewSessionPromptBody({
   )
 }
 
-/** "This answer needs kanji", plus a way to accept the kana answer anyway
- * for a word that's just as correct written without them. */
-function KanjiWarning({ onAcceptTyped }: { onAcceptTyped?: () => void }) {
+/** "This answer needs kanji". */
+function KanjiWarning() {
   return (
     <div className="stack kanji-warning">
       <p className="error">この解答には漢字が必要です。</p>
-      {onAcceptTyped && (
-        <button
-          type="button"
-          className="btn secondary align-start"
-          onClick={onAcceptTyped}
-        >
-          この答えも正解にする
-        </button>
-      )}
     </div>
   )
 }

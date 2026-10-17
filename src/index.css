@@ -358,12 +358,8 @@ a:hover {
   align-self: flex-end;
 }
 
-.align-start {
-  align-self: flex-start;
-}
-
-/* The needs-kanji message with its accept button below it — positioned as
-   one unit under the input (see `.answer-input-anchor > .kanji-warning`). */
+/* The needs-kanji message, positioned under the input (see
+   `.answer-input-anchor > .kanji-warning`). */
 .kanji-warning {
   gap: 0.5rem;
 }
