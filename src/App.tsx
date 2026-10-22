@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom"
-import { DeckListPage } from "./features/decks/DeckListPage"
+import { CollectionPage } from "./features/collection/CollectionPage"
+import { NewCardRedirect } from "./features/collection/NewCardRedirect"
 import { DeckPage } from "./features/decks/DeckPage"
 import { CardEditPage } from "./features/cards/CardEditPage"
 import { ReviewSessionPage } from "./features/review/ReviewSessionPage"
@@ -36,7 +37,8 @@ export function App() {
   return (
     <div className="app-shell">
       <Routes>
-        <Route path="/" element={<DeckListPage />} />
+        <Route path="/" element={<CollectionPage />} />
+        <Route path="/cards/new" element={<NewCardRedirect />} />
         <Route path="/decks/:deckId" element={<DeckPage />} />
         <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
         <Route path="/decks/:deckId/cards/:cardId" element={<CardEditPage />} />
