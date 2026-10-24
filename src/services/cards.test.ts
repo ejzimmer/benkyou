@@ -238,6 +238,19 @@ describe("card type conversions", () => {
     })
   })
 
+  it("keeps a question typed with no answer yet in the word field, not the example sentences", () => {
+    expect(
+      vocabularyFromGrammarContent({
+        sentenceWithGap: "雰囲気",
+        gapMarker: "___",
+        construction: "",
+        translationEn: "",
+        readings: {},
+        images: [],
+      }),
+    ).toMatchObject({ wordJa: "雰囲気", exampleSentences: [] })
+  })
+
   it("converts vocabulary content to grammar content", () => {
     expect(
       grammarFromVocabularyContent({

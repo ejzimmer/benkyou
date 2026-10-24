@@ -104,9 +104,7 @@ export function CollectionPage() {
                   className="input"
                 />
               </div>
-              <span className="reel-counter" aria-label={`${filtered.length}枚のカード`}>
-                {String(filtered.length).padStart(4, "0")}
-              </span>
+              <span className="reel-counter muted small">{filtered.length}枚</span>
             </div>
 
             <div className="reel-window">

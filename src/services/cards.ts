@@ -474,8 +474,12 @@ export function vocabularyFromGrammarContent(
   const reading = containsKanji(content.construction)
     ? content.constructionReading
     : undefined
+  // With no answer typed yet, the question is all the user has written, so
+  // it stays in the question field (日本語で) rather than becoming an example
+  // sentence.
+  const questionOnly = !content.construction.trim()
   return {
-    wordJa: content.construction,
+    wordJa: questionOnly ? content.sentenceWithGap : content.construction,
     reading,
     readingParts: segments
       ? segmentsToReadingParts(segments)
@@ -483,7 +487,7 @@ export function vocabularyFromGrammarContent(
     readings: { ...content.readings },
     definitionsEn: [content.translationEn],
     images: [...content.images],
-    exampleSentences: [content.sentenceWithGap],
+    exampleSentences: questionOnly ? [] : [content.sentenceWithGap],
     confusedWith: [...(content.confusedWith ?? [])],
     alternateAnswers: [...(content.alternateAnswers ?? [])],
   }
