@@ -8,7 +8,7 @@ import { CollectionPage } from "./CollectionPage"
 import { NewCardRedirect } from "./NewCardRedirect"
 import { resetDatabase } from "../../test/db"
 import { createDeck, DEFAULT_DECK_NAME } from "../../services/decks"
-import { createVocabularyCard } from "../../services/cards"
+import { createVocabularyCard, markLeech } from "../../services/cards"
 import { db } from "../../lib/db/schema"
 
 vi.mock("../../lib/firebase", () => ({
@@ -64,5 +64,20 @@ describe("CollectionPage", () => {
     await waitFor(() => expect(screen.getByText("Add form")).toBeInTheDocument())
     const decks = await db.decks.toArray()
     expect(decks.map((d) => d.name)).toEqual([DEFAULT_DECK_NAME])
+  })
+
+  it("clears every leeched mode of a card when its leech badge is clicked", async () => {
+    const deck = await createDeck("A")
+    const card = await createVocabularyCard(deck.id, vocab("猫"))
+    const rows = await db.scheduling.where("cardId").equals(card.id).toArray()
+    for (const r of rows) await markLeech(card.id, r.modeId)
+    renderAt("/")
+
+    await userEvent.click(await screen.findByRole("button", { name: "リーチを解除" }))
+
+    await waitFor(async () => {
+      const after = await db.scheduling.where("cardId").equals(card.id).toArray()
+      expect(after.some((r) => r.isLeech)).toBe(false)
+    })
   })
 })

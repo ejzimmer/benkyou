@@ -3,7 +3,7 @@ import { useEffect } from "react"
 /**
  * Tracks elapsed wall-clock time (paused while the tab is hidden) and a count
  * of cards judged correct for one review session, keyed by `scopeKey`
- * (deckId, or "all" for the unscoped review). Backed by `sessionStorage`
+ * (currently always "all", the whole-collection review). Backed by `sessionStorage`
  * rather than component state so it survives a remount of `ReviewSessionPage`
  * mid-session — a browser refresh, or navigating away to edit a card and
  * back. A session's entry is only cleared by an explicit "Exit review"

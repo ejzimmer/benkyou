@@ -203,12 +203,11 @@ export function ReviewSessionPage() {
    */
   const hadDueItemsRef = useRef(false)
   /**
-   * Scope (`scopeKey`) the review-session timer was last started/resumed
-   * for. Guards against re-starting it on every `load()` call within the
-   * same mount (e.g. a mid-session sync-conflict reload) — only a genuine
-   * new scope (fresh mount, or a different deck) should reset it.
+   * Whether this mount has already started/resumed the review-session timer.
+   * Guards against re-starting it on every `load()` call within the same
+   * mount (e.g. a mid-session sync-conflict reload).
    */
-  const lastTimerScopeRef = useRef<string | null>(null)
+  const timerStartedRef = useRef(false)
   /**
    * Bumped every time the prompt (re-)becomes the active side. The
    * prompt/answer layers stay permanently mounted (so revealing the answer
@@ -244,8 +243,8 @@ export function ReviewSessionPage() {
     const q = prioritizeResumeItem(await getDueQueue(), resumeCardId, resumeModeId)
     if (q.length > 0) {
       hadDueItemsRef.current = true
-      if (lastTimerScopeRef.current !== scopeKey) {
-        lastTimerScopeRef.current = scopeKey
+      if (!timerStartedRef.current) {
+        timerStartedRef.current = true
         // Picks back up an in-progress session's timer across a browser
         // refresh (or the resume-from-card-edit remount) rather than
         // resetting it — only a genuinely new session (nothing stored,
