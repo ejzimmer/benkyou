@@ -616,3 +616,9 @@ describe("switching the form's card type", () => {
     })
   })
 })
+
+it("keeps separate definitions through a word → gap → word switch", () => {
+  const vocab = { ...defaultVocabulary(), definitionsEn: ["eat", "consume"] }
+  const back = switchFormToVocabulary(switchFormToGrammar(vocab, defaultGrammar()), vocab)
+  expect(back.definitionsEn).toEqual(["eat", "consume"])
+})

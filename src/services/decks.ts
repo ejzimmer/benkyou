@@ -24,15 +24,16 @@ export const DEFAULT_DECK_NAME = "カード"
 /**
  * The deck new cards go into now that the UI shows a single collection.
  * Decks still exist under the hood (every card has a `deckId`, and sync is
- * keyed on them), so this reuses the most recently updated existing deck and
- * only creates one when there are none yet.
+ * keyed on them), so this reuses an existing deck and only creates one when
+ * there are none yet. Ordered by id rather than `updatedAt` so the choice
+ * doesn't shift when a deck is renamed or synced, and agrees across devices.
  */
 export function getOrCreateDefaultDeck(): Promise<Deck> {
   // Shared in-flight promise: StrictMode's double-mounted effect (or a fast
   // double click) would otherwise create two default decks on an empty DB.
   defaultDeckInFlight ??= db.decks
-    .orderBy("updatedAt")
-    .last()
+    .orderBy("id")
+    .first()
     .then((latest) => latest ?? createDeck(DEFAULT_DECK_NAME))
     .finally(() => {
       defaultDeckInFlight = null

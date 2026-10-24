@@ -147,11 +147,6 @@ export async function getDueQueue(
   return randomizeDueQueue(await loadDueItems(now))
 }
 
-/** Total number of due review items across the whole collection. */
-export async function getDueCount(now = endOfLocalDay(Date.now())): Promise<number> {
-  return (await loadDueItems(now)).length
-}
-
 /** Number of due cards per deck, keyed by `deckId`. Decks with no due cards are omitted. */
 export async function getDueCountsByDeck(
   now = endOfLocalDay(Date.now()),

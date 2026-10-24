@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom"
 import { useMemo, useState } from "react"
 import { db, type SchedulingRow } from "../../lib/db/schema"
-import { getDueCount } from "../../services/review"
+import { endOfLocalDay } from "../../services/review"
+import { reviewModesForCard } from "../../domain/types"
 import { clearLeech, unsuspendCard } from "../../services/cards"
 import { isSuspendedDue } from "../../lib/srs/schedule"
 import { cardMatchesQuery } from "../../domain/cardSearch"
@@ -24,7 +25,6 @@ export function CollectionPage() {
     [],
   )
   const schedulingRows = useDebouncedQuery(() => db.scheduling.toArray(), [])
-  const dueCount = useDebouncedQuery(() => getDueCount(), []) ?? 0
   const [q, setQ] = useState("")
 
   /** Soonest-due scheduling row per card — the one that determines when it next surfaces for review. */
@@ -46,6 +46,22 @@ export function CollectionPage() {
     }
     return ids
   }, [schedulingRows])
+
+  /** Due review items, counted the same way as the review queue (only modes
+   *  still valid for their card), from the rows already loaded for the list
+   *  rather than a separate due-queue load. */
+  const dueCount = useMemo(() => {
+    if (!cards || !schedulingRows) return 0
+    const byId = new Map(cards.map((c) => [c.id, c]))
+    const cutoff = endOfLocalDay(Date.now())
+    let count = 0
+    for (const row of schedulingRows) {
+      if (row.due > cutoff) continue
+      const card = byId.get(row.cardId)
+      if (card && reviewModesForCard(card).includes(row.modeId)) count++
+    }
+    return count
+  }, [cards, schedulingRows])
 
   const filtered = useMemo(() => {
     const list = cards ?? []

@@ -534,7 +534,9 @@ export function switchFormToVocabulary(
   return {
     ...draft,
     wordJa: from.sentenceWithGap,
-    definitionsEn: from.translationEn ? [from.translationEn] : [],
+    // Same split as the word card's 意味 input, so a round trip through the
+    // gap form gives back the definitions it started with.
+    definitionsEn: from.translationEn ? from.translationEn.split("; ") : [],
     reading: from.constructionReading || undefined,
     readingParts: { ...(from.constructionReadingParts ?? {}) },
     readings: { ...from.readings },
