@@ -14,6 +14,7 @@ import { constructionReadingSegments, isSingleSided } from "../domain/grammarCon
 import { containsKanji, reviewModesForCard } from "../domain/types"
 import {
   countGaps,
+  detectGapMarker,
   normalizeGapAnswers,
   splitGapAnswers,
 } from "../domain/grammarGaps"
@@ -474,12 +475,8 @@ export function vocabularyFromGrammarContent(
   const reading = containsKanji(content.construction)
     ? content.constructionReading
     : undefined
-  // With no answer typed yet, the question is all the user has written, so
-  // it stays in the question field (日本語で) rather than becoming an example
-  // sentence.
-  const questionOnly = !content.construction.trim()
   return {
-    wordJa: questionOnly ? content.sentenceWithGap : content.construction,
+    wordJa: content.construction,
     reading,
     readingParts: segments
       ? segmentsToReadingParts(segments)
@@ -487,7 +484,7 @@ export function vocabularyFromGrammarContent(
     readings: { ...content.readings },
     definitionsEn: [content.translationEn],
     images: [...content.images],
-    exampleSentences: questionOnly ? [] : [content.sentenceWithGap],
+    exampleSentences: [content.sentenceWithGap],
     confusedWith: [...(content.confusedWith ?? [])],
     alternateAnswers: [...(content.alternateAnswers ?? [])],
   }
@@ -518,6 +515,49 @@ export function grammarFromVocabularyContent(
     images: [...content.images],
     confusedWith: [...(content.confusedWith ?? [])],
     alternateAnswers: [...(content.alternateAnswers ?? [])],
+  }
+}
+
+/**
+ * The card-type switch on the new-card form. Unlike the converters above,
+ * nothing moves between fields: each field that sits in the same place on
+ * both forms (the question field, 意味, ひらがなで, ふりがな, 紛らわしい言葉
+ * and 画像) keeps its text, and fields only one form has (例文 on a word
+ * card, 答え on a gap card) keep their own draft for if the user switches
+ * back. The usual reason to switch is having started typing before noticing
+ * which type was selected, not changing one's mind about the card.
+ */
+export function switchFormToVocabulary(
+  from: GrammarCardContent,
+  draft: VocabularyCardContent,
+): VocabularyCardContent {
+  return {
+    ...draft,
+    wordJa: from.sentenceWithGap,
+    definitionsEn: from.translationEn ? [from.translationEn] : [],
+    reading: from.constructionReading || undefined,
+    readingParts: { ...(from.constructionReadingParts ?? {}) },
+    readings: { ...from.readings },
+    confusedWith: [...(from.confusedWith ?? [])],
+    images: [...from.images],
+  }
+}
+
+/** The other direction of {@link switchFormToVocabulary}. */
+export function switchFormToGrammar(
+  from: VocabularyCardContent,
+  draft: GrammarCardContent,
+): GrammarCardContent {
+  return {
+    ...draft,
+    sentenceWithGap: from.wordJa,
+    gapMarker: detectGapMarker(from.wordJa),
+    translationEn: from.definitionsEn.join("; "),
+    constructionReading: from.reading,
+    constructionReadingParts: { ...(from.readingParts ?? {}) },
+    readings: { ...(from.readings ?? {}) },
+    confusedWith: [...(from.confusedWith ?? [])],
+    images: [...from.images],
   }
 }
 

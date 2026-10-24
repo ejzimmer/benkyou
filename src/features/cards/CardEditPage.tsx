@@ -32,6 +32,8 @@ import {
   saveCard,
   validateGrammar,
   validateVocabulary,
+  switchFormToGrammar,
+  switchFormToVocabulary,
   vocabularyFromGrammarContent,
 } from "../../services/cards"
 import { deleteImageBlob, saveImageBlob } from "../../services/media"
@@ -310,6 +312,17 @@ export function CardEditPage() {
 
   function onKindChange(nextKind: "vocabulary" | "grammar") {
     if (nextKind === kind) return
+
+    // On a new card the switch is usually a correction (the user started
+    // typing before noticing the type), so every field stays where it is and
+    // the shared furigana draft is left as typed. On an existing card it's a
+    // deliberate conversion, so the content is remapped to fit the new type.
+    if (isNew) {
+      if (nextKind === "vocabulary") setVocab(switchFormToVocabulary(grammar, vocab))
+      else setGrammar(switchFormToGrammar(vocab, grammar))
+      setKind(nextKind)
+      return
+    }
 
     if (nextKind === "vocabulary") {
       const nextVocab = vocabularyFromGrammarContent(grammar)

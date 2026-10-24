@@ -7,6 +7,7 @@ import { SyncProvider } from "../../lib/sync/SyncContext"
 import { db } from "../../lib/db/schema"
 import { resetDatabase } from "../../test/db"
 import { CardEditPage } from "./CardEditPage"
+import { CARD_KIND_LABELS } from "../../domain/types"
 
 vi.mock("../../lib/firebase", () => ({
   getFirebaseApp: () => null,
@@ -32,6 +33,23 @@ function renderNewCardPage() {
 describe("CardEditPage create flow", () => {
   beforeEach(async () => {
     await resetDatabase()
+  })
+
+  it("leaves typed text in the same fields when switching card type on a new card", async () => {
+    const user = userEvent.setup()
+    renderNewCardPage()
+
+    await user.type(screen.getByLabelText("日本語で"), "雰囲気")
+    await user.type(screen.getByLabelText("意味"), "atmosphere")
+    await user.click(screen.getByRole("radio", { name: CARD_KIND_LABELS.grammar }))
+
+    expect(screen.getByLabelText("問題文")).toHaveValue("雰囲気")
+    expect(screen.getByLabelText("答え")).toHaveValue("")
+    expect(screen.getByLabelText("意味")).toHaveValue("atmosphere")
+
+    await user.click(screen.getByRole("radio", { name: CARD_KIND_LABELS.vocabulary }))
+    expect(screen.getByLabelText("日本語で")).toHaveValue("雰囲気")
+    expect(screen.getByLabelText("例文")).toHaveValue("")
   })
 
   it("converts romaji typed into the reading field to hiragana, fixing a trailing n on save", async () => {

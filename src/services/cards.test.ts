@@ -6,6 +6,10 @@ import {
   validateGrammar,
   validateVocabulary,
   vocabularyFromGrammarContent,
+  defaultGrammar,
+  defaultVocabulary,
+  switchFormToGrammar,
+  switchFormToVocabulary,
 } from "./cards"
 import type { Card } from "../domain/types"
 
@@ -236,19 +240,6 @@ describe("card type conversions", () => {
       confusedWith: [],
       alternateAnswers: [],
     })
-  })
-
-  it("keeps a question typed with no answer yet in the word field, not the example sentences", () => {
-    expect(
-      vocabularyFromGrammarContent({
-        sentenceWithGap: "雰囲気",
-        gapMarker: "___",
-        construction: "",
-        translationEn: "",
-        readings: {},
-        images: [],
-      }),
-    ).toMatchObject({ wordJa: "雰囲気", exampleSentences: [] })
   })
 
   it("converts vocabulary content to grammar content", () => {
@@ -578,5 +569,50 @@ describe("mergeCardContent", () => {
     const merged = mergeCardContent(target, source)
     if (merged.kind !== "grammar") throw new Error("expected grammar")
     expect(merged.content.singleSided).toBe(true)
+  })
+})
+
+describe("switching the form's card type", () => {
+  it("keeps each field's text in place when switching a gap card to a word card", () => {
+    const draft = { ...defaultVocabulary(), exampleSentences: ["前の例文"] }
+    const next = switchFormToVocabulary(
+      {
+        ...defaultGrammar(),
+        sentenceWithGap: "雰囲気",
+        construction: "答え",
+        translationEn: "atmosphere",
+        constructionReading: "ふんいき",
+        readings: { 雰囲気: "ふんいき" },
+        images: ["image-1"],
+      },
+      draft,
+    )
+    expect(next).toMatchObject({
+      wordJa: "雰囲気",
+      definitionsEn: ["atmosphere"],
+      reading: "ふんいき",
+      readings: { 雰囲気: "ふんいき" },
+      images: ["image-1"],
+      exampleSentences: ["前の例文"],
+    })
+  })
+
+  it("keeps each field's text in place when switching a word card to a gap card", () => {
+    const draft = { ...defaultGrammar(), construction: "のに" }
+    const next = switchFormToGrammar(
+      {
+        ...defaultVocabulary(),
+        wordJa: "雨が降っている＿＿、出かけた。",
+        definitionsEn: ["even though"],
+        exampleSentences: ["例文"],
+      },
+      draft,
+    )
+    expect(next).toMatchObject({
+      sentenceWithGap: "雨が降っている＿＿、出かけた。",
+      gapMarker: "＿＿",
+      construction: "のに",
+      translationEn: "even though",
+    })
   })
 })

@@ -77,6 +77,9 @@ export function CollectionPage() {
       ) : (
         <>
           <div className="collection-actions">
+            <Link to="/cards/new" className="btn secondary">
+              カードを作る
+            </Link>
             {dueCount > 0 ? (
               <Link to="/review" className="btn primary">
                 {dueCount}枚を復習する
@@ -86,9 +89,6 @@ export function CollectionPage() {
                 復習するカードはありません
               </button>
             )}
-            <Link to="/cards/new" className="btn primary blue">
-              カードを作る
-            </Link>
           </div>
 
           <div className="reel-machine">
