@@ -21,7 +21,7 @@ function renderExistingCardPage() {
       <AuthProvider>
         <SyncProvider>
         <Routes>
-          <Route path="/decks/:deckId" element={<div>Deck page</div>} />
+          <Route path="/" element={<div>Home page</div>} />
           <Route
             path="/decks/:deckId/cards/:cardId"
             element={<CardEditPage />}
@@ -86,7 +86,7 @@ describe("CardEditPage delete card", () => {
       expect(await db.cards.get("card-1")).toBeUndefined()
     })
 
-    expect(await screen.findByText("Deck page")).toBeInTheDocument()
+    expect(await screen.findByText("Home page")).toBeInTheDocument()
   })
 
   it("keeps the card when the confirmation is cancelled", async () => {
@@ -104,7 +104,7 @@ describe("CardEditPage delete card", () => {
     ).toBeInTheDocument()
     await user.click(within(dialog).getByRole("button", { name: "キャンセル" }))
 
-    expect(screen.queryByText("Deck page")).not.toBeInTheDocument()
+    expect(screen.queryByText("Home page")).not.toBeInTheDocument()
     expect(await db.cards.get("card-1")).toBeDefined()
   })
 })

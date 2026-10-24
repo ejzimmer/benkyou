@@ -147,17 +147,6 @@ export async function getDueQueue(
   return randomizeDueQueue(await loadDueItems(now))
 }
 
-/** Number of due cards per deck, keyed by `deckId`. Decks with no due cards are omitted. */
-export async function getDueCountsByDeck(
-  now = endOfLocalDay(Date.now()),
-): Promise<Map<string, number>> {
-  const counts = new Map<string, number>()
-  for (const item of await loadDueItems(now)) {
-    counts.set(item.card.deckId, (counts.get(item.card.deckId) ?? 0) + 1)
-  }
-  return counts
-}
-
 export type JudgementSnapshot = {
   schedulingRow: SchedulingRow
 }

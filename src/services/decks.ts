@@ -43,11 +43,6 @@ export function getOrCreateDefaultDeck(): Promise<Deck> {
 
 let defaultDeckInFlight: Promise<Deck> | null = null
 
-export async function saveDeck(deck: Deck): Promise<void> {
-  const updated = { ...deck, updatedAt: Date.now() }
-  await db.decks.put(updated)
-}
-
 export async function deleteDeck(deckId: string): Promise<void> {
   const now = Date.now()
   const cards = await db.cards.where("deckId").equals(deckId).toArray()

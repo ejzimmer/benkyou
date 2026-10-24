@@ -137,7 +137,7 @@ export function CardEditPage() {
   const isNew = Boolean(isNewRoute) || cardId === "new" || !cardId
   const vocabNew = searchParams.get("vocab") !== "0"
   const returnTo = safeReturnTo(searchParams.get("returnTo"))
-  const backTo = returnTo ?? `/decks/${deckId}`
+  const backTo = returnTo ?? "/"
 
   const loadedCard = useLiveQuery(
     async () => {
@@ -215,12 +215,7 @@ export function CardEditPage() {
           const count = duplicateJapaneseCards.length
           const fieldName =
             kind === "vocabulary" ? "日本語の単語" : "解答"
-          const deckScope = duplicateJapaneseCards.some(
-            (card) => card.deckId !== deckId,
-          )
-            ? "他のデッキも含む"
-            : "このデッキ内"
-          return `警告: 同じ${fieldName}を持つカードが既に${count}件あります（${deckScope}）。このまま重複カードとして保存することもできます。`
+          return `警告: 同じ${fieldName}を持つカードが既に${count}件あります。このまま重複カードとして保存することもできます。`
         })()
       : null
 
@@ -378,7 +373,7 @@ export function CardEditPage() {
           })
         }
       }
-      navigate(returnTo ?? `/decks/${deckId}`)
+      navigate(backTo)
     } catch (x) {
       setErr({ field: null, message: x instanceof Error ? x.message : "保存に失敗しました。" })
     }
@@ -392,7 +387,7 @@ export function CardEditPage() {
     setConfirmingDelete(false)
     try {
       await deleteCard(cardId)
-      navigate(returnTo ?? `/decks/${deckId}`)
+      navigate(backTo)
     } catch (x) {
       setErr({ field: null, message: x instanceof Error ? x.message : "削除に失敗しました。" })
     }
@@ -526,7 +521,7 @@ export function CardEditPage() {
   return (
     <div className="page">
       <header className="header app-header">
-        <PageHeading backTo={backTo} backLabel={returnTo ? "戻る" : "デッキに戻る"}>
+        <PageHeading backTo={backTo} backLabel="戻る">
           {isNew ? "新規カード" : "カード編集"}
         </PageHeading>
         <div className="header-actions">

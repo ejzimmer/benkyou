@@ -389,23 +389,6 @@ a:hover {
   margin-top: 1rem;
 }
 
-/* Deck list: the all-decks card search and the add-deck form share one row
-   above the deck list, each taking half; on a phone they wrap onto their own
-   lines at full width. */
-.deck-list-toolbar > * {
-  flex: 1 1 16rem;
-  min-width: 0;
-}
-
-/* Keep 作る on the same line as its name field; the toolbar does the wrapping. */
-.deck-list-toolbar .deck-create {
-  flex-wrap: nowrap;
-}
-
-.deck-list-toolbar .add-deck-btn {
-  white-space: nowrap;
-}
-
 .deck-search {
   position: relative;
   display: flex;
@@ -413,7 +396,7 @@ a:hover {
 }
 
 /* Stands in for a placeholder (which the UI conventions rule out): the
-   magnifier tells the field apart from the add-deck name input beside it. */
+   magnifier marks the field as the card search. */
 .deck-search-icon {
   position: absolute;
   left: 0.65rem;
@@ -426,15 +409,6 @@ a:hover {
 .deck-search .input {
   appearance: none;
   padding-left: 2.1rem;
-}
-
-.deck-search-results a.muted {
-  text-align: right;
-  margin-left: 1rem;
-}
-
-.toolbar-count {
-  margin-right: auto;
 }
 
 .input,
@@ -714,7 +688,7 @@ fieldset.plain legend {
 }
 
 /* Standard secondary CTA: coloured border/text on a dark fill, glowing on
-   hover — same soft double-blur used on the deck page's back-link hover. */
+   hover — the same soft double-blur as the back-link hover. */
 .btn.secondary {
   background: transparent;
   border-color: var(--blue);
@@ -872,33 +846,17 @@ fieldset.plain legend {
   color: #fcd34d;
 }
 
-.deck-list,
 .card-list {
   list-style: none;
   padding: 0;
 }
 
-.deck-list li,
 .card-list li {
   padding: 0.35rem 0;
   border-bottom: 1px solid #2a2a3e;
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.deck-list a {
-  color: var(--green);
-}
-
-.deck-list-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.due-complete {
-  display: inline-flex;
 }
 
 .card-schedule {
@@ -2182,14 +2140,6 @@ fieldset.plain legend {
 .reading-answer-diff-line:hover .reading-answer-diff-furigana rt,
 .reading-answer-diff-line:focus-within .reading-answer-diff-furigana rt {
   opacity: 1;
-}
-
-.footer-nav {
-  margin-top: 2rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding-right: 1.25rem;
 }
 
 .page:has(.build-footer) {
