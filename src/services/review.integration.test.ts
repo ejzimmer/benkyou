@@ -5,7 +5,6 @@ import { createVocabularyCard } from "./cards"
 import {
   commitJudgement,
   endOfLocalDay,
-  getDueCountsByDeck,
   getDueQueue,
   prepareJudgement,
   randomizeDueQueue,
@@ -456,40 +455,5 @@ describe("getDueQueue day window", () => {
 
     expect(ids).toContain("today")
     expect(ids).not.toContain("tomorrow")
-  })
-})
-
-describe("getDueCountsByDeck", () => {
-  beforeEach(async () => {
-    await resetDatabase()
-  })
-
-  it("counts due cards per deck, skipping decks with nothing due", async () => {
-    const now = Date.now()
-    await seedDueCard("a1", "vocab_oral_en", now, "deckA")
-    await seedDueCard("a2", "vocab_oral_en", now, "deckA")
-    await seedDueCard("b1", "vocab_oral_en", now, "deckB")
-    await seedDueCard("c1", "vocab_oral_en", endOfLocalDay(now) + 1, "deckC")
-
-    const counts = await getDueCountsByDeck()
-
-    expect(counts.get("deckA")).toBe(2)
-    expect(counts.get("deckB")).toBe(1)
-    expect(counts.has("deckC")).toBe(false)
-  })
-
-  it("doesn't scan every card in the collection, only the ones actually due", async () => {
-    const now = Date.now()
-    await seedDueCard("due1", "vocab_oral_en", now, "deckA")
-    // A large number of not-due cards — cost should not scale with these.
-    for (let i = 0; i < 200; i++) {
-      await seedDueCard(`future${i}`, "vocab_oral_en", endOfLocalDay(now) + 1, "deckB")
-    }
-
-    const toArraySpy = vi.spyOn(db.cards, "toArray")
-    const counts = await getDueCountsByDeck()
-    expect(toArraySpy).not.toHaveBeenCalled()
-    expect(counts.get("deckA")).toBe(1)
-    toArraySpy.mockRestore()
   })
 })

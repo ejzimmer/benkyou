@@ -22,7 +22,7 @@ function renderNewCardPage() {
         <SyncProvider>
         <Routes>
           <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
-          <Route path="/decks/:deckId" element={<div>Deck page</div>} />
+          <Route path="/" element={<div>Home page</div>} />
         </Routes>
         </SyncProvider>
       </AuthProvider>
@@ -51,7 +51,7 @@ describe("CardEditPage duplicate warning", () => {
 
     expect(
       await screen.findByText(
-        /日本語の単語を持つカードが既に1件あります（他のデッキも含む）.*重複カードとして保存/,
+        /日本語の単語を持つカードが既に1件あります。.*重複カードとして保存/,
       ),
     ).toBeInTheDocument()
 

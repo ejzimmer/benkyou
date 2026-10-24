@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { toHiragana } from "wanakana"
 import {
   commitJudgement,
@@ -109,9 +109,10 @@ function prioritizeResumeItem(
 }
 
 export function ReviewSessionPage() {
-  const { deckId } = useParams()
   const navigate = useNavigate()
-  const scopeKey = deckId ?? "all"
+  // Session timer / wrong-answer storage is keyed by scope; there's only the
+  // one, whole-collection review now that decks aren't exposed.
+  const scopeKey = "all"
   useReviewSessionTimerVisibility(scopeKey)
   const [searchParams, setSearchParams] = useSearchParams()
   /**
@@ -202,12 +203,11 @@ export function ReviewSessionPage() {
    */
   const hadDueItemsRef = useRef(false)
   /**
-   * Scope (`scopeKey`) the review-session timer was last started/resumed
-   * for. Guards against re-starting it on every `load()` call within the
-   * same mount (e.g. a mid-session sync-conflict reload) — only a genuine
-   * new scope (fresh mount, or a different deck) should reset it.
+   * Whether this mount has already started/resumed the review-session timer.
+   * Guards against re-starting it on every `load()` call within the same
+   * mount (e.g. a mid-session sync-conflict reload).
    */
-  const lastTimerScopeRef = useRef<string | null>(null)
+  const timerStartedRef = useRef(false)
   /**
    * Bumped every time the prompt (re-)becomes the active side. The
    * prompt/answer layers stay permanently mounted (so revealing the answer
@@ -240,13 +240,11 @@ export function ReviewSessionPage() {
       phase: resumePhase,
       typed: resumeTyped,
     } = resumeParamsRef.current
-    const all = await getDueQueue()
-    const deckQueue = deckId ? all.filter((x) => x.card.deckId === deckId) : all
-    const q = prioritizeResumeItem(deckQueue, resumeCardId, resumeModeId)
+    const q = prioritizeResumeItem(await getDueQueue(), resumeCardId, resumeModeId)
     if (q.length > 0) {
       hadDueItemsRef.current = true
-      if (lastTimerScopeRef.current !== scopeKey) {
-        lastTimerScopeRef.current = scopeKey
+      if (!timerStartedRef.current) {
+        timerStartedRef.current = true
         // Picks back up an in-progress session's timer across a browser
         // refresh (or the resume-from-card-edit remount) rather than
         // resetting it — only a genuinely new session (nothing stored,
@@ -337,7 +335,7 @@ export function ReviewSessionPage() {
         { replace: true },
       )
     }
-  }, [deckId])
+  }, [])
 
   useEffect(() => {
     // Reload whenever a manually-triggered sync resolves a conflict — that
@@ -368,7 +366,7 @@ export function ReviewSessionPage() {
   }, [])
 
   const current = sessionQueue[0]
-  const backTo = deckId ? `/decks/${deckId}` : "/"
+  const backTo = "/"
 
   // Surfaced right in the session rather than only on the edit page: a
   // duplicate is easiest to recognise while actually reviewing the card.
@@ -695,9 +693,8 @@ export function ReviewSessionPage() {
     if (!leechPrompt) return
     const { item } = leechPrompt
     setLeechPrompt(null)
-    const returnTo = deckId ? `/decks/${deckId}/review` : "/review"
     navigate(
-      `/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(returnTo)}`,
+      `/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent("/review")}`,
     )
   }
 
@@ -876,13 +873,13 @@ export function ReviewSessionPage() {
     resumePhase: phase,
     resumeTyped: typed,
   })
-  const reviewReturnTo = `${deckId ? `/decks/${deckId}/review` : "/review"}?${reviewReturnParams}`
+  const reviewReturnTo = `/review?${reviewReturnParams}`
 
   return (
     <div className="page review">
       <header className="header review-header">
         <Link
-          to={deckId ? `/decks/${deckId}` : "/"}
+          to="/"
           className="back-link"
           aria-label="復習を終了"
           onClick={() => clearReviewSessionTimer(scopeKey)}

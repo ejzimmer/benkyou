@@ -642,7 +642,7 @@ export async function markLeech(cardId: string, modeId: string): Promise<void> {
 /** Clear a leech flag directly (clicking the badge), without requiring a
  *  full card edit. Clears one row when `modeId` is given; otherwise every
  *  leeched row for the card, since a badge shown outside review (e.g.
- *  DeckPage's) represents "any mode", not a specific one. */
+ *  the home page's) represents "any mode", not a specific one. */
 export async function clearLeech(cardId: string, modeId?: string): Promise<void> {
   const rows = modeId
     ? [await loadSchedulingRow(cardId, modeId)].filter(

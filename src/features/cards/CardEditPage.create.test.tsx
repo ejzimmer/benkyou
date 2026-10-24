@@ -22,7 +22,7 @@ function renderNewCardPage() {
         <SyncProvider>
         <Routes>
           <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
-          <Route path="/decks/:deckId" element={<div>Deck page</div>} />
+          <Route path="/" element={<div>Home page</div>} />
         </Routes>
         </SyncProvider>
       </AuthProvider>
@@ -96,7 +96,7 @@ describe("CardEditPage create flow", () => {
     }
     expect(card.content.wordJa).toBe("猫")
 
-    expect(screen.queryByText("Deck page")).not.toBeInTheDocument()
+    expect(screen.queryByText("Home page")).not.toBeInTheDocument()
     expect(
       screen.getByRole("heading", { name: "新規カード" }),
     ).toBeInTheDocument()

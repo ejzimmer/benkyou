@@ -28,7 +28,7 @@ function renderNewCardPage() {
         <SyncProvider>
         <Routes>
           <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
-          <Route path="/decks/:deckId" element={<div>Deck page</div>} />
+          <Route path="/" element={<div>Home page</div>} />
         </Routes>
         </SyncProvider>
       </AuthProvider>

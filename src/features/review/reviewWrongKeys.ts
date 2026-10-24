@@ -1,7 +1,7 @@
 /**
  * Persists which queue items (`dueItemKey` — `${cardId}:${modeId}`) have been
  * judged incorrect this session and are awaiting a correcting redo, keyed by
- * `scopeKey` (deckId, or "all"). Backed by `sessionStorage` rather than
+ * `scopeKey` (currently always "all"). Backed by `sessionStorage` rather than
  * component state so it survives the remount that happens when the user
  * navigates away mid-session to edit a card and back (`resumeCardId` flow in
  * `ReviewSessionPage`) — without this, that round trip silently forgot which
