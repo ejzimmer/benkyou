@@ -1035,10 +1035,10 @@ fieldset.plain legend {
 }
 
 /* Images sit side-by-side. When they don't fit across, the row — not the
-   card — scrolls horizontally; vertically the row grows with its images so
-   the enclosing card grows to fit (up to the card's own viewport-relative
-   cap, per .review-question/.review-answer above), rather than the images
-   scrolling inside a fixed-height row. */
+   card — scrolls horizontally; vertically the row grows with its images
+   rather than the images scrolling inside a fixed-height row. The card's
+   content area scrolls if they don't fit (on wide screens the cards are a
+   fixed height; on phones the card grows). */
 .card-image-row {
   display: flex;
   gap: 0.5rem;
@@ -1459,7 +1459,7 @@ fieldset.plain legend {
 
 @media (min-width: 760px) {
   /* Bound the whole review page to the viewport so the two cards below have
-     a definite height to stretch/cap against instead of growing forever.
+     a definite height to fill.
      Sizing `.app-shell` itself (rather than `.page.review`) means its own
      top/bottom padding is included in that height (box-sizing: border-box),
      instead of pushing the page past the viewport by that padding amount. */
@@ -1489,7 +1489,10 @@ fieldset.plain legend {
   /* The cards always fill all the height left under the header, whatever
      their content, so they keep the same size from one card to the next
      instead of growing and shrinking as you review. A card with more content
-     than fits scrolls its own content rather than growing. */
+     than fits scrolls its own content rather than growing. The min-height
+     floor keeps them usable on a short window (e.g. split screen, or with an
+     on-screen keyboard open): there the page scrolls instead of the cards
+     shrinking until their buttons are clipped. */
   .review-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1497,7 +1500,7 @@ fieldset.plain legend {
     gap: 2rem;
     align-items: stretch;
     flex: 1;
-    min-height: 0;
+    min-height: 24rem;
   }
 
   .review-question,
