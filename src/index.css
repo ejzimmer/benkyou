@@ -1414,9 +1414,8 @@ fieldset.plain legend {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* "safe" falls back to top-aligned once content (e.g. this card grown as
-     tall as its `max-height` allows by an opened `.prompt-extras` disclosure)
-     still doesn't fit, so it scrolls from the start instead of clipping it. */
+  /* "safe" falls back to top-aligned once content (e.g. an opened `.prompt-extras`
+     disclosure on a card that's already full height) still doesn't fit, so it scrolls from the start instead of clipping it. */
   justify-content: safe center;
   text-align: center;
   overflow-y: auto;
@@ -1478,9 +1477,8 @@ fieldset.plain legend {
   }
 
   /* `flex: 1; min-height: 0` gives this a definite height (the space left
-     under the header) regardless of its own content — that's what lets the
-     percentage max-heights below act as a real viewport-relative ceiling
-     rather than growing to whatever the cards need. */
+     under the header) regardless of its own content, for the cards below to
+     fill. */
   .page.review .panel.prompt {
     display: flex;
     flex-direction: column;
@@ -1488,24 +1486,23 @@ fieldset.plain legend {
     min-height: 0;
   }
 
-  /* Deliberately NOT a flex/stretch item of `.panel.prompt` — this sizes to
-     its own content (cards' min-height floor, or taller if they need more),
-     not to the full space available, so short cards stay at their minimum
-     size instead of stretching to fill the viewport. Each `max-height: 100%`
-     below (here and on the cards) caps that growth at the space available,
-     per `.panel.prompt` above — beyond it, a card scrolls its own overflow
-     instead of growing past the viewport. */
-  .review-columns,
-  .review-question,
-  .review-answer {
-    max-height: 100%;
-  }
-
+  /* The cards always fill all the height left under the header, whatever
+     their content, so they keep the same size from one card to the next
+     instead of growing and shrinking as you review. A card with more content
+     than fits scrolls its own content rather than growing. */
   .review-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-template-rows: minmax(0, 1fr);
     gap: 2rem;
     align-items: stretch;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .review-question,
+  .review-answer {
+    min-height: 0;
   }
 
   .review-answer {
@@ -2020,9 +2017,9 @@ fieldset.plain legend {
 /* Animates open/closed via the grid-rows trick: a 0fr/1fr track transition
    collapses/expands the (overflow-hidden) content row smoothly, which a
    plain height or max-height transition can't do for content of unknown
-   height. Left in normal flow (rather than overlaid) so opening it grows the
-   card itself to fit — it only starts scrolling once the card has hit its
-   own max-height (see `.review-question-content` / `.review-answer`). */
+   height. Left in normal flow (rather than overlaid) so opening it pushes the
+   card's other content up — it scrolls once it no longer fits the card (see
+   `.review-question-content` / `.review-answer`). */
 .prompt-extras {
   display: grid;
   grid-template-rows: 0fr;
