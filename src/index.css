@@ -2464,16 +2464,18 @@ button.leech-badge-clear:focus-visible {
   flex: 0 0 auto;
 }
 
-/* The window the reel rolls behind. The overlay darkens the top and bottom
-   like the curve of a drum. */
+/* The window the reel rolls behind. A light shade over the top and bottom
+   edges suggests the curve of a drum. It's exactly as tall as the list's
+   padding, so the first and last rows sit just clear of it when scrolled to
+   the end, and a short (e.g. filtered) list is never shaded at all. */
 .reel-window {
+  --reel-shade: 3rem;
   position: relative;
   flex: 1;
   min-height: 0;
   border-radius: 12px;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, #0c0c14, #20202f 22%, #262638 50%, #20202f 78%, #0c0c14);
+  background: #1f1f2e;
 }
 
 .reel-window::after {
@@ -2482,8 +2484,13 @@ button.leech-badge-clear:focus-visible {
   inset: 0;
   pointer-events: none;
   border-radius: inherit;
-  background:
-    linear-gradient(180deg, rgb(0 0 0 / 0.85), transparent 22%, transparent 78%, rgb(0 0 0 / 0.85));
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0.4),
+    transparent var(--reel-shade),
+    transparent calc(100% - var(--reel-shade)),
+    rgb(0 0 0 / 0.4)
+  );
 }
 
 .card-list.reel {
@@ -2491,9 +2498,7 @@ button.leech-badge-clear:focus-visible {
   margin: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* Enough room above the first row and below the last that each can be
-     scrolled out of the drum's shaded edges into the bright middle. */
-  padding: 3rem 1rem;
+  padding: var(--reel-shade) 1rem;
   scroll-snap-type: y proximity;
   scrollbar-width: thin;
   scrollbar-color: #33334a transparent;
@@ -2522,28 +2527,30 @@ button.leech-badge-clear:focus-visible {
   border-bottom: 0;
 }
 
-/* Rows tip away as they roll towards the top and bottom of the drum. Scroll-
-   driven, so browsers without view timelines just get a flat list. */
+/* Rows tip away as they roll through the shaded band at the top and bottom
+   (the timeline's viewport is inset by the band, so a row only tilts while
+   it's inside it). Scroll-driven, so browsers without view timelines just
+   get a flat list. */
 @supports (animation-timeline: view()) {
   .card-list.reel li {
     animation: reel-roll linear both;
-    animation-timeline: view();
+    animation-timeline: view(block var(--reel-shade));
     transform-origin: center;
   }
 }
 
 @keyframes reel-roll {
-  0% {
-    transform: perspective(500px) rotateX(-60deg) scaleY(0.8);
-    opacity: 0.3;
+  entry 0% {
+    transform: perspective(500px) rotateX(-35deg);
+    opacity: 0.5;
   }
-  35%,
-  65% {
+  entry 100%,
+  exit 0% {
     transform: none;
     opacity: 1;
   }
-  100% {
-    transform: perspective(500px) rotateX(60deg) scaleY(0.8);
-    opacity: 0.3;
+  exit 100% {
+    transform: perspective(500px) rotateX(35deg);
+    opacity: 0.5;
   }
 }
