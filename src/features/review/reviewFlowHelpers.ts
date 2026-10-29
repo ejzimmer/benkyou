@@ -22,6 +22,7 @@ import {
   isMissingDoubledN,
 } from "../../lib/japanese/normalize"
 import { arabicToKanjiNumerals } from "../../lib/japanese/numerals"
+import { politenessCounterparts } from "../../lib/japanese/politeness"
 
 /** Marker used to blank out the target word in an example sentence. */
 export const EXAMPLE_PLACEHOLDER = "___"
@@ -231,15 +232,59 @@ export function expectedAnswer(card: Card, mode: ReviewModeId): string {
 }
 
 /**
- * Extra spellings the card accepts for `mode` (its `alternateAnswers`) —
+ * Extra answers the card accepts for `mode`: its own `alternateAnswers` —
  * only for the modes that type the word/construction itself, where kana vs
- * kanji spellings of the same answer come up. Blank entries are dropped.
+ * kanji spellings of the same answer come up — plus the plain/polite
+ * counterpart of each accepted answer (食べます for 食べる, and vice versa;
+ * see `politenessAlternates`). Blank entries are dropped.
  */
 export function alternateAnswersFor(card: Card, mode: ReviewModeId): string[] {
-  if (!acceptsAlternateAnswers(mode)) return []
-  return (card.content.alternateAnswers ?? [])
-    .map((s) => s.trim())
-    .filter(Boolean)
+  const own = acceptsAlternateAnswers(mode)
+    ? (card.content.alternateAnswers ?? []).map((s) => s.trim()).filter(Boolean)
+    : []
+  const expected = expectedAnswer(card, mode)
+  const accepted = [expected, ...splitAlternates(expected), ...own]
+  const polite = politenessAlternates(card, mode, accepted).filter(
+    (s) => !accepted.includes(s),
+  )
+  return [...own, ...new Set(polite)]
+}
+
+/** Text after a gap that ends the sentence, so either politeness level
+ * fits there: closing punctuation, optionally after a sentence-final
+ * particle (行く？ / 行きますか？ / 行くよ。). */
+const SENTENCE_END_AFTER_GAP = /^\s*(?:か|よ|ね|よね)?\s*(?:[。．.！!？?」』）)…]|$)/
+
+/**
+ * Plain/polite counterparts of `answers` that also count as correct. Only
+ * the final part of a multi-part answer is swapped — that's where the
+ * conjugation is. On a fill-in-the-gap card the swap only applies when the
+ * last gap ends the sentence: mid-sentence the form is usually fixed by the
+ * grammar (行くと思います, never 行きますと思います), so it's left exact.
+ */
+function politenessAlternates(
+  card: Card,
+  mode: ReviewModeId,
+  answers: string[],
+): string[] {
+  if (!requiresTyping(mode)) return []
+  if (card.kind === "grammar") {
+    const marker = card.content.gapMarker.trim()
+    const sentence = card.content.sentenceWithGap
+    const lastGap = marker ? sentence.lastIndexOf(marker) : -1
+    if (lastGap < 0) return []
+    const after = sentence.slice(lastGap + marker.length)
+    if (!SENTENCE_END_AFTER_GAP.test(after)) return []
+  }
+  return answers.flatMap((answer) => {
+    if (!comparesByGap(mode)) return politenessCounterparts(answer)
+    const parts = splitGapAnswers(answer)
+    const last = parts.pop()
+    if (last === undefined) return []
+    return politenessCounterparts(last).map((swapped) =>
+      [...parts, swapped].join(GAP_ANSWER_JOIN),
+    )
+  })
 }
 
 /** Modes where a typed answer can be added to the card's `alternateAnswers`. */

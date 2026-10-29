@@ -322,3 +322,61 @@ describe("alternate accepted answers", () => {
     )
   })
 })
+
+describe("plain and polite forms", () => {
+  const grammarCard = (
+    sentenceWithGap: string,
+    construction: string,
+  ): Extract<Card, { kind: "grammar" }> => ({
+    id: "g",
+    deckId: "d",
+    kind: "grammar",
+    updatedAt: 1,
+    content: {
+      sentenceWithGap,
+      gapMarker: "___",
+      construction,
+      translationEn: "",
+      readings: {},
+      images: [],
+    },
+  })
+
+  const accepts = (card: Card, mode: Parameters<typeof answersMatch>[0], typed: string) =>
+    answersMatch(mode, typed, expectedAnswer(card, mode), alternateAnswersFor(card, mode))
+
+  it("accepts the polite form of a plain word, and the reverse", () => {
+    const card = vocabCard()
+    card.content.wordJa = "食べる"
+    card.content.reading = "たべる"
+    expect(accepts(card, "vocab_type_word_from_clue", "食べます")).toBe(true)
+    expect(accepts(card, "vocab_type_reading", "たべます")).toBe(true)
+    card.content.wordJa = "食べます"
+    expect(accepts(card, "vocab_type_word_from_clue", "食べる")).toBe(true)
+    expect(accepts(card, "vocab_type_word_from_clue", "飲む")).toBe(false)
+  })
+
+  it("also swaps the card's own alternate answers", () => {
+    const card = vocabCard()
+    card.content.wordJa = "食べる"
+    card.content.alternateAnswers = ["たべる"]
+    expect(accepts(card, "vocab_type_word_from_clue", "たべます")).toBe(true)
+  })
+
+  it("accepts either form only in a gap that ends the sentence", () => {
+    expect(
+      accepts(grammarCard("昨日映画を___。", "見た"), "grammar_type_construction", "見ました"),
+    ).toBe(true)
+    expect(
+      accepts(grammarCard("明日___か？", "行きます"), "grammar_type_construction", "行く"),
+    ).toBe(true)
+    expect(
+      accepts(grammarCard("彼は___と思います。", "来る"), "grammar_type_construction", "来ます"),
+    ).toBe(false)
+  })
+
+  it("swaps only the last gap of a multi-gap answer", () => {
+    const card = grammarCard("___は___。", "猫, 食べる")
+    expect(accepts(card, "grammar_type_construction", "猫、食べます")).toBe(true)
+  })
+})
