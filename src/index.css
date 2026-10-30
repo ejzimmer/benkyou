@@ -2499,6 +2499,8 @@ button.leech-badge-clear:focus-visible {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--reel-shade) 1rem;
+  /* Keyboard focus scrolls a row clear of the shaded band, not into it. */
+  scroll-padding-block: var(--reel-shade);
   scroll-snap-type: y proximity;
   scrollbar-width: thin;
   scrollbar-color: #33334a transparent;
@@ -2527,15 +2529,19 @@ button.leech-badge-clear:focus-visible {
   border-bottom: 0;
 }
 
-/* Rows tip away as they roll through the shaded band at the top and bottom
-   (the timeline's viewport is inset by the band, so a row only tilts while
-   it's inside it). Scroll-driven, so browsers without view timelines just
-   get a flat list. */
-@supports (animation-timeline: view()) {
-  .card-list.reel li {
-    animation: reel-roll linear both;
-    animation-timeline: view(block var(--reel-shade));
-    transform-origin: center;
+/* Rows tip away as they roll across the edge of the shaded band at the top
+   and bottom: the timeline's viewport is inset by the band (capped at 20% of
+   the list, so a short window still keeps a flat middle), and a row tilts
+   while it crosses that inset line, fully tilted once it's inside the band.
+   Browsers without inset view timelines, and anyone who prefers reduced
+   motion, get a flat list. */
+@supports (animation-timeline: view(block 1px)) {
+  @media (prefers-reduced-motion: no-preference) {
+    .card-list.reel li {
+      animation: reel-roll linear both;
+      animation-timeline: view(block min(var(--reel-shade), 20%));
+      transform-origin: center;
+    }
   }
 }
 
