@@ -14,6 +14,10 @@ export function App() {
     if (!vv) return
     const syncViewportHeight = () => {
       document.documentElement.style.setProperty("--vvh", `${vv.height}px`)
+      // How far iOS Safari has panned the visual viewport down (to show a
+      // focused input above the keyboard) — the mobile review screen pins
+      // itself there. See `.app-shell:has(.page.review)` in index.css.
+      document.documentElement.style.setProperty("--vvt", `${vv.offsetTop}px`)
     }
     syncViewportHeight()
     vv.addEventListener("resize", syncViewportHeight)
@@ -22,6 +26,7 @@ export function App() {
       vv.removeEventListener("resize", syncViewportHeight)
       vv.removeEventListener("scroll", syncViewportHeight)
       document.documentElement.style.removeProperty("--vvh")
+      document.documentElement.style.removeProperty("--vvt")
     }
   }, [])
 
