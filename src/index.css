@@ -1043,8 +1043,15 @@ fieldset.plain legend {
   display: flex;
   gap: 0.5rem;
   align-items: flex-start;
+  /* "safe" keeps a row of several images that overflows scrollable from
+     its first image instead of cutting off both ends. */
+  justify-content: safe center;
   max-width: 100%;
   overflow-x: auto;
+  /* `overflow-x: auto` zeroes this row's automatic minimum height, so in
+     the review cards' flex columns it would otherwise shrink and slice the
+     bottom off its images instead of letting the card scroll. */
+  flex-shrink: 0;
 }
 
 .card-image-row .card-image {
@@ -1227,46 +1234,155 @@ fieldset.plain legend {
    the mode's "Show answer" button (and any typing) lives on the question
    side or the answer side (`showAnswerOnQuestionSide`). */
 @media (max-width: 759.98px) {
-  /* Typing happens on the answer (second) card: it only needs to fit its
-     label/input/buttons, so it shrinks to that instead of the usual 50vh
-     floor, and the question (first) card expands to fill what's left of the
-     viewport, scrolling its own content instead of the whole page. Needs the
-     ancestor chain up to `.app-shell` bounded to the viewport height —
-     mirrors the desktop treatment below, scoped here via `:has()` so it
-     only kicks in for this mode rather than every mobile review layout. */
-  .app-shell:has(.review-columns.answer-typed) {
+  /* The whole review screen is bounded to the visible viewport, which
+     shrinks to the space above the on-screen keyboard while typing
+     (`--vvh`, from `visualViewport` in App). Each card scrolls its own
+     content instead of the page scrolling, so the question can't end up
+     pushed off-screen above the keyboard with no way back to it.
+
+     `position: fixed` at the visual viewport's offset (`--vvt`) is for iOS
+     Safari, which ignores `interactive-widget=resizes-content`: there the
+     keyboard only shrinks the visual viewport, and Safari pans it down to
+     the focused input, which used to scroll the question card out of view
+     at the top. Pinned to the visual viewport, the screen goes wherever
+     that pan takes it. Android Chrome resizes the layout viewport itself,
+     so `--vvt` stays 0 there. */
+  .app-shell:has(.page.review) {
+    position: fixed;
+    top: var(--vvt, 0px);
+    left: 0;
+    right: 0;
     display: flex;
     flex-direction: column;
     height: var(--vvh, 100dvh);
+    padding-bottom: 1rem;
   }
 
-  .page.review:has(.review-columns.answer-typed) {
+  .page.review {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
   }
 
-  .page.review .panel.prompt:has(.review-columns.answer-typed) {
+  .page.review .panel.prompt {
     display: flex;
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    margin-top: 0.75rem;
   }
 
-  .review-columns.answer-typed {
+  .review-columns {
     flex: 1;
+    min-height: 0;
+    gap: 0.75rem;
+  }
+
+  /* Doubled class for specificity: the 50vh floor further down comes later
+     in the file. */
+  .review-columns .review-question,
+  .review-columns .review-answer {
     min-height: 0;
   }
 
+  /* Only the cards' content scrolls — the buttons stay pinned to the
+     bottom, where they can't slide under the keyboard. */
+  .review-answer-prompt > .stack,
+  .answer-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* Images are capped against the *visible* height, so with the keyboard
+     open they shrink to fit alongside the question text instead of
+     overflowing the question card. */
+  .card-image-row .card-image {
+    max-height: min(34vh, 320px, calc(var(--vvh, 100dvh) * 0.3));
+  }
+
+  /* A question's own picture shrinks to whatever height the card has left
+     after its text (down to a floor), rather than pushing past the card's
+     bottom edge and needing a scroll to see the rest of it. Only reachable
+     through definite flex heights, hence just the direct children here. */
+  .review-question-content > .stack {
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+
+  .review-question-content > .stack > .card-image-row {
+    flex-shrink: 1;
+    min-height: 5rem;
+  }
+
+  .review-question-content > .stack > .card-image-row .card-image {
+    max-height: min(100%, 34vh, 320px, calc(var(--vvh, 100dvh) * 0.3));
+  }
+
+  /* Typing happens on the answer (second) card: it only needs to fit its
+     label/input/buttons, and the question (first) card takes everything
+     that's left, scrolling its own content if it still doesn't fit. */
   .review-columns.answer-typed .review-question {
-    flex: 1 1 auto;
-    min-height: 0;
+    flex: 1 1 0;
+    min-height: min(7rem, 30%);
+    padding-top: 0.5rem;
   }
 
+  /* Never squeezed to make room for the question: the input and its
+     buttons always fit. Only a revealed answer too long for the screen
+     shrinks it (down to the question's floor above), and that scrolls. */
   .review-columns.answer-typed .review-answer {
-    flex: 0 0 auto;
-    min-height: 0;
+    flex: 0 1 auto;
+    overflow: hidden;
+    padding: 0.75rem 1.25rem 1rem;
+  }
+
+  /* Stacked cards have nothing to line up with each other, so the
+     invisible footer twins that do that side by side (see
+     `.review-footer-spacer`) would only waste height here. */
+  .review-columns.answer-typed .review-footer-spacer {
+    display: none;
+  }
+
+  .review-columns.answer-typed .review-footer {
+    padding-top: 1.5rem;
+  }
+
+  /* The input's caption and any warning under it normally float outside
+     the flow so they can't nudge a vertically centered input (see
+     `.review-answer-prompt .input-label-text` and `.answer-input-anchor`
+     below). This compact card is top-aligned instead, so they go back into
+     the flow, where the card's scrolling content box can't clip them. */
+  .review-columns.answer-typed .review-answer-prompt > .stack {
+    padding-top: 0;
+  }
+
+  .review-columns.answer-typed .review-answer-prompt .input-label-text {
+    position: static;
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+
+  .review-columns.answer-typed .answer-input-anchor > .error,
+  .review-columns.answer-typed .answer-input-anchor > .warn,
+  .review-columns.answer-typed .answer-input-anchor > .kanji-warning {
+    position: static;
+  }
+
+  /* The answer card's two layers normally share one grid cell, so the card
+     is always as tall as the (still hidden) revealed answer — which on a
+     phone ate the space the question needed. Here the hidden layer is
+     taken out of flow, so the card is only as tall as what's showing;
+     revealing the answer resizes it, and the question card gives way. */
+  .review-columns.answer-typed .review-answer-stack {
+    position: relative;
+  }
+
+  .review-columns.answer-typed .review-answer-prompt.is-hidden,
+  .review-columns.answer-typed .review-answer-revealed:not(.is-visible) {
+    position: absolute;
+    inset: 0 0 auto 0;
   }
 
   /* Typing happens on the question (first) card, or not at all (oral
@@ -1277,6 +1393,7 @@ fieldset.plain legend {
   .review-columns.flip-card {
     display: grid;
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
     perspective: 1600px;
   }
 
