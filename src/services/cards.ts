@@ -131,7 +131,11 @@ export async function ensureSchedulingForCard(card: Card): Promise<void> {
     } else if (r.isLeech) {
       // Editing the card is the user's intervention on a leech — clear the
       // flag so it doesn't keep showing the badge indefinitely.
-      await db.scheduling.update(r.id, { isLeech: false, updatedAt: now })
+      await db.scheduling.update(r.id, {
+        isLeech: false,
+        leechCorrectStreak: undefined,
+        updatedAt: now,
+      })
     }
   }
   for (const modeId of modes) {
@@ -635,7 +639,12 @@ export async function unsuspendCard(cardId: string): Promise<void> {
 export async function markLeech(cardId: string, modeId: string): Promise<void> {
   const row = await loadSchedulingRow(cardId, modeId)
   if (!row) return
-  await updateSchedulingRow({ ...row, isLeech: true, updatedAt: Date.now() })
+  await updateSchedulingRow({
+    ...row,
+    isLeech: true,
+    leechCorrectStreak: 0,
+    updatedAt: Date.now(),
+  })
   markCardEdited(cardId)
 }
 
@@ -653,7 +662,12 @@ export async function clearLeech(cardId: string, modeId?: string): Promise<void>
   let cleared = false
   for (const row of rows) {
     if (!row.isLeech) continue
-    await updateSchedulingRow({ ...row, isLeech: false, updatedAt: now })
+    await updateSchedulingRow({
+      ...row,
+      isLeech: false,
+      leechCorrectStreak: undefined,
+      updatedAt: now,
+    })
     cleared = true
   }
   if (cleared) markCardEdited(cardId)
