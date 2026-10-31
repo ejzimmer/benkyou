@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useLiveQuery } from "dexie-react-hooks"
 import {
+  Link,
   useMatch,
   useNavigate,
   useParams,
@@ -128,6 +129,43 @@ function FieldError({
   return <p className="error">{err.message}</p>
 }
 
+/** Short English gloss to tell same-word cards apart in a link. */
+function cardMeaning(card: Card): string {
+  const meaning =
+    card.kind === "vocabulary"
+      ? card.content.definitionsEn.find((d) => d.trim())
+      : card.content.translationEn
+  return meaning?.trim() || japaneseWordForCard(card)
+}
+
+function DuplicateJapaneseWarning({
+  cards,
+  fieldName,
+}: {
+  cards: Card[]
+  fieldName: string
+}) {
+  return (
+    <p className="warn small" role="status">
+      警告: 同じ{fieldName}を持つカードが既に{cards.length}件あります（
+      {cards.map((card, i) => (
+        <span key={card.id}>
+          {i > 0 && "、"}
+          {/* New tab, so following the link doesn't throw away this draft. */}
+          <Link
+            to={`/decks/${card.deckId}/cards/${encodeURIComponent(card.id)}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {cardMeaning(card)}
+          </Link>
+        </span>
+      ))}
+      ）。このまま重複カードとして保存することもできます。
+    </p>
+  )
+}
+
 export function CardEditPage() {
   const { deckId = "", cardId: cardIdParam = "" } = useParams()
   const [searchParams] = useSearchParams()
@@ -210,14 +248,12 @@ export function CardEditPage() {
     useDuplicateCards(duplicateCard)
 
   const duplicateJapaneseWarning =
-    isNew && normalizedCurrentJapanese && duplicateJapaneseCards?.length
-      ? (() => {
-          const count = duplicateJapaneseCards.length
-          const fieldName =
-            kind === "vocabulary" ? "日本語の単語" : "解答"
-          return `警告: 同じ${fieldName}を持つカードが既に${count}件あります。このまま重複カードとして保存することもできます。`
-        })()
-      : null
+    isNew && normalizedCurrentJapanese && duplicateJapaneseCards?.length ? (
+      <DuplicateJapaneseWarning
+        cards={duplicateJapaneseCards}
+        fieldName={kind === "vocabulary" ? "日本語の単語" : "解答"}
+      />
+    ) : null
 
   // Tracks which cardId the form has already been hydrated from, so that
   // live-query emissions caused by unrelated writes to this row (e.g. a
@@ -620,11 +656,7 @@ export function CardEditPage() {
               primaryMessages={
                 <>
                   <FieldError err={err} field="wordJa" />
-                  {duplicateJapaneseWarning && (
-                    <p className="warn small" role="status">
-                      {duplicateJapaneseWarning}
-                    </p>
-                  )}
+                  {duplicateJapaneseWarning}
                 </>
               }
             />
@@ -767,11 +799,7 @@ export function CardEditPage() {
               primaryMessages={
                 <>
                   <FieldError err={err} field="construction" />
-                  {duplicateJapaneseWarning && (
-                    <p className="warn small" role="status">
-                      {duplicateJapaneseWarning}
-                    </p>
-                  )}
+                  {duplicateJapaneseWarning}
                 </>
               }
             />

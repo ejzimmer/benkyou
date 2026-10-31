@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { AuthProvider } from "../../lib/auth/AuthContext"
@@ -49,11 +49,17 @@ describe("CardEditPage duplicate warning", () => {
 
     await user.type(screen.getByLabelText("日本語で"), "猫")
 
-    expect(
-      await screen.findByText(
-        /日本語の単語を持つカードが既に1件あります。.*重複カードとして保存/,
-      ),
-    ).toBeInTheDocument()
+    const warning = await screen.findByText(
+      (_, el) =>
+        el?.tagName === "P" &&
+        /日本語の単語を持つカードが既に1件あります（cat）。.*重複カードとして保存/.test(
+          el.textContent ?? "",
+        ),
+    )
+    // Links to the matching card in a new tab, so the draft survives.
+    const link = within(warning).getByRole("link", { name: "cat" })
+    expect(link).toHaveAttribute("href", "/decks/deck-2/cards/existing-card")
+    expect(link).toHaveAttribute("target", "_blank")
 
     await user.type(screen.getByLabelText("意味"), "cat")
     await user.click(screen.getByRole("button", { name: "保存" }))
