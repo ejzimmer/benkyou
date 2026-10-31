@@ -3,6 +3,9 @@
  *  a per-mode count, not a per-card total. */
 export const LEECH_LAPSE_THRESHOLD = 4
 
+/** Correct answers in a row that clear a row's leech flag on their own. */
+export const LEECH_CLEAR_STREAK = 3
+
 /**
  * True the moment `nextLapses` first reaches the threshold — i.e. `prevLapses`
  * was still below it. `lapses` only ever increases (FSRS bumps it on an
