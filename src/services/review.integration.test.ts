@@ -276,6 +276,102 @@ describe("review + scheduling (IndexedDB)", () => {
     expect(result2).toEqual({ becameLeech: false })
   })
 
+  it("clears a leech flag and resets lapses after three correct answers in a row", async () => {
+    const deck = await createDeck("D")
+    const card = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "保険",
+        reading: "ほけん",
+        definitionsEn: [],
+        images: [],
+        exampleSentences: [],
+      },
+    )
+    const row = (await loadSchedulingRow(card.id, "vocab_type_reading"))!
+    const fsrsCard = deserializeFsrs(row.fsrs)
+    fsrsCard.state = 2
+    fsrsCard.lapses = 5
+    fsrsCard.stability = 5
+    fsrsCard.difficulty = 5
+    await db.scheduling.put({
+      ...row,
+      fsrs: serializeFsrs(fsrsCard),
+      isLeech: true,
+      leechCorrectStreak: 0,
+    })
+
+    const judge = async (correct: boolean) => {
+      const snap = await prepareJudgement(card.id, "vocab_type_reading")
+      await commitJudgement(card.id, "vocab_type_reading", null, correct, snap)
+      return (await loadSchedulingRow(card.id, "vocab_type_reading"))!
+    }
+
+    // A wrong answer partway through starts the streak over.
+    expect((await judge(true)).leechCorrectStreak).toBe(1)
+    expect((await judge(true)).leechCorrectStreak).toBe(2)
+    const afterWrong = await judge(false)
+    expect(afterWrong.isLeech).toBe(true)
+    expect(afterWrong.leechCorrectStreak).toBe(0)
+
+    await judge(true)
+    const stillLeech = await judge(true)
+    expect(stillLeech.isLeech).toBe(true)
+    expect(stillLeech.fsrs.lapses).toBeGreaterThan(0)
+
+    const cleared = await judge(true)
+    expect(cleared.isLeech).toBe(false)
+    expect(cleared.leechCorrectStreak).toBeUndefined()
+    expect(cleared.fsrs.lapses).toBe(0)
+  })
+
+  it("can flag a row as a leech again once its reset lapses climb back up", async () => {
+    const deck = await createDeck("D")
+    const card = await createVocabularyCard(
+      deck.id,
+      {
+        wordJa: "保険",
+        reading: "ほけん",
+        definitionsEn: [],
+        images: [],
+        exampleSentences: [],
+      },
+    )
+    const row = (await loadSchedulingRow(card.id, "vocab_type_reading"))!
+    const fsrsCard = deserializeFsrs(row.fsrs)
+    fsrsCard.state = 2
+    fsrsCard.lapses = 4
+    fsrsCard.stability = 5
+    fsrsCard.difficulty = 5
+    await db.scheduling.put({
+      ...row,
+      fsrs: serializeFsrs(fsrsCard),
+      isLeech: true,
+      leechCorrectStreak: 2,
+    })
+
+    let snap = await prepareJudgement(card.id, "vocab_type_reading")
+    await commitJudgement(card.id, "vocab_type_reading", null, true, snap)
+    const cleared = (await loadSchedulingRow(card.id, "vocab_type_reading"))!
+    expect(cleared.isLeech).toBe(false)
+
+    // Back in Review state with lapses one short of the threshold.
+    const relapsing = deserializeFsrs(cleared.fsrs)
+    relapsing.state = 2
+    relapsing.lapses = 3
+    await db.scheduling.put({ ...cleared, fsrs: serializeFsrs(relapsing) })
+
+    snap = await prepareJudgement(card.id, "vocab_type_reading")
+    const result = await commitJudgement(
+      card.id,
+      "vocab_type_reading",
+      null,
+      false,
+      snap,
+    )
+    expect(result).toEqual({ becameLeech: true })
+  })
+
   it("does not record a timing sample when latency wasn't captured", async () => {
     const deck = await createDeck("D")
     const card = await createVocabularyCard(

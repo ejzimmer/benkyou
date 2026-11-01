@@ -8,7 +8,7 @@ import {
 } from "../lib/db/schema"
 import { newId } from "../lib/db/id"
 import { applyGrade, deserializeFsrs, serializeFsrs } from "../lib/srs/schedule"
-import { crossedLeechThreshold } from "../lib/srs/leech"
+import { crossedLeechThreshold, LEECH_CLEAR_STREAK } from "../lib/srs/leech"
 import { responseTimeToGrade } from "../lib/srs/time-to-rating"
 import { recordTimingSample } from "../lib/srs/timingSamples"
 import { markCardEdited } from "../lib/sync/sessionEdits"
@@ -186,8 +186,23 @@ export async function commitJudgement(
   const becameLeech =
     !row.isLeech && crossedLeechThreshold(prevCard.lapses, nextCard.lapses)
 
+  let leechFields: Pick<SchedulingRow, "isLeech" | "leechCorrectStreak"> = {}
+  if (row.isLeech) {
+    const streak = selfCorrect ? (row.leechCorrectStreak ?? 0) + 1 : 0
+    if (streak >= LEECH_CLEAR_STREAK) {
+      // Recovered — drop the flag and start the lapse count over, so the row
+      // can be offered up as a leech again if it starts slipping later
+      // (`crossedLeechThreshold` only fires on the way up past the threshold).
+      leechFields = { isLeech: false, leechCorrectStreak: undefined }
+      nextCard.lapses = 0
+    } else {
+      leechFields = { leechCorrectStreak: streak }
+    }
+  }
+
   const updated: SchedulingRow = {
     ...row,
+    ...leechFields,
     fsrs: serializeFsrs(nextCard),
     due: nextCard.due.getTime(),
     updatedAt: Date.now(),
