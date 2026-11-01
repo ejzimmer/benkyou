@@ -11,6 +11,7 @@ import {
   differsOnlyByPunctuation,
   displayedCorrectAnswer,
   readingForConstruction,
+  readingForDisplayedAnswer,
   requiresTyping,
 } from "./reviewFlowHelpers"
 import { countGaps } from "../../domain/grammarGaps"
@@ -81,10 +82,12 @@ export function ReviewSessionAnswerPanel({
   // learner actually matched — the raw "A/B" isn't itself an answer anyone
   // typed, and a reading/furigana meant for one alternate would otherwise be
   // shown stacked over both.
-  const displayExpected = displayedCorrectAnswer(m, typed, expected)
+  // An answer accepted as the other politeness level (食べます for 食べる)
+  // is shown in the form the learner used, with its reading to match.
+  const displayExpected = displayedCorrectAnswer(m, typed, expected, card)
   const wordFromClueReading =
     m === "vocab_type_word_from_clue" && card.kind === "vocabulary"
-      ? wordJaReading(card.content)
+      ? readingForDisplayedAnswer(wordJaReading(card.content), displayExpected)
       : undefined
   // The furigana map alone is enough to annotate the word — a card with no
   // pronunciation field (e.g. 特殊な製法, furigana 特殊/製法) has no
@@ -262,9 +265,12 @@ export function ReviewSessionAnswerPanel({
           <AnswerComparison
             typed={typed}
             expected={displayExpected}
-            reading={readingForConstruction(
-              card.content.construction,
-              card.content.readings,
+            reading={readingForDisplayedAnswer(
+              readingForConstruction(
+                card.content.construction,
+                card.content.readings,
+              ),
+              displayExpected,
             )}
             readings={card.content.readings}
             answeredCorrectly={answeredCorrectly}

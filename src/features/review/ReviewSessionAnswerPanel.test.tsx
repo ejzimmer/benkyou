@@ -38,6 +38,28 @@ const readingItem: DueItem = vocabItem("vocab_type_reading")
 const vocabWordItem: DueItem = vocabItem("vocab_type_word_from_clue")
 
 describe("ReviewSessionAnswerPanel", () => {
+  it("shows the polite form the learner typed for a plain-form card, with a matching reading", () => {
+    const item = vocabItem("vocab_type_word_from_clue")
+    if (item.card.kind !== "vocabulary") throw new Error("vocab card expected")
+    item.card.content.wordJa = "食べる"
+    item.card.content.reading = "たべる"
+    render(
+      <ReviewSessionAnswerPanel
+        item={item}
+        typed="食べます"
+        expected="食べる"
+        pendingIncorrectDelay={false}
+        onJudge={vi.fn()}
+        onUndoAnswer={vi.fn()}
+      />,
+    )
+    const answer = screen.getByRole("group", { name: "答え" })
+    expect(answer.textContent).toContain("食べます")
+    expect(answer.textContent).not.toContain("食べる")
+    expect(answer.querySelector("rt")?.textContent).toBe("たべます")
+    expect(within(answer).getByText("正解です")).toBeInTheDocument()
+  })
+
   it("shows only the correct answer for a matching hiragana answer", async () => {
     render(
       <ReviewSessionAnswerPanel

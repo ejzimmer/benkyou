@@ -5,6 +5,7 @@ import {
   answersMatch,
   appliesConfusedWordCheck,
   displayedCorrectAnswer,
+  readingForDisplayedAnswer,
   expectedAnswer,
   hasMissingDoubledN,
   hasNonHiraganaReadingAnswer,
@@ -378,5 +379,43 @@ describe("plain and polite forms", () => {
   it("swaps only the last gap of a multi-gap answer", () => {
     const card = grammarCard("___は___。", "猫, 食べる")
     expect(accepts(card, "grammar_type_construction", "猫、食べます")).toBe(true)
+  })
+  const shown = (card: Card, mode: Parameters<typeof answersMatch>[0], typed: string) =>
+    displayedCorrectAnswer(mode, typed, expectedAnswer(card, mode), card)
+
+  it("shows the form the learner typed, not the card's stored form", () => {
+    const card = vocabCard()
+    card.content.wordJa = "食べる"
+    card.content.reading = "たべる"
+    expect(shown(card, "vocab_type_word_from_clue", "食べます")).toBe("食べます")
+    expect(shown(card, "vocab_type_reading", "たべます")).toBe("たべます")
+    expect(shown(card, "vocab_type_word_from_clue", "食べる")).toBe("食べる")
+    card.content.wordJa = "食べます"
+    expect(shown(card, "vocab_type_word_from_clue", "食べる")).toBe("食べる")
+    // A wrong answer still reveals the card's own form.
+    expect(shown(card, "vocab_type_word_from_clue", "飲む")).toBe("食べます")
+    expect(
+      shown(grammarCard("昨日映画を___。", "見た"), "grammar_type_construction", "見ました"),
+    ).toBe("見ました")
+    expect(
+      shown(grammarCard("___は___。", "猫, 食べる"), "grammar_type_construction", "猫、食べます"),
+    ).toBe("猫, 食べます")
+  })
+
+  it("shows the typed form when it matched via a swapped alternate", () => {
+    const card = vocabCard()
+    card.content.wordJa = "食べる"
+    card.content.alternateAnswers = ["たべる"]
+    expect(shown(card, "vocab_type_word_from_clue", "たべます")).toBe("たべます")
+    // The alternate itself still shows the card's main spelling.
+    expect(shown(card, "vocab_type_word_from_clue", "たべる")).toBe("食べる")
+  })
+
+  it("swaps the whole-word reading to match the shown form", () => {
+    expect(readingForDisplayedAnswer("たべる", "食べます")).toBe("たべます")
+    expect(readingForDisplayedAnswer("たべます", "食べる")).toBe("たべる")
+    expect(readingForDisplayedAnswer("たべる", "食べる")).toBe("たべる")
+    expect(readingForDisplayedAnswer("ねこ", "猫")).toBe("ねこ")
+    expect(readingForDisplayedAnswer(undefined, "食べます")).toBeUndefined()
   })
 })

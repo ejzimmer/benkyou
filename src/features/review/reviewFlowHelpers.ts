@@ -388,17 +388,67 @@ function matchesAsNumeralVariant(
  * An answer accepted only via the card's own `alternateAnswers` (たべる for
  * 食べる) also shows the full `expected` — those are other spellings of the
  * same answer, so the card's main spelling is the one worth seeing.
+ *
+ * Given the `card`, an answer accepted as the other politeness level (食べます
+ * for a card stored as 食べる, or vice versa) shows that form, in the card's
+ * own spelling — the learner answered in that form, so that's what the
+ * revealed answer should read as, not the card's stored form. When only a
+ * politeness swap of one of the card's own `alternateAnswers` matched
+ * (たべます, via the alternate たべる), the typed answer is shown as is.
  */
 export function displayedCorrectAnswer(
   mode: ReviewModeId,
   typed: string,
   expected: string,
+  card?: Card,
 ): string {
   const alternates = splitAlternates(expected)
   const matched =
     alternates.find((alt) => candidateMatches(mode, typed, alt)) ??
     (candidateMatches(mode, typed, expected) ? expected : undefined)
-  if (matched === undefined) return expected
-  if (matchesAsNumeralVariant(mode, typed, matched)) return typed.trim()
-  return matched
+  if (matched !== undefined) {
+    return matchesAsNumeralVariant(mode, typed, matched) ? typed.trim() : matched
+  }
+  if (!card || !typed.trim()) return expected
+  const swapped = politenessAlternates(card, mode, [
+    expected,
+    ...alternates,
+  ]).find((form) => candidateMatches(mode, typed, form))
+  if (swapped !== undefined) {
+    return matchesAsNumeralVariant(mode, typed, swapped) ? typed.trim() : swapped
+  }
+  const own = acceptsAlternateAnswers(mode)
+    ? (card.content.alternateAnswers ?? []).map((s) => s.trim()).filter(Boolean)
+    : []
+  if (own.some((alt) => candidateMatches(mode, typed, alt))) return expected
+  const viaOwnSwap = politenessAlternates(card, mode, own).some((form) =>
+    candidateMatches(mode, typed, form),
+  )
+  return viaOwnSwap ? typed.trim() : expected
+}
+
+/**
+ * The whole-word `reading` to show over `displayed` (see
+ * `displayedCorrectAnswer`). When the shown answer ends in different kana
+ * than the reading — 食べます shown for a card whose reading is たべる — the
+ * reading's own plain/polite counterpart with that ending is used instead;
+ * if there's none, no whole-word reading at all, since furigana for a
+ * different form would be wrong.
+ */
+export function readingForDisplayedAnswer(
+  reading: string | undefined,
+  displayed: string,
+): string | undefined {
+  const r = reading?.trim()
+  if (!r) return reading
+  const chars = [...displayed.trim()]
+  let start = chars.length
+  while (start > 0 && !containsKanji(chars[start - 1]!)) start--
+  // No kanji (nothing for furigana to annotate) or no kana ending to compare.
+  if (start === 0 || start === chars.length) return reading
+  const ending = foldKatakanaToHiragana(chars.slice(start).join(""))
+  if (foldKatakanaToHiragana(r).endsWith(ending)) return reading
+  return politenessCounterparts(r).find((c) =>
+    foldKatakanaToHiragana(c).endsWith(ending),
+  )
 }
