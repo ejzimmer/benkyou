@@ -7,6 +7,7 @@ import {
   saveCard,
 } from "./cards"
 import { createDeck } from "./decks"
+import { db } from "../lib/db/schema"
 import { resetDatabase } from "../test/db"
 import { getSessionEditedCardIds, clearSessionEdits } from "../lib/sync/sessionEdits"
 
@@ -15,6 +16,12 @@ vi.mock("../lib/firebase", () => ({
   getFirestoreDb: () => null,
   isFirebaseConfigured: () => false,
 }))
+
+/** Give a row some lapse history, as a real leech would have. */
+async function setLapses(cardId: string, modeId: string, lapses: number) {
+  const row = (await loadSchedulingRow(cardId, modeId))!
+  await db.scheduling.put({ ...row, fsrs: { ...row.fsrs, lapses } })
+}
 
 describe("markLeech", () => {
   it("flags the scheduling row and marks the card as a pending sync edit", async () => {
@@ -66,12 +73,14 @@ describe("clearLeech", () => {
       exampleSentences: [],
     })
     await markLeech(card.id, "vocab_type_reading")
+    await setLapses(card.id, "vocab_type_reading", 5)
     clearSessionEdits()
 
     await clearLeech(card.id, "vocab_type_reading")
 
     const row = await loadSchedulingRow(card.id, "vocab_type_reading")
     expect(row?.isLeech).toBe(false)
+    expect(row?.fsrs.lapses).toBe(0)
     expect(getSessionEditedCardIds()).toContain(card.id)
   })
 
@@ -128,6 +137,7 @@ describe("saveCard", () => {
       exampleSentences: [],
     })
     await markLeech(card.id, "vocab_type_reading")
+    await setLapses(card.id, "vocab_type_reading", 5)
     expect((await loadSchedulingRow(card.id, "vocab_type_reading"))?.isLeech).toBe(
       true,
     )
@@ -138,8 +148,28 @@ describe("saveCard", () => {
       content: { ...card.content, reading: "ほけん" },
     })
 
+    const row = await loadSchedulingRow(card.id, "vocab_type_reading")
+    expect(row?.isLeech).toBe(false)
+    expect(row?.fsrs.lapses).toBe(0)
+  })
+
+  it("leaves lapses alone on rows that weren't leeches", async () => {
+    await resetDatabase()
+    const deck = await createDeck("D")
+    const card = await createVocabularyCard(deck.id, {
+      wordJa: "保険",
+      reading: "ほけん",
+      definitionsEn: [],
+      images: [],
+      exampleSentences: [],
+    })
+    await setLapses(card.id, "vocab_type_reading", 2)
+
+    if (card.kind !== "vocabulary") throw new Error("expected vocabulary card")
+    await saveCard({ ...card, content: { ...card.content, reading: "ほけん" } })
+
     expect(
-      (await loadSchedulingRow(card.id, "vocab_type_reading"))?.isLeech,
-    ).toBe(false)
+      (await loadSchedulingRow(card.id, "vocab_type_reading"))?.fsrs.lapses,
+    ).toBe(2)
   })
 })

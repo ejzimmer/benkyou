@@ -131,11 +131,7 @@ export async function ensureSchedulingForCard(card: Card): Promise<void> {
     } else if (r.isLeech) {
       // Editing the card is the user's intervention on a leech — clear the
       // flag so it doesn't keep showing the badge indefinitely.
-      await db.scheduling.update(r.id, {
-        isLeech: false,
-        leechCorrectStreak: undefined,
-        updatedAt: now,
-      })
+      await db.scheduling.put(clearedLeechRow(r, now))
     }
   }
   for (const modeId of modes) {
@@ -643,6 +639,19 @@ export async function markLeech(cardId: string, modeId: string): Promise<void> {
   markCardEdited(cardId)
 }
 
+/** A leeched row with its flag cleared by hand. Lapses start over too, like
+ *  the automatic clear in `commitJudgement` — otherwise the row could never
+ *  cross `LEECH_LAPSE_THRESHOLD` again and be offered up as a leech. */
+function clearedLeechRow(row: SchedulingRow, now: number): SchedulingRow {
+  return {
+    ...row,
+    isLeech: false,
+    leechCorrectStreak: undefined,
+    fsrs: { ...row.fsrs, lapses: 0 },
+    updatedAt: now,
+  }
+}
+
 /** Clear a leech flag directly (clicking the badge), without requiring a
  *  full card edit. Clears one row when `modeId` is given; otherwise every
  *  leeched row for the card, since a badge shown outside review (e.g.
@@ -657,12 +666,7 @@ export async function clearLeech(cardId: string, modeId?: string): Promise<void>
   let cleared = false
   for (const row of rows) {
     if (!row.isLeech) continue
-    await updateSchedulingRow({
-      ...row,
-      isLeech: false,
-      leechCorrectStreak: undefined,
-      updatedAt: now,
-    })
+    await updateSchedulingRow(clearedLeechRow(row, now))
     cleared = true
   }
   if (cleared) markCardEdited(cardId)
