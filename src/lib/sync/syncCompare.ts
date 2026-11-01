@@ -32,6 +32,10 @@ function schedulingPayload(row: SchedulingRow) {
     modeId: row.modeId,
     fsrs: row.fsrs,
     due: row.due,
+    // Normalized so a field Firestore dropped as undefined compares equal to
+    // its local default, and a leech flag change alone still syncs.
+    isLeech: row.isLeech === true,
+    leechCorrectStreak: row.isLeech ? (row.leechCorrectStreak ?? 0) : null,
   }
 }
 

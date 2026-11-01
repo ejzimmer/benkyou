@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest"
 import type { Card, Deck } from "../../domain/types"
+import type { SchedulingRow } from "../db/schema"
+import { emptyFsrs, serializeFsrs } from "../srs/schedule"
 import {
   cardChanged,
   cardDiffRows,
   preferNonEmptyCard,
+  schedulingChanged,
   resolveByTimestamp,
   resolveEntityMerge,
 } from "./syncCompare"
@@ -184,5 +187,36 @@ describe("cardDiffRows and not-a-duplicate verdicts", () => {
         cardLabel,
       ),
     ).toEqual([])
+  })
+})
+
+describe("schedulingChanged", () => {
+  const base: SchedulingRow = {
+    id: "c-1:vocab_type_reading",
+    cardId: "c-1",
+    modeId: "vocab_type_reading",
+    fsrs: serializeFsrs(emptyFsrs()),
+    due: 0,
+    updatedAt: 1,
+  }
+
+  it("treats a leech flag or streak change as a change", () => {
+    expect(schedulingChanged({ ...base, isLeech: true }, base)).toBe(true)
+    expect(
+      schedulingChanged(
+        { ...base, isLeech: true, leechCorrectStreak: 2 },
+        { ...base, isLeech: true, leechCorrectStreak: 1 },
+      ),
+    ).toBe(true)
+  })
+
+  it("treats missing leech fields as their defaults", () => {
+    expect(schedulingChanged({ ...base, isLeech: false }, base)).toBe(false)
+    expect(
+      schedulingChanged(
+        { ...base, isLeech: true, leechCorrectStreak: 0 },
+        { ...base, isLeech: true },
+      ),
+    ).toBe(false)
   })
 })

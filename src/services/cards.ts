@@ -639,12 +639,7 @@ export async function unsuspendCard(cardId: string): Promise<void> {
 export async function markLeech(cardId: string, modeId: string): Promise<void> {
   const row = await loadSchedulingRow(cardId, modeId)
   if (!row) return
-  await updateSchedulingRow({
-    ...row,
-    isLeech: true,
-    leechCorrectStreak: 0,
-    updatedAt: Date.now(),
-  })
+  await updateSchedulingRow({ ...row, isLeech: true, updatedAt: Date.now() })
   markCardEdited(cardId)
 }
 
