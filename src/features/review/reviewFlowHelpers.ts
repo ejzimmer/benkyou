@@ -429,11 +429,11 @@ export function displayedCorrectAnswer(
 
 /**
  * The whole-word `reading` to show over `displayed` (see
- * `displayedCorrectAnswer`). When the shown answer ends in different kana
- * than the reading — 食べます shown for a card whose reading is たべる — the
- * reading's own plain/polite counterpart with that ending is used instead;
- * if there's none, no whole-word reading at all, since furigana for a
- * different form would be wrong.
+ * `displayedCorrectAnswer`). When the shown answer's kana ending differs
+ * from the reading's because it's the other politeness level — 食べます shown
+ * for a card whose reading is たべる — the reading's own plain/polite
+ * counterpart with that ending is used instead. Anything else (no kana
+ * ending, or no counterpart that fits) keeps `reading` as it is.
  */
 export function readingForDisplayedAnswer(
   reading: string | undefined,
@@ -441,14 +441,14 @@ export function readingForDisplayedAnswer(
 ): string | undefined {
   const r = reading?.trim()
   if (!r) return reading
-  const chars = [...displayed.trim()]
-  let start = chars.length
-  while (start > 0 && !containsKanji(chars[start - 1]!)) start--
-  // No kanji (nothing for furigana to annotate) or no kana ending to compare.
-  if (start === 0 || start === chars.length) return reading
-  const ending = foldKatakanaToHiragana(chars.slice(start).join(""))
+  const ending = foldKatakanaToHiragana(
+    displayed.trim().match(/[\p{Script=Hiragana}\p{Script=Katakana}ー]+$/u)?.[0] ?? "",
+  )
+  if (!ending || !containsKanji(displayed)) return reading
   if (foldKatakanaToHiragana(r).endsWith(ending)) return reading
-  return politenessCounterparts(r).find((c) =>
-    foldKatakanaToHiragana(c).endsWith(ending),
+  return (
+    politenessCounterparts(r).find((c) =>
+      foldKatakanaToHiragana(c).endsWith(ending),
+    ) ?? reading
   )
 }

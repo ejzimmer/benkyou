@@ -417,5 +417,10 @@ describe("plain and polite forms", () => {
     expect(readingForDisplayedAnswer("たべる", "食べる")).toBe("たべる")
     expect(readingForDisplayedAnswer("ねこ", "猫")).toBe("ねこ")
     expect(readingForDisplayedAnswer(undefined, "食べます")).toBeUndefined()
+    // Punctuation or an ending that isn't a politeness swap keeps the reading.
+    expect(readingForDisplayedAnswer("けっこう", "結構〜")).toBe("けっこう")
+    expect(readingForDisplayedAnswer("たべる/たべます", "食べる/食べます")).toBe(
+      "たべる/たべます",
+    )
   })
 })
