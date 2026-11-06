@@ -14,7 +14,8 @@ export type SchedulingRow = {
   /** Set once the user dismisses the leech prompt with "除外" (keep reviewing
    *  as normal). See `lib/srs/leech.ts`. Cleared when the card is next edited
    *  (`ensureSchedulingForCard`), since editing is the user's intervention,
-   *  or automatically after enough correct answers in a row (`commitJudgement`). */
+   *  or automatically after enough correct answers in a row (`commitJudgement`).
+   *  Every way of clearing it also resets `fsrs.lapses` to 0. */
   isLeech?: boolean
   /** Consecutive correct answers since this row was flagged as a leech (or
    *  since its last wrong answer). Reaching `LEECH_CLEAR_STREAK` clears the
