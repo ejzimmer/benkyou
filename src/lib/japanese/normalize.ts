@@ -128,3 +128,17 @@ export function foldKatakanaToHiragana(s: string): string {
     String.fromCharCode(ch.charCodeAt(0) - 0x60),
   )
 }
+
+/** Wave dash 〜, full-width tilde ～, ASCII ~ and wavy dash 〰. */
+const AFFIX_MARKERS = /[〜～~〰]/g
+
+/**
+ * Drop the 〜 that marks where a prefix/suffix/construction attaches (旧〜,
+ * 〜的, 〜たり、〜たり) so an answer typed without it — or with a different
+ * tilde character — compares equal. Left alone when the text is nothing but
+ * markers, so a field that is literally "〜" still has something to match.
+ */
+export function stripAffixMarkers(s: string): string {
+  const stripped = s.replace(AFFIX_MARKERS, "")
+  return stripped.trim() ? stripped : s
+}

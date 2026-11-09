@@ -20,6 +20,7 @@ import {
   foldKatakanaToHiragana,
   hasNonHiraganaKana,
   isMissingDoubledN,
+  stripAffixMarkers,
 } from "../../lib/japanese/normalize"
 import { arabicToKanjiNumerals } from "../../lib/japanese/numerals"
 import { politenessCounterparts } from "../../lib/japanese/politeness"
@@ -320,7 +321,8 @@ function candidateMatches(
   typed: string,
   candidate: string,
 ): boolean {
-  const fold = (s: string) => foldKatakanaToHiragana(arabicToKanjiNumerals(s))
+  const fold = (s: string) =>
+    foldKatakanaToHiragana(arabicToKanjiNumerals(stripAffixMarkers(s)))
   if (comparesByGap(mode)) {
     return (
       fold(normalizeGapAnswers(typed)) === fold(normalizeGapAnswers(candidate))
@@ -367,7 +369,9 @@ function matchesAsNumeralVariant(
   candidate: string,
 ): boolean {
   const format = (s: string) =>
-    foldKatakanaToHiragana(comparesByGap(mode) ? normalizeGapAnswers(s) : s)
+    foldKatakanaToHiragana(
+      stripAffixMarkers(comparesByGap(mode) ? normalizeGapAnswers(s) : s),
+    )
   return (
     format(typed) !== format(candidate) &&
     candidateMatches(mode, typed, candidate)

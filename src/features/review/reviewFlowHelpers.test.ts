@@ -142,6 +142,25 @@ describe("reviewFlowHelpers", () => {
     )
   })
 
+  it("answersMatch ignores the 〜 affix marker and tilde variants", () => {
+    expect(answersMatch("vocab_type_word_from_clue", "旧", "旧〜")).toBe(true)
+    expect(answersMatch("vocab_type_word_from_clue", "旧~", "旧〜")).toBe(true)
+    expect(answersMatch("vocab_type_word_from_clue", "旧～", "旧〜")).toBe(true)
+    expect(answersMatch("vocab_type_word_from_clue", "的", "〜的")).toBe(true)
+    expect(answersMatch("vocab_type_reading", "きゅう", "きゅう〜")).toBe(true)
+    expect(
+      answersMatch("grammar_type_construction", "たり、たり", "〜たり、〜たり"),
+    ).toBe(true)
+    // Only the marker is forgiven — a different word is still wrong.
+    expect(answersMatch("vocab_type_word_from_clue", "新", "旧〜")).toBe(false)
+  })
+
+  it("displayedCorrectAnswer keeps the card's 〜 when only the marker was left off", () => {
+    expect(displayedCorrectAnswer("vocab_type_word_from_clue", "旧", "旧〜")).toBe(
+      "旧〜",
+    )
+  })
+
   it("answersMatch treats hiragana and katakana as the same script", () => {
     expect(answersMatch("vocab_type_reading", "こーひー", "コーヒー")).toBe(true)
     expect(
