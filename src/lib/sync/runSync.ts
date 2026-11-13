@@ -902,8 +902,10 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
     pushLocalToRemote(fs, uid, remote, reportUploadSteps),
   )
 
+  // A retry for images syncMedia couldn't fetch. It runs after the upload,
+  // so it reports no progress rather than send the stage indicator backwards.
   const hydrate = await syncLogTimed("hydrate card images for review", () =>
-    hydrateReferencedMedia(uid, reportImageSteps),
+    hydrateReferencedMedia(uid),
   )
   syncLog("hydrate card images complete", hydrate)
 
