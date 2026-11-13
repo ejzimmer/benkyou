@@ -60,7 +60,7 @@ describe("SyncContext pushNow", () => {
     await act(() => pushPromise)
 
     expect(runPushOnly).toHaveBeenCalledTimes(1)
-    expect(runPushOnly).toHaveBeenCalledWith(expect.anything(), expect.anything(), "u1")
+    expect(runPushOnly).toHaveBeenCalledWith(expect.anything(), expect.anything(), "u1", expect.any(Function))
     expect(runFullSync).not.toHaveBeenCalled()
     expect(result.current.syncing).toBe(false)
   })

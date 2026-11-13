@@ -14,7 +14,11 @@ import {
 import type { Card, Deck } from "../../domain/types"
 import type { MediaRow, SchedulingRow } from "../db/schema"
 import { db } from "../db/schema"
-import type { RemoteMediaMeta, Tombstone } from "./syncTypes"
+import type {
+  RemoteMediaMeta,
+  StepProgressListener,
+  Tombstone,
+} from "./syncTypes"
 import { stableCompareJson, stripUndefinedDeep } from "./firestoreData"
 import { syncLog, syncLogTimed } from "./syncLog"
 import { cardChanged, deckChanged, mediaChanged, schedulingChanged } from "./syncCompare"
@@ -50,23 +54,30 @@ export async function fetchRemoteSnapshot(
   fs: Firestore,
   uid: string,
   phase = "pull",
+  onProgress?: StepProgressListener,
 ): Promise<RemoteSnapshot> {
   syncLog("fetchRemoteSnapshot", { uid, phase })
-  const label = (collection: string) =>
-    `Firestore getDocs ${collection} (${phase})`
+  const collectionCount = 5
+  let fetched = 0
+  async function fetchCollection<T>(
+    collection: string,
+    load: () => Promise<T>,
+  ): Promise<T> {
+    const result = await syncLogTimed(
+      `Firestore getDocs ${collection} (${phase})`,
+      load,
+    )
+    fetched++
+    onProgress?.(fetched, collectionCount)
+    return result
+  }
   const [snapDecks, snapCards, snapSched, snapTombs, snapMedia] =
     await Promise.all([
-      syncLogTimed(label("decks"), () => getDocs(decksCol(fs, uid))),
-      syncLogTimed(label("cards"), () => getDocs(cardsCol(fs, uid))),
-      syncLogTimed(label("scheduling"), () =>
-        getDocs(schedCol(fs, uid)),
-      ),
-      syncLogTimed(label("tombstones"), () =>
-        getDocs(tombstonesCol(fs, uid)),
-      ),
-      syncLogTimed(label("media meta"), () =>
-        getDocs(mediaMetaCol(fs, uid)),
-      ),
+      fetchCollection("decks", () => getDocs(decksCol(fs, uid))),
+      fetchCollection("cards", () => getDocs(cardsCol(fs, uid))),
+      fetchCollection("scheduling", () => getDocs(schedCol(fs, uid))),
+      fetchCollection("tombstones", () => getDocs(tombstonesCol(fs, uid))),
+      fetchCollection("media meta", () => getDocs(mediaMetaCol(fs, uid))),
     ])
 
   const decks = new Map<string, Deck>()
@@ -209,6 +220,7 @@ export async function hasEntityCountMismatch(
 async function commitBatch(
   fs: Firestore,
   ops: Array<{ ref: ReturnType<typeof doc>; data: object }>,
+  onBatchCommitted?: () => void,
 ): Promise<void> {
   let batch = writeBatch(fs)
   let n = 0
@@ -217,11 +229,15 @@ async function commitBatch(
     n++
     if (n >= BATCH_SIZE) {
       await batch.commit()
+      onBatchCommitted?.()
       batch = writeBatch(fs)
       n = 0
     }
   }
-  if (n > 0) await batch.commit()
+  if (n > 0) {
+    await batch.commit()
+    onBatchCommitted?.()
+  }
 }
 
 type BatchWriteOp =
@@ -298,6 +314,7 @@ export async function pushLocalToRemote(
   fs: Firestore,
   uid: string,
   remote?: RemoteSnapshot,
+  onProgress?: StepProgressListener,
 ): Promise<void> {
   syncLog("pushLocalToRemote", { uid })
   const [localDecks, localCards, localSched, localTombs, localMedia] =
@@ -390,8 +407,6 @@ export async function pushLocalToRemote(
     toWrite: sets.length,
     skippedUnchanged: skipped,
   })
-  await syncLogTimed("Firestore commit upserts", () => commitBatch(fs, sets))
-
   const tombstoned = new Set(localTombs.map((t) => t.id))
   const localDeckIds = new Set(localDecks.map((d) => d.id))
   const localCardIds = new Set(localCards.map((c) => c.id))
@@ -431,11 +446,25 @@ export async function pushLocalToRemote(
     }
   }
 
+  const batchCount =
+    Math.ceil(sets.length / BATCH_SIZE) + Math.ceil(deleteOps.length / BATCH_SIZE)
+  let batchesCommitted = 0
+  const reportBatchCommitted = () => {
+    batchesCommitted++
+    onProgress?.(batchesCommitted, batchCount)
+  }
+  onProgress?.(0, batchCount)
+
+  await syncLogTimed("Firestore commit upserts", () =>
+    commitBatch(fs, sets, reportBatchCommitted),
+  )
+
   syncLog("pushLocalToRemote deletes", { count: deleteOps.length })
   for (let i = 0; i < deleteOps.length; i += BATCH_SIZE) {
     const batch = writeBatch(fs)
     for (const ref of deleteOps.slice(i, i + BATCH_SIZE)) batch.delete(ref)
     await syncLogTimed(`Firestore commit deletes ${i}`, () => batch.commit())
+    reportBatchCommitted()
   }
   syncLog("pushLocalToRemote complete")
 }

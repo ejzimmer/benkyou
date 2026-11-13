@@ -4,17 +4,20 @@ import { useSync } from "../lib/sync/SyncContext"
 import { useSessionEditedCardIds } from "../lib/sync/sessionEdits"
 import { formatDateTimeJa } from "../lib/formatDate"
 import { RefreshIcon } from "./RefreshIcon"
+import { SyncProgressIndicator } from "./SyncProgressIndicator"
 
 /**
  * Full two-way sync button, rendered inline in every page's header next to
  * the user menu — the only manual sync trigger in the app now that Settings
  * is gone. Pulls remote changes, resolves conflicts, and pushes local ones.
  * Turns green whenever this session has created/edited cards still pending
- * push, reverting to white once they're synced.
+ * push, reverting to white once they're synced. While a sync runs, shows
+ * which kind of data it's on underneath.
  */
 export function SyncButton() {
   const { user, offlineOnly } = useAuth()
-  const { syncNow, syncing, conflictActive, lastSyncedAt } = useSync()
+  const { syncNow, syncing, syncProgress, conflictActive, lastSyncedAt } =
+    useSync()
   const editedCardIds = useSessionEditedCardIds()
   const [error, setError] = useState<string | null>(null)
 
@@ -49,6 +52,7 @@ export function SyncButton() {
           <RefreshIcon className="sync-icon" />
         )}
       </button>
+      {syncProgress && <SyncProgressIndicator progress={syncProgress} />}
       {error && <span className="error small">{error}</span>}
     </span>
   )

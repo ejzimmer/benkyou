@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { SyncButton } from "./SyncButton"
+import type { SyncProgress } from "../lib/sync/syncTypes"
 
 const syncNow = vi.fn()
 
@@ -13,7 +14,12 @@ vi.mock("../lib/auth/AuthContext", () => ({
   useAuth: () => mockAuth,
 }))
 
-let mockSync = { syncing: false, conflictActive: false, lastSyncedAt: null as number | null }
+let mockSync = {
+  syncing: false,
+  syncProgress: null as SyncProgress | null,
+  conflictActive: false,
+  lastSyncedAt: null as number | null,
+}
 vi.mock("../lib/sync/SyncContext", () => ({
   useSync: () => ({
     syncNow: (...args: unknown[]) => syncNow(...args),
@@ -25,7 +31,12 @@ describe("SyncButton", () => {
   beforeEach(() => {
     syncNow.mockReset()
     mockAuth = { user: { uid: "u1" }, offlineOnly: false }
-    mockSync = { syncing: false, conflictActive: false, lastSyncedAt: null }
+    mockSync = {
+      syncing: false,
+      syncProgress: null,
+      conflictActive: false,
+      lastSyncedAt: null,
+    }
   })
 
   it("shows a plain 'Sync' button", () => {
@@ -48,7 +59,7 @@ describe("SyncButton", () => {
   })
 
   it("is disabled and shows a spinner while syncing", () => {
-    mockSync = { syncing: true, conflictActive: false, lastSyncedAt: null }
+    mockSync = { ...mockSync, syncing: true }
     render(<SyncButton />)
     const button = screen.getByRole("button", { name: /同期中/ })
     expect(button).toBeDisabled()
@@ -56,10 +67,21 @@ describe("SyncButton", () => {
   })
 
   it("is disabled and labelled to resolve a conflict when one is active", () => {
-    mockSync = { syncing: false, conflictActive: true, lastSyncedAt: null }
+    mockSync = { ...mockSync, conflictActive: true }
     render(<SyncButton />)
     const button = screen.getByRole("button", { name: /競合を解決/ })
     expect(button).toBeDisabled()
+  })
+
+  it("shows which kind of data a running sync is on", () => {
+    mockSync = {
+      ...mockSync,
+      syncing: true,
+      syncProgress: { stage: "images", fraction: 0.5 },
+    }
+    render(<SyncButton />)
+
+    expect(screen.getByRole("progressbar", { name: "画像" })).toBeInTheDocument()
   })
 
   it("calls syncNow on click", async () => {

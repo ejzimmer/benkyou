@@ -42,7 +42,10 @@ import {
   LAST_FULL_SYNC_AT_KEY,
   LAST_SYNCED_AT_KEY,
   type SyncConflict,
+  type StepProgressListener,
   type SyncConflictChoice,
+  type SyncProgressListener,
+  type SyncStage,
   type Tombstone,
 } from "./syncTypes"
 import { syncLog, syncLogTimed } from "./syncLog"
@@ -103,6 +106,7 @@ export type RunSyncOptions = {
   storage: FirebaseStorage
   uid: string
   onConflict: (conflict: SyncConflict) => Promise<SyncConflictChoice>
+  onProgress?: SyncProgressListener
 }
 
 function tombstoneWins(
@@ -275,6 +279,7 @@ async function collectEntityConflicts(
   lastSyncedAt: number | null,
   remote: RemoteSnapshot,
   onConflict: (c: SyncConflict) => Promise<SyncConflictChoice>,
+  onTableMerged: () => void,
 ): Promise<void> {
   const localDecks = await db.decks.toArray()
   const localCards = await db.cards.toArray()
@@ -353,6 +358,7 @@ async function collectEntityConflicts(
       await db.decks.put(remoteDeck)
     })
   }
+  onTableMerged()
 
   // Names the cards a "not a duplicate" verdict points at, for the conflict
   // table — checking both sides, since a card one device dismissed against
@@ -430,6 +436,7 @@ async function collectEntityConflicts(
       await db.cards.put(remoteCard)
     })
   }
+  onTableMerged()
 
   for (let i = 0; i < localSched.length; i++) {
     await yieldPeriodically(i)
@@ -506,6 +513,7 @@ async function collectEntityConflicts(
       },
     )
   }
+  onTableMerged()
 }
 
 async function syncOneMediaItem(
@@ -615,6 +623,7 @@ async function syncMedia(
   remote: RemoteSnapshot,
   lastSyncedAt: number | null,
   onConflict: (c: SyncConflict) => Promise<SyncConflictChoice>,
+  onProgress: StepProgressListener,
 ): Promise<void> {
   const cards = await db.cards.toArray()
   const localMedia = await db.media.toArray()
@@ -645,6 +654,8 @@ async function syncMedia(
   if (ids.length === 0) return
 
   const concurrency = 4
+  let synced = 0
+  onProgress(0, ids.length)
   await runWithConcurrency(ids, concurrency, async (mediaId, index) => {
     await syncLogTimed(
       `sync media ${index + 1}/${ids.length}`,
@@ -661,6 +672,8 @@ async function syncMedia(
         ),
       { mediaId: mediaId.slice(0, 40) },
     )
+    synced++
+    onProgress(synced, ids.length)
   })
 }
 
@@ -733,8 +746,23 @@ export function clearLastSyncedAt(): void {
   localStorage.removeItem(LAST_FULL_SYNC_AT_KEY)
 }
 
+function reportStageSteps(
+  onProgress: SyncProgressListener | undefined,
+  stage: SyncStage,
+): StepProgressListener {
+  return (done, total) =>
+    onProgress?.({ stage, fraction: total > 0 ? done / total : 1 })
+}
+
+/** The cards stage spans the five collection fetches plus three merge passes. */
+const CARD_STAGE_STEPS = 8
+
 export async function runFullSync(options: RunSyncOptions): Promise<void> {
-  const { fs, storage, uid, onConflict } = options
+  const { fs, storage, uid, onConflict, onProgress } = options
+  const reportCardSteps = reportStageSteps(onProgress, "cards")
+  const reportImageSteps = reportStageSteps(onProgress, "images")
+  const reportUploadSteps = reportStageSteps(onProgress, "upload")
+  onProgress?.({ stage: "cards", fraction: null })
   syncLog("runFullSync start", { uid, lastSyncedAt: readLastSyncedAt() })
   const lastSyncedAt = readLastSyncedAt()
   // Captured before any checks/fetches run, so the marker we persist can
@@ -829,7 +857,7 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
     // hydrate call below isn't guarded either).
     const hydrate = await syncLogTimed(
       "hydrate card images for review (no-op path)",
-      () => hydrateReferencedMedia(uid),
+      () => hydrateReferencedMedia(uid, reportImageSteps),
     )
     syncLog("hydrate card images complete (no-op path)", hydrate)
     syncLog("runFullSync complete (no-op)")
@@ -837,7 +865,9 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
   }
 
   const remote = await syncLogTimed("pull remote snapshot", () =>
-    fetchRemoteSnapshot(fs, uid, "sync"),
+    fetchRemoteSnapshot(fs, uid, "sync", (fetched) =>
+      reportCardSteps(fetched, CARD_STAGE_STEPS),
+    ),
   )
   const localTombs = await db.tombstones.toArray()
 
@@ -850,25 +880,30 @@ export async function runFullSync(options: RunSyncOptions): Promise<void> {
   if (prunedTombs > 0) {
     syncLog("pruned orphan media tombstones", { count: prunedTombs })
   }
+  let tablesMerged = 0
   await syncLogTimed("merge decks/cards/scheduling", () =>
-    collectEntityConflicts(lastSyncedAt, remote, onConflict),
+    collectEntityConflicts(lastSyncedAt, remote, onConflict, () => {
+      tablesMerged++
+      reportCardSteps(5 + tablesMerged, CARD_STAGE_STEPS)
+    }),
   )
 
   await syncLogTimed("sync media blobs", () =>
-    syncMedia(storage, uid, remote, lastSyncedAt, onConflict),
+    syncMedia(storage, uid, remote, lastSyncedAt, onConflict, reportImageSteps),
   )
 
+  onProgress?.({ stage: "upload", fraction: null })
   const remoteMediaIds = new Set(remote.mediaMeta.keys())
   await syncLogTimed("purge tombstoned media in Storage", () =>
     purgeTombstonedMediaStorage(storage, uid, { remoteMediaIds }),
   )
 
   await syncLogTimed("push local to remote", () =>
-    pushLocalToRemote(fs, uid, remote),
+    pushLocalToRemote(fs, uid, remote, reportUploadSteps),
   )
 
   const hydrate = await syncLogTimed("hydrate card images for review", () =>
-    hydrateReferencedMedia(uid),
+    hydrateReferencedMedia(uid, reportImageSteps),
   )
   syncLog("hydrate card images complete", hydrate)
 
@@ -882,10 +917,19 @@ export async function runPushOnly(
   fs: Firestore,
   storage: FirebaseStorage,
   uid: string,
+  onProgress?: SyncProgressListener,
 ): Promise<void> {
+  onProgress?.({ stage: "images", fraction: null })
   await pruneOrphanMediaTombstones()
   await purgeTombstonedMediaStorage(storage, uid)
   const remote = await fetchRemoteSnapshot(fs, uid, "push")
-  await syncMedia(storage, uid, remote, readLastSyncedAt(), async () => "local")
-  await pushLocalToRemote(fs, uid, remote)
+  await syncMedia(
+    storage,
+    uid,
+    remote,
+    readLastSyncedAt(),
+    async () => "local",
+    reportStageSteps(onProgress, "images"),
+  )
+  await pushLocalToRemote(fs, uid, remote, reportStageSteps(onProgress, "upload"))
 }
