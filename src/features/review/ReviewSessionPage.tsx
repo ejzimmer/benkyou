@@ -57,6 +57,7 @@ import { UserMenu } from "../../ui/UserMenu"
 import { SyncButton } from "../../ui/SyncButton"
 import { ScrollShadow } from "../../ui/ScrollShadow"
 import { useScrollShadow } from "../../ui/useScrollShadow"
+import { usePhoneReviewLayout } from "./usePhoneReviewLayout"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
@@ -192,6 +193,7 @@ export function ReviewSessionPage() {
     }>
   >([])
   const showAnswerBtnRef = useRef<HTMLButtonElement>(null)
+  const isPhoneLayout = usePhoneReviewLayout()
   const phaseRef = useRef<Phase>(phase)
   const conflictReloadPendingRef = useRef(false)
   /**
@@ -866,7 +868,25 @@ export function ReviewSessionPage() {
 
   const item = current
   const exp = expectedAnswer(item.card, item.modeId)
-  const buttonOnQuestionSide = showAnswerOnQuestionSide(item.card, item.modeId)
+  const buttonOnQuestionSide =
+    isPhoneLayout || showAnswerOnQuestionSide(item.card, item.modeId)
+  const frontFaceHidden = isPhoneLayout && phase === "answer"
+  const answerPromptBody = (
+    <ReviewSessionPromptBody
+      item={item}
+      typed={typed}
+      onTypedChange={handleTypedChange}
+      readingWarn={readingWarn}
+      kanjiWarn={kanjiWarn}
+      latinWarn={latinWarn}
+      nWarn={nWarn}
+      confusedMatch={confusedMatch}
+      onTypedSubmit={() => tryShowAnswerRef.current()}
+      column="answer"
+      promptFocusToken={promptFocusToken}
+      promptRefocusToken={promptRefocusToken}
+    />
+  )
   const reviewReturnParams = new URLSearchParams({
     resumeCardId: item.card.id,
     resumeModeId: item.modeId,
@@ -942,12 +962,12 @@ export function ReviewSessionPage() {
         {pendingIncorrectDelay ? (
           <p className="muted small">次。。。</p>
         ) : (
-          <div
-            className={`review-columns ${buttonOnQuestionSide ? "flip-card" : "answer-typed"}${
-              buttonOnQuestionSide && phase === "answer" ? " is-flipped" : ""
-            }`}
-          >
-            <div className="review-question">
+          <div className={`review-columns${phase === "answer" ? " is-flipped" : ""}`}>
+            <div
+              className="review-question"
+              aria-hidden={frontFaceHidden}
+              {...inertWhen(frontFaceHidden)}
+            >
               <div className="review-question-content" ref={questionContentRef}>
                 <ReviewSessionPromptBody
                   item={item}
@@ -965,12 +985,21 @@ export function ReviewSessionPage() {
                   promptRefocusToken={promptRefocusToken}
                 />
               </div>
+              {isPhoneLayout && (
+                <div className="review-answer-prompt review-front-answer">
+                  <div className="stack">
+                    {answerPromptBody}
+                  </div>
+                </div>
+              )}
               {buttonOnQuestionSide ? (
                 // For oral modes and an inline-gap construction, all of the
                 // user's interaction (speaking, or typing the gap) happens on
-                // this side, so the button that advances past it lives here
-                // too, pinned to the bottom and scrolled behind by
-                // `.review-question-content`'s own overflow. Once the answer
+                // this side, as it does for every mode on a phone, where this
+                // side is the front of a single flip card. The button that
+                // advances past it lives here too, pinned to the bottom and
+                // scrolled behind by `.review-question-content`'s own
+                // overflow. Once the answer
                 // is revealed this collapses to an invisible/inert spacer,
                 // same as the never-had-a-button case below — the
                 // Correct/Incorrect controls that replace it live in the
@@ -1008,49 +1037,38 @@ export function ReviewSessionPage() {
                 className="review-answer-stack"
                 key={`${item.card.id}:${item.modeId}`}
               >
-                <div
-                  className={`review-answer-prompt${phase === "answer" ? " is-hidden" : ""}`}
-                  aria-hidden={phase === "answer"}
-                  {...inertWhen(phase === "answer")}
-                >
-                  <ScrollShadow className="stack">
-                    <ReviewSessionPromptBody
-                      item={item}
-                      typed={typed}
-                      onTypedChange={handleTypedChange}
-                      readingWarn={readingWarn}
-                      kanjiWarn={kanjiWarn}
-                      latinWarn={latinWarn}
-                      nWarn={nWarn}
-                      confusedMatch={confusedMatch}
-                      onTypedSubmit={() => tryShowAnswerRef.current()}
-                      column="answer"
-                      promptFocusToken={promptFocusToken}
-                      promptRefocusToken={promptRefocusToken}
-                    />
-                  </ScrollShadow>
-                  {buttonOnQuestionSide ? (
-                    // The real button lives on the question side for this
-                    // mode (see above) — reserve the same footer space here
-                    // so this card's content still centers at the same
-                    // height as the question card's.
-                    <ReviewFooter className="review-footer-spacer" aria-hidden>
-                      <span className="btn">答えを見る</span>
-                    </ReviewFooter>
-                  ) : (
-                    <ReviewFooter>
-                      <button
-                        ref={showAnswerBtnRef}
-                        type="button"
-                        className="btn primary"
-                        aria-label="答えを見る"
-                        onClick={() => tryShowAnswerRef.current()}
-                      >
-                        答えを見る
-                      </button>
-                    </ReviewFooter>
-                  )}
-                </div>
+                {!isPhoneLayout && (
+                  <div
+                    className={`review-answer-prompt${phase === "answer" ? " is-hidden" : ""}`}
+                    aria-hidden={phase === "answer"}
+                    {...inertWhen(phase === "answer")}
+                  >
+                    <ScrollShadow className="stack">
+                      {answerPromptBody}
+                    </ScrollShadow>
+                    {buttonOnQuestionSide ? (
+                      // The real button lives on the question side for this
+                      // mode (see above) — reserve the same footer space here
+                      // so this card's content still centers at the same
+                      // height as the question card's.
+                      <ReviewFooter className="review-footer-spacer" aria-hidden>
+                        <span className="btn">答えを見る</span>
+                      </ReviewFooter>
+                    ) : (
+                      <ReviewFooter>
+                        <button
+                          ref={showAnswerBtnRef}
+                          type="button"
+                          className="btn primary"
+                          aria-label="答えを見る"
+                          onClick={() => tryShowAnswerRef.current()}
+                        >
+                          答えを見る
+                        </button>
+                      </ReviewFooter>
+                    )}
+                  </div>
+                )}
 
                 <div
                   className={`review-answer-revealed${phase === "answer" ? " is-visible" : ""}`}
