@@ -86,3 +86,17 @@ export const LAST_SYNCED_AT_KEY = "benkyou:lastSyncedAt"
  * accumulate. This one only advances when the full pipeline actually runs.
  */
 export const LAST_FULL_SYNC_AT_KEY = "benkyou:lastFullSyncAt"
+
+export const SYNC_STAGES = ["cards", "images", "upload"] as const
+
+export type SyncStage = (typeof SYNC_STAGES)[number]
+
+export type SyncProgress = {
+  stage: SyncStage
+  /** 0–1 through the current stage, or null while its size isn't known yet. */
+  fraction: number | null
+}
+
+export type SyncProgressListener = (progress: SyncProgress) => void
+
+export type StepProgressListener = (done: number, total: number) => void

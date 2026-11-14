@@ -15,7 +15,7 @@ import { syncLog } from "./syncLog"
 import { withStorageTimeout } from "./storageTimeout"
 import { mediaBlobDigest } from "./syncCompare"
 import { runWithConcurrency } from "./runWithConcurrency"
-import type { RemoteMediaMeta } from "./syncTypes"
+import type { RemoteMediaMeta, StepProgressListener } from "./syncTypes"
 
 /** Backfills and caches `row.digest` (SHA-256 of the blob) when missing. */
 export async function ensureMediaDigest(row: MediaRow): Promise<MediaRow> {
@@ -203,6 +203,7 @@ export async function pushLocalMediaToRemote(
  */
 export async function hydrateReferencedMedia(
   uid: string,
+  onProgress?: StepProgressListener,
 ): Promise<{ total: number; pulled: number; alreadyLocal: number; failed: number }> {
   const cards = await db.cards.toArray()
   const ids = new Set<string>()
@@ -224,6 +225,7 @@ export async function hydrateReferencedMedia(
   let pulled = 0
   let failed = 0
 
+  if (missing.length > 0) onProgress?.(0, missing.length)
   await runWithConcurrency(missing, 4, async (id) => {
     try {
       const local = localById.get(id)
@@ -242,6 +244,7 @@ export async function hydrateReferencedMedia(
     } catch {
       failed++
     }
+    onProgress?.(pulled + failed, missing.length)
   })
 
   return { total, pulled, alreadyLocal, failed }

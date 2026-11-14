@@ -22,15 +22,22 @@ import {
 import { clearSessionEdits } from "./sessionEdits"
 import { pushSessionEditsNow } from "../../services/decks"
 import { useIdleSync } from "./useIdleSync"
-import type { SyncConflict, SyncConflictChoice } from "./syncTypes"
+import type {
+  SyncConflict,
+  SyncConflictChoice,
+  SyncProgress,
+} from "./syncTypes"
 
 export type SyncPhase = "idle" | "running" | "conflict"
 
 const IDLE_SYNC_TIMEOUT_MS = 5 * 60 * 1000
+const PROGRESS_RENDER_INTERVAL_MS = 100
 
 type SyncState = {
   syncing: boolean
   syncPhase: SyncPhase
+  /** Which kind of data the running sync is on, and how far through it. */
+  syncProgress: SyncProgress | null
   syncLog: readonly SyncLogEntry[]
   lastError: string | null
   lastSyncedAt: number | null
@@ -62,6 +69,29 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     () => getSyncLogEntries(),
   )
   const conflictNumberRef = useRef(0)
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null)
+  const latestProgressRef = useRef<SyncProgress | null>(null)
+  const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Media sync can report thousands of steps in a burst, so renders are
+  // throttled to the latest value every PROGRESS_RENDER_INTERVAL_MS.
+  const reportProgress = useCallback((progress: SyncProgress) => {
+    latestProgressRef.current = progress
+    if (progressTimerRef.current) return
+    progressTimerRef.current = setTimeout(() => {
+      progressTimerRef.current = null
+      setSyncProgress(latestProgressRef.current)
+    }, PROGRESS_RENDER_INTERVAL_MS)
+  }, [])
+
+  const clearProgress = useCallback(() => {
+    if (progressTimerRef.current) clearTimeout(progressTimerRef.current)
+    progressTimerRef.current = null
+    latestProgressRef.current = null
+    setSyncProgress(null)
+  }, [])
+
+  useEffect(() => clearProgress, [clearProgress])
   const [conflictResolutionVersion, setConflictResolutionVersion] = useState(0)
 
   useEffect(() => {
@@ -150,6 +180,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
           storage,
           uid: user.uid,
           onConflict,
+          onProgress: reportProgress,
         })
         setLastSyncedAt(Date.now())
         // A full sync pushes every local-only/local-newer card, so nothing
@@ -163,6 +194,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         throw e
       } finally {
         const hadConflict = conflictNumberRef.current > 0
+        clearProgress()
         setSyncing(false)
         setSyncPhase("idle")
         setActiveConflict(null)
@@ -177,7 +209,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       operationInFlightRef.current = null
     })
     return operationInFlightRef.current
-  }, [offlineOnly, user, onConflict])
+  }, [offlineOnly, user, onConflict, reportProgress, clearProgress])
 
   // Kick off a full sync after 5 minutes with no input activity, so devices
   // stay roughly in step even if the user never presses the sync button.
@@ -219,7 +251,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setSyncPhase("running")
       setLastError(null)
       try {
-        await runPushOnly(fs, storage, user.uid)
+        await runPushOnly(fs, storage, user.uid, reportProgress)
         // Push-only uploads every local-only/local-newer card too, so
         // nothing this session edited is still pending afterward.
         clearSessionEdits()
@@ -230,6 +262,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setLastError(msg)
         throw e
       } finally {
+        clearProgress()
         setSyncing(false)
         setSyncPhase("idle")
       }
@@ -239,7 +272,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       operationInFlightRef.current = null
     })
     return operationInFlightRef.current
-  }, [offlineOnly, user])
+  }, [offlineOnly, user, reportProgress, clearProgress])
 
   const syncEditsNow = useCallback(async () => {
     if (offlineOnly || !user) {
@@ -267,6 +300,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setSyncPhase("running")
       setLastError(null)
       try {
+        reportProgress({ stage: "upload", fraction: null })
         // pushSessionEditsNow clears the specific cards it pushed itself,
         // once it's confirmed they actually went out.
         await pushSessionEditsNow(user)
@@ -277,6 +311,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setLastError(msg)
         throw e
       } finally {
+        clearProgress()
         setSyncing(false)
         setSyncPhase("idle")
       }
@@ -286,12 +321,13 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       operationInFlightRef.current = null
     })
     return operationInFlightRef.current
-  }, [offlineOnly, user])
+  }, [offlineOnly, user, reportProgress, clearProgress])
 
   const value = useMemo(
     () => ({
       syncing,
       syncPhase,
+      syncProgress,
       syncLog: syncLogEntries,
       lastError,
       lastSyncedAt,
@@ -304,6 +340,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     [
       syncing,
       syncPhase,
+      syncProgress,
       syncLogEntries,
       lastError,
       lastSyncedAt,
