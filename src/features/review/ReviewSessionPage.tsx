@@ -871,6 +871,22 @@ export function ReviewSessionPage() {
   const buttonOnQuestionSide =
     isPhoneLayout || showAnswerOnQuestionSide(item.card, item.modeId)
   const frontFaceHidden = isPhoneLayout && phase === "answer"
+  const answerPromptBody = (
+    <ReviewSessionPromptBody
+      item={item}
+      typed={typed}
+      onTypedChange={handleTypedChange}
+      readingWarn={readingWarn}
+      kanjiWarn={kanjiWarn}
+      latinWarn={latinWarn}
+      nWarn={nWarn}
+      confusedMatch={confusedMatch}
+      onTypedSubmit={() => tryShowAnswerRef.current()}
+      column="answer"
+      promptFocusToken={promptFocusToken}
+      promptRefocusToken={promptRefocusToken}
+    />
+  )
   const reviewReturnParams = new URLSearchParams({
     resumeCardId: item.card.id,
     resumeModeId: item.modeId,
@@ -972,20 +988,7 @@ export function ReviewSessionPage() {
               {isPhoneLayout && (
                 <div className="review-answer-prompt review-front-answer">
                   <div className="stack">
-                    <ReviewSessionPromptBody
-                      item={item}
-                      typed={typed}
-                      onTypedChange={handleTypedChange}
-                      readingWarn={readingWarn}
-                      kanjiWarn={kanjiWarn}
-                      latinWarn={latinWarn}
-                      nWarn={nWarn}
-                      confusedMatch={confusedMatch}
-                      onTypedSubmit={() => tryShowAnswerRef.current()}
-                      column="answer"
-                      promptFocusToken={promptFocusToken}
-                      promptRefocusToken={promptRefocusToken}
-                    />
+                    {answerPromptBody}
                   </div>
                 </div>
               )}
@@ -1041,20 +1044,7 @@ export function ReviewSessionPage() {
                     {...inertWhen(phase === "answer")}
                   >
                     <ScrollShadow className="stack">
-                      <ReviewSessionPromptBody
-                        item={item}
-                        typed={typed}
-                        onTypedChange={handleTypedChange}
-                        readingWarn={readingWarn}
-                        kanjiWarn={kanjiWarn}
-                        latinWarn={latinWarn}
-                        nWarn={nWarn}
-                        confusedMatch={confusedMatch}
-                        onTypedSubmit={() => tryShowAnswerRef.current()}
-                        column="answer"
-                        promptFocusToken={promptFocusToken}
-                        promptRefocusToken={promptRefocusToken}
-                      />
+                      {answerPromptBody}
                     </ScrollShadow>
                     {buttonOnQuestionSide ? (
                       // The real button lives on the question side for this
