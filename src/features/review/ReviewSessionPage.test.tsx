@@ -404,80 +404,96 @@ describe("ReviewSessionPage", () => {
     expect(editLinkAfter.getAttribute("href")).toBe(hrefBefore)
   })
 
-  it("marks the stacked layout as a flip card for a mode answered on the question side", async () => {
-    await resetDatabase()
-    const deck = await createDeck("T")
-    const card = await createVocabularyCard(deck.id, {
-      wordJa: "猫",
-      reading: "ねこ",
-      definitionsEn: ["cat"],
-      images: [],
-      exampleSentences: [],
+  describe("card layout", () => {
+    async function renderReadingReview() {
+      await resetDatabase()
+      const deck = await createDeck("T")
+      const card = await createVocabularyCard(deck.id, {
+        wordJa: "猫",
+        reading: "ねこ",
+        definitionsEn: ["cat"],
+        images: [],
+        exampleSentences: [],
+      })
+      render(
+        <MemoryRouter
+          initialEntries={[
+            `/review?resumeCardId=${card.id}&resumeModeId=vocab_type_reading`,
+          ]}
+        >
+          <AuthProvider>
+            <SyncProvider>
+              <Routes>
+                <Route path="/review" element={<ReviewSessionPage />} />
+              </Routes>
+            </SyncProvider>
+          </AuthProvider>
+        </MemoryRouter>,
+      )
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
+      })
+    }
+
+    describe("on a wide screen", () => {
+      it("puts the reading input on the answer card, beside the question", async () => {
+        await renderReadingReview()
+
+        const question = screen.getByText("猫").closest(".review-question")
+        const input = screen.getByRole("textbox")
+        expect(input.closest(".review-answer")).not.toBeNull()
+        expect(question).not.toContainElement(input)
+      })
+
+      it("keeps the question showing once the answer is revealed", async () => {
+        const user = userEvent.setup()
+        await renderReadingReview()
+
+        await user.type(screen.getByRole("textbox"), "ねこ{Enter}")
+
+        await screen.findByRole("button", { name: "正解" })
+        const question = screen.getByText("猫").closest(".review-question")
+        expect(question).not.toHaveAttribute("aria-hidden", "true")
+      })
     })
 
-    const { container } = render(
-      <MemoryRouter
-        initialEntries={[
-          `/review?resumeCardId=${card.id}&resumeModeId=vocab_oral_en`,
-        ]}
-      >
-        <AuthProvider>
-          <SyncProvider>
-            <Routes>
-              <Route path="/review" element={<ReviewSessionPage />} />
-            </Routes>
-          </SyncProvider>
-        </AuthProvider>
-      </MemoryRouter>,
-    )
+    describe("on a phone", () => {
+      beforeEach(() => {
+        vi.stubGlobal(
+          "matchMedia",
+          (query: string) =>
+            ({
+              matches: query === "(max-width: 759.98px)",
+              addEventListener: () => {},
+              removeEventListener: () => {},
+            }) as unknown as MediaQueryList,
+        )
+        return () => vi.unstubAllGlobals()
+      })
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
+      it("puts the question, reading input and show-answer button on one card", async () => {
+        await renderReadingReview()
+
+        const question = screen.getByText("猫").closest(".review-question")
+        expect(question).toContainElement(screen.getByRole("textbox"))
+        expect(question).toContainElement(
+          screen.getByRole("button", { name: /答えを見る/ }),
+        )
+      })
+
+      it("flips the card over to the answer after a submitted answer", async () => {
+        const user = userEvent.setup()
+        await renderReadingReview()
+        const question = screen.getByText("猫").closest(".review-question")
+
+        await user.type(screen.getByRole("textbox"), "いぬ{Enter}")
+
+        const incorrect = await screen.findByRole("button", { name: "不正解" })
+        expect(question?.parentElement).toHaveClass("is-flipped")
+        expect(question).toHaveAttribute("aria-hidden", "true")
+        expect(incorrect.closest(".review-answer")).not.toBeNull()
+      })
     })
-
-    expect(container.querySelector(".review-columns")).toHaveClass("flip-card")
-    expect(container.querySelector(".review-columns")).not.toHaveClass(
-      "answer-typed",
-    )
-  })
-
-  it("marks the stacked layout as answer-typed for a mode answered on the answer side", async () => {
-    await resetDatabase()
-    const deck = await createDeck("T")
-    const card = await createVocabularyCard(deck.id, {
-      wordJa: "猫",
-      reading: "ねこ",
-      definitionsEn: ["cat"],
-      images: [],
-      exampleSentences: [],
-    })
-
-    const { container } = render(
-      <MemoryRouter
-        initialEntries={[
-          `/review?resumeCardId=${card.id}&resumeModeId=vocab_type_reading`,
-        ]}
-      >
-        <AuthProvider>
-          <SyncProvider>
-            <Routes>
-              <Route path="/review" element={<ReviewSessionPage />} />
-            </Routes>
-          </SyncProvider>
-        </AuthProvider>
-      </MemoryRouter>,
-    )
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /答えを見る/ })).toBeEnabled()
-    })
-
-    expect(container.querySelector(".review-columns")).toHaveClass(
-      "answer-typed",
-    )
-    expect(container.querySelector(".review-columns")).not.toHaveClass(
-      "flip-card",
-    )
   })
 
   it("keeps a typed but unrevealed answer after returning from card edit", async () => {
