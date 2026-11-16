@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": "^22.13.0 || >=24.0.0"
+    "node": ">=26"
   },
   "scripts": {
     "dev": "vite",
@@ -19,8 +19,8 @@
     "diff": "^9.0.0",
     "firebase": "^11.1.0",
     "firebase-admin": "^14.2.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "react-router-dom": "^7.1.1",
     "ts-fsrs": "^5.1.0",
     "wanakana": "^5.3.1"
@@ -31,10 +31,11 @@
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/diff": "^7.0.2",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "dexie-react-hooks": "^1.1.7",
+    "dexie-react-hooks": "^4.4.0",
     "eslint": "^9.17.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
@@ -42,7 +43,7 @@
     "firebase-tools": "^15.18.0",
     "globals": "^15.14.0",
     "jsdom": "^25.0.1",
-    "typescript": "~5.7.2",
+    "typescript": "~6.0.3",
     "typescript-eslint": "^8.19.1",
     "vite": "^6.0.7",
     "vite-plugin-pwa": "^0.21.1",

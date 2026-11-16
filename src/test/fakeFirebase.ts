@@ -39,7 +39,7 @@ export type FakeFirestoreBackend = {
 
 export type FakeStorageBackend = {
   /** "users/u/media/{id}" -> stored bytes + contentType */
-  blobs: Map<string, { bytes: Uint8Array; contentType: string }>
+  blobs: Map<string, { bytes: Uint8Array<ArrayBuffer>; contentType: string }>
   /** Upload calls recorded for assertions (path + contentType + size). */
   uploads: Array<{ path: string; contentType: string; size: number }>
   /** Paths fetched via getBlob/getBytes, recorded for assertions. */
@@ -227,7 +227,7 @@ export async function fakeUploadBytes(
   data: Blob | Uint8Array | ArrayBuffer,
   metadata?: { contentType?: string },
 ) {
-  let bytes: Uint8Array
+  let bytes: Uint8Array<ArrayBuffer>
   let blobType = ""
   if (data instanceof Blob) {
     bytes = new Uint8Array(await data.arrayBuffer())
