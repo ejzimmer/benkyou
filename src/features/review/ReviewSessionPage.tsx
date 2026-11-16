@@ -61,15 +61,6 @@ import { usePhoneReviewLayout } from "./usePhoneReviewLayout"
 
 const INCORRECT_ADVANCE_DELAY_MS = 550
 
-/**
- * `inert` disables focus/interaction for a hidden overlay layer (see the
- * always-rendered prompt/answer stack below). Not yet in this React/TS
- * version's JSX typings even though every supported browser implements it,
- * so it's spread in as a plain attribute rather than passed as a normal prop.
- */
-function inertWhen(condition: boolean) {
-  return (condition ? { inert: "" } : {}) as { inert?: string }
-}
 
 type Phase = "prompt" | "answer"
 
@@ -966,7 +957,7 @@ export function ReviewSessionPage() {
             <div
               className="review-question"
               aria-hidden={frontFaceHidden}
-              {...inertWhen(frontFaceHidden)}
+              inert={frontFaceHidden}
             >
               <div className="review-question-content" ref={questionContentRef}>
                 <ReviewSessionPromptBody
@@ -1015,7 +1006,7 @@ export function ReviewSessionPage() {
                     className="btn primary"
                     aria-label="答えを見る"
                     onClick={() => tryShowAnswerRef.current()}
-                    {...inertWhen(phase === "answer")}
+                    inert={phase === "answer"}
                   >
                     答えを見る
                   </button>
@@ -1041,7 +1032,7 @@ export function ReviewSessionPage() {
                   <div
                     className={`review-answer-prompt${phase === "answer" ? " is-hidden" : ""}`}
                     aria-hidden={phase === "answer"}
-                    {...inertWhen(phase === "answer")}
+                    inert={phase === "answer"}
                   >
                     <ScrollShadow className="stack">
                       {answerPromptBody}
@@ -1073,7 +1064,7 @@ export function ReviewSessionPage() {
                 <div
                   className={`review-answer-revealed${phase === "answer" ? " is-visible" : ""}`}
                   aria-hidden={phase !== "answer"}
-                  {...inertWhen(phase !== "answer")}
+                  inert={phase !== "answer"}
                 >
                   <ReviewSessionAnswerPanel
                     item={item}

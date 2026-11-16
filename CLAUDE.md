@@ -25,7 +25,7 @@ npx vitest run -t "blocks submitting a reading answer"
 
 There is no ESLint config or `lint` script despite `eslint` being a devDependency — type checking (`tsc --noEmit`) is the only static check, and runs as part of `npm run build`.
 
-Requires Node **22.13+** or **24+** (`engines` in `package.json`; `.nvmrc`/`.node-version` pin it). Use npm (`package-lock.json`), not yarn.
+Requires Node **26+** (`engines` in `package.json`; `.nvmrc`/`.node-version` pin it), which has `Temporal` built in. Use npm (`package-lock.json`), not yarn.
 
 Tests use Vitest with `fake-indexeddb` standing in for Dexie under jsdom.
 

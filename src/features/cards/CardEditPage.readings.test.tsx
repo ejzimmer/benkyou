@@ -1,3 +1,4 @@
+import type React from "react"
 import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -18,7 +19,7 @@ vi.mock("../../lib/sync/firestoreSync", () => ({
   upsertSchedulingRemote: vi.fn(),
 }))
 
-function wrap(ui: JSX.Element) {
+function wrap(ui: React.JSX.Element) {
   return (
     <MemoryRouter initialEntries={["/decks/d1/cards/new?vocab=0"]}>
       <AuthProvider>

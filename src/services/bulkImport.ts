@@ -15,8 +15,8 @@ export type ImportProgress =
 
 export type ImportProgressFn = (progress: ImportProgress) => void
 
-function mediaItemBytes(item: BulkImportPayload["media"][number]): Uint8Array {
-  if (item.bytes) return item.bytes
+function mediaItemBytes(item: BulkImportPayload["media"][number]): Uint8Array<ArrayBuffer> {
+  if (item.bytes) return new Uint8Array(item.bytes)
   if (item.base64) {
     const binary = atob(item.base64)
     const bytes = new Uint8Array(binary.length)

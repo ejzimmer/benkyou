@@ -63,5 +63,10 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: "./src/test/setup.ts",
+    // Node 26's own localStorage global shadows jsdom's and is undefined
+    // without a backing file, so the tests turn it off.
+    poolOptions: {
+      forks: { execArgv: ["--no-experimental-webstorage"] },
+    },
   },
 })
