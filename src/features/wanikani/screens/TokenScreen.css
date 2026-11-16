@@ -1,0 +1,36 @@
+@scope (.field) to (.shake-input) {
+  :scope {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: min(560px, 100%);
+  }
+
+  label {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ink) 75%, transparent);
+    color: var(--paper);
+    cursor: pointer;
+  }
+}

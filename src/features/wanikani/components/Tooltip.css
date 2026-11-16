@@ -1,0 +1,45 @@
+@scope (.has-tooltip) {
+  :scope {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .tooltip {
+    position: absolute;
+    top: 100%;
+    z-index: 10;
+    margin-top: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 13px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  :scope.tooltip-center .tooltip {
+    left: 50%;
+    translate: -50% 0;
+  }
+
+  :scope.tooltip-end .tooltip {
+    right: 0;
+  }
+
+  :scope:has(:focus-visible) .tooltip {
+    opacity: 1;
+  }
+
+  @media (hover: hover) {
+    :scope:hover .tooltip {
+      opacity: 1;
+    }
+  }
+
+  :scope[data-dismissed] .tooltip {
+    opacity: 0;
+  }
+}

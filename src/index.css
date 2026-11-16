@@ -45,7 +45,7 @@ body {
   scroll-margin-block: 0.25rem;
 }
 
-a {
+a:where(:not(.wanikani *)) {
   color: var(--blue);
   text-decoration: none;
 }
@@ -368,7 +368,7 @@ a:hover {
   margin: 0;
 }
 
-.row {
+.row:where(:not(.wanikani *)) {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -432,7 +432,7 @@ textarea::selection {
   color: #0f0f18;
 }
 
-label,
+label:where(:not(.wanikani *)),
 fieldset.plain {
   display: flex;
   flex-direction: column;
@@ -838,7 +838,7 @@ fieldset.plain legend {
     0 0 20px var(--blue);
 }
 
-.error {
+.error:where(:not(.wanikani *)) {
   color: var(--pink);
 }
 
@@ -2581,7 +2581,7 @@ button.leech-badge-clear:focus-visible {
 .app-shell:has(.page.collection) {
   display: flex;
   flex-direction: column;
-  height: var(--vvh, 100dvh);
+  height: calc(var(--vvh, 100dvh) - var(--tab-bar-height, 0px));
   padding-bottom: 0.5rem;
 }
 

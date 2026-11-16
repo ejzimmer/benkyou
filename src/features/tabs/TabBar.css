@@ -1,0 +1,48 @@
+:root:has(.tab-bar) {
+  --tab-bar-height: 48px;
+}
+
+:root:has(.wanikani :is(.quiz:not(.summary), .lesson)) {
+  --tab-bar-height: 0px;
+
+  .tab-bar {
+    display: none;
+  }
+}
+
+.tab-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: var(--tab-bar-height);
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid #e3e3e8;
+  background: white;
+  color: #333;
+  font-family: system-ui, sans-serif;
+}
+
+.tab-bar .brand {
+  align-self: center;
+  margin-inline-end: 16px;
+  font-family: "Noto Serif JP", serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.tab-bar a {
+  padding: 8px 14px 10px;
+  border-bottom: 2px solid transparent;
+  color: #6b6b78;
+  text-decoration: none;
+}
+
+.tab-bar a:hover {
+  color: #333;
+  text-decoration: none;
+}
+
+.tab-bar a.active {
+  border-bottom-color: currentColor;
+  color: #333;
+}

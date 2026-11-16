@@ -1,0 +1,69 @@
+@scope (.shake-input) {
+  :scope {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid var(--glass-edge);
+    border-radius: 14px;
+    background: var(--glass);
+    box-shadow: inset 0 1px 3px hsl(210 40% 40% / 0.2);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--input-font-size, 22px);
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  input:focus {
+    outline: none;
+  }
+
+  input:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--type-colour, var(--radical)) 35%, transparent);
+  }
+
+  input.error {
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  input.highlighted {
+    color: transparent;
+    caret-color: var(--ink);
+  }
+
+  /* Sits exactly over the input, since text inside an input can't be coloured a character at a time */
+  .highlights {
+    position: absolute;
+    inset: 0;
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    color: var(--ink);
+    font-size: var(--input-font-size, 22px);
+    line-height: 1.2;
+    text-align: center;
+    white-space: pre;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .wrong {
+    color: var(--red);
+  }
+
+  .message {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--red);
+    text-align: center;
+  }
+}
