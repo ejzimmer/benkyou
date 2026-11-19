@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
-import { getThisYear } from '../shared/dates';
-import { ContextType } from '../shared/FirebaseContext';
-import { StorageContextWrapper } from '../shared/storageContextTestUtils';
+import { getThisYear } from '../../../journal/dates';
+import { ContextType } from '../../../journal/FirebaseContext';
+import { StorageContextWrapper } from '../../../journal/storageContextTestUtils';
 import {
   LanguageMediaStorageProvider,
   useLanguageMediaStorage,

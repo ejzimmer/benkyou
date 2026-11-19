@@ -1,4 +1,4 @@
-import { formatDayAndMonth, getLocalDate } from '../shared/dates';
+import { formatDayAndMonth, getLocalDate } from '../../../journal/dates';
 import { CallistemonFlower } from './CallistemonFlower';
 import { findBranchPoint } from './findBranchPoint';
 import { Bloom } from './getBlooms';

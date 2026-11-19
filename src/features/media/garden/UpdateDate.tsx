@@ -1,4 +1,4 @@
-import { formatDayAndMonth, getLocalDate } from '../shared/dates';
+import { formatDayAndMonth, getLocalDate } from '../../../journal/dates';
 
 type UpdateDateProps = { instant: string };
 

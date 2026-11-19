@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ModalContext } from '../shared/controls/ModalContext';
+import { ModalContext } from '../../../journal/controls/ModalContext';
 import { AddMediaForm } from './AddMediaForm';
 import { renderWithLanguageMediaStorage } from './languageMediaStorageTestUtils';
 

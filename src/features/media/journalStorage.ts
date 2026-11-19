@@ -1,7 +1,7 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
 import { getDatabase } from 'firebase/database'
-import { createLocalFirstContext } from './shared/localFirst/createLocalFirstContext'
+import { createLocalFirstContext } from '../../journal/localFirst/createLocalFirstContext'
 
 // The garden's data stays in journal's Realtime Database, so journal and
 // benkyou read and write the same garden.

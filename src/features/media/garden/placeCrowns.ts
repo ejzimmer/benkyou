@@ -3,7 +3,7 @@ import { getItemsInAddedOrder } from './lists';
 import { roundCoordinate } from './treeGeometry';
 import { GrownShape } from './treeGrowth';
 import { Video, YoutubeChannel } from './types';
-import { toRadians } from '../shared/toRadians';
+import { toRadians } from '../../../journal/toRadians';
 
 const SINK = 2;
 

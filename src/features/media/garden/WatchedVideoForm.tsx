@@ -1,7 +1,7 @@
 import { FormEvent, KeyboardEvent, useState } from 'react';
-import { DeleteWithConfirmation } from '../shared/controls/DeleteWithConfirmation';
-import { useModal } from '../shared/controls/ModalContext';
-import { TickIcon } from '../shared/icons/Tick';
+import { DeleteWithConfirmation } from '../../../journal/controls/DeleteWithConfirmation';
+import { useModal } from '../../../journal/controls/ModalContext';
+import { TickIcon } from '../../../journal/icons/Tick';
 import { CountTile } from './CountTile';
 import { LadyBeetleIcon } from './LadyBeetleIcon';
 import { UnderstoodTile } from './UnderstoodTile';

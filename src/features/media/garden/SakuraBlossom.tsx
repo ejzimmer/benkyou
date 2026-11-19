@@ -1,4 +1,4 @@
-import { toRadians } from '../shared/toRadians';
+import { toRadians } from '../../../journal/toRadians';
 const PETAL =
   'M0 0 C-6.5 -3.5 -8 -11 -3.6 -14.4 L0 -12 L3.6 -14.4 C8 -11 6.5 -3.5 0 0 Z';
 const PETAL_COUNT = 5;

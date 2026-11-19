@@ -1,4 +1,4 @@
-import { formatDayAndMonth, getLocalDate } from '../shared/dates';
+import { formatDayAndMonth, getLocalDate } from '../../../journal/dates';
 import { findBranchPoint } from './findBranchPoint';
 import { HoverCloud } from './HoverCloud';
 import { Raceme } from './getRacemes';

@@ -37,6 +37,6 @@ export function HomeScreen({ token, onUnauthorized }: Props) {
       if (location.pathname === '/debug') {
         return <DebugScreen user={user} isSyncing={isSyncing} syncError={syncError} onSync={syncNow} />
       }
-      return <MenuScreen user={user} onStartLessons={() => setActivity('lessons')} onStartReviews={() => setActivity('reviews')} />
+      return <MenuScreen user={user} token={token} onUnauthorized={onUnauthorized} onStartLessons={() => setActivity('lessons')} onStartReviews={() => setActivity('reviews')} />
   }
 }

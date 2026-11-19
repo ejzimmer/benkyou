@@ -1,7 +1,7 @@
 import { calculateBloomFraction } from './calculateBloomFraction';
 import { EdgeSample } from './treeGeometry';
 import { findBranchPoint } from './findBranchPoint';
-import { toRadians } from '../shared/toRadians';
+import { toRadians } from '../../../journal/toRadians';
 
 const BUD_ROWS = 8;
 const SPAN = 22;

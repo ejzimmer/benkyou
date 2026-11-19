@@ -1,7 +1,7 @@
 import { CSSProperties, useMemo, useState } from 'react';
-import { ModalDialog } from '../shared/controls/ModalDialog';
-import { OpenBookIcon } from '../shared/icons/OpenBook';
-import { PencilIcon } from '../shared/icons/Pencil';
+import { ModalDialog } from '../../../journal/controls/ModalDialog';
+import { OpenBookIcon } from '../../../journal/icons/OpenBook';
+import { PencilIcon } from '../../../journal/icons/Pencil';
 import { AddVolumeForm } from './AddVolumeForm';
 import { BranchNames } from './BranchNames';
 import { CloudFrame } from './CloudFrame';

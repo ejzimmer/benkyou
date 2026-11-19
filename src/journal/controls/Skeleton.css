@@ -1,0 +1,33 @@
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+  gap: 4px;
+
+  :first-child {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+  }
+
+  .row {
+    height: 20px;
+    border-radius: 3px;
+    background-image: linear-gradient(
+      to right,
+      var(--border-colour-hover) 45%,
+      var(--border-colour) 55%
+    );
+    background-size: 200%;
+    animation: skeleton 2s ease-out infinite alternate;
+  }
+}
+
+@keyframes skeleton {
+  from {
+    background-position-x: 100%;
+  }
+  to {
+    background-position-x: 0;
+  }
+}

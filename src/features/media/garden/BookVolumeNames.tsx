@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { PlusIcon } from '../shared/icons/Plus';
-import { Tooltip } from '../shared/controls/Tooltip';
+import { PlusIcon } from '../../../journal/icons/Plus';
+import { Tooltip } from '../../../journal/controls/Tooltip';
 import { VolumeNameField } from './VolumeNameField';
 
 export function BookVolumeNames() {

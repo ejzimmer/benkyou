@@ -1,8 +1,8 @@
 import { FormEvent, useState } from 'react';
-import { DeleteWithConfirmation } from '../shared/controls/DeleteWithConfirmation';
-import { useModal } from '../shared/controls/ModalContext';
-import { Switch } from '../shared/controls/Switch';
-import { TickIcon } from '../shared/icons/Tick';
+import { DeleteWithConfirmation } from '../../../journal/controls/DeleteWithConfirmation';
+import { useModal } from '../../../journal/controls/ModalContext';
+import { Switch } from '../../../journal/controls/Switch';
+import { TickIcon } from '../../../journal/icons/Tick';
 import { readText } from './fields';
 import { LanguageOption } from './LanguageOption';
 import { useLanguageMediaStorage } from './LanguageMediaStorageContext';

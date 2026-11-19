@@ -1,7 +1,7 @@
 import { CSSProperties, useState } from 'react';
 import { MediaTypeIcon } from './MediaTypeIcon';
 import { MediaType } from './types';
-import { Tooltip } from '../shared/controls/Tooltip';
+import { Tooltip } from '../../../journal/controls/Tooltip';
 
 type UnderstoodTileProps = {
   mediaType: MediaType;

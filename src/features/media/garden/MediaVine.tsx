@@ -1,6 +1,6 @@
 import { CSSProperties, useMemo, useState } from 'react';
-import { ModalDialog } from '../shared/controls/ModalDialog';
-import { TelevisionIcon } from '../shared/icons/Television';
+import { ModalDialog } from '../../../journal/controls/ModalDialog';
+import { TelevisionIcon } from '../../../journal/icons/Television';
 import { AddEpisodeForm } from './AddEpisodeForm';
 import { CloudFrame } from './CloudFrame';
 import { EpisodeUpdateForm } from './EpisodeUpdateForm';

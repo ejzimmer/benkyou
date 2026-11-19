@@ -1,6 +1,6 @@
 import { DurationField } from './DurationField';
 import { formatMinutesAndSeconds } from './format';
-import { Tooltip } from '../shared/controls/Tooltip';
+import { Tooltip } from '../../../journal/controls/Tooltip';
 
 type EpisodeTimeTileProps = {
   timestampInSeconds?: number;

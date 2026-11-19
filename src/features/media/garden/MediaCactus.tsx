@@ -1,7 +1,7 @@
 import { CSSProperties, useMemo, useState } from 'react';
-import { ModalDialog } from '../shared/controls/ModalDialog';
-import { PencilIcon } from '../shared/icons/Pencil';
-import { PlayButtonIcon } from '../shared/icons/PlayButton';
+import { ModalDialog } from '../../../journal/controls/ModalDialog';
+import { PencilIcon } from '../../../journal/icons/Pencil';
+import { PlayButtonIcon } from '../../../journal/icons/PlayButton';
 import { CactusCrowns } from './CactusCrowns';
 import { createCactusLayout } from './cactusLayout';
 import { CactusRibs } from './CactusRibs';

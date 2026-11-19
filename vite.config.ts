@@ -73,15 +73,24 @@ export default defineConfig({
         extends: true,
         test: {
           name: "app",
-          exclude: ["src/features/media/**", "**/node_modules/**"],
+          exclude: [
+            "src/features/media/**",
+            "src/features/wanikani/status/**",
+            "src/journal/**",
+            "**/node_modules/**",
+          ],
         },
       },
       {
         extends: true,
         test: {
-          name: "media",
-          include: ["src/features/media/**/*.test.{ts,tsx}"],
-          setupFiles: ["./src/features/media/test/setup.ts"],
+          name: "journal",
+          include: [
+            "src/features/media/**/*.test.{ts,tsx}",
+            "src/features/wanikani/status/**/*.test.{ts,tsx}",
+            "src/journal/**/*.test.{ts,tsx}",
+          ],
+          setupFiles: ["./src/journal/test/setup.ts"],
           mockReset: true,
         },
       },

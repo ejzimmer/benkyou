@@ -1,4 +1,4 @@
-import { beforeEach, expect } from 'vitest'
+import { beforeEach, expect, vi } from 'vitest'
 import { FakeResizeObserver } from './resizeObserverTestUtils'
 
 expect.addEqualityTesters([
@@ -104,3 +104,9 @@ Element.prototype.getBoundingClientRect = function mock(this: Element) {
     },
   }
 }
+
+// Testing Library only advances fake timers when it finds a `jest` global,
+// and otherwise waits on a faked setTimeout that never fires.
+Object.assign(globalThis, {
+  jest: { advanceTimersByTime: (ms: number) => vi.advanceTimersByTime(ms) },
+})

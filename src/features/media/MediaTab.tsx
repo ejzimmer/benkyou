@@ -1,8 +1,8 @@
 import { Suspense } from 'react'
-import { AuthGate } from './shared/AuthGate'
+import { AuthGate } from '../../journal/AuthGate'
 import { MediaGardenWithStorage } from './MediaGardenWithStorage'
 import { getJournalAuth } from './journalStorage'
-import { Loading } from './shared/loading'
+import { Loading } from '../../journal/loading'
 import './MediaTab.css'
 
 export function MediaTab() {

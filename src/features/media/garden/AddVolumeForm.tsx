@@ -1,6 +1,6 @@
 import { FormEvent } from 'react';
-import { useModal } from '../shared/controls/ModalContext';
-import { TickIcon } from '../shared/icons/Tick';
+import { useModal } from '../../../journal/controls/ModalContext';
+import { TickIcon } from '../../../journal/icons/Tick';
 import { CountField } from './CountField';
 import { readNumber, readText } from './fields';
 import { useLanguageMediaStorage } from './LanguageMediaStorageContext';

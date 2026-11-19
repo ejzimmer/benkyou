@@ -1,4 +1,4 @@
-import { formatDayAndMonth, getLocalDate } from '../shared/dates';
+import { formatDayAndMonth, getLocalDate } from '../../../journal/dates';
 import { drawEdgeBand } from './drawEdgeBand';
 import { formatEpisodeName } from './format';
 import { getEpisodeUpdateStretches } from './getEpisodeUpdateStretches';

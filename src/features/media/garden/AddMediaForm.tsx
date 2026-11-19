@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
-import { useModal } from '../shared/controls/ModalContext';
-import { Switch } from '../shared/controls/Switch';
-import { TickIcon } from '../shared/icons/Tick';
+import { useModal } from '../../../journal/controls/ModalContext';
+import { Switch } from '../../../journal/controls/Switch';
+import { TickIcon } from '../../../journal/icons/Tick';
 import { BookVolumeNames } from './BookVolumeNames';
 import { CountField } from './CountField';
 import { LanguageOption } from './LanguageOption';

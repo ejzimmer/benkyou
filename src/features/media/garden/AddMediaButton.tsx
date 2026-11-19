@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ModalDialog } from '../shared/controls/ModalDialog';
-import { Tooltip } from '../shared/controls/Tooltip';
+import { ModalDialog } from '../../../journal/controls/ModalDialog';
+import { Tooltip } from '../../../journal/controls/Tooltip';
 import { AddMediaForm } from './AddMediaForm';
 import { CloudFrame } from './CloudFrame';
 import { SeedlingIcon } from './SeedlingIcon';

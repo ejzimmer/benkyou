@@ -1,6 +1,6 @@
 import { calculateBloomFraction } from './calculateBloomFraction';
 import { SakuraBlossom } from './SakuraBlossom';
-import { toRadians } from '../shared/toRadians';
+import { toRadians } from '../../../journal/toRadians';
 
 const BLOSSOM_COUNT = 5;
 const OPENING_ORDER = [2, 0, 4, 1, 3];

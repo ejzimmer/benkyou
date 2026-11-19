@@ -1,4 +1,4 @@
-import { formatDayAndMonth, getLocalDate } from '../shared/dates';
+import { formatDayAndMonth, getLocalDate } from '../../../journal/dates';
 import { CallistemonSpray } from './CallistemonSpray';
 import { findBranchPoint } from './findBranchPoint';
 import { Bloom } from './getBlooms';
@@ -8,7 +8,7 @@ import { HoverCloud } from './HoverCloud';
 import { SakuraFlower } from './SakuraFlower';
 import { TreeLayout } from './treeLayout';
 import { PrintSeries, Volume } from './types';
-import { toRadians } from '../shared/toRadians';
+import { toRadians } from '../../../journal/toRadians';
 
 const CALLISTEMON_TURNS = [60, 30];
 const SAKURA_TURN = 55;

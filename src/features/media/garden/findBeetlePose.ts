@@ -1,6 +1,6 @@
 import { findBranchPoint } from './findBranchPoint';
 import { EdgeSample } from './treeGeometry';
-import { toRadians } from '../shared/toRadians';
+import { toRadians } from '../../../journal/toRadians';
 
 const FOOT_SINK = 0.4;
 

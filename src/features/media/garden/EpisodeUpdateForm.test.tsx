@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ModalContext } from '../shared/controls/ModalContext';
+import { ModalContext } from '../../../journal/controls/ModalContext';
 import { EpisodeUpdateForm } from './EpisodeUpdateForm';
 import { renderWithLanguageMediaStorage } from './languageMediaStorageTestUtils';
 import { lupin } from './testMedia';

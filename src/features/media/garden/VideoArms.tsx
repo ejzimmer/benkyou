@@ -1,4 +1,4 @@
-import { formatDayAndMonth, getLocalDate } from '../shared/dates';
+import { formatDayAndMonth, getLocalDate } from '../../../journal/dates';
 import { getItemsInAddedOrder } from './lists';
 import { GrownShape } from './treeGrowth';
 import { drawShapeFill } from './treeShapePaths';

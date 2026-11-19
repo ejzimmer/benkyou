@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { showPopoverOnMount } from '../shared/controls/showPopoverOnMount';
+import { showPopoverOnMount } from '../../../journal/controls/showPopoverOnMount';
 
 const PUFFS = [
   [20, 30, 14],

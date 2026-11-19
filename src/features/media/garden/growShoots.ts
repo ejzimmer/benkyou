@@ -14,7 +14,7 @@ import {
 } from './treeGeometry';
 import { GrownShape } from './treeGrowth';
 import { ShootStyle } from './treeSpecies';
-import { toRadians } from '../shared/toRadians';
+import { toRadians } from '../../../journal/toRadians';
 
 export type Leaf = Point & { angle: number };
 

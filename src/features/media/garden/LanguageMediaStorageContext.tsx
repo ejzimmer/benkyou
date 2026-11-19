@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useMemo, useState } from 'react';
-import { useStorageContext } from '../shared/FirebaseContext';
-import { getThisYear } from '../shared/dates';
+import { useStorageContext } from '../../../journal/FirebaseContext';
+import { getThisYear } from '../../../journal/dates';
 import { createInitialChildren, createMediaDetails } from './createMedia';
 import { getItemsInAddedOrder } from './lists';
 import {

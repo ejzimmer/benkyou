@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Tooltip } from '../shared/controls/Tooltip';
+import { Tooltip } from '../../../journal/controls/Tooltip';
 
 type TooltipOptionProps = {
   icon: ReactNode;

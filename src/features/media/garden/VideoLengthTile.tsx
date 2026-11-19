@@ -1,5 +1,5 @@
 import { DURATION_UNITS, DurationField } from './DurationField';
-import { Tooltip } from '../shared/controls/Tooltip';
+import { Tooltip } from '../../../journal/controls/Tooltip';
 
 type VideoLengthTileProps = {
   name?: string;

@@ -1,4 +1,4 @@
-import { toRadians } from '../shared/toRadians';
+import { toRadians } from '../../../journal/toRadians';
 export type Point = { x: number; y: number };
 
 type Curve = [Point, Point, Point, Point];

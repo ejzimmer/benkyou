@@ -1,4 +1,4 @@
-import { Tooltip } from '../shared/controls/Tooltip';
+import { Tooltip } from '../../../journal/controls/Tooltip';
 
 type PageTileProps = { page?: number; pages?: number };
 
