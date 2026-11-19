@@ -5,6 +5,7 @@ import { useEffect } from "react"
 import { TabBar } from "./features/tabs/TabBar"
 import { useOpenLastUsedTab } from "./features/tabs/useOpenLastUsedTab"
 import { WaniKaniTab } from "./features/wanikani/WaniKaniTab"
+import { MediaTab } from "./features/media/MediaTab"
 
 export function App() {
   const { loading } = useAuth()
@@ -43,6 +44,7 @@ export function App() {
     <>
       <TabBar />
       <Routes>
+        <Route path="/media" element={<MediaTab />} />
         <Route path="/wanikani" element={<WaniKaniTab />} />
         <Route path="*" element={<CardsTab />} />
       </Routes>

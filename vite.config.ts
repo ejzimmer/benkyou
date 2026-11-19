@@ -82,6 +82,7 @@ export default defineConfig({
           name: "media",
           include: ["src/features/media/**/*.test.{ts,tsx}"],
           setupFiles: ["./src/features/media/test/setup.ts"],
+          mockReset: true,
         },
       },
     ],

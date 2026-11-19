@@ -45,7 +45,7 @@ body {
   scroll-margin-block: 0.25rem;
 }
 
-a:where(:not(.wanikani *)) {
+a:where(:not(:is(.wanikani, .media) *)) {
   color: var(--blue);
   text-decoration: none;
 }
@@ -368,7 +368,7 @@ a:hover {
   margin: 0;
 }
 
-.row:where(:not(.wanikani *)) {
+.row:where(:not(:is(.wanikani, .media) *)) {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -412,8 +412,8 @@ a:hover {
 }
 
 .input,
-select,
-textarea {
+select:where(:not(.media *)),
+textarea:where(:not(.media *)) {
   width: 100%;
   padding: 0.5rem 0.65rem;
   border-radius: 8px;
@@ -426,13 +426,13 @@ textarea {
 }
 
 .input::selection,
-select::selection,
-textarea::selection {
+select:where(:not(.media *))::selection,
+textarea:where(:not(.media *))::selection {
   background: var(--blue);
   color: #0f0f18;
 }
 
-label:where(:not(.wanikani *)),
+label:where(:not(:is(.wanikani, .media) *)),
 fieldset.plain {
   display: flex;
   flex-direction: column;
@@ -838,7 +838,7 @@ fieldset.plain legend {
     0 0 20px var(--blue);
 }
 
-.error:where(:not(.wanikani *)) {
+.error:where(:not(:is(.wanikani, .media) *)) {
   color: var(--pink);
 }
 

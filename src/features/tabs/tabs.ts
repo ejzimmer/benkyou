@@ -1,4 +1,5 @@
 export const TABS = [
+  { id: "media", label: "Media", path: "/media" },
   { id: "wanikani", label: "WaniKani", path: "/wanikani" },
   { id: "cards", label: "Cards", path: "/" },
 ] as const
