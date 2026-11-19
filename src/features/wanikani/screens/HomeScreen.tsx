@@ -34,7 +34,7 @@ export function HomeScreen({ token, onUnauthorized }: Props) {
     case 'reviews':
       return <ReviewScreen client={client} onExit={returnToMenu} />
     case 'menu':
-      if (location.pathname === '/debug') {
+      if (location.pathname === '/wanikani/debug') {
         return <DebugScreen user={user} isSyncing={isSyncing} syncError={syncError} onSync={syncNow} />
       }
       return <MenuScreen user={user} token={token} onUnauthorized={onUnauthorized} onStartLessons={() => setActivity('lessons')} onStartReviews={() => setActivity('reviews')} />

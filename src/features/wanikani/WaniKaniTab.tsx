@@ -8,6 +8,7 @@ import { clearDatabase, db } from './data/db'
 import { applyFontStyle, type FontStyle, getFontStyle, saveFontStyle } from './fontStyle'
 import { HomeScreen } from './screens/HomeScreen'
 import { TokenScreen } from './screens/TokenScreen'
+import { clearCachedCollections } from './status/collectionCache'
 import { clearToken, getToken, saveToken } from './token'
 
 export function WaniKaniTab() {
@@ -25,6 +26,7 @@ export function WaniKaniTab() {
     clearToken()
     setToken(null)
     void clearDatabase()
+    void clearCachedCollections()
   }, [])
 
   async function signIn(newToken: string, newUser: User) {

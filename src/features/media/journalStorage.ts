@@ -38,6 +38,11 @@ export function getJournalStorage() {
 }
 
 export function hydrateJournalStorage() {
-  hydration ??= getJournalStorage().hydrate()
+  hydration ??= getJournalStorage()
+    .hydrate()
+    .catch((error: unknown) => {
+      hydration = undefined
+      throw error
+    })
   return hydration
 }

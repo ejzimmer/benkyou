@@ -49,7 +49,7 @@ a:where(:not(:is(.wanikani, .media) *)) {
   color: var(--blue);
   text-decoration: none;
 }
-a:hover {
+a:where(:not(:is(.wanikani, .media) *)):hover {
   text-decoration: underline;
 }
 
@@ -455,7 +455,7 @@ fieldset.plain legend {
   align-items: center;
 }
 
-.switch {
+.switch:where(:not(.media *)) {
   /* Overridden by .switch-orange below; everything in the switch draws its
      accent from these two. */
   --switch-accent: var(--blue);
@@ -480,7 +480,7 @@ fieldset.plain legend {
   border-left: 1px solid var(--switch-accent);
 }
 
-.switch:has(input:disabled) {
+.switch:where(:not(.media *)):has(input:disabled) {
   opacity: 0.5;
 }
 
@@ -542,7 +542,7 @@ fieldset.plain legend {
   color: #0f0f18;
 }
 
-.switch:has(input:disabled) .switch-option {
+.switch:where(:not(.media *)):has(input:disabled) .switch-option {
   cursor: not-allowed;
 }
 
@@ -550,7 +550,7 @@ fieldset.plain legend {
    option: the track clips its children (so the thumb's border-radius
    only ever shows on the correct side), which would otherwise clip an
    option's own hover glow into a lopsided sliver right at the divide. */
-.switch:has(.switch-option:hover):not(:has(input:disabled)) {
+.switch:where(:not(.media *)):has(.switch-option:hover):not(:has(input:disabled)) {
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.4),
     0 0 8px var(--switch-accent),

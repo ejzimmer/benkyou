@@ -46,6 +46,13 @@
   .media-garden {
     flex: 1;
   }
+
+  .garden-failed {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    margin: auto;
+  }
 }
 
 :where(.media) {

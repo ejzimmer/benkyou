@@ -45,7 +45,7 @@ export function App() {
       <TabBar />
       <Routes>
         <Route path="/media" element={<MediaTab />} />
-        <Route path="/wanikani" element={<WaniKaniTab />} />
+        <Route path="/wanikani/*" element={<WaniKaniTab />} />
         <Route path="*" element={<CardsTab />} />
       </Routes>
     </>
