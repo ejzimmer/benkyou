@@ -68,5 +68,22 @@ export default defineConfig({
     poolOptions: {
       forks: { execArgv: ["--no-experimental-webstorage"] },
     },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "app",
+          exclude: ["src/features/media/**", "**/node_modules/**"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "media",
+          include: ["src/features/media/**/*.test.{ts,tsx}"],
+          setupFiles: ["./src/features/media/test/setup.ts"],
+        },
+      },
+    ],
   },
 })

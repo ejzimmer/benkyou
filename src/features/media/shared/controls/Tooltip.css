@@ -1,0 +1,40 @@
+.tooltip {
+  background: var(--body-colour);
+  color: white;
+  padding: 6px 8px;
+  border-radius: 3px;
+  font-size: 14px;
+  inset: auto;
+  margin: 0;
+  border: 0;
+  overflow: visible;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    display 0.2s allow-discrete,
+    overlay 0.2s allow-discrete;
+  width: max-content;
+
+  &:popover-open {
+    opacity: 1;
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
+}
+
+.tooltip-right {
+  position-area: right;
+  margin-inline-start: 4px;
+}
+
+.tooltip-top {
+  position-area: top;
+  margin-block-end: 4px;
+}
+
+.tooltip-top-right {
+  position-area: top right;
+}

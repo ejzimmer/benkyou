@@ -1,0 +1,755 @@
+.this-year {
+  --sky-top: hsl(199 72% 70%);
+  --sky-low: hsl(160 50% 92%);
+  --cloud: white;
+  --cloud-edge: hsl(205 30% 70%);
+  --far-hills: hsl(96 46% 69%);
+  --near-hills: hsl(101 43% 58%);
+  --meadow-top: hsl(101 42% 54%);
+  --meadow-bottom: hsl(101 45% 42%);
+  --edge: hsl(105 30% 36%);
+  --star-opacity: 0;
+  --drift-duration: 400s;
+
+  &:has(.garden[data-time-of-day='dawn']) {
+    --sky-top: hsl(225 45% 62%);
+    --sky-low: hsl(28 90% 82%);
+    --cloud: hsl(350 70% 92%);
+    --star-opacity: 0.3;
+  }
+
+  &:has(.garden[data-time-of-day='dusk']) {
+    --sky-top: hsl(255 35% 42%);
+    --sky-low: hsl(18 85% 68%);
+    --cloud: hsl(330 40% 80%);
+    --cloud-edge: hsl(300 20% 55%);
+    --far-hills: hsl(110 25% 50%);
+    --near-hills: hsl(110 28% 42%);
+    --meadow-top: hsl(105 30% 40%);
+    --meadow-bottom: hsl(105 32% 32%);
+    --edge: hsl(110 30% 24%);
+    --star-opacity: 0.5;
+  }
+
+  &:has(.garden[data-time-of-day='night']) {
+    --sky-top: hsl(232 50% 12%);
+    --sky-low: hsl(230 38% 30%);
+    --cloud: hsl(230 25% 38%);
+    --cloud-edge: hsl(230 25% 28%);
+    --far-hills: hsl(150 22% 24%);
+    --near-hills: hsl(145 25% 20%);
+    --meadow-top: hsl(140 26% 20%);
+    --meadow-bottom: hsl(140 28% 14%);
+    --edge: hsl(150 30% 10%);
+    --star-opacity: 1;
+  }
+}
+
+.garden {
+  --sink: 16px;
+
+  position: relative;
+  margin-inline: calc(-1 * var(--page-padding-inline));
+  margin-block-end: calc(-1 * var(--page-padding-block));
+  padding-inline: var(--page-padding-inline);
+}
+
+.media-garden {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  column-gap: 8px;
+  row-gap: 24px;
+  list-style-type: none;
+  margin: 0;
+  padding-block-start: 96px;
+  padding-block-end: var(--sink);
+  padding-inline: 12px;
+
+  > li {
+    display: flex;
+    align-items: flex-end;
+  }
+}
+
+.garden-scenery {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sky {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  height: calc(var(--horizon) - var(--sink));
+  background: linear-gradient(var(--sky-top), var(--sky-low));
+}
+
+.stars {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: hsl(50 100% 90%);
+  opacity: var(--star-opacity);
+}
+
+.sky-body {
+  --body-size: 60px;
+
+  position: absolute;
+  width: var(--body-size);
+  height: var(--body-size);
+  border-radius: 50%;
+}
+
+.sun {
+  border: 2px solid hsl(40 70% 52%);
+  background: hsl(46 100% 68%);
+}
+
+.moon-body {
+  --body-size: 44px;
+}
+
+.moon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.moon-dark {
+  fill: hsl(230 25% 45% / 0.35);
+}
+
+.moon-lit {
+  fill: hsl(52 60% 88%);
+}
+
+.sky-cloud {
+  position: absolute;
+  inset-inline-start: 0;
+  fill: var(--cloud);
+  stroke: var(--cloud-edge);
+  stroke-width: 2;
+  animation: drift-cloud var(--drift-duration) linear infinite;
+}
+
+@keyframes drift-cloud {
+  from {
+    inset-inline-start: -120px;
+  }
+  to {
+    inset-inline-start: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-cloud {
+    animation-play-state: paused;
+  }
+}
+
+.garden-hills {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  width: 100%;
+  height: 50px;
+}
+
+.dinosaur {
+  position: absolute;
+  inset-block-end: 0;
+  stroke: hsl(170 40% 20%);
+  stroke-width: 1.4;
+  animation: walk-across 180s linear 20s infinite backwards;
+
+  .dinosaur-skin,
+  rect {
+    fill: hsl(168 42% 52%);
+  }
+
+  .far-legs rect {
+    fill: hsl(168 38% 40%);
+  }
+
+  .dinosaur-spot {
+    fill: hsl(168 40% 40%);
+    stroke: none;
+  }
+
+  .dinosaur-eye {
+    fill: hsl(170 40% 15%);
+    stroke: none;
+  }
+
+  .near-legs,
+  .far-legs {
+    animation: step-legs 0.6s steps(1) infinite;
+  }
+
+  .far-legs {
+    animation-delay: -0.3s;
+  }
+
+  rect {
+    transform-box: fill-box;
+    transform-origin: top;
+  }
+}
+
+@keyframes walk-across {
+  from {
+    inset-inline-start: -80px;
+  }
+  15%,
+  to {
+    inset-inline-start: 100%;
+  }
+}
+
+@keyframes step-legs {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dinosaur {
+    display: none;
+  }
+}
+
+.far-hills {
+  fill: var(--far-hills);
+}
+
+.near-hills {
+  fill: var(--near-hills);
+}
+
+.hills-edge {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.meadow {
+  flex-grow: 1;
+  border-block-start: 2px solid var(--edge);
+  background: linear-gradient(var(--meadow-top), var(--meadow-bottom));
+}
+
+.tree-silhouette {
+  fill: hsl(80 16% 92%);
+  opacity: 0.4;
+}
+
+.tree-fill {
+  fill: hsl(28 42% 48%);
+}
+
+.tree-shoot {
+  fill: hsl(28 42% 48%);
+  stroke: hsl(28 45% 28%);
+  stroke-width: 0.8;
+}
+
+.tree-leaf {
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+
+  &.book {
+    fill: hsl(100 26% 42%);
+    stroke: hsl(105 30% 26%);
+  }
+
+  &.manga {
+    fill: hsl(98 48% 48%);
+    stroke: hsl(105 45% 28%);
+  }
+
+  .midrib {
+    fill: none;
+    stroke-width: 0.5;
+    opacity: 0.7;
+  }
+}
+
+.bottlebrush-buds {
+  stroke: hsl(100 40% 26%);
+  stroke-width: 0.45;
+}
+
+.bottlebrush-stamens {
+  stroke: hsl(354 82% 46%);
+  stroke-width: 0.6;
+  stroke-linecap: round;
+}
+
+.bottlebrush-anthers {
+  fill: hsl(48 95% 58%);
+}
+
+.sakura-stalks {
+  fill: none;
+  stroke: hsl(20 35% 32%);
+  stroke-linecap: round;
+}
+
+.sakura-bud path {
+  stroke: hsl(342 40% 38%);
+  stroke-width: 0.6;
+}
+
+.sakura-bud .sakura-sepals {
+  fill: none;
+  stroke: hsl(100 40% 30%);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+}
+
+.sakura-petals {
+  fill: hsl(345 85% 88%);
+  stroke: hsl(342 55% 58%);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.sakura-centre {
+  fill: hsl(340 70% 66%);
+}
+
+.sakura-anther {
+  fill: hsl(45 90% 50%);
+}
+
+.branch-names {
+  fill: transparent;
+}
+
+.tree-outline {
+  fill: none;
+  stroke: hsl(28 45% 28%);
+  stroke-linejoin: round;
+}
+
+.media-cactus {
+  .tree-fill {
+    fill: hsl(104 30% 42%);
+  }
+
+  .tree-outline {
+    stroke: hsl(110 36% 22%);
+  }
+}
+
+.cactus-ribs {
+  fill: none;
+  stroke: hsl(106 32% 33%);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+}
+
+.cactus-areoles {
+  fill: hsl(48 55% 90%);
+  stroke: none;
+}
+
+.saguaro-bud {
+  ellipse {
+    fill: hsl(78 45% 56%);
+    stroke: hsl(95 40% 28%);
+    stroke-width: 0.6;
+  }
+
+  path {
+    fill: none;
+    stroke: hsl(95 40% 34%);
+    stroke-width: 0.5;
+  }
+}
+
+.saguaro-stalk {
+  stroke: hsl(85 40% 45%);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.saguaro-petal {
+  fill: hsl(50 60% 97%);
+  stroke: hsl(40 22% 60%);
+  stroke-width: 0.5;
+}
+
+.saguaro-centre {
+  fill: hsl(48 92% 58%);
+  stroke: hsl(40 70% 42%);
+  stroke-width: 0.5;
+}
+
+.cactus-spines {
+  fill: none;
+  stroke: hsl(36 30% 48%);
+  stroke-width: 0.5;
+  stroke-linecap: round;
+}
+
+.media-tree {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+
+  > form {
+    position: absolute;
+    inset-block-start: 100%;
+    z-index: 1;
+    background: white;
+  }
+
+  svg {
+    display: block;
+    overflow: visible;
+  }
+}
+
+.signpost {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  margin-block-end: var(--ground);
+}
+
+.signpost.on-right {
+  order: 1;
+  margin-inline-start: calc(var(--sign-offset) - var(--tree-width) / 2);
+}
+
+.signpost.on-left {
+  order: -1;
+  margin-inline-end: calc(var(--sign-offset) - var(--tree-width) / 2);
+}
+
+.sign-board {
+  padding-block: 2px;
+  padding-inline: 0.6em;
+  border: 2px solid var(--body-colour);
+  border-radius: 6px;
+  background: hsl(33 72% 72%);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.sign-legs {
+  display: grid;
+
+  > * {
+    grid-area: 1 / 1;
+  }
+}
+
+.sign-posts {
+  display: flex;
+  padding-inline: 1em;
+}
+
+.sign-post {
+  margin-inline: auto;
+  width: 6px;
+  height: 3.2em;
+  border: 2px solid var(--body-colour);
+  border-block-start: none;
+  background: hsl(28 42% 48%);
+}
+
+.sign-post:has(+ .sign-post) {
+  margin-inline: 0;
+}
+
+.sign-post + .sign-post {
+  margin-inline-start: auto;
+  margin-inline-end: 0;
+}
+
+.sign-hangers {
+  display: flex;
+  align-items: flex-start;
+  padding-inline: 1em;
+  justify-content: center;
+  gap: 18px;
+}
+
+.hanging-sign {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: top center;
+
+  &.swinging {
+    animation: swing-sign 1.4s ease-out;
+  }
+}
+
+@keyframes swing-sign {
+  15% {
+    transform: rotate(14deg);
+  }
+  35% {
+    transform: rotate(-10deg);
+  }
+  55% {
+    transform: rotate(6deg);
+  }
+  75% {
+    transform: rotate(-3deg);
+  }
+  90% {
+    transform: rotate(1deg);
+  }
+}
+
+.sign-chains {
+  display: flex;
+  gap: 10px;
+}
+
+.sign-chain {
+  display: block;
+  margin-block-end: -1px;
+  fill: none;
+  stroke: hsl(28 10% 35%);
+  stroke-width: 1.2;
+}
+
+.hanging-board {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--body-colour);
+  border-radius: 4px;
+  background: hsl(33 72% 72%);
+  color: hsl(28 45% 30%);
+
+  svg {
+    display: block;
+    filter: drop-shadow(0 1px 0 hsl(33 80% 86%));
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: hsl(33 72% 76%);
+  }
+}
+
+.pergola-wood,
+.post-fronts rect {
+  fill: hsl(33 50% 64%);
+}
+
+.pergola-wood {
+  stroke: hsl(28 45% 30%);
+  stroke-width: 1.4;
+}
+
+.post-fronts path {
+  fill: none;
+  stroke: hsl(28 45% 30%);
+  stroke-width: 1.4;
+}
+
+.lattice {
+  fill: none;
+  stroke: hsl(33 40% 82%);
+  stroke-width: 1.6;
+}
+
+.wisteria-leaf {
+  path {
+    fill: hsl(92 42% 46%);
+    stroke: hsl(98 40% 28%);
+    stroke-width: 0.4;
+  }
+
+  &.young path:not(.rachis) {
+    fill: hsl(80 55% 60%);
+  }
+
+  .rachis {
+    fill: none;
+    stroke: hsl(95 38% 32%);
+    stroke-width: 0.7;
+  }
+}
+
+.raceme-stalk {
+  fill: none;
+  stroke: hsl(95 30% 34%);
+  stroke-width: 0.8;
+}
+
+.wisteria-bud {
+  fill: hsl(268 30% 80%);
+  stroke: hsl(268 22% 52%);
+  stroke-width: 0.4;
+}
+
+.wisteria-floret {
+  .standard {
+    fill: hsl(268 58% 72%);
+    stroke: hsl(270 40% 42%);
+    stroke-width: 0.45;
+  }
+
+  .keel {
+    fill: hsl(272 55% 56%);
+    stroke: hsl(272 40% 36%);
+    stroke-width: 0.4;
+  }
+
+  .blotch {
+    fill: hsl(52 85% 70%);
+  }
+}
+
+.wisteria-raceme.ghost {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.wisteria-raceme.highlighted {
+  .wisteria-floret .standard {
+    fill: hsl(345 80% 88%);
+    stroke: hsl(345 45% 60%);
+  }
+
+  .wisteria-floret .keel {
+    fill: hsl(345 70% 78%);
+    stroke: hsl(345 45% 52%);
+  }
+
+  .wisteria-bud {
+    fill: hsl(345 70% 90%);
+    stroke: hsl(345 40% 62%);
+  }
+}
+
+.update-stretch {
+  fill: transparent;
+  stroke: transparent;
+  stroke-width: 8;
+  cursor: pointer;
+  outline: none;
+  transition: fill 0.15s;
+
+  &:hover,
+  &:focus-visible {
+    fill: hsl(95 40% 46%);
+  }
+}
+
+.media-tree .clickable {
+  cursor: pointer;
+}
+
+.media-cactus .update-stretch {
+  &:hover,
+  &:focus-visible {
+    fill: hsl(88 50% 58%);
+  }
+}
+
+.season-branches .update-stretch {
+  &:hover,
+  &:focus-visible {
+    fill: hsl(345 80% 80%);
+  }
+}
+
+.tiny-cloud-popover {
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: visible;
+  translate: -50% calc(-100% - 12px);
+  pointer-events: none;
+}
+
+.tiny-cloud {
+  display: block;
+  overflow: visible;
+  filter: blur(0) drop-shadow(1px 1px 2px hsl(0 0% 0% / 0.15));
+  transform-origin: bottom center;
+  animation: tiny-cloud-drift-in 0.7s ease-out;
+
+  circle {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: tiny-cloud-puff-in 0.5s ease-out backwards;
+
+    &:nth-of-type(2) {
+      animation-delay: 0.08s;
+    }
+
+    &:nth-of-type(3) {
+      animation-delay: 0.16s;
+    }
+
+    &:nth-of-type(4) {
+      animation-delay: 0.24s;
+    }
+  }
+
+  text {
+    animation: tiny-cloud-fade-in 0.4s 0.3s ease-out backwards;
+    fill: var(--body-colour);
+    font-size: 13px;
+    font-weight: bold;
+  }
+}
+
+@keyframes tiny-cloud-drift-in {
+  from {
+    opacity: 0;
+    filter: blur(6px) drop-shadow(1px 1px 2px hsl(0 0% 0% / 0));
+    transform: translateY(6px) scale(0.8, 0.6);
+  }
+
+  60% {
+    opacity: 0.8;
+    filter: blur(1.5px) drop-shadow(1px 1px 2px hsl(0 0% 0% / 0.1));
+  }
+}
+
+@keyframes tiny-cloud-puff-in {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+
+@keyframes tiny-cloud-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.next-volume-branch .update-stretch {
+  &:hover,
+  &:focus-visible {
+    fill: hsl(28 45% 72%);
+  }
+}

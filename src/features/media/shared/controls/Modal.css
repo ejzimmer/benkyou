@@ -1,0 +1,25 @@
+dialog.modal {
+  width: 400px;
+  max-width: 100vw;
+  font-size: 1.2rem;
+  font-family: var(--body-font);
+  box-shadow:
+    2px 2px 2px hsl(0 0% 0%/0.1),
+    2px 2px 4px hsl(0 0% 0%/0.1),
+    2px 2px 8px hsl(0 0% 0%/0.1),
+    2px 2px 16px 8px hsl(0 0% 0%/0.1);
+
+  .close-button {
+    display: flex;
+    justify-content: end;
+    margin-inline-end: -10px;
+    margin-block-start: -10px;
+  }
+
+  .footer {
+    display: flex;
+    gap: 4px;
+    justify-content: end;
+    margin-block-start: 30px;
+  }
+}

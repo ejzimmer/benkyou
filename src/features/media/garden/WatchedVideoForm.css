@@ -1,0 +1,6 @@
+.watched-video-actions {
+  flex-direction: row;
+  align-self: center;
+  justify-self: end;
+  margin-inline-end: -20px;
+}
