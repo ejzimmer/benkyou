@@ -28,7 +28,7 @@
 
   height: calc(var(--vvh, 100dvh) - var(--tab-bar-height, 0px));
   overflow-y: auto;
-  background: linear-gradient(white, hsl(36 45% 93%)) fixed;
+  background: linear-gradient(hsl(150 50% 93%), hsl(160 40% 87%)) fixed;
   color: var(--ink);
   color-scheme: light;
   font-family: var(--sans);
