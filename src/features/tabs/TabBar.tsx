@@ -26,6 +26,7 @@ export function TabBar() {
             key={tab.id}
             path={tab.path}
             label={tab.label}
+            isActive={tab.id === currentTab.id}
             reviewCount={reviewCounts[tab.id]}
           />
         ))}

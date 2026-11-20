@@ -8,8 +8,14 @@ export type TabId = (typeof TABS)[number]["id"]
 
 const LAST_USED_TAB_KEY = "benkyou.lastUsedTab"
 
+const CARDS_PAGE_PREFIXES = ["/cards", "/decks/"]
+
+/** The tab a page belongs to, or nothing for the full-screen review session. */
 export function findTabAtPath(pathname: string) {
-  return TABS.find((tab) => tab.path === pathname)
+  if (pathname === "/") return TABS[0]
+  if (pathname.startsWith("/wanikani")) return TABS[1]
+  if (CARDS_PAGE_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return TABS[2]
+  return undefined
 }
 
 export function readLastUsedTab() {

@@ -1,8 +1,17 @@
+import { FirebaseError } from 'firebase/app';
 import { Auth, onAuthStateChanged } from 'firebase/auth';
 import { ReactNode, useEffect, useState } from 'react';
 
 import { Loading } from './loading';
 import './AuthGate.css';
+
+const CANCELLED_LOG_IN_CODES = [
+  'auth/popup-closed-by-user',
+  'auth/cancelled-popup-request',
+];
+
+const isCancelledLogIn = (error: unknown) =>
+  error instanceof FirebaseError && CANCELLED_LOG_IN_CODES.includes(error.code);
 
 type AuthGateProps = {
   auth: Auth;
@@ -26,7 +35,9 @@ export function AuthGate({ auth, logIn, children }: AuthGateProps) {
 
   const startLogIn = () => {
     setHasLogInFailed(false);
-    logIn().catch(() => setHasLogInFailed(true));
+    logIn().catch((error: unknown) => {
+      if (!isCancelledLogIn(error)) setHasLogInFailed(true);
+    });
   };
 
   if (isLoading) {

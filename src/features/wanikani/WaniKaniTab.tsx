@@ -8,6 +8,10 @@ import { TokenScreen } from './screens/TokenScreen'
 import { signOutOfWaniKani } from './signOutOfWaniKani'
 import { getToken, saveToken, subscribeToToken } from './token'
 
+function handleUnauthorized() {
+  void signOutOfWaniKani()
+}
+
 export function WaniKaniTab() {
   const token = useSyncExternalStore(subscribeToToken, getToken)
 
@@ -23,7 +27,7 @@ export function WaniKaniTab() {
         {token === null ? (
           <TokenScreen onSignedIn={signIn} />
         ) : (
-          <HomeScreen key={token} token={token} onUnauthorized={() => void signOutOfWaniKani()} />
+          <HomeScreen key={token} token={token} onUnauthorized={handleUnauthorized} />
         )}
       </main>
     </div>

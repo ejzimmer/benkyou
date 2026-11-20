@@ -8,7 +8,7 @@ describe("TabLink", () => {
     it("shows how many", () => {
       render(
         <MemoryRouter>
-          <TabLink path="/cards" label="Cards" reviewCount={24} />
+          <TabLink path="/cards" label="Cards" isActive={false} reviewCount={24} />
         </MemoryRouter>,
       )
 
@@ -20,7 +20,7 @@ describe("TabLink", () => {
     it("shows just the tab's name", () => {
       render(
         <MemoryRouter>
-          <TabLink path="/cards" label="Cards" reviewCount={0} />
+          <TabLink path="/cards" label="Cards" isActive={false} reviewCount={0} />
         </MemoryRouter>,
       )
 

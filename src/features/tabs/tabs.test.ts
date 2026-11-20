@@ -18,8 +18,14 @@ describe("tabs", () => {
     })
 
     describe("on a page inside a tab", () => {
+      it("finds the tab it belongs to", () => {
+        expect(findTabAtPath("/decks/d1/cards/c1")?.id).toBe("cards")
+      })
+    })
+
+    describe("in a card review session", () => {
       it("finds no tab", () => {
-        expect(findTabAtPath("/cards/new")).toBeUndefined()
+        expect(findTabAtPath("/review")).toBeUndefined()
       })
     })
   })
