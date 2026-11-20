@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useLanguageMediaStorage } from './LanguageMediaStorageContext';
 import { MediaCactus } from './MediaCactus';
 import { AddMediaButton } from './AddMediaButton';
@@ -10,12 +10,16 @@ import { useNow } from './useNow';
 import { useGardenLocation } from './useGardenLocation';
 import { findTimeOfDay } from './findTimeOfDay';
 import { isPrintSeries } from './types';
+import { useGridSpans } from './useGridSpans';
+import { sortTallestFirst } from './sortTallestFirst';
 
 import './MediaGarden.css';
 
 export function MediaGarden() {
   const { media } = useLanguageMediaStorage();
+  const plants = useMemo(() => sortTallestFirst(media), [media]);
   const listRef = useRef<HTMLUListElement>(null);
+  useGridSpans(listRef, media.length);
   const horizon = useHorizon(listRef);
   const now = useNow();
   const location = useGardenLocation();
@@ -26,7 +30,7 @@ export function MediaGarden() {
         <GardenScenery horizon={horizon} now={now} location={location} />
       )}
       <ul ref={listRef} className="media-garden">
-        {media.map((item) => {
+        {plants.map((item) => {
           if (isPrintSeries(item)) {
             return (
               <li key={item.id}>
@@ -47,7 +51,7 @@ export function MediaGarden() {
             </li>
           );
         })}
-        <li>
+        <li className="add-media-plot">
           <AddMediaButton />
         </li>
       </ul>

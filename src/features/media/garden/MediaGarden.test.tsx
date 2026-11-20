@@ -21,7 +21,10 @@ describe('MediaGarden', () => {
     expect(
       screen
         .getAllByRole('img')
-        .map((plant) => plant.getAttribute('aria-label')),
-    ).toEqual(['Lupin', 'よつばと！', 'HugoDécrypte', 'Les Misérables']);
+        .map((plant) => plant.getAttribute('aria-label'))
+        .toSorted(),
+    ).toEqual(
+      ['Lupin', 'よつばと！', 'HugoDécrypte', 'Les Misérables'].toSorted(),
+    );
   });
 });
