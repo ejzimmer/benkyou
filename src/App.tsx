@@ -3,13 +3,11 @@ import { CardsTab } from "./features/tabs/CardsTab"
 import { useAuth } from "./lib/auth/AuthContext"
 import { useEffect } from "react"
 import { TabBar } from "./features/tabs/TabBar"
-import { useOpenLastUsedTab } from "./features/tabs/useOpenLastUsedTab"
 import { WaniKaniTab } from "./features/wanikani/WaniKaniTab"
 import { MediaTab } from "./features/media/MediaTab"
 
 export function App() {
   const { loading } = useAuth()
-  useOpenLastUsedTab()
 
   useEffect(() => {
     const vv = window.visualViewport

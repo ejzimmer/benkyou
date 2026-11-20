@@ -1,11 +1,7 @@
-import { beforeEach, describe, expect, it } from "vitest"
-import { findTabAtPath, readLastUsedTab, saveLastUsedTab } from "./tabs"
+import { describe, expect, it } from "vitest"
+import { findTabAtPath } from "./tabs"
 
 describe("tabs", () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   describe("findTabAtPath", () => {
     describe("at a tab's own path", () => {
       it("finds the Media tab at the root", () => {
@@ -26,24 +22,6 @@ describe("tabs", () => {
     describe("in a card review session", () => {
       it("finds no tab", () => {
         expect(findTabAtPath("/review")).toBeUndefined()
-      })
-    })
-  })
-
-  describe("the last-used tab", () => {
-    describe("once a tab has been saved", () => {
-      it("reads it back", () => {
-        saveLastUsedTab("media")
-
-        expect(readLastUsedTab()?.path).toBe("/")
-      })
-    })
-
-    describe("when the stored value is not a tab", () => {
-      it("reads nothing", () => {
-        localStorage.setItem("benkyou.lastUsedTab", "garden")
-
-        expect(readLastUsedTab()).toBeUndefined()
       })
     })
   })

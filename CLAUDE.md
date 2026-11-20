@@ -41,7 +41,7 @@ This is a solo project. There is no other reviewer — no human, no bot, no CI a
 
 ### Tabs (`src/features/tabs/`)
 
-The app is three tabs under one top bar: **Media** at `/` (journal's language media garden, `features/media/`, storing its data in journal's Firebase Realtime Database through the local-first layer copied into `src/journal/`), **WaniKani** at `/wanikani` (the yomu WaniKani client, `features/wanikani/`, with journal's status widget in `features/wanikani/status/`) and **Cards** at `/cards` (everything below). Opening the app at `/` jumps to the last-used tab. Tests for `src/journal/`, `features/media/` and `features/wanikani/status/` run in a separate vitest project (`journal`) with journal's test setup.
+The app is three tabs under one top bar: **Media** at `/` (journal's language media garden, `features/media/`, storing its data in journal's Firebase Realtime Database through the local-first layer copied into `src/journal/`), **WaniKani** at `/wanikani` (the yomu WaniKani client, `features/wanikani/`, with journal's status widget in `features/wanikani/status/`) and **Cards** at `/cards` (everything below). Tests for `src/journal/`, `features/media/` and `features/wanikani/status/` run in a separate vitest project (`journal`) with journal's test setup.
 
 ### Data model (`src/domain/types.ts`, `src/lib/db/schema.ts`)
 
