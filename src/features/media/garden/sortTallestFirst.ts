@@ -9,7 +9,7 @@ function measurePlantHeight(item: LanguageMedia) {
   return createVineLayout(item).bounds.height;
 }
 
-/** Puts plants of a similar height in the same row, so a tall plant doesn't leave empty space above its short neighbours. */
+/** Places the tallest plants first, so the shorter ones can fill the gaps around them. */
 export function sortTallestFirst(media: LanguageMedia[]) {
   return media
     .map((item) => ({ item, height: measurePlantHeight(item) }))

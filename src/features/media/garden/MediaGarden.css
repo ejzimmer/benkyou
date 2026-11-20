@@ -55,12 +55,13 @@
 }
 
 .media-garden {
+  --cell: 8px;
+
   position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  column-gap: 8px;
-  row-gap: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--cell));
+  grid-auto-rows: var(--cell);
+  grid-auto-flow: dense;
   list-style-type: none;
   margin: 0;
   padding-block-start: 96px;
@@ -70,6 +71,8 @@
   > li {
     display: flex;
     align-items: flex-end;
+    grid-column-end: span var(--columns, 1);
+    grid-row-end: span var(--rows, 1);
   }
 }
 
