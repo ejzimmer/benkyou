@@ -8,12 +8,12 @@ describe("tabs", () => {
 
   describe("findTabAtPath", () => {
     describe("at a tab's own path", () => {
-      it("finds the Media tab", () => {
-        expect(findTabAtPath("/media")?.id).toBe("media")
+      it("finds the Media tab at the root", () => {
+        expect(findTabAtPath("/")?.id).toBe("media")
       })
 
-      it("finds the Cards tab at the root", () => {
-        expect(findTabAtPath("/")?.id).toBe("cards")
+      it("finds the Cards tab", () => {
+        expect(findTabAtPath("/cards")?.id).toBe("cards")
       })
     })
 
@@ -29,7 +29,7 @@ describe("tabs", () => {
       it("reads it back", () => {
         saveLastUsedTab("media")
 
-        expect(readLastUsedTab()?.path).toBe("/media")
+        expect(readLastUsedTab()?.path).toBe("/")
       })
     })
 

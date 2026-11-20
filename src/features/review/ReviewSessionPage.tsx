@@ -53,8 +53,6 @@ import {
 } from "./reviewFlowHelpers"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
 import { UndoIcon } from "../../ui/UndoIcon"
-import { UserMenu } from "../../ui/UserMenu"
-import { SyncButton } from "../../ui/SyncButton"
 import { ScrollShadow } from "../../ui/ScrollShadow"
 import { useScrollShadow } from "../../ui/useScrollShadow"
 import { usePhoneReviewLayout } from "./usePhoneReviewLayout"
@@ -359,7 +357,7 @@ export function ReviewSessionPage() {
   }, [])
 
   const current = sessionQueue[0]
-  const backTo = "/"
+  const backTo = "/cards"
 
   // Surfaced right in the session rather than only on the edit page: a
   // duplicate is easiest to recognise while actually reviewing the card.
@@ -890,7 +888,7 @@ export function ReviewSessionPage() {
     <div className="page review">
       <header className="header review-header">
         <Link
-          to="/"
+          to="/cards"
           className="back-link"
           aria-label="復習を終了"
           onClick={() => clearReviewSessionTimer(scopeKey)}
@@ -942,8 +940,6 @@ export function ReviewSessionPage() {
             <span className="control-text-full">取り消す</span>
             <UndoIcon className="control-text-short control-icon" />
           </button>
-          <UserMenu />
-          <SyncButton />
         </div>
       </header>
 

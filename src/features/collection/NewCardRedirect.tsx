@@ -29,7 +29,7 @@ export function NewCardRedirect() {
   if (!deckId) return <div className="page">読み込み中</div>
   return (
     <Navigate
-      to={`/decks/${deckId}/cards/new?returnTo=${encodeURIComponent("/")}`}
+      to={`/decks/${deckId}/cards/new?returnTo=${encodeURIComponent("/cards")}`}
       replace
     />
   )

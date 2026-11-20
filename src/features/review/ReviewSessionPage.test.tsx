@@ -60,7 +60,7 @@ describe("ReviewSessionPage", () => {
           <SyncProvider>
             <Routes>
               <Route path="/review" element={<ReviewSessionPage />} />
-              <Route path="/" element={<p>Landing page</p>} />
+              <Route path="/cards" element={<p>Landing page</p>} />
             </Routes>
           </SyncProvider>
         </AuthProvider>

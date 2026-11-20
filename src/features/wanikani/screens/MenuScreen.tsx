@@ -1,3 +1,4 @@
+import './MenuScreen.css'
 import type { User } from '../api/types'
 import { useLevelUp } from '../data/useLevelUp'
 import { LevelUpScreen } from './LevelUpScreen'
@@ -18,10 +19,14 @@ export function MenuScreen({ user, token, onUnauthorized, onStartLessons, onStar
 
   if (isLevelUp) return <LevelUpScreen level={user.level} onDismiss={dismissLevelUp} />
   return (
-    <>
-      <StudyMenu onStartLessons={onStartLessons} onStartReviews={onStartReviews} />
-      <ReviewForecast />
-      <WaniKaniProgress apiKey={token} onInvalidApiKey={onUnauthorized} />
-    </>
+    <div className="menu">
+      <div className="menu-study">
+        <StudyMenu onStartLessons={onStartLessons} onStartReviews={onStartReviews} />
+        <ReviewForecast />
+      </div>
+      <div className="menu-progress">
+        <WaniKaniProgress apiKey={token} onInvalidApiKey={onUnauthorized} />
+      </div>
+    </div>
   )
 }

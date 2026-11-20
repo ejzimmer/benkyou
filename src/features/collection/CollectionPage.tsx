@@ -1,20 +1,16 @@
 import { Link } from "react-router-dom"
 import { useMemo, useState } from "react"
 import { db, type SchedulingRow } from "../../lib/db/schema"
-import { endOfLocalDay } from "../../services/review"
-import { reviewModesForCard } from "../../domain/types"
 import { clearLeech, unsuspendCard } from "../../services/cards"
 import { isSuspendedDue } from "../../lib/srs/schedule"
 import { cardMatchesQuery } from "../../domain/cardSearch"
 import { useDebouncedQuery } from "../../lib/useDebouncedQuery"
 import { useAuth } from "../../lib/auth/AuthContext"
-import { AppIcon } from "../../ui/AppIcon"
-import { UserMenu } from "../../ui/UserMenu"
-import { SyncButton } from "../../ui/SyncButton"
 import { SearchIcon } from "../../ui/SearchIcon"
 import { SrsStageDiagram } from "../../ui/SrsStageDiagram"
 import { NextReviewBar } from "../../ui/NextReviewBar"
 import { LeechBadge } from "../../ui/LeechBadge"
+import { useDueCardCount } from "./useDueCardCount"
 import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 
 /** Home page: every card in one collection, shown on a scrolling reel. */
@@ -47,21 +43,7 @@ export function CollectionPage() {
     return ids
   }, [schedulingRows])
 
-  /** Due review items, counted the same way as the review queue (only modes
-   *  still valid for their card), from the rows already loaded for the list
-   *  rather than a separate due-queue load. */
-  const dueCount = useMemo(() => {
-    if (!cards || !schedulingRows) return 0
-    const byId = new Map(cards.map((c) => [c.id, c]))
-    const cutoff = endOfLocalDay(Date.now())
-    let count = 0
-    for (const row of schedulingRows) {
-      if (row.due > cutoff) continue
-      const card = byId.get(row.cardId)
-      if (card && reviewModesForCard(card).includes(row.modeId)) count++
-    }
-    return count
-  }, [cards, schedulingRows])
+  const dueCount = useDueCardCount()
 
   const filtered = useMemo(() => {
     const list = cards ?? []
@@ -73,17 +55,6 @@ export function CollectionPage() {
 
   return (
     <div className="page collection">
-      <header className="header app-header">
-        <Link to="/" className="brand" aria-label="Benkyouのホームへ">
-          <AppIcon className="brand-icon" />
-          <span className="brand-name">Benkyou</span>
-        </Link>
-        <div className="header-actions">
-          <UserMenu />
-          <SyncButton />
-        </div>
-      </header>
-
       {needsSignIn ? (
         <section className="centred">
           <button type="button" className="btn primary" onClick={signInGoogle}>
@@ -130,7 +101,7 @@ export function CollectionPage() {
                   return (
                     <li key={c.id}>
                       <Link
-                        to={`/decks/${c.deckId}/cards/${encodeURIComponent(c.id)}?returnTo=${encodeURIComponent("/")}`}
+                        to={`/decks/${c.deckId}/cards/${encodeURIComponent(c.id)}?returnTo=${encodeURIComponent("/cards")}`}
                       >
                         {c.kind === "vocabulary"
                           ? c.content.wordJa

@@ -48,8 +48,6 @@ import { DuplicateCardsModal, type DuplicateChanges } from "./DuplicateCardsModa
 import { useDuplicateCards } from "./useDuplicateCards"
 import { ConfirmModal } from "../../ui/ConfirmModal"
 import { PageHeading } from "../../ui/PageHeading"
-import { UserMenu } from "../../ui/UserMenu"
-import { SyncButton } from "../../ui/SyncButton"
 import { LabeledToggle } from "../../ui/LabeledToggle"
 import { Switch } from "../../ui/Switch"
 import {
@@ -175,7 +173,7 @@ export function CardEditPage() {
   const isNew = Boolean(isNewRoute) || cardId === "new" || !cardId
   const vocabNew = searchParams.get("vocab") !== "0"
   const returnTo = safeReturnTo(searchParams.get("returnTo"))
-  const backTo = returnTo ?? "/"
+  const backTo = returnTo ?? "/cards"
 
   const loadedCard = useLiveQuery(
     async () => {
@@ -560,10 +558,6 @@ export function CardEditPage() {
         <PageHeading backTo={backTo} backLabel="戻る">
           {isNew ? "新規カード" : "カード編集"}
         </PageHeading>
-        <div className="header-actions">
-          <UserMenu />
-          <SyncButton />
-        </div>
       </header>
 
       {!isNew && (

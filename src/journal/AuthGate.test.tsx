@@ -1,21 +1,21 @@
 import { describe, it, expect, vi, type Mock } from 'vitest'
 import { act, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Auth, onAuthStateChanged, User } from 'firebase/auth';
 import { AuthGate } from './AuthGate';
 
 vi.mock('firebase/auth', () => ({
-  GoogleAuthProvider: vi.fn(),
   onAuthStateChanged: vi.fn(),
-  signInWithPopup: vi.fn(),
 }));
 vi.mock('./loading', () => ({ Loading: () => null }));
 
 const mockOnAuthStateChanged = onAuthStateChanged as Mock;
 const auth = {} as Auth;
+const logIn = vi.fn();
 
 function GatedApp() {
   return (
-    <AuthGate auth={auth}>
+    <AuthGate auth={auth} logIn={logIn}>
       <main />
     </AuthGate>
   );
@@ -66,6 +66,20 @@ describe('AuthGate', () => {
       expect(
         screen.getByRole('button', { name: 'Log In' }),
       ).toBeInTheDocument();
+    });
+
+    describe('and logging in fails', () => {
+      it('says so', async () => {
+        logIn.mockRejectedValue(new Error('auth/popup-blocked'));
+        const { reportUser } = renderGatedApp();
+        reportUser(null);
+
+        await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          "Couldn't log in. Please try again.",
+        );
+      });
     });
   });
 

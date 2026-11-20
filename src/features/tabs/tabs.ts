@@ -1,7 +1,7 @@
 export const TABS = [
-  { id: "media", label: "Media", path: "/media" },
+  { id: "media", label: "Media", path: "/" },
   { id: "wanikani", label: "WaniKani", path: "/wanikani" },
-  { id: "cards", label: "Cards", path: "/" },
+  { id: "cards", label: "Cards", path: "/cards" },
 ] as const
 
 export type TabId = (typeof TABS)[number]["id"]
@@ -25,6 +25,6 @@ export function saveLastUsedTab(tabId: TabId) {
   try {
     localStorage.setItem(LAST_USED_TAB_KEY, tabId)
   } catch {
-    // Private browsing can refuse storage; the app then just opens on Cards.
+    // Private browsing can refuse storage; the app then just opens on Media.
   }
 }

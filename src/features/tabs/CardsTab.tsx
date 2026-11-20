@@ -8,13 +8,13 @@ export function CardsTab() {
   return (
     <div className="app-shell">
       <Routes>
-        <Route path="/" element={<CollectionPage />} />
+        <Route path="/cards" element={<CollectionPage />} />
         <Route path="/cards/new" element={<NewCardRedirect />} />
         <Route path="/decks/:deckId/cards/new" element={<CardEditPage />} />
         <Route path="/decks/:deckId/cards/:cardId" element={<CardEditPage />} />
         <Route path="/review" element={<ReviewSessionPage />} />
         <Route path="/decks/:deckId/review" element={<LegacyDeckReviewRedirect />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/cards" replace />} />
       </Routes>
     </div>
   )
