@@ -1,0 +1,8 @@
+.rubbish-bin.animate {
+  overflow: visible;
+
+  .lid {
+    transform: translate(-2px, -4px) rotate(-10deg);
+    transition: transform 0.2s ease-out;
+  }
+}

@@ -1,0 +1,206 @@
+.media,
+.tiny-cloud-popover {
+  --body-font:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --body-colour: hsl(0 0% 20%);
+  --body-colour-mid: hsl(0 0% 50%);
+  --body-colour-light: hsl(0 0% 60%);
+  --border-colour: hsl(214 32% 82%);
+  --border-colour-hover: hsl(214 32% 70%);
+  --danger-colour: var(--error-colour);
+  --danger-colour-dark: hsl(10, 89%, 31%);
+  --action-colour: hsl(211 81% 46%);
+  --action-colour-dark: hsl(211 81% 36%);
+  --success-colour: hsl(108, 81%, 36%);
+  --error-colour: hsl(10, 89%, 41%);
+
+  color: var(--body-colour);
+  font-family: var(--body-font);
+}
+
+.media {
+  --page-padding-inline: 30px;
+  --page-padding-block: 0px;
+
+  @media (width <= 600px) {
+    --page-padding-inline: 12px;
+  }
+
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--vvh, 100dvh) - var(--tab-bar-height, 0px));
+  overflow: auto;
+  padding-inline: var(--page-padding-inline);
+  background: white;
+  line-height: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  .garden {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .media-garden {
+    flex: 1;
+  }
+
+  .garden-failed {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    margin: auto;
+  }
+}
+
+:where(.media) {
+  button {
+    padding-inline: 16px;
+    font-size: 1em;
+    line-height: 1.2;
+    height: 2.5rem;
+    cursor: pointer;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    border: 2px solid;
+    &:hover,
+    &:focus-visible {
+      background: var(--border-colour);
+    }
+    &:focus-visible {
+      outline: 2px solid black;
+    }
+    &:disabled {
+      opacity: 0.2;
+    }
+
+    &.primary {
+      color: white;
+      background: var(--action-colour);
+      border-color: var(--action-colour);
+
+      &:hover,
+      &:focus-visible {
+        background: var(--action-colour-dark);
+        border-color: var(--action-colour-dark);
+      }
+    }
+    &.outline {
+      border-color: var(--border-colour);
+    }
+
+    &.secondary {
+      border: 0;
+      background: none;
+      opacity: 0.6;
+
+      &:hover,
+      &:focus-visible {
+        opacity: 1;
+        background: none;
+      }
+    }
+
+    &.ghost {
+      border: 0;
+      opacity: 0.5;
+      padding: 6px;
+      height: auto;
+      line-height: 1;
+
+      &:hover {
+        opacity: 1;
+        background: none;
+      }
+      &:focus-visible {
+        opacity: 1;
+        background: none;
+        outline: 1px solid black;
+      }
+    }
+
+    &.round {
+      border-radius: 10000px;
+      padding: 0;
+      width: var(--size);
+      height: var(--size);
+    }
+
+    &.danger {
+      color: white;
+      background: var(--danger-colour);
+      border-color: var(--danger-colour);
+
+      &:hover,
+      &:focus-visible {
+        background: var(--danger-colour-dark);
+        border-color: var(--danger-colour-dark);
+      }
+    }
+
+    &.subtle {
+      color: var(--body-colour-light);
+      border: none;
+
+      &:hover,
+      &:focus {
+        transform: scale(1.1);
+        text-shadow: 1px 1px hsl(0 0 0/0.4);
+        background: none;
+        outline: none;
+      }
+    }
+
+    &.icon {
+      padding: 0;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    &.white {
+      background: white;
+
+      &:hover,
+      &:focus-visible {
+        background: var(--border-colour);
+      }
+    }
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-control input.subtle,
+  input.subtle {
+    font-size: 16px;
+    padding: 5px 10px;
+    border: 0;
+    border-block-end: 2px solid var(--border-colour);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  select.subtle {
+    font-size: 20px;
+    background: transparent;
+    border: 2px solid var(--border-colour);
+    border-radius: 6px;
+    padding-block: 4px;
+  }
+
+  dialog {
+    border: 0;
+    border-radius: 10px;
+    padding-inline: 30px;
+    padding-block: 20px;
+    color: var(--body-colour);
+  }
+}

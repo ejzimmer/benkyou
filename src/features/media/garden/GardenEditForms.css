@@ -1,0 +1,78 @@
+.edit-media-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding-inline: 24px;
+
+  .add-media-name {
+    margin-block-end: 4px;
+  }
+}
+
+.book-volume-rows {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .volume-name-field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .count-field {
+    padding-block: 8px;
+    padding-inline: 10px;
+    border: 2px solid var(--border-colour);
+    border-radius: 10px;
+  }
+}
+
+.manga-volume-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.manga-volume-pages {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-block: 8px;
+  padding-inline: 10px;
+  border: 2px solid var(--border-colour);
+  border-radius: 10px;
+}
+
+.edit-volume-number {
+  color: var(--body-colour-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.edit-video-rows {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+dialog.progress-update-modal.edit-channel-modal {
+  width: 640px;
+}
+
+dialog.edit-channel-modal .add-media-name {
+  margin-block-start: 56px;
+}
+
+.edit-media-actions {
+  display: flex;
+  gap: 10px;
+}

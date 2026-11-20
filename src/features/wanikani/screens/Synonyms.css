@@ -1,0 +1,81 @@
+@scope (.synonyms) to (.tooltip) {
+  :scope {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  ul {
+    display: contents;
+  }
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    padding-left: 12px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--type-colour, var(--ink)) 12%, transparent);
+    font-size: 15px;
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+
+  .remove {
+    width: 32px;
+    height: 32px;
+  }
+
+  .remove svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .add {
+    width: 36px;
+    height: 36px;
+  }
+
+  form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  input {
+    width: 12em;
+    padding: 4px 0;
+    border: none;
+    border-bottom: 2px solid var(--ink);
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 16px;
+  }
+
+  input:focus {
+    outline: none;
+  }
+
+  input:focus-visible {
+    border-bottom-width: 3px;
+  }
+
+  p {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 14px;
+    color: var(--red);
+  }
+}

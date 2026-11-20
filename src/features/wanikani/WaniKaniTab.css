@@ -1,0 +1,112 @@
+.wanikani {
+  --paper: white;
+  --sky: hsl(199 72% 70%);
+  --glass: hsl(0 0% 100% / 0.7);
+  --glass-edge: hsl(199 60% 75%);
+  --track: hsl(199 50% 86%);
+  --ink: hsl(0 0% 20%);
+  --ink-soft: hsl(215 25% 30%);
+  --red: #e0245e;
+  --green: #36A152;
+  --down: #D6472A;
+  --radical-light: #9ee3ff;
+  --radical: #00aaff;
+  --radical-dark: #0068b8;
+  --kanji-light: #ffa3dc;
+  --kanji: #ff00aa;
+  --kanji-dark: #b3007a;
+  --vocab-light: #dcadff;
+  --vocab: #aa00ff;
+  --vocab-dark: #6c00a8;
+  --night: #1a2a52;
+  --indigo: var(--radical-dark);
+  --serif: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --sans: 'IBM Plex Sans JP', 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
+  --system: system-ui, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans CJK JP', sans-serif;
+  --display: var(--serif);
+  --display-weight: 700;
+
+  height: calc(var(--vvh, 100dvh) - var(--tab-bar-height, 0px));
+  overflow-y: auto;
+  background: linear-gradient(white, var(--sky)) fixed;
+  color: var(--ink);
+  color-scheme: light;
+  font-family: var(--sans);
+  line-height: normal;
+}
+
+:root[data-font-style='plain'] .wanikani {
+  --display: var(--system);
+  --display-weight: 500;
+}
+
+.wanikani [hidden] {
+  display: none !important;
+}
+
+.wanikani .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.wanikani button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.wanikani [aria-disabled] {
+  cursor: progress;
+}
+
+.wanikani .character-image {
+  vertical-align: -0.12em;
+}
+
+@scope (.wanikani header.bar) {
+  :scope {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .name {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 18px;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+@scope (.wanikani main.centre) {
+  :scope {
+    min-height: calc(100% - 56px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 24px 16px;
+  }
+
+  :scope:has(.quiz:not(.summary), .lesson) {
+    justify-content: flex-start;
+    padding-top: 0;
+  }
+
+  :scope:has(.quiz:not(.summary)) {
+    height: calc(100% - 56px);
+    min-height: 0;
+  }
+}

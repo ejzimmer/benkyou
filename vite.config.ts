@@ -68,5 +68,32 @@ export default defineConfig({
     poolOptions: {
       forks: { execArgv: ["--no-experimental-webstorage"] },
     },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "app",
+          exclude: [
+            "src/features/media/**",
+            "src/features/wanikani/status/**",
+            "src/journal/**",
+            "**/node_modules/**",
+          ],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "journal",
+          include: [
+            "src/features/media/**/*.test.{ts,tsx}",
+            "src/features/wanikani/status/**/*.test.{ts,tsx}",
+            "src/journal/**/*.test.{ts,tsx}",
+          ],
+          setupFiles: ["./src/journal/test/setup.ts"],
+          mockReset: true,
+        },
+      },
+    ],
   },
 })

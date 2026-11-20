@@ -1,0 +1,148 @@
+.wanikani-status {
+  --body-colour: var(--night);
+  --body-colour-mid: color-mix(in oklab, var(--night) 65%, transparent);
+  --border-colour: hsl(214 32% 82%);
+  --border-colour-hover: hsl(214 32% 70%);
+
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+
+  .current-level {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 170px;
+    height: 170px;
+  }
+
+  .level-rings {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .current-level-badge {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+
+    .level-number {
+      position: relative;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 0 4px #9ee3ff;
+    }
+  }
+
+  .level-badge {
+    position: absolute;
+    inset: 0;
+  }
+
+  .badge-shine {
+    animation: wanikani-badge-shine 180s ease-in-out infinite;
+  }
+
+  .days-remaining {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--body-colour-mid);
+    font-weight: bold;
+  }
+
+  .srs-vials {
+    display: flex;
+    flex-shrink: 0;
+    gap: 4px;
+  }
+
+  .srs-vial {
+    overflow: visible;
+  }
+
+  .bubble-rise {
+    animation: wanikani-bubble-rise linear infinite;
+  }
+
+  .bubble-drift {
+    animation: wanikani-bubble-drift ease-in-out infinite;
+  }
+
+  .level-gems {
+    display: grid;
+    grid-template-columns: repeat(10, auto);
+    justify-content: start;
+    row-gap: 3px;
+    column-gap: 4px;
+    padding-inline-start: 8px;
+
+    @media (width <= 600px) {
+      grid-template-columns: repeat(5, auto);
+    }
+  }
+
+  .level-gem-cluster {
+    overflow: visible;
+
+    text {
+      fill: var(--body-colour-mid);
+      font-weight: bold;
+    }
+  }
+
+  .gem-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+}
+
+@keyframes wanikani-badge-shine {
+  0% {
+    transform: translateX(-60px) skewX(-20deg);
+  }
+  0.86%,
+  100% {
+    transform: translateX(120px) skewX(-20deg);
+  }
+}
+
+@keyframes wanikani-bubble-rise {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(var(--rise));
+    opacity: 0;
+  }
+}
+
+@keyframes wanikani-bubble-drift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  33% {
+    transform: translateX(var(--drift));
+  }
+  66% {
+    transform: translateX(calc(var(--drift) * -1));
+  }
+}

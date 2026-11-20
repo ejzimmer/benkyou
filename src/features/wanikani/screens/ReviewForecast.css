@@ -1,0 +1,96 @@
+@scope (.review-forecast) {
+  :scope {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: min(100%, 420px);
+  }
+
+  .next-day {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .count {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .label {
+    color: var(--ink-soft);
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .days {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .day {
+    display: grid;
+    grid-template-columns: 3em 1fr 3em 3em;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .timeline {
+    position: relative;
+    --tick: hsl(199 60% 72%);
+
+    height: 64px;
+    background:
+      linear-gradient(var(--tick), var(--tick)) center / 100% 1px no-repeat,
+      linear-gradient(var(--tick), var(--tick)) 25% center / 1px 7px no-repeat,
+      linear-gradient(var(--tick), var(--tick)) 50% center / 1px 7px no-repeat,
+      linear-gradient(var(--tick), var(--tick)) 75% center / 1px 7px no-repeat;
+  }
+
+  .cluster {
+    position: absolute;
+    top: 50%;
+    translate: -50% -78%;
+  }
+
+  .cluster button {
+    display: grid;
+    place-items: center;
+    min-width: 20px;
+    min-height: 20px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: default;
+  }
+
+  .cluster:hover,
+  .cluster:has(:focus-visible) {
+    z-index: 1;
+  }
+
+  .cluster svg {
+    overflow: visible;
+  }
+
+  .added {
+    color: var(--indigo);
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .total {
+    color: var(--ink-soft);
+    text-align: right;
+  }
+}

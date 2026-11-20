@@ -1,0 +1,80 @@
+@scope (.debug) to (.has-tooltip) {
+  :scope {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: min(560px, 100%);
+  }
+
+  .level {
+    font-family: var(--display);
+    font-weight: var(--display-weight);
+    font-size: 120px;
+    line-height: 1;
+  }
+
+  .meta {
+    color: var(--ink-soft);
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  section {
+    width: 100%;
+  }
+
+  .heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th,
+  td {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--track);
+    text-align: right;
+  }
+
+  th:first-child {
+    text-align: left;
+    font-weight: 400;
+  }
+
+  thead th {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+
+  .note {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  pre {
+    margin: 8px 0 0;
+    padding: 12px;
+    overflow-x: auto;
+    background: color-mix(in srgb, var(--track) 50%, transparent);
+    font-size: 13px;
+  }
+}

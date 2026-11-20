@@ -1,0 +1,26 @@
+@scope (.marked-up) {
+  mark {
+    border-radius: 3px;
+    background: none;
+    color: inherit;
+    font-weight: 700;
+  }
+
+  .radical {
+    color: var(--radical);
+  }
+
+  .kanji {
+    color: var(--kanji);
+  }
+
+  .vocabulary {
+    color: var(--vocab);
+  }
+
+  .reading,
+  .meaning {
+    padding: 0 0.15em;
+    background: color-mix(in srgb, var(--track) 60%, transparent);
+  }
+}

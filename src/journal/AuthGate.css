@@ -1,0 +1,15 @@
+.auth-gate-loading {
+  width: fit-content;
+  height: 100%;
+  align-content: center;
+  margin: auto;
+}
+
+.not-logged-in {
+  display: grid;
+  height: 100%;
+
+  button {
+    margin: auto;
+  }
+}

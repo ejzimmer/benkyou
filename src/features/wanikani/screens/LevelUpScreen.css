@@ -1,0 +1,53 @@
+@scope (.level-up) to (.has-tooltip) {
+  :scope {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    color: var(--paper);
+  }
+
+  .congratulations {
+    position: absolute;
+    top: max(4vh, 16px);
+    left: 0;
+    right: 0;
+    margin: 0;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: min(17vw, 20vh);
+    line-height: 1;
+    text-align: center;
+    text-shadow: 0 2px 16px rgb(0 0 0 / 0.5);
+    animation: rise 0.6s ease-out both;
+  }
+
+  .actions {
+    position: absolute;
+    right: max(24px, env(safe-area-inset-right, 0px));
+    bottom: max(24px, env(safe-area-inset-bottom, 0px));
+    animation: rise 0.6s 0.4s ease-out both;
+  }
+}
+
+@scope (.level-up) {
+  .submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}

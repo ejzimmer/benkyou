@@ -1,0 +1,57 @@
+[role='radiogroup'].switch {
+  border: 1px solid var(--body-colour-light);
+  border-radius: 6px;
+  width: fit-content;
+  display: flex;
+  position: relative;
+
+  label {
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:first-child {
+      border-top-left-radius: inherit;
+      border-bottom-left-radius: inherit;
+    }
+    &:last-of-type {
+      border-top-right-radius: inherit;
+      border-bottom-right-radius: inherit;
+    }
+
+    &:not(:last-of-type) {
+      border-inline-end: 1px solid var(--body-colour-light);
+    }
+
+    &:has(input:checked) {
+      color: white;
+      font-weight: bold;
+    }
+
+    &:has(input:not(:checked)) {
+      box-shadow: inset 2px 2px 4px hsl(0 0 0 /0.2);
+    }
+  }
+
+  input {
+    position: fixed;
+    top: -100vh;
+  }
+
+  &:focus-within {
+    outline: 2px solid var(--body-colour);
+  }
+
+  .indicator {
+    height: 100%;
+    z-index: -1;
+    position: absolute;
+    --light: var(--action-colour);
+    --dark: var(--action-colour-dark);
+    background: linear-gradient(var(--dark), var(--light) 5%, var(--dark) 95%);
+    box-shadow: inset 2px 2px 8px var(--dark);
+    transition-property: left, box-shadow, border-radius;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out;
+  }
+}

@@ -1,0 +1,57 @@
+@scope (.question-card) {
+  :scope {
+    --card-radius: 20px;
+    --card-edge: color-mix(in srgb, var(--type-colour) 30%, white);
+
+    justify-self: center;
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 560px);
+    min-height: 0;
+    padding-top: var(--card-radius);
+    border: 1px solid var(--card-edge);
+    border-radius: var(--card-radius);
+    background:
+      linear-gradient(var(--type-colour), var(--type-colour)) top / 100% var(--card-radius) no-repeat,
+      hsl(0 0% 100% / 0.78);
+    background-clip: padding-box;
+    box-shadow: 0 6px 24px color-mix(in srgb, var(--type-colour) 22%, transparent);
+    overflow: hidden;
+  }
+
+  .item {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    container-type: size;
+    color: var(--type-dark);
+  }
+
+  .item span {
+    font-family: var(--display);
+    font-weight: var(--display-weight);
+    line-height: 1.1;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  label {
+    padding: 12px 0;
+    border-top: 1px solid var(--type-dark);
+    color: var(--type-dark);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  :scope[data-question='reading'] label {
+    border-top-color: var(--type-colour);
+    background: var(--type-colour);
+    color: white;
+  }
+}
