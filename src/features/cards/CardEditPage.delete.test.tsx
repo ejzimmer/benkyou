@@ -21,7 +21,7 @@ function renderExistingCardPage() {
       <AuthProvider>
         <SyncProvider>
         <Routes>
-          <Route path="/" element={<div>Home page</div>} />
+          <Route path="/cards" element={<div>Home page</div>} />
           <Route
             path="/decks/:deckId/cards/:cardId"
             element={<CardEditPage />}

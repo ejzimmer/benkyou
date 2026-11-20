@@ -1,15 +1,13 @@
-import { Route, Routes } from "react-router-dom"
+import { Navigate, Route, Routes } from "react-router-dom"
 import { CardsTab } from "./features/tabs/CardsTab"
 import { useAuth } from "./lib/auth/AuthContext"
 import { useEffect } from "react"
 import { TabBar } from "./features/tabs/TabBar"
-import { useOpenLastUsedTab } from "./features/tabs/useOpenLastUsedTab"
 import { WaniKaniTab } from "./features/wanikani/WaniKaniTab"
 import { MediaTab } from "./features/media/MediaTab"
 
 export function App() {
   const { loading } = useAuth()
-  useOpenLastUsedTab()
 
   useEffect(() => {
     const vv = window.visualViewport
@@ -44,7 +42,8 @@ export function App() {
     <>
       <TabBar />
       <Routes>
-        <Route path="/media" element={<MediaTab />} />
+        <Route path="/" element={<MediaTab />} />
+        <Route path="/media" element={<Navigate to="/" replace />} />
         <Route path="/wanikani/*" element={<WaniKaniTab />} />
         <Route path="*" element={<CardsTab />} />
       </Routes>

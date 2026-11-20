@@ -1,28 +1,35 @@
 import "./TabBar.css"
-import { useEffect } from "react"
-import { NavLink, useLocation } from "react-router-dom"
-import { findTabAtPath, saveLastUsedTab, TABS } from "./tabs"
+import { useLocation } from "react-router-dom"
+import { SyncButton } from "../../ui/SyncButton"
+import { LogoutButton } from "./LogoutButton"
+import { TabLink } from "./TabLink"
+import { findTabAtPath, TABS } from "./tabs"
+import { useReviewCounts } from "./useReviewCounts"
 
 export function TabBar() {
   const { pathname } = useLocation()
   const currentTab = findTabAtPath(pathname)
-
-  useEffect(() => {
-    if (currentTab) saveLastUsedTab(currentTab.id)
-  }, [currentTab])
+  const reviewCounts = useReviewCounts()
 
   if (!currentTab) return null
 
   return (
-    <nav className="tab-bar" aria-label="Sections">
-      <span className="brand" lang="ja">
-        勉強
-      </span>
-      {TABS.map((tab) => (
-        <NavLink key={tab.id} to={tab.path} end>
-          {tab.label}
-        </NavLink>
-      ))}
-    </nav>
+    <header className="tab-bar" data-tab={currentTab.id}>
+      <nav aria-label="Sections">
+        {TABS.map((tab) => (
+          <TabLink
+            key={tab.id}
+            path={tab.path}
+            label={tab.label}
+            isActive={tab.id === currentTab.id}
+            reviewCount={reviewCounts[tab.id]}
+          />
+        ))}
+      </nav>
+      <div className="tab-bar-actions">
+        <SyncButton />
+        <LogoutButton />
+      </div>
+    </header>
   )
 }

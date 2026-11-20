@@ -28,16 +28,11 @@
 
   height: calc(var(--vvh, 100dvh) - var(--tab-bar-height, 0px));
   overflow-y: auto;
-  background: linear-gradient(white, var(--sky)) fixed;
+  background: linear-gradient(white, hsl(36 45% 93%)) fixed;
   color: var(--ink);
   color-scheme: light;
   font-family: var(--sans);
   line-height: normal;
-}
-
-:root[data-font-style='plain'] .wanikani {
-  --display: var(--system);
-  --display-weight: 500;
 }
 
 .wanikani [hidden] {
@@ -66,38 +61,15 @@
   vertical-align: -0.12em;
 }
 
-@scope (.wanikani header.bar) {
-  :scope {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    height: 56px;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-  }
-
-  .name {
-    font-family: var(--serif);
-    font-weight: 700;
-    font-size: 18px;
-  }
-
-  .actions {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-}
-
 @scope (.wanikani main.centre) {
   :scope {
-    min-height: calc(100% - 56px);
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 24px;
-    padding: 24px 16px;
+    padding: calc(24px + var(--tab-bar-overlay-height, 0px)) 16px 24px;
   }
 
   :scope:has(.quiz:not(.summary), .lesson) {
@@ -106,7 +78,7 @@
   }
 
   :scope:has(.quiz:not(.summary)) {
-    height: calc(100% - 56px);
+    height: 100%;
     min-height: 0;
   }
 }

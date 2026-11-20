@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
-import { UserMenu } from "../../ui/UserMenu"
-import { SyncButton } from "../../ui/SyncButton"
 import { useSync } from "../../lib/sync/SyncContext"
 import { BUILD_LABEL_LOCAL } from "../../lib/buildInfo"
 import {
@@ -88,8 +86,6 @@ export function ReviewSessionComplete({ backTo, scopeKey, onUndoLastJudgement }:
           <ChevronLeftIcon className="back-chevron" />
         </Link>
         <div className="review-header-actions">
-          <UserMenu />
-          <SyncButton />
         </div>
       </header>
 
@@ -119,7 +115,7 @@ export function ReviewSessionComplete({ backTo, scopeKey, onUndoLastJudgement }:
 
         <div className="review-complete-actions">
           <Link
-            to="/"
+            to="/cards"
             className="btn primary"
             onClick={() => clearReviewSessionTimer(scopeKey)}
           >
