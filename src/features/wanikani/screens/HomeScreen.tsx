@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { WaniKaniClient } from '../api/client'
-import { LoadingYomu } from '../components/LoadingYomu'
+import { LoadingMessage } from '../components/LoadingMessage'
 import { db } from '../data/db'
 import { useSync } from '../data/useSync'
 import { DebugScreen } from './DebugScreen'
@@ -26,7 +26,7 @@ export function HomeScreen({ token, onUnauthorized }: Props) {
     syncNow()
   }
 
-  if (!user || !hasFinishedFirstSync) return <LoadingYomu />
+  if (!user || !hasFinishedFirstSync) return <LoadingMessage />
 
   switch (activity) {
     case 'lessons':
