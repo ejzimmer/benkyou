@@ -30,23 +30,21 @@ export function App() {
     }
   }, [])
 
-  if (loading) {
-    return (
-      <div className="page centred">
-        <p>読み込み中</p>
-      </div>
-    )
-  }
-
   return (
     <>
       <TabBar />
-      <Routes>
-        <Route path="/" element={<MediaTab />} />
-        <Route path="/media" element={<Navigate to="/" replace />} />
-        <Route path="/wanikani/*" element={<WaniKaniTab />} />
-        <Route path="*" element={<CardsTab />} />
-      </Routes>
+      {loading ? (
+        <div className="page centred">
+          <p>読み込み中</p>
+        </div>
+      ) : (
+        <Routes>
+          <Route path="/" element={<MediaTab />} />
+          <Route path="/media" element={<Navigate to="/" replace />} />
+          <Route path="/wanikani/*" element={<WaniKaniTab />} />
+          <Route path="*" element={<CardsTab />} />
+        </Routes>
+      )}
     </>
   )
 }

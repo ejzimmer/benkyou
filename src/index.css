@@ -1219,13 +1219,21 @@ fieldset.plain legend {
      so `--vvt` stays 0 there. */
   .app-shell:has(.page.review) {
     position: fixed;
-    top: var(--vvt, 0px);
+    top: calc(var(--vvt, 0px) + var(--tab-bar-height, 0px));
     left: 0;
     right: 0;
     display: flex;
     flex-direction: column;
-    height: var(--vvh, 100dvh);
+    height: calc(var(--vvh, 100dvh) - var(--tab-bar-height, 0px));
     padding-bottom: 1rem;
+  }
+
+  /* Pinned with the review screen, so the bar stays above it while iOS pans. */
+  :root:has(.page.review) .tab-bar {
+    position: fixed;
+    top: var(--vvt, 0px);
+    left: 0;
+    right: 0;
   }
 
   .page.review {
@@ -1523,7 +1531,7 @@ fieldset.plain legend {
   .app-shell:has(.page.review) {
     display: flex;
     flex-direction: column;
-    height: var(--vvh, 100dvh);
+    height: calc(var(--vvh, 100dvh) - var(--tab-bar-height, 0px));
   }
 
   .page.review {

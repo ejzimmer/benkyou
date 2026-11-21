@@ -23,8 +23,8 @@
   --serif: 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   --sans: 'IBM Plex Sans JP', 'Hiragino Sans', 'Yu Gothic', system-ui, sans-serif;
   --system: system-ui, 'Hiragino Sans', 'Yu Gothic UI', 'Noto Sans CJK JP', sans-serif;
-  --display: var(--serif);
-  --display-weight: 700;
+  --display: var(--system);
+  --display-weight: 500;
 
   height: calc(var(--vvh, 100dvh) - var(--tab-bar-height, 0px));
   overflow-y: auto;

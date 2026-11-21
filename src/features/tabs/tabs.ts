@@ -6,12 +6,9 @@ export const TABS = [
 
 export type TabId = (typeof TABS)[number]["id"]
 
-const CARDS_PAGE_PREFIXES = ["/cards", "/decks/"]
-
-/** The tab a page belongs to, or nothing for the full-screen review session. */
+/** The tab a page belongs to. Every page outside Media and WaniKani is a Cards page. */
 export function findTabAtPath(pathname: string) {
   if (pathname === "/") return TABS[0]
   if (pathname.startsWith("/wanikani")) return TABS[1]
-  if (CARDS_PAGE_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return TABS[2]
-  return undefined
+  return TABS[2]
 }
