@@ -7,12 +7,14 @@
   --tab-bar-overlay-height: 48px;
 }
 
+/* Lessons and reviews have their own header, so the bar sits above it instead of over it. */
 :root:has(.wanikani :is(.quiz:not(.summary), .lesson)) {
-  --tab-bar-height: 0px;
+  --tab-bar-height: 48px;
   --tab-bar-overlay-height: 0px;
 
   .tab-bar {
-    display: none;
+    position: relative;
+    background: hsl(150 50% 93%);
   }
 }
 

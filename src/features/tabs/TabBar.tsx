@@ -11,8 +11,6 @@ export function TabBar() {
   const currentTab = findTabAtPath(pathname)
   const reviewCounts = useReviewCounts()
 
-  if (!currentTab) return null
-
   return (
     <header className="tab-bar" data-tab={currentTab.id}>
       <nav aria-label="Sections">
