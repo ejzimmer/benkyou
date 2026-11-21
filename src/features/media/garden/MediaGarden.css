@@ -76,6 +76,14 @@
   }
 }
 
+/* Outside the grid, so the dense packing can't lift it into the sky. */
+.add-media-plot {
+  position: relative;
+  display: flex;
+  padding-inline: 12px;
+  padding-block-end: var(--sink);
+}
+
 .garden-scenery {
   position: absolute;
   inset: 0;

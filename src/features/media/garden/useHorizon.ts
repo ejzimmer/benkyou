@@ -9,11 +9,7 @@ export function useHorizon(listRef: RefObject<HTMLUListElement | null>) {
 
     const measureHorizon = () => {
       const grounds = [...list.children]
-        .filter(
-          (plot): plot is HTMLElement =>
-            plot instanceof HTMLElement &&
-            !plot.classList.contains('add-media-plot'),
-        )
+        .filter((plot): plot is HTMLElement => plot instanceof HTMLElement)
         .map((plot) => plot.offsetTop + plot.offsetHeight);
       if (grounds.length) setHorizon(Math.min(...grounds));
     };

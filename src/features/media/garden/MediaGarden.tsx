@@ -51,10 +51,10 @@ export function MediaGarden() {
             </li>
           );
         })}
-        <li className="add-media-plot">
-          <AddMediaButton />
-        </li>
       </ul>
+      <div className="add-media-plot">
+        <AddMediaButton />
+      </div>
     </div>
   );
 }

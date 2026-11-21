@@ -1,29 +1,64 @@
 @scope (.wanikani .menu) {
   :scope {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'study study'
+      'forecast forecast'
+      'level vials'
+      'gems gems';
+    justify-items: center;
     align-items: center;
-    gap: 48px;
+    gap: 32px;
     width: 100%;
+    max-width: 1200px;
   }
 
-  .menu-study {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 24px;
+  /* Lay the progress pieces out alongside the study menu. */
+  .menu-progress,
+  .wanikani-status {
+    display: contents;
   }
 
-  @media (width >= 1100px) {
+  .study-menu {
+    grid-area: study;
+  }
+
+  .review-forecast {
+    grid-area: forecast;
+  }
+
+  .current-level {
+    grid-area: level;
+  }
+
+  .srs-vials {
+    grid-area: vials;
+  }
+
+  .level-gems {
+    grid-area: gems;
+  }
+
+  @media (width >= 900px) {
     :scope {
-      flex-direction: row;
-      align-items: center;
-      justify-content: center;
+      grid-template-columns: repeat(3, auto);
+      grid-template-areas:
+        'forecast study vials'
+        'forecast level vials'
+        'gems gems gems';
+      justify-content: space-evenly;
     }
 
-    .menu-progress {
-      flex: 0 1 640px;
-      min-width: 0;
+    .review-forecast {
+      width: 320px;
+    }
+
+    :scope .level-gems {
+      grid-template-columns: repeat(15, 1fr);
+      justify-items: center;
+      justify-self: stretch;
+      row-gap: 12px;
     }
   }
 }
