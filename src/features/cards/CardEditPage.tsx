@@ -40,6 +40,7 @@ import {
 import { deleteImageBlob, saveImageBlob } from "../../services/media"
 import { db } from "../../lib/db/schema"
 import { CardImage } from "../../ui/CardImage"
+import { PasteImageButton } from "./PasteImageButton"
 import { toHiragana } from "wanakana"
 import { finalizeReadingAnswer, normalizeJapanese } from "../../lib/japanese/normalize"
 import { japaneseWordForCard } from "../../domain/duplicates"
@@ -76,10 +77,14 @@ function ImagePreviewList({
   imageIds,
   onRemove,
   onAdd,
+  onPasteImages,
+  onPasteFailed,
 }: {
   imageIds: string[]
   onRemove: (id: string) => void
   onAdd: () => void
+  onPasteImages: (files: File[]) => void
+  onPasteFailed: (message: string) => void
 }) {
   return (
     <div className="image-preview-list">
@@ -109,6 +114,10 @@ function ImagePreviewList({
           +
         </span>
       </button>
+      <PasteImageButton
+        onPasteImages={onPasteImages}
+        onPasteFailed={onPasteFailed}
+      />
     </div>
   )
 }
@@ -751,6 +760,8 @@ export function CardEditPage() {
                 imageIds={vocab.images}
                 onRemove={onRemoveImage}
                 onAdd={() => imageInputRef.current?.click()}
+                onPasteImages={(files) => void addImageFiles(files)}
+                onPasteFailed={(message) => setErr({ field: null, message })}
               />
             </fieldset>
           </>
@@ -885,6 +896,8 @@ export function CardEditPage() {
                 imageIds={grammar.images}
                 onRemove={onRemoveImage}
                 onAdd={() => imageInputRef.current?.click()}
+                onPasteImages={(files) => void addImageFiles(files)}
+                onPasteFailed={(message) => setErr({ field: null, message })}
               />
             </fieldset>
           </>

@@ -1,0 +1,14 @@
+.paste-image-button .paste-image-button-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  pointer-events: none;
+}
+
+.paste-image-button svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.paste-image-button:hover svg {
+  filter: drop-shadow(0 0 4px var(--blue)) drop-shadow(0 0 10px var(--blue));
+}
