@@ -12,8 +12,7 @@ async function readImageFilesFromClipboard(): Promise<File[]> {
     const imageType = item.types.find((type) => type.startsWith("image/"))
     if (!imageType) continue
     const blob = await item.getType(imageType)
-    const extension = imageType.slice("image/".length)
-    files.push(new File([blob], `clipboard.${extension}`, { type: imageType }))
+    files.push(new File([blob], "clipboard-image", { type: imageType }))
   }
   return files
 }
