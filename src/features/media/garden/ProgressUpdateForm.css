@@ -125,8 +125,6 @@ dialog.progress-update-modal {
   border-radius: 10px;
 
   input[type='number'] {
-    /* Grows with what's typed (caret included), never narrower than three
-       digits. Browsers without field-sizing get room for four. */
     field-sizing: content;
     min-width: calc(3ch + 2px);
     flex: none;
@@ -181,9 +179,6 @@ dialog.progress-update-modal {
   line-height: 1;
 }
 
-/* Tighter than the other tiles so a four-digit page and its total leave some
-   room at the tile's edges. Phones give the tile a whole row, so it doesn't
-   need squeezing there. */
 @media (width > 480px) {
   .page-tile {
     gap: 2px;
@@ -277,9 +272,6 @@ dialog.progress-update-modal {
   gap: 10px;
 }
 
-/* On a phone a four-digit page and its total don't fit in half the cloud, so
-   the page tile takes a whole row, and the understood slider beneath it too
-   rather than sitting beside an empty half. */
 @media (width <= 480px) {
   .progress-tile:has(.page-total),
   .progress-tile:has(.page-total) + .understood-tile {
@@ -343,7 +335,7 @@ dialog.progress-update-modal {
 
   input {
     width: 2.4ch;
-    padding-inline: 0;
+    padding-inline: 1px;
     padding-block: 4px;
     border: 0;
     border-block-end: 2px solid var(--border-colour);

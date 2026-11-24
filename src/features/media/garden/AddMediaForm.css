@@ -132,8 +132,6 @@
 }
 
 .count-field input {
-  /* Grows with what's typed (caret included), never narrower than three
-     digits. Browsers without field-sizing get room for four. */
   field-sizing: content;
   min-width: calc(3ch + 2px);
   padding-inline: 0;
