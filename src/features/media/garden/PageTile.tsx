@@ -20,7 +20,7 @@ export function PageTile({ page, pages }: PageTileProps) {
         min={0}
         max={pages}
       />
-      {pages && <span className="page-total">/&thinsp;{pages}</span>}
+      {pages && <span className="page-total">/{pages}</span>}
     </div>
   );
 }
