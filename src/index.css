@@ -1185,14 +1185,17 @@ fieldset.plain legend {
   border: none;
   border-radius: 8px;
   background: none;
-  color: #fff;
+  color: #b4b4c8;
   cursor: pointer;
-  transition: filter 0.15s ease;
+  transition:
+    color 0.15s ease,
+    filter 0.15s ease;
 }
 
 .review-header-icon-btn:hover,
 .review-header-icon-btn:focus-visible {
   text-decoration: none;
+  color: #fff;
   filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px #fff);
 }
 
