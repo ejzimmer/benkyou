@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import Dexie from "dexie"
+import Dexie, { type Table } from "dexie"
 
 /**
  * Like dexie-react-hooks' `useLiveQuery`, but recomputes at most once every
@@ -8,10 +8,17 @@ import Dexie from "dexie"
  * full-table scan (e.g. due counts across every card) reruns that scan once
  * per row during a sync and saturates the main thread, which is what made
  * the app feel unresponsive while a sync was still running.
+ *
+ * Only writes to `tables` (the tables `queryFn` reads) trigger a rerun.
+ * Dexie's "storagemutated" event fires for every write to every Dexie
+ * database, so without this a card sync also kept rerunning the WaniKani
+ * due count, which reads every WaniKani subject, and froze the whole app
+ * until the sync finished.
  */
 export function useDebouncedQuery<T>(
   queryFn: () => Promise<T>,
   deps: unknown[],
+  tables: readonly Table[],
   waitMs = 300,
 ): T | undefined {
   const [value, setValue] = useState<T>()
@@ -53,12 +60,23 @@ export function useDebouncedQuery<T>(
       }, waitMs)
     }
 
+    // Dexie keys each change as "idb://<database>/<table>/<index>".
+    const watchedPrefixes = tables.map(
+      (table) => `idb://${table.db.name}/${table.name}/`,
+    )
+    function onStorageMutated(parts: Record<string, unknown>) {
+      const touchesWatchedTable = Object.keys(parts).some((key) =>
+        watchedPrefixes.some((prefix) => key.startsWith(prefix)),
+      )
+      if (touchesWatchedTable) schedule()
+    }
+
     void recompute()
-    Dexie.on("storagemutated", schedule)
+    Dexie.on("storagemutated", onStorageMutated)
     return () => {
       cancelled = true
       if (timer) clearTimeout(timer)
-      Dexie.on.storagemutated.unsubscribe(schedule)
+      Dexie.on.storagemutated.unsubscribe(onStorageMutated)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)

@@ -19,8 +19,13 @@ export function CollectionPage() {
   const cards = useDebouncedQuery(
     () => db.cards.orderBy("updatedAt").reverse().toArray(),
     [],
+    [db.cards],
   )
-  const schedulingRows = useDebouncedQuery(() => db.scheduling.toArray(), [])
+  const schedulingRows = useDebouncedQuery(
+    () => db.scheduling.toArray(),
+    [],
+    [db.scheduling],
+  )
   const [q, setQ] = useState("")
 
   /** Soonest-due scheduling row per card — the one that determines when it next surfaces for review. */

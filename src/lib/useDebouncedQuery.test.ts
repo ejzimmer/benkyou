@@ -13,7 +13,7 @@ describe("useDebouncedQuery", () => {
     await db.decks.put({ id: "d1", name: "Deck one", updatedAt: Date.now() })
 
     const { result } = renderHook(() =>
-      useDebouncedQuery(() => db.decks.toArray(), [], 300),
+      useDebouncedQuery(() => db.decks.toArray(), [], [db.decks], 300),
     )
 
     await waitFor(() => expect(result.current).toHaveLength(1))
@@ -22,7 +22,7 @@ describe("useDebouncedQuery", () => {
   it("coalesces a burst of individual writes into far fewer query runs", async () => {
     const querier = vi.fn(() => db.decks.toArray())
 
-    const { result } = renderHook(() => useDebouncedQuery(querier, [], 50))
+    const { result } = renderHook(() => useDebouncedQuery(querier, [], [db.decks], 50))
     await waitFor(() => expect(querier).toHaveBeenCalledTimes(1))
 
     // Simulate a sync writing one changed row at a time, in separate ticks.
@@ -37,7 +37,7 @@ describe("useDebouncedQuery", () => {
 
   it("settles on the accurate final value once a burst of writes quiets down", async () => {
     const { result } = renderHook(() =>
-      useDebouncedQuery(() => db.decks.toArray(), [], 50),
+      useDebouncedQuery(() => db.decks.toArray(), [], [db.decks], 50),
     )
     await waitFor(() => expect(result.current).toHaveLength(0))
 
@@ -56,7 +56,7 @@ describe("useDebouncedQuery", () => {
       return db.decks.toArray()
     })
 
-    renderHook(() => useDebouncedQuery(querier, [], 20))
+    renderHook(() => useDebouncedQuery(querier, [], [db.decks], 20))
     await waitFor(() => expect(querier).toHaveBeenCalledTimes(1))
 
     shouldThrow = false
@@ -66,5 +66,31 @@ describe("useDebouncedQuery", () => {
     // so this second write would never trigger another query call.
     await waitFor(() => expect(querier).toHaveBeenCalledTimes(2))
     errorSpy.mockRestore()
+  })
+
+  it("ignores writes to tables the query doesn't read", async () => {
+    const querier = vi.fn(() => db.decks.toArray())
+    renderHook(() => useDebouncedQuery(querier, [], [db.decks], 20))
+    await waitFor(() => expect(querier).toHaveBeenCalledTimes(1))
+
+    // A card sync writes cards and scheduling rows, never decks.
+    await db.cards.put({
+      id: "c1",
+      deckId: "d1",
+      kind: "vocabulary",
+      updatedAt: Date.now(),
+      content: {
+        wordJa: "単語",
+        reading: "たんご",
+        definitionsEn: ["word"],
+        images: [],
+        exampleSentences: [],
+      },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    expect(querier).toHaveBeenCalledTimes(1)
+
+    await db.decks.put({ id: "d1", name: "Deck one", updatedAt: Date.now() })
+    await waitFor(() => expect(querier).toHaveBeenCalledTimes(2))
   })
 })
