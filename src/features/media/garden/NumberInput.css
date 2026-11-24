@@ -1,0 +1,26 @@
+.number-input {
+  field-sizing: content;
+  min-width: calc(3ch + 2px);
+  flex: none;
+  padding-inline: 0;
+  padding-block: 4px;
+  border: 0;
+  border-block-end: 2px solid var(--border-colour);
+  border-radius: 0;
+  font: inherit;
+  color: inherit;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  appearance: textfield;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    appearance: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--border-colour-hover);
+  }
+}

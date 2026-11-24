@@ -109,8 +109,7 @@
   line-height: 1;
 }
 
-.volume-name-field input,
-.count-field input {
+.volume-name-field input {
   padding-inline: 2px;
   padding-block: 4px;
   border: 0;
@@ -129,18 +128,6 @@
 .volume-name-field input {
   flex: 1;
   min-width: 0;
-}
-
-.count-field input {
-  width: 3.6ch;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  appearance: textfield;
-
-  &::-webkit-inner-spin-button,
-  &::-webkit-outer-spin-button {
-    appearance: none;
-  }
 }
 
 .add-volume-name {

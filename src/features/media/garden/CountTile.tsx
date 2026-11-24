@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Tooltip } from '../../../journal/controls/Tooltip';
+import { NumberInput } from './NumberInput';
 
 type CountTileProps = {
   name: string;
@@ -33,9 +34,8 @@ export function CountTile({
           </button>
         )}
       </Tooltip>
-      <input
+      <NumberInput
         key={count}
-        type="number"
         name={name}
         aria-label={label}
         defaultValue={count}
