@@ -153,9 +153,13 @@ dialog.progress-update-modal {
   line-height: 1;
 }
 
-@media (width > 480px) {
-  .page-tile {
-    gap: 2px;
+.page-tile {
+  gap: 2px;
+
+  @media (width <= 480px) {
+    .page-icon {
+      margin-inline-end: 4px;
+    }
   }
 }
 
