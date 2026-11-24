@@ -24,9 +24,3 @@
     border-color: var(--border-colour-hover);
   }
 }
-
-@supports not (field-sizing: content) {
-  .number-input {
-    width: calc(4ch + 2px);
-  }
-}
