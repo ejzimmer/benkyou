@@ -132,9 +132,10 @@
 }
 
 .count-field input {
-  /* Four digits plus room for the caret, with no side padding so the width
-     is all digits; text-align centres them. */
-  width: calc(4ch + 2px);
+  /* Grows with what's typed (caret included), never narrower than three
+     digits. Browsers without field-sizing get room for four. */
+  field-sizing: content;
+  min-width: calc(3ch + 2px);
   padding-inline: 0;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -204,4 +205,10 @@
 
 .new-volume-number {
   color: var(--body-colour-light);
+}
+
+@supports not (field-sizing: content) {
+  .count-field input {
+    width: calc(4ch + 2px);
+  }
 }

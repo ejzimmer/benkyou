@@ -125,10 +125,11 @@ dialog.progress-update-modal {
   border-radius: 10px;
 
   input[type='number'] {
-    /* --digits is set from the largest value the field is expected to hold;
-       2px is room for the caret. No side padding, so the width is all digits
-       and text-align centres them. */
-    width: calc(var(--digits, 3) * 1ch + 2px);
+    /* Grows with what's typed (caret included), never narrower than three
+       digits. Browsers without field-sizing get room for four. */
+    field-sizing: content;
+    min-width: calc(3ch + 2px);
+    flex: none;
     padding-inline: 0;
     padding-block: 4px;
     border: 0;
@@ -181,9 +182,12 @@ dialog.progress-update-modal {
 }
 
 /* Tighter than the other tiles so a four-digit page and its total leave some
-   room at the tile's edges. */
-.page-tile {
-  gap: 2px;
+   room at the tile's edges. Phones give the tile a whole row, so it doesn't
+   need squeezing there. */
+@media (width > 480px) {
+  .page-tile {
+    gap: 2px;
+  }
 }
 
 .page-total {
@@ -339,7 +343,7 @@ dialog.progress-update-modal {
 
   input {
     width: 2.4ch;
-    padding-inline: 1px;
+    padding-inline: 0;
     padding-block: 4px;
     border: 0;
     border-block-end: 2px solid var(--border-colour);
@@ -372,5 +376,11 @@ dialog.progress-update-modal {
       outline: none;
       border-color: var(--border-colour-hover);
     }
+  }
+}
+
+@supports not (field-sizing: content) {
+  .progress-tile input[type='number'] {
+    width: calc(4ch + 2px);
   }
 }

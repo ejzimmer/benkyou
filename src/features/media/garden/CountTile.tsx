@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
 import { Tooltip } from '../../../journal/controls/Tooltip';
-import { digitsStyle } from './digitsStyle';
 
 type CountTileProps = {
   name: string;
@@ -41,7 +40,6 @@ export function CountTile({
         aria-label={label}
         defaultValue={count}
         min={0}
-        style={digitsStyle(count)}
       />
     </div>
   );
