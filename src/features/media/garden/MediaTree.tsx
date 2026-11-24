@@ -26,6 +26,8 @@ import { NextVolumeBranch } from './NextVolumeBranch';
 import { Signpost } from './Signpost';
 import { PrintSeries, Volume } from './types';
 import { UpdateStretches } from './UpdateStretches';
+import { GROWTH_DURATION_MS, useGrowingShapes } from './useGrowingShapes';
+import { useKeysAddedSinceMount } from './useKeysAddedSinceMount';
 import { readVolumeProgress } from './volumeProgress';
 
 type MediaTreeProps = { series: PrintSeries };
@@ -35,8 +37,14 @@ export function MediaTree({ series }: MediaTreeProps) {
   const volumes = getItemsByNumber(series.volumes);
   const progress = volumes.map((volume) => readVolumeProgress(series, volume));
   const grownShapes = getGrownShapes(layout, progress);
+  const growingShapes = useGrowingShapes(grownShapes);
   const blooms = getBlooms(series);
   const sprays = groupBloomsIntoSprays(blooms, layout.shapes);
+  const beetleSpots = placeProgressBeetles(series, grownShapes);
+  const newBloomKeys = useKeysAddedSinceMount(blooms.map(({ key }) => key));
+  const newBeetleKeys = useKeysAddedSinceMount(
+    beetleSpots.map(({ key }) => key),
+  );
   const [isProgressUpdateFormOpen, setIsProgressUpdateFormOpen] =
     useState(false);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
@@ -55,6 +63,7 @@ export function MediaTree({ series }: MediaTreeProps) {
         {
           '--ground': `${y + height}px`,
           '--tree-width': `${width}px`,
+          '--growth-duration': `${GROWTH_DURATION_MS}ms`,
         } as CSSProperties
       }
     >
@@ -66,18 +75,19 @@ export function MediaTree({ series }: MediaTreeProps) {
         height={height}
       >
         <TreeShoots
-          shapes={grownShapes}
+          shapes={growingShapes}
           flowerSpots={series.type === 'book' ? sprays : blooms}
           type={series.type}
         />
-        <TreeOutline shapes={grownShapes} />
+        <TreeOutline shapes={growingShapes} />
         <TreeSilhouette layout={layout} />
-        <TreeFill shapes={grownShapes} />
+        <TreeFill shapes={growingShapes} />
         <TreeFlowers
           layout={layout}
           blooms={blooms}
           sprays={sprays}
           type={series.type}
+          newKeys={newBloomKeys}
           onSelect={(volume, updateKey) =>
             setEditedUpdate({ volume, updateKey })
           }
@@ -85,7 +95,7 @@ export function MediaTree({ series }: MediaTreeProps) {
         {series.type === 'book' && (
           <BranchNames layout={layout} series={series} />
         )}
-        <TreeBeetles spots={placeProgressBeetles(series, grownShapes)} />
+        <TreeBeetles spots={beetleSpots} newKeys={newBeetleKeys} />
         <UpdateStretches
           series={series}
           shapes={grownShapes}

@@ -5,6 +5,7 @@ import { Bloom } from './getBlooms';
 import { Spray } from './groupBloomsIntoSprays';
 import { findShootBase } from './growShoots';
 import { HoverCloud } from './HoverCloud';
+import { NewGrowth } from './NewGrowth';
 import { SakuraFlower } from './SakuraFlower';
 import { TreeLayout } from './treeLayout';
 import { PrintSeries, Volume } from './types';
@@ -18,6 +19,7 @@ type TreeFlowersProps = {
   blooms: Bloom[];
   sprays: Spray[];
   type: PrintSeries['type'];
+  newKeys: Set<string>;
   onSelect: (volume: Volume, updateKey: string) => void;
 };
 
@@ -26,6 +28,7 @@ export function TreeFlowers({
   blooms,
   sprays,
   type,
+  newKeys,
   onSelect,
 }: TreeFlowersProps) {
   const findLimbPoint = ({ limbKey, at }: Pick<Bloom, 'limbKey' | 'at'>) => {
@@ -43,16 +46,20 @@ export function TreeFlowers({
           const limbPoint = findLimbPoint(spray);
           if (!limbPoint) return null;
           const { point, downSide } = limbPoint;
+          const base = findShootBase(point, downSide);
+          const isNewSpray = spray.blooms.every(({ key }) => newKeys.has(key));
           return (
-            <CallistemonSpray
-              key={spray.key}
-              seed={spray.key}
-              base={findShootBase(point, downSide)}
-              angle={point.angle + CALLISTEMON_TURNS[index % 2] * downSide}
-              side={downSide}
-              blooms={spray.blooms}
-              onSelect={onSelect}
-            />
+            <NewGrowth key={spray.key} isNew={isNewSpray} origin={base}>
+              <CallistemonSpray
+                seed={spray.key}
+                base={base}
+                angle={point.angle + CALLISTEMON_TURNS[index % 2] * downSide}
+                side={downSide}
+                blooms={spray.blooms}
+                newKeys={isNewSpray ? new Set() : newKeys}
+                onSelect={onSelect}
+              />
+            </NewGrowth>
           );
         })}
       </g>
@@ -66,20 +73,26 @@ export function TreeFlowers({
         if (!limbPoint) return null;
         const { point, downSide } = limbPoint;
         const side = index % 2 ? -downSide : downSide;
+        const base = findShootBase(point, side);
 
         return (
-          <HoverCloud
+          <NewGrowth
             key={bloom.key}
-            text={formatDayAndMonth(getLocalDate(bloom.date))}
-            onClick={() => onSelect(bloom.volume, bloom.key)}
+            isNew={newKeys.has(bloom.key)}
+            origin={base}
           >
-            <SakuraFlower
-              seed={bloom.key}
-              base={findShootBase(point, side)}
-              angle={point.angle + SAKURA_TURN * side}
-              understood={bloom.understood}
-            />
-          </HoverCloud>
+            <HoverCloud
+              text={formatDayAndMonth(getLocalDate(bloom.date))}
+              onClick={() => onSelect(bloom.volume, bloom.key)}
+            >
+              <SakuraFlower
+                seed={bloom.key}
+                base={base}
+                angle={point.angle + SAKURA_TURN * side}
+                understood={bloom.understood}
+              />
+            </HoverCloud>
+          </NewGrowth>
         );
       })}
     </g>

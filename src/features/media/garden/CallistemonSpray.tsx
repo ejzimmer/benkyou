@@ -4,6 +4,7 @@ import { findBranchPoint } from './findBranchPoint';
 import { Bloom } from './getBlooms';
 import { growArchingShoot, growShoot } from './growShoots';
 import { HoverCloud } from './HoverCloud';
+import { NewGrowth } from './NewGrowth';
 import { createSeededRandom } from './seededRandom';
 import { Point } from './treeGeometry';
 import { TreeShoot } from './TreeShoot';
@@ -43,6 +44,7 @@ type CallistemonSprayProps = {
   angle: number;
   side: number;
   blooms: Bloom[];
+  newKeys: Set<string>;
   onSelect: (volume: Volume, updateKey: string) => void;
 };
 
@@ -52,6 +54,7 @@ export function CallistemonSpray({
   angle,
   side,
   blooms,
+  newKeys,
   onSelect,
 }: CallistemonSprayProps) {
   const random = createSeededRandom(seed);
@@ -66,8 +69,8 @@ export function CallistemonSpray({
     [[0.15, 0.35]],
   );
   const forks = findForkPositions(blooms.length);
-  const stems = forks.map((at, index) => {
-    const fork = findBranchPoint(twig.edges, at);
+  const forkPoints = forks.map((at) => findBranchPoint(twig.edges, at));
+  const stems = forkPoints.map((fork, index) => {
     const turn = index % 2 ? -side : side;
     return growShoot(
       fork,
@@ -83,16 +86,21 @@ export function CallistemonSpray({
     <g className="callistemon-spray">
       <TreeShoot shoot={twig} type="book" />
       {blooms.map((bloom, index) => (
-        <HoverCloud
+        <NewGrowth
           key={bloom.key}
-          text={formatDayAndMonth(getLocalDate(bloom.date))}
-          onClick={() => onSelect(bloom.volume, bloom.key)}
+          isNew={newKeys.has(bloom.key)}
+          origin={forkPoints[index]}
         >
-          <CallistemonFlower
-            stem={stems[index]}
-            understood={bloom.understood}
-          />
-        </HoverCloud>
+          <HoverCloud
+            text={formatDayAndMonth(getLocalDate(bloom.date))}
+            onClick={() => onSelect(bloom.volume, bloom.key)}
+          >
+            <CallistemonFlower
+              stem={stems[index]}
+              understood={bloom.understood}
+            />
+          </HoverCloud>
+        </NewGrowth>
       ))}
     </g>
   );
