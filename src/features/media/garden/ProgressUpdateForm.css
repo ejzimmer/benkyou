@@ -127,9 +127,9 @@ dialog.progress-update-modal {
   input[type='number'] {
     /* content-box so the padding doesn't eat into the digits' room under the
        app-wide border-box rule. --digits is set from the largest value the
-       field is expected to hold, plus half a digit for the caret. */
+       field is expected to hold, plus 2px for the caret. */
     box-sizing: content-box;
-    width: calc(var(--digits, 3) * 1ch + 0.5ch);
+    width: calc(var(--digits, 3) * 1ch + 2px);
     padding-inline: 2px;
     padding-block: 4px;
     border: 0;
@@ -179,6 +179,12 @@ dialog.progress-update-modal {
 .page-icon {
   font-size: 30px;
   line-height: 1;
+}
+
+/* Tighter than the other tiles so a four-digit page and its total leave some
+   room at the tile's edges. */
+.page-tile {
+  gap: 2px;
 }
 
 .page-total {

@@ -5,7 +5,7 @@ type PageTileProps = { page?: number; pages?: number };
 
 export function PageTile({ page, pages }: PageTileProps) {
   return (
-    <div className="progress-tile">
+    <div className="progress-tile page-tile">
       <Tooltip label="Page" position="top">
         {(triggerProps) => (
           <span {...triggerProps} className="page-icon" aria-hidden="true">
@@ -22,7 +22,7 @@ export function PageTile({ page, pages }: PageTileProps) {
         max={pages}
         style={digitsStyle(pages ?? page)}
       />
-      {pages && <span className="page-total">/ {pages}</span>}
+      {pages && <span className="page-total">/{'\u2009'}{pages}</span>}
     </div>
   );
 }
