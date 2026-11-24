@@ -1101,11 +1101,11 @@ fieldset.plain legend {
     0 0 20px var(--pink);
 }
 
-/* Same footprint as an image preview thumbnail, so it sits in line with
+/* Same height as an image preview thumbnail, so it sits in line with
    them (or stands alone when there are none yet) rather than reading as
    a separate control below the row. */
 .image-preview-add {
-  width: 6rem;
+  width: 2.5rem;
   height: 6rem;
   display: inline-flex;
   align-items: center;
