@@ -98,7 +98,7 @@ export function MediaTree({ series }: MediaTreeProps) {
         <TreeBeetles spots={beetleSpots} newKeys={newBeetleKeys} />
         <UpdateStretches
           series={series}
-          shapes={grownShapes}
+          shapes={growingShapes}
           onSelect={(volume, updateKey) =>
             setEditedUpdate({ volume, updateKey })
           }
