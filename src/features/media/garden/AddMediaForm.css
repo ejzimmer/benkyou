@@ -132,10 +132,10 @@
 }
 
 .count-field input {
-  /* content-box so the padding doesn't eat into the four digits' room under
-     the app-wide border-box rule. */
-  box-sizing: content-box;
-  width: 4.5ch;
+  /* Four digits plus room for the caret, with no side padding so the width
+     is all digits; text-align centres them. */
+  width: calc(4ch + 2px);
+  padding-inline: 0;
   text-align: center;
   font-variant-numeric: tabular-nums;
   appearance: textfield;
