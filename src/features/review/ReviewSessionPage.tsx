@@ -52,6 +52,7 @@ import {
   warnsNonHiraganaReading,
 } from "./reviewFlowHelpers"
 import { ChevronLeftIcon } from "../../ui/ChevronLeftIcon"
+import { PencilIcon } from "../../ui/PencilIcon"
 import { UndoIcon } from "../../ui/UndoIcon"
 import { ScrollShadow } from "../../ui/ScrollShadow"
 import { useScrollShadow } from "../../ui/useScrollShadow"
@@ -895,6 +896,15 @@ export function ReviewSessionPage() {
         >
           <ChevronLeftIcon className="back-chevron" />
         </Link>
+        <p className="muted small review-counts">
+          残り<span className="review-count-remaining">{remainingCount}</span>枚
+          {wrongCount > 0 && (
+            <>
+              ・やり直し
+              <span className="review-count-wrong">{wrongCount}</span>枚
+            </>
+          )}
+        </p>
         <div className="review-header-actions">
           {item.isLeech && <LeechBadge onClear={() => void onClearLeech()} />}
           {/* Matches only, unlike the edit page's button: once a pair has
@@ -912,33 +922,24 @@ export function ReviewSessionPage() {
               重複{duplicateMatches.length > 1 && duplicateMatches.length}
             </button>
           )}
-          <p className="muted small">
-            残り<span className="review-count-remaining">{remainingCount}</span>枚
-            {wrongCount > 0 && (
-              <>
-                ・やり直し
-                <span className="review-count-wrong">{wrongCount}</span>枚
-              </>
-            )}
-          </p>
           <Link
             to={`/decks/${item.card.deckId}/cards/${encodeURIComponent(item.card.id)}?returnTo=${encodeURIComponent(
               reviewReturnTo,
             )}`}
-            className="btn secondary white"
+            className="review-header-icon-btn"
             aria-label="カード編集"
+            title="カード編集"
           >
-            <span className="control-text-full">カード編集</span>
-            <span className="control-text-short">編集</span>
+            <PencilIcon className="review-header-icon" />
           </Link>
           <button
             type="button"
-            className="btn secondary white"
+            className="review-header-icon-btn"
             aria-label="取り消す"
+            title="取り消す"
             onClick={() => void onUndoJudgementFromHeader()}
           >
-            <span className="control-text-full">取り消す</span>
-            <UndoIcon className="control-text-short control-icon" />
+            <UndoIcon className="review-header-icon" />
           </button>
         </div>
       </header>

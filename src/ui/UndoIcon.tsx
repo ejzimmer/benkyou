@@ -13,14 +13,14 @@ export function UndoIcon({ className }: Props) {
       <path
         d="M7 8H4V5"
         stroke="currentColor"
-        strokeWidth="2.5"
+        strokeWidth="1.75"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M4.5 8.5A8 8 0 1 1 6 17"
         stroke="currentColor"
-        strokeWidth="2.5"
+        strokeWidth="1.75"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
