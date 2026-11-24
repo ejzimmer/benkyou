@@ -132,7 +132,10 @@
 }
 
 .count-field input {
-  width: 3.6ch;
+  /* content-box so the padding doesn't eat into the four digits' room under
+     the app-wide border-box rule. */
+  box-sizing: content-box;
+  width: 4.5ch;
   text-align: center;
   font-variant-numeric: tabular-nums;
   appearance: textfield;

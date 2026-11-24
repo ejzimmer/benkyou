@@ -1,4 +1,5 @@
 import { Tooltip } from '../../../journal/controls/Tooltip';
+import { digitsStyle } from './digitsStyle';
 
 type PageTileProps = { page?: number; pages?: number };
 
@@ -19,6 +20,7 @@ export function PageTile({ page, pages }: PageTileProps) {
         defaultValue={page}
         min={0}
         max={pages}
+        style={digitsStyle(pages ?? page)}
       />
       {pages && <span className="page-total">/ {pages}</span>}
     </div>

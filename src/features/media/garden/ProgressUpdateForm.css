@@ -125,7 +125,11 @@ dialog.progress-update-modal {
   border-radius: 10px;
 
   input[type='number'] {
-    width: 3.6ch;
+    /* content-box so the padding doesn't eat into the digits' room under the
+       app-wide border-box rule. --digits is set from the largest value the
+       field is expected to hold, plus half a digit for the caret. */
+    box-sizing: content-box;
+    width: calc(var(--digits, 3) * 1ch + 0.5ch);
     padding-inline: 2px;
     padding-block: 4px;
     border: 0;
@@ -262,6 +266,16 @@ dialog.progress-update-modal {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* On a phone a four-digit page and its total don't fit in half the cloud, so
+   the page tile takes a whole row, and the understood slider beneath it too
+   rather than sitting beside an empty half. */
+@media (width <= 480px) {
+  .progress-tile:has(.page-total),
+  .progress-tile:has(.page-total) + .understood-tile {
+    grid-column: 1 / -1;
+  }
 }
 
 .progress-update-delete {
