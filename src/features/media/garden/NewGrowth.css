@@ -1,0 +1,22 @@
+.new-growth {
+  animation: new-growth-appear 0.4s ease-out var(--growth-duration) backwards;
+
+  &.sprouting {
+    transform-box: view-box;
+    animation-name: new-growth-sprout;
+    animation-duration: 0.7s;
+  }
+}
+
+@keyframes new-growth-appear {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes new-growth-sprout {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}

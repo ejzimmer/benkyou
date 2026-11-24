@@ -156,6 +156,44 @@ describe('MediaTree', () => {
     const getStretch = () =>
       screen.getByRole('button', { name: 'Edit update to Fantine' });
 
+    describe('when the tree first appears', () => {
+      it('shows the flower already open', () => {
+        renderWithLanguageMediaStorage(<MediaTree series={seriesWithUpdate} />);
+
+        expect(
+          screen.getByTestId('callistemon-flower').closest('.new-growth'),
+        ).toBeNull();
+      });
+    });
+
+    describe('when the update is added while the tree is showing', () => {
+      it('sprouts the new flower', () => {
+        const { rerender } = renderWithLanguageMediaStorage(
+          <MediaTree series={series} />,
+        );
+
+        rerender(<MediaTree series={seriesWithUpdate} />);
+
+        expect(
+          screen.getByTestId('callistemon-flower').closest('.new-growth'),
+        ).toHaveClass('sprouting');
+      });
+
+      it('fades in the new beetles', () => {
+        const { rerender } = renderWithLanguageMediaStorage(
+          <MediaTree series={series} />,
+        );
+
+        rerender(<MediaTree series={seriesWithUpdate} />);
+
+        screen
+          .getAllByTestId('beetle')
+          .forEach((beetle) =>
+            expect(beetle.closest('.new-growth')).toBeInTheDocument(),
+          );
+      });
+    });
+
     describe('clicking the stretch of branch the update grew', () => {
       it('opens that update in the update form', async () => {
         const user = userEvent.setup();
