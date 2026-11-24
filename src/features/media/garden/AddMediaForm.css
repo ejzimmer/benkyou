@@ -109,8 +109,7 @@
   line-height: 1;
 }
 
-.volume-name-field input,
-.count-field input {
+.volume-name-field input {
   padding-inline: 2px;
   padding-block: 4px;
   border: 0;
@@ -129,20 +128,6 @@
 .volume-name-field input {
   flex: 1;
   min-width: 0;
-}
-
-.count-field input {
-  field-sizing: content;
-  min-width: calc(3ch + 2px);
-  padding-inline: 0;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  appearance: textfield;
-
-  &::-webkit-inner-spin-button,
-  &::-webkit-outer-spin-button {
-    appearance: none;
-  }
 }
 
 .add-volume-name {
@@ -203,10 +188,4 @@
 
 .new-volume-number {
   color: var(--body-colour-light);
-}
-
-@supports not (field-sizing: content) {
-  .count-field input {
-    width: calc(4ch + 2px);
-  }
 }

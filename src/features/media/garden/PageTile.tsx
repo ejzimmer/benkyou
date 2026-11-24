@@ -1,4 +1,5 @@
 import { Tooltip } from '../../../journal/controls/Tooltip';
+import { NumberInput } from './NumberInput';
 
 type PageTileProps = { page?: number; pages?: number };
 
@@ -12,8 +13,7 @@ export function PageTile({ page, pages }: PageTileProps) {
           </span>
         )}
       </Tooltip>
-      <input
-        type="number"
+      <NumberInput
         name="page"
         aria-label="Page"
         defaultValue={page}

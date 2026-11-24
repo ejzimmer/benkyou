@@ -123,32 +123,6 @@ dialog.progress-update-modal {
   padding-inline: 10px;
   border: 2px solid var(--border-colour);
   border-radius: 10px;
-
-  input[type='number'] {
-    field-sizing: content;
-    min-width: calc(3ch + 2px);
-    flex: none;
-    padding-inline: 0;
-    padding-block: 4px;
-    border: 0;
-    border-block-end: 2px solid var(--border-colour);
-    font: inherit;
-    color: inherit;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    background: transparent;
-    appearance: textfield;
-
-    &::-webkit-inner-spin-button,
-    &::-webkit-outer-spin-button {
-      appearance: none;
-    }
-
-    &:focus-visible {
-      outline: none;
-      border-color: var(--border-colour-hover);
-    }
-  }
 }
 
 .count-button {
@@ -368,11 +342,5 @@ dialog.progress-update-modal {
       outline: none;
       border-color: var(--border-colour-hover);
     }
-  }
-}
-
-@supports not (field-sizing: content) {
-  .progress-tile input[type='number'] {
-    width: calc(4ch + 2px);
   }
 }

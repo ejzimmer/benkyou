@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Tooltip } from '../../../journal/controls/Tooltip';
+import { NumberInput } from './NumberInput';
 
 type CountFieldProps = {
   name: string;
@@ -25,8 +26,7 @@ export function CountField({
           </span>
         )}
       </Tooltip>
-      <input
-        type="number"
+      <NumberInput
         name={name}
         aria-label={label}
         min="0"
