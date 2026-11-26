@@ -809,6 +809,12 @@ fieldset.plain legend {
     0 0 20px var(--blue);
 }
 
+/* The app-wide `.btn` focus ring is blue, which disappears against this
+   blue button, so its ring uses the page's text colour instead. */
+.page.review .btn.primary:focus-visible {
+  outline-color: #eee;
+}
+
 .error:where(:not(:is(.wanikani, .media) *)) {
   color: var(--pink);
 }
