@@ -58,7 +58,7 @@ There is no ESLint config or `lint` script in this repo. TypeScript checking run
 
 ### Key caveats
 
-- **Node 22.13+** or **24+** required (`engines` in `package.json`; `.nvmrc` pins 22.13).
+- **Node 26+** required (`engines` in `package.json`; `.nvmrc` / `.node-version` pin 26).
 - Use **npm** (`package-lock.json`).
 - **Offline mode works without Firebase.** Copy `.env.example` to `.env.local` only when testing sign-in or cloud sync. See [docs/FIREBASE.md](docs/FIREBASE.md).
 - No separate backend server — all app logic runs in the browser.

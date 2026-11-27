@@ -4,7 +4,7 @@ Local-first Japanese SRS (FSRS) with optional Firestore sync. Web/PWA; runs on L
 
 ## Development
 
-Requires **Node.js 22.13+** or **24+** (`engines` in `package.json`, `.nvmrc` / `.node-version` for `nvm` / `fnm`). Older **22.0–22.12** builds trip `EBADENGINE` on some devDependencies (e.g. `eslint-visitor-keys`). Netlify builds use **Node 22** via `NODE_VERSION` in `netlify.toml`.
+Requires **Node.js 26+**, the current LTS, which has `Temporal` built in (`engines` in `package.json`, `.nvmrc` / `.node-version` for `nvm` / `fnm`). Netlify builds use **Node 26** via `NODE_VERSION` in `netlify.toml`.
 
 ```bash
 npm install
