@@ -9,7 +9,7 @@ export type AnswerResult = 'blank' | MeaningResult | ReadingResult | LookalikeAn
 
 export type UnmarkableAnswer = Exclude<AnswerResult, 'correct' | 'incorrect'>
 
-const WRONG_FOR_THIS_SUBJECT: ReadonlySet<AnswerResult> = new Set(['incorrect', 'onyomi-wanted', 'kunyomi-wanted'])
+const WRONG_FOR_THIS_SUBJECT: ReadonlySet<AnswerResult> = new Set(['incorrect', 'to-wanted', 'onyomi-wanted', 'kunyomi-wanted'])
 
 export function checkAnswer(
   answer: string,

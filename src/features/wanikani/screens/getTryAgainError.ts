@@ -11,6 +11,7 @@ const TRY_AGAIN_MESSAGES: Record<UnmarkableAnswer, string> = {
   'onyomi-wanted': 'On’yomi wanted',
   'kunyomi-wanted': 'Kun’yomi wanted',
   'reading-given': 'Meaning wanted, not reading',
+  'to-wanted': 'Start with “to”',
   'meaning-given': 'Reading wanted, not meaning',
   'radical-meaning-wanted': 'Radical meaning wanted',
   'kanji-meaning-wanted': 'Kanji meaning wanted',
