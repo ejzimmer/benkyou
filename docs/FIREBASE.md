@@ -16,7 +16,7 @@ Cloud sync uses the existing Firebase project:
 
 Security rules for Firestore live in [`firestore.rules`](../firestore.rules) at the repo root. Deploy them after changes:
 
-From the repo root (requires [Node 22+](../README.md)):
+From the repo root (requires [Node 26+](../README.md)):
 
 ```bash
 npm install
