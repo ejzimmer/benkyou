@@ -58,6 +58,15 @@ describe('checkAnswer', () => {
       expect(checkAnswer('mountain', 'meaning', mountainRadical, [], [mountainKanji])).toBe('radical-meaning-wanted')
     })
 
+    it('says which subject’s answer is wanted before asking for a verb’s “to”', () => {
+      const climbVocabulary = makeLookalike('vocabulary', {
+        characters: '山る',
+        meanings: [{ meaning: 'To Climb', primary: true, accepted_answer: true }],
+      })
+      expect(checkAnswer('mountain', 'meaning', climbVocabulary, [], [mountainKanji])).toBe('vocabulary-meaning-wanted')
+      expect(checkAnswer('river', 'meaning', climbVocabulary, [], [mountainKanji])).toBe('to-wanted')
+    })
+
     it('marks answers that are right for this subject too as correct', () => {
       expect(checkAnswer('mountain', 'meaning', mountainVocabulary, [], [mountainKanji])).toBe('correct')
     })

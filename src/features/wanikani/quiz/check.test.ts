@@ -108,7 +108,32 @@ describe('checkMeaning', () => {
     expect(checkMeaning('nureru', toLeak)).toBe('reading-given')
     expect(checkMeaning('Moreru', toLeak)).toBe('reading-given')
     expect(checkMeaning('to drip', toLeak)).toBe('incorrect')
-    expect(checkMeaning('more', toLeak)).toBe('incorrect')
+    expect(checkMeaning('to more', toLeak)).toBe('incorrect')
+  })
+
+  it('asks again for a verb’s meaning when the answer doesn’t start with “to”', () => {
+    const toEat = makeSubject({
+      meanings: [
+        { meaning: 'To Eat', primary: true, accepted_answer: true },
+        { meaning: 'To Consume', primary: false, accepted_answer: true },
+      ],
+      auxiliary_meanings: [
+        { meaning: 'Eating', type: 'whitelist' },
+        { meaning: 'Drink', type: 'blacklist' },
+      ],
+    })
+    expect(checkMeaning('eat', toEat)).toBe('to-wanted')
+    expect(checkMeaning('run', toEat)).toBe('to-wanted')
+    expect(checkMeaning('To', toEat)).toBe('incorrect')
+    expect(checkMeaning('to run', toEat)).toBe('incorrect')
+    expect(checkMeaning('to-eat', toEat)).toBe('correct')
+    expect(checkMeaning('eating', toEat)).toBe('correct')
+    expect(checkMeaning('eat', toEat, ['eat'])).toBe('correct')
+    expect(checkMeaning('drink', toEat)).toBe('incorrect')
+  })
+
+  it('doesn’t ask for “to” when the meaning isn’t a verb', () => {
+    expect(checkMeaning('tomato', persimmon)).toBe('incorrect')
   })
 
   it('doesn’t treat romaji as a reading when the question has no kana', () => {

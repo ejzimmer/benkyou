@@ -3,7 +3,7 @@ import type { Subject } from '../api/types'
 import { convertToHiragana } from './convertToHiragana'
 import { matchesKanaInQuestion } from './matchesKanaInQuestion'
 
-export type MeaningResult = 'correct' | 'incorrect' | 'not-english' | 'reading-given'
+export type MeaningResult = 'correct' | 'incorrect' | 'not-english' | 'reading-given' | 'to-wanted'
 
 export function checkMeaning(answer: string, subject: Subject, synonyms: readonly string[] = []): MeaningResult {
   if (isJapanese(answer.replaceAll(/\s/gu, ''))) return 'not-english'
@@ -13,15 +13,23 @@ export function checkMeaning(answer: string, subject: Subject, synonyms: readonl
   const blacklisted = subject.auxiliary_meanings.filter((m) => m.type === 'blacklist').map((m) => normalise(m.meaning))
   if (blacklisted.includes(given)) return 'incorrect'
 
+  const acceptedMeanings = subject.meanings.filter((m) => m.accepted_answer).map((m) => normalise(m.meaning))
   const accepted = [
-    ...subject.meanings.filter((m) => m.accepted_answer).map((m) => m.meaning),
+    ...acceptedMeanings,
     ...subject.auxiliary_meanings.filter((m) => m.type === 'whitelist').map((m) => m.meaning),
     ...synonyms,
   ].map((meaning) => normalise(meaning))
 
   const isCloseEnough = (meaning: string) => getEditDistance(given, meaning) <= getAllowedTypos(meaning)
   if (accepted.some((meaning) => isCloseEnough(meaning))) return 'correct'
-  return isReadingInRomaji(answer, subject) ? 'reading-given' : 'incorrect'
+  if (isReadingInRomaji(answer, subject)) return 'reading-given'
+  return isMissingTo(given, acceptedMeanings) ? 'to-wanted' : 'incorrect'
+}
+
+// A verb's meaning is given as an infinitive ("to eat"), so an answer without the "to" gets another go.
+function isMissingTo(given: string, acceptedMeanings: readonly string[]) {
+  const isVerb = acceptedMeanings.some((meaning) => meaning.startsWith('to '))
+  return isVerb && given !== 'to' && !given.startsWith('to ')
 }
 
 function isReadingInRomaji(answer: string, subject: Subject) {
